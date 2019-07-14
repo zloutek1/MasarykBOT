@@ -2,7 +2,7 @@
 from discord import Game
 from discord.ext.commands import Bot, when_mentioned_or
 
-from config import Bot as BotConfig
+from config import BotConfig
 
 
 bot = Bot(
