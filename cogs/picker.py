@@ -101,6 +101,8 @@ class ReactionPicker(commands.Cog):
                             option_order += 1
                             is_full = False
 
+                            await bulk_message.add_reaction(emoji)
+
                         else:
                             database_relations += ((section_msg.id, bulk_message.id, bulk_order, option_order),)
                             await bulk_message.edit(content=batch)
@@ -123,7 +125,6 @@ class ReactionPicker(commands.Cog):
         try:
             ctx.db.executemany("INSERT INTO `reactionmenu_sections` (`guild_id`, `channel_id`, `section_id`, `section_order`, `text`) VALUES (%s, %s, %s, %s, %s)", database_sections)
 
-            print(database_options)
             ctx.db.executemany("INSERT INTO `reactionmenu_options`(`guild_id`, `channel_id`, `bulk_id`, `text`) VALUES (%s, %s, %s, %s)", database_options)
 
             ctx.db.executemany("INSERT INTO `reactionmenu_relations`(`section_id`, `bulk_id`, `bulk_order`, `option_order`) VALUES (%s, %s, %s, %s)", database_relations)
