@@ -9,7 +9,7 @@ from cogs.utils.db import Database
 from config import BotConfig
 
 
-class MasatykBot(Bot):
+class MasarykBot(Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -60,7 +60,7 @@ class MasatykBot(Bot):
         await self.invoke(ctx)
 
 
-bot = MasatykBot(
+bot = MasarykBot(
     command_prefix=when_mentioned_or(BotConfig.prefix),
     activity=Game(name="Commands: !help"),
     case_insensitive=True
