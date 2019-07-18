@@ -1,10 +1,11 @@
 import asyncio
 import sys
+import time
 
 from discord import Game
 from discord.ext.commands import Bot, when_mentioned_or
 
-from cogs.utils import context
+from cogs.utils import context, db
 from cogs.utils.db import Database
 from config import BotConfig
 
@@ -14,6 +15,20 @@ class MasarykBot(Bot):
         super().__init__(*args, **kwargs)
 
         self.ininial_params = args, kwargs
+        self.errors = []
+
+        while True:
+            try:
+                self.db = Database.connect(**BotConfig.db_config)
+                print("Database connected.")
+                break
+            except db.ConnectionError as e:
+                print(f"{e}\nReconnecting to the database...")
+                time.sleep(120)
+            except KeyboardInterrupt:
+                self.handle_exit()
+                print("Bot shut down by KeyboardInterrupt")
+                sys.exit(1)
 
     def handle_exit(self):
         # finish runnings tasks and logout bot
@@ -72,5 +87,6 @@ bot.load_extension("cogs.errors")
 
 # Commands
 bot.load_extension("cogs.picker")
+
 
 bot.start(BotConfig.token)
