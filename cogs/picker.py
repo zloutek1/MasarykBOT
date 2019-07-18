@@ -3,7 +3,7 @@ import discord.utils
 from discord.ext import commands
 from discord.ext.commands import Bot, Converter, group
 
-from cogs.utils.db import DuplicateEntryError
+from core.utils.db import DuplicateEntryError
 from config import BotConfig
 
 from PIL import Image, ImageDraw, ImageFont

@@ -2,7 +2,7 @@ from discord.ext import commands
 import asyncio
 import discord
 
-from cogs.utils.db import Database
+from core.utils.db import Database
 from config import BotConfig
 
 
