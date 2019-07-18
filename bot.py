@@ -87,6 +87,7 @@ bot.load_extension("cogs.errors")
 
 # Commands
 bot.load_extension("cogs.picker")
+bot.load_extension("cogs.antispam")
 
 
 bot.start(BotConfig.token)
