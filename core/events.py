@@ -1,3 +1,4 @@
+import discord
 from discord import Colour, Embed, Member, Object
 from discord.ext import commands
 from discord.ext.commands import Bot
@@ -20,6 +21,8 @@ class Events(commands.Cog):
                 await self.bot.user.edit(username=BotConfig.name, avatar=f.read())
         except OSError as e:
             print("Failed to set new name and avatar to the bot")
+        except discord.errors.HTTPException as e:
+            pass
 
     @commands.command()
     async def ping(self, ctx):
