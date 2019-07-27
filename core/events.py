@@ -15,6 +15,12 @@ class Events(commands.Cog):
     async def on_ready(self):
         print("{0.user.name} ready to serve!".format(self.bot))
 
+        try:
+            with open(BotConfig.icon, "rb") as f:
+                await self.bot.user.edit(username=BotConfig.name, avatar=f.read())
+        except OSError as e:
+            print("Failed to set new name and avatar to the bot")
+
     @commands.command()
     async def ping(self, ctx):
         await ctx.send("pong!")
