@@ -1,6 +1,8 @@
 
 class BotConfig:
     prefix = "<your-prefix>"
+    name = "<bot-name>"
+    icon = "<bot-image-path>"
     token = "<your-token-here>"
 
     db_config = {
