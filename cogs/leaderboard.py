@@ -18,7 +18,7 @@ class Leaderboard(commands.Cog):
         rows = ctx.db.fetchall()
 
         author_index = core.utils.index(rows, author=author.name)
-        print(author_index)
+
         template = "`{index:0>2}.` {medal} `{count}` {author}"
 
         embed = Embed(color=0x53acf2)
