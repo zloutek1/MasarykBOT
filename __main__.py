@@ -22,6 +22,7 @@ if __name__ == "__main__":
     # Commands
     print("\n---[ Commands ]---")
     bot.load_extension("cogs.reactionPicker")
+    bot.load_extension("cogs.verification")
     bot.load_extension("cogs.leaderboard")
     bot.load_extension("cogs.antispam")
     bot.load_extension("cogs.backup")
