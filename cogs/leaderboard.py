@@ -23,15 +23,22 @@ class Leaderboard(commands.Cog):
 
         embed = Embed(color=0x53acf2)
         embed.add_field(name=f"FI MUNI Leaderboard! ({len(rows)})", inline=False, value="\n".join([
-            template.format(index=i + 1, medal=":military_medal:", count=row["count"], author=row["author"])
+            template.format(index=i + 1, medal=self.get_medal(i), count=row["count"], author=row["author"])
             for i, row in enumerate(rows)
         ]))
         embed.add_field(name="Your position", inline=True, value="\n".join([
-            template.format(index=j + 1, medal=":military_medal:", count=rows[j]["count"], author=f'**{rows[j]["author"]}**' if j == author_index else rows[j]["author"])
+            template.format(index=j + 1, medal=self.get_medal(j), count=rows[j]["count"], author=f'**{rows[j]["author"]}**' if j == author_index else rows[j]["author"])
             for j in range(author_index - 2, author_index + 2)
             if 0 <= j < len(rows)
         ]))
         await ctx.send(embed=embed)
+
+    def get_medal(self, i):
+        return {
+            0: core.utils.get(self.bot.emojis, name="gold_medal"),
+            1: core.utils.get(self.bot.emojis, name="silver_medal"),
+            2: core.utils.get(self.bot.emojis, name="bronze_medal")
+        }.get(i, core.utils.get(self.bot.emojis, name="BLANK"))
 
     @commands.Cog.listener()
     async def on_message(self, message):
