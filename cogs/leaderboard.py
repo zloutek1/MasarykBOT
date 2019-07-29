@@ -49,7 +49,7 @@ class Leaderboard(commands.Cog):
         self.bot.db.execute("""
             INSERT INTO leaderbaord (guild_id, guild, channel_id, channel, author_id, author, messages_sent) VALUES (%s, %s, %s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE messages_sent=messages_sent+1
-        """, (guild.id, guild.name, channel.id, channel.name, author.id, author.name, 0))
+        """, (guild.id, guild.name, channel.id, channel.name, author.id, author.name, 1))
 
 
 def setup(bot):
