@@ -14,7 +14,7 @@ class Leaderboard(commands.Cog):
         guild = ctx.guild
         author = ctx.message.author
 
-        ctx.db.execute("SELECT author_id, author, SUM(messages_sent) AS `count` FROM leaderboard WHERE guild_id = %s GROUP BY author_id, author ORDER BY `count` DESC", (guild.id,))
+        ctx.db.execute("SELECT author_id, author, SUM(messages_sent) AS `count` FROM leaderboard WHERE guild_id = %s GROUP BY author_id, author ORDER BY `count` DESC LIMIT 10", (guild.id,))
         rows = ctx.db.fetchall()
 
         author_index = core.utils.index(rows, author=author.name)
