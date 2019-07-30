@@ -9,11 +9,12 @@ class Database:
 
     @classmethod
     def connect(cls, *args, **kwargs):
-        db = Database()
-        db.conn = mysql.connector.connect(*args, **kwargs)
-        db.cursor = db.conn.cursor(dictionary=True)
+        if args or kwargs:
+            db = Database()
+            db.conn = mysql.connector.connect(*args, **kwargs)
+            db.cursor = db.conn.cursor(dictionary=True)
 
-        return db
+            return db
 
     def __getattrib__(self, attr):
         pass

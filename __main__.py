@@ -12,6 +12,7 @@ if __name__ == "__main__":
         db_config=BotConfig.db_config
     )
 
+    print()
     # Internal/debug
     print("---[ Internal ]---")
     bot.load_extension("core.events")
@@ -27,5 +28,6 @@ if __name__ == "__main__":
     bot.load_extension("cogs.antispam")
     bot.load_extension("cogs.backup")
     bot.load_extension("cogs.fun")
+    print()
 
     bot.start(BotConfig.token)

@@ -14,7 +14,7 @@ class Leaderboard(commands.Cog):
         guild = ctx.guild
         author = ctx.message.author
 
-        ctx.db.execute("SELECT author_id, author, SUM(messages_sent) AS `count` FROM leaderbaord WHERE guild_id = %s GROUP BY author_id, author ORDER BY `count` DESC", (guild.id,))
+        ctx.db.execute("SELECT author_id, author, SUM(messages_sent) AS `count` FROM leaderboard WHERE guild_id = %s GROUP BY author_id, author ORDER BY `count` DESC", (guild.id,))
         rows = ctx.db.fetchall()
 
         author_index = core.utils.index(rows, author=author.name)
@@ -47,9 +47,43 @@ class Leaderboard(commands.Cog):
         author = message.author
 
         self.bot.db.execute("""
-            INSERT INTO leaderbaord (guild_id, guild, channel_id, channel, author_id, author, messages_sent) VALUES (%s, %s, %s, %s, %s, %s, %s)
+            INSERT INTO leaderboard (guild_id, guild, channel_id, channel, author_id, author, messages_sent) VALUES (%s, %s, %s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE messages_sent=messages_sent+1
         """, (guild.id, guild.name, channel.id, channel.name, author.id, author.name, 1))
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        self.bot.db.execute("""
+            (SELECT guild_id, channel_id, `timestamp` FROM leaderboard AS l1
+            WHERE `timestamp` = (
+                SELECT MAX(`timestamp`) FROM leaderboard l2
+                WHERE l1.channel_id = l2.channel_id)
+                OR `timestamp` = 0
+            ORDER BY `timestamp`, channel_id)
+            UNION
+            SELECT guild_id, channel_id, NULL AS `timestamp` FROM channels
+        """)
+        rows = self.bot.db.fetchall()
+
+        for row in rows:
+            guild = self.bot.get_guild(row["guild_id"])
+            channel = guild.get_channel(row["channel_id"])
+
+            if not isinstance(channel, discord.TextChannel):
+                continue
+
+            counter = 0
+            async for message in channel.history(limit=10000, after=row["timestamp"], oldest_first=True):
+                author = message.author
+
+                self.bot.db.execute("""
+                    INSERT INTO leaderboard (guild_id, guild, channel_id, channel, author_id, author, messages_sent, `timestamp`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    ON DUPLICATE KEY UPDATE messages_sent=messages_sent+1, `timestamp`=%s
+                """, (guild.id, guild.name, channel.id, channel.name, author.id, author.name, 1, message.created_at, message.created_at))
+                self.bot.db.commit()
+
+                counter += 1
+        print("[leaderboard] is now up to date")
 
 
 def setup(bot):
