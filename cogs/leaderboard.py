@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import Colour, Embed, Member, Object, File
 
 import core.utils.index
+import datetime
 
 
 class Leaderboard(commands.Cog):
@@ -14,7 +15,7 @@ class Leaderboard(commands.Cog):
         guild = ctx.guild
         author = ctx.message.author
 
-        ctx.db.execute("SELECT author_id, author, SUM(messages_sent) AS `count` FROM leaderboard WHERE guild_id = %s GROUP BY author_id, author ORDER BY `count` DESC LIMIT 10", (guild.id,))
+        ctx.db.execute("SELECT author_id, name AS author, SUM(messages_sent) AS `count` FROM leaderboard AS ldb INNER JOIN members AS mem ON mem.id = ldb.author_id WHERE guild_id = %s GROUP BY author_id ORDER BY `count` DESC LIMIT 10", (guild.id,))
         rows = ctx.db.fetchall()
 
         author_index = core.utils.index(rows, author=author.name)
@@ -47,21 +48,29 @@ class Leaderboard(commands.Cog):
         author = message.author
 
         self.bot.db.execute("""
-            INSERT INTO leaderboard (guild_id, guild, channel_id, channel, author_id, author, messages_sent) VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE messages_sent=messages_sent+1
-        """, (guild.id, guild.name, channel.id, channel.name, author.id, author.name, 1))
+            INSERT INTO leaderboard (guild_id, channel_id, author_id, messages_sent, `timestamp`) VALUES (%s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE messages_sent=messages_sent+1, `timestamp`=%s
+        """, (guild.id, channel.id, author.id, 1, message.created_at, message.created_at))
+        self.bot.db.commit()
 
     @commands.Cog.listener()
     async def on_ready(self):
+        async def catchUpAfter(timestamp):
+            async for message in channel.history(limit=10000, after=timestamp, oldest_first=True):
+                author = message.author
+
+                self.bot.db.execute("""
+                    INSERT INTO leaderboard (guild_id, channel_id, author_id, messages_sent, `timestamp`) VALUES (%s, %s, %s, %s, %s)
+                    ON DUPLICATE KEY UPDATE messages_sent=messages_sent+1, `timestamp`=%s
+                """, (guild.id, channel.id, author.id, 1, message.created_at, message.created_at))
+                self.bot.db.commit()
+
         self.bot.db.execute("""
-            (SELECT guild_id, channel_id, `timestamp` FROM leaderboard AS l1
-            WHERE `timestamp` = (
-                SELECT MAX(`timestamp`) FROM leaderboard l2
-                WHERE l1.channel_id = l2.channel_id)
-                OR `timestamp` = 0
-            ORDER BY `timestamp`, channel_id)
-            UNION
-            SELECT guild_id, channel_id, NULL AS `timestamp` FROM channels
+            SELECT guild_id, channel_id, MAX(`timestamp`) AS `timestamp` FROM
+                (SELECT ch.guild_id, ch.id AS `channel_id`, ldb.author_id, ldb.messages_sent, ldb.timestamp FROM channels AS ch
+                LEFT OUTER JOIN leaderboard AS ldb
+                ON ldb.guild_id = ch.guild_id AND ldb.channel_id = ch.id) AS restul1
+            GROUP BY guild_id, channel_id
         """)
         rows = self.bot.db.fetchall()
 
@@ -72,17 +81,12 @@ class Leaderboard(commands.Cog):
             if not isinstance(channel, discord.TextChannel):
                 continue
 
-            counter = 0
-            async for message in channel.history(limit=10000, after=row["timestamp"], oldest_first=True):
-                author = message.author
+            timestamp_after = row["timestamp"]
+            if timestamp_after:
+                timestamp_after += datetime.timedelta(milliseconds=500)
 
-                self.bot.db.execute("""
-                    INSERT INTO leaderboard (guild_id, guild, channel_id, channel, author_id, author, messages_sent, `timestamp`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                    ON DUPLICATE KEY UPDATE messages_sent=messages_sent+1, `timestamp`=%s
-                """, (guild.id, guild.name, channel.id, channel.name, author.id, author.name, 1, message.created_at, message.created_at))
-                self.bot.db.commit()
+            await catchUpAfter(timestamp_after)
 
-                counter += 1
         print("[leaderboard] is now up to date")
 
 

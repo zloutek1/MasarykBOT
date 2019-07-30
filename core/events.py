@@ -24,10 +24,28 @@ class Events(commands.Cog):
         except discord.errors.HTTPException as e:
             pass
 
-        self.bot.db.executemany("INSERT IGNORE INTO guilds (guild_id, guild) VALUES (%s, %s)", [(guild.id, guild.name) for guild in self.bot.guilds])
+        self.bot.db.executemany("INSERT IGNORE INTO guilds (id, name) VALUES (%s, %s)", [(guild.id, guild.name) for guild in self.bot.guilds])
 
-        self.bot.db.executemany("INSERT IGNORE INTO channels (guild_id, channel_id, channel) VALUES (%s, %s, %s)", [(guild.id, channel.id, channel.name) for guild in self.bot.guilds for channel in guild.channels])
+        self.bot.db.executemany("INSERT IGNORE INTO channels (guild_id, id, name) VALUES (%s, %s, %s)", [(guild.id, channel.id, channel.name) for guild in self.bot.guilds for channel in guild.channels if isinstance(channel, discord.channel.TextChannel)])
+
+        self.bot.db.executemany("INSERT IGNORE INTO members (id, name, nickname) VALUES (%s, %s, %s)", [(member.id, member.name, member.nick) for guild in self.bot.guilds for member in guild.members])
         self.bot.db.commit()
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        self.bot.db.execute("INSERT IGNORE INTO members (id, name, nickname) VALUES (%s, %s, %s)", (member.id, member.name, member.nick))
+        self.bot.db.commit()
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        self.bot.db.execute("INSERT IGNORE INTO members (id, name, nickname) VALUES (%s, %s, %s)", (member.id, member.name, member.nick))
+        self.bot.db.commit()
+
+    @commands.Cog.listener()
+    async def on_member_update(self, before, after):
+        if before.nick != after.nick:
+            self.bot.db.execute("INSERT IGNORE INTO members (id, name, nickname) VALUES (%s, %s, %s)", (member.id, member.name, member.nick))
+            self.bot.db.commit()
 
     @commands.command()
     async def ping(self, ctx):
