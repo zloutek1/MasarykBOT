@@ -3,8 +3,8 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hostiteľ: 127.0.0.1:3306
--- Čas generovania: Ne 28.Júl 2019, 08:20
--- Verzia serveru: 5.7.26
+-- Čas generovania: Pi 02.Aug 2019, 17:59
+-- Verzia serveru: 8.0.17
 -- Verzia PHP: 7.2.18
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -31,9 +31,7 @@ SET time_zone = "+00:00";
 DROP TABLE IF EXISTS `backup_attachemnts`;
 CREATE TABLE IF NOT EXISTS `backup_attachemnts` (
   `guild_id` bigint(22) NOT NULL,
-  `guild` text COLLATE utf8_czech_ci NOT NULL,
   `channel_id` bigint(22) NOT NULL,
-  `channel` text COLLATE utf8_czech_ci NOT NULL,
   `message_id` bigint(22) NOT NULL,
   `width` int(11) DEFAULT NULL,
   `height` int(11) DEFAULT NULL,
@@ -46,20 +44,63 @@ CREATE TABLE IF NOT EXISTS `backup_attachemnts` (
 -- --------------------------------------------------------
 
 --
--- Štruktúra tabuľky pre tabuľku `leaderbaord`
+-- Štruktúra tabuľky pre tabuľku `channels`
 --
 
-DROP TABLE IF EXISTS `leaderbaord`;
-CREATE TABLE IF NOT EXISTS `leaderbaord` (
+DROP TABLE IF EXISTS `channels`;
+CREATE TABLE IF NOT EXISTS `channels` (
   `guild_id` bigint(22) NOT NULL,
-  `guild` text COLLATE utf8_czech_ci NOT NULL,
+  `id` bigint(22) NOT NULL,
+  `name` text COLLATE utf8_czech_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `UNIQUE` (`guild_id`,`id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_czech_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Štruktúra tabuľky pre tabuľku `guilds`
+--
+
+DROP TABLE IF EXISTS `guilds`;
+CREATE TABLE IF NOT EXISTS `guilds` (
+  `id` bigint(22) NOT NULL,
+  `name` text COLLATE utf8_czech_ci NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_czech_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Štruktúra tabuľky pre tabuľku `leaderboard`
+--
+
+DROP TABLE IF EXISTS `leaderboard`;
+CREATE TABLE IF NOT EXISTS `leaderboard` (
+  `guild_id` bigint(22) NOT NULL,
   `channel_id` bigint(22) NOT NULL,
-  `channel` text COLLATE utf8_czech_ci NOT NULL,
   `author_id` bigint(22) NOT NULL,
-  `author` text COLLATE utf8_czech_ci NOT NULL,
   `messages_sent` int(11) NOT NULL,
-  UNIQUE KEY `guild_id` (`guild_id`,`channel_id`,`author_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_czech_ci;
+  `timestamp` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`guild_id`,`channel_id`,`author_id`) USING BTREE,
+  KEY `channel_id` (`channel_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_czech_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Štruktúra tabuľky pre tabuľku `members`
+--
+
+DROP TABLE IF EXISTS `members`;
+CREATE TABLE IF NOT EXISTS `members` (
+  `id` bigint(22) NOT NULL,
+  `name` varchar(127) COLLATE utf8_czech_ci NOT NULL,
+  `nickname` varchar(127) COLLATE utf8_czech_ci NOT NULL,
+  `last_updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `UNIQUE NAME` (`id`,`name`,`nickname`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_czech_ci;
 
 -- --------------------------------------------------------
 
@@ -74,7 +115,9 @@ CREATE TABLE IF NOT EXISTS `reactionmenu` (
   `channel_id` bigint(22) NOT NULL,
   `message_id` bigint(22) NOT NULL,
   `name` varchar(127) COLLATE utf8_czech_ci NOT NULL,
-  PRIMARY KEY (`id`,`guild_id`,`channel_id`,`name`) USING BTREE
+  PRIMARY KEY (`id`,`guild_id`,`channel_id`,`name`) USING BTREE,
+  KEY `guild_id` (`guild_id`),
+  KEY `channel_id` (`channel_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_czech_ci;
 
 -- --------------------------------------------------------
@@ -131,6 +174,44 @@ CREATE TABLE IF NOT EXISTS `reactionmenu_section_option` (
   `is_full` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`section_id`,`order_id`) USING BTREE
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_czech_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Štruktúra tabuľky pre tabuľku `verification`
+--
+
+DROP TABLE IF EXISTS `verification`;
+CREATE TABLE IF NOT EXISTS `verification` (
+  `guild_id` bigint(22) NOT NULL,
+  `channel_id` bigint(22) NOT NULL,
+  `message_id` bigint(22) NOT NULL,
+  PRIMARY KEY (`guild_id`,`channel_id`) USING BTREE
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_czech_ci;
+
+--
+-- Obmedzenie pre exportované tabuľky
+--
+
+--
+-- Obmedzenie pre tabuľku `channels`
+--
+ALTER TABLE `channels`
+  ADD CONSTRAINT `channels_ibfk_1` FOREIGN KEY (`guild_id`) REFERENCES `guilds` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+--
+-- Obmedzenie pre tabuľku `leaderboard`
+--
+ALTER TABLE `leaderboard`
+  ADD CONSTRAINT `leaderboard_ibfk_1` FOREIGN KEY (`guild_id`) REFERENCES `guilds` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  ADD CONSTRAINT `leaderboard_ibfk_2` FOREIGN KEY (`channel_id`) REFERENCES `channels` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+--
+-- Obmedzenie pre tabuľku `reactionmenu`
+--
+ALTER TABLE `reactionmenu`
+  ADD CONSTRAINT `reactionmenu_ibfk_1` FOREIGN KEY (`guild_id`) REFERENCES `guilds` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  ADD CONSTRAINT `reactionmenu_ibfk_2` FOREIGN KEY (`channel_id`) REFERENCES `channels` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
