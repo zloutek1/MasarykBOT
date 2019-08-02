@@ -21,21 +21,66 @@ class Verification(commands.Cog):
         channel = ctx.channel
         message = await channel.fetch_message(message_id)
 
-        ctx.db.execute("INSERT INTO verification (guild_id, channel_id, message_id) VALUES (%s, %s, %s)", (guild.id, channel.id, message.id))
+        ctx.db.execute("INSERT INTO verification_channel (guild_id, channel_id, message_id, emoji) VALUES (%s, %s, %s, %s)", (guild.id, channel.id, message.id, emoji.name))
 
         await message.add_reaction(core.utils.get(self.bot.emojis, name="Verification"))
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         guild = self.bot.get_guild(payload.guild_id)
+        channel = self.bot.get_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
         author = guild.get_member(payload.user_id)
-        channel = self.bot.get_channel(payload)
+        emoji = payload.emoji
 
         if author.bot:
             return
 
+        self.bot.db.execute("SELECT * FROM verification_channel WHERE (guild_id = %s AND channel_id = %s)", (guild.id, channel.id))
+        rows = self.bot.db.fetchall()
+
+        row = core.utils.get(rows, message_id=message.id)
+        if not row:
+            return
+
+        if emoji.name != row["emoji"]:
+            await message.remove_reaction(emoji, author)
+            return
+
         studentRole = core.utils.get(guild.roles, name="Student")
         await author.add_roles(studentRole)
+
+        # -- send DM with detail how to verify yourself
+
+        embed = Embed(
+            title=f"Welcome to {guild.name} discord",
+            description="*Before you go, could you please verify yourself as a student of MUNI? We would appreciate it, but it is not a requirement to enter*",
+            color=0x000000
+        )
+
+        await author.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_remove(self, payload):
+        guild = self.bot.get_guild(payload.guild_id)
+        channel = self.bot.get_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+        author = guild.get_member(payload.user_id)
+        emoji = payload.emoji
+
+        if author.bot:
+            return
+
+        self.bot.db.execute("SELECT * FROM verification_channel WHERE (guild_id = %s AND channel_id = %s)", (guild.id, channel.id))
+        rows = self.bot.db.fetchall()
+
+        row = core.utils.get(rows, message_id=message.id)
+        if not row:
+            return
+
+        if emoji.name == row["emoji"]:
+            studentRole = core.utils.get(guild.roles, name="Student")
+            await author.remove_roles(studentRole)
 
 
 def setup(bot):
