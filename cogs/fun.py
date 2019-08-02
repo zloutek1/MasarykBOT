@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from discord import Colour, Embed, Member, Object, File
+from discord import Colour, Embed, Member, Object, File, PartialEmoji
 
 
 class Fun(commands.Cog):
@@ -14,6 +14,10 @@ class Fun(commands.Cog):
         emojis = sorted(ctx.guild.emojis, key=lambda emoji: emoji.name)
         for i in range(0, len(emojis), 10):
             await ctx.send(" ".join(list(map(str, emojis[i:i + 10]))))
+
+    @commands.command()
+    async def emoji_url(self, ctx, emoji: PartialEmoji):
+        await ctx.send(emoji.url)
 
 
 def setup(bot):
