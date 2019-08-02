@@ -139,6 +139,13 @@ class Leaderboard(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        if (message.author.bot):
+            return
+
+        # valid message
+        if (message.channel is discord.TextChannel or not message.author or not message.guild or not message.channel.guild):
+            return
+
         guild = message.guild
         channel = message.channel
         author = message.author
@@ -151,8 +158,6 @@ class Leaderboard(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        return
-
         async def catchUpAfter(timestamp):
             async for message in channel.history(limit=10000, after=timestamp, oldest_first=True):
                 author = message.author

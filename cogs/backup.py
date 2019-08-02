@@ -14,6 +14,13 @@ class Backup(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        if (message.author.bot):
+            return
+
+        # valid message
+        if (message.channel is discord.TextChannel or not message.author or not message.guild or not message.channel.guild):
+            return
+
         for attachment in message.attachments:
             self.bot.db.execute("INSERT INTO backup_attachemnts VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (message.guild.id, str(message.guild), message.channel.id, str(message.channel), message.id, attachment.width, attachment.height, attachment.size, attachment.filename, attachment.url))
 
