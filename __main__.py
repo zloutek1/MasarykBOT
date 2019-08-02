@@ -17,7 +17,6 @@ if __name__ == "__main__":
     print("---[ Internal ]---")
     bot.load_extension("core.events")
     bot.load_extension("core.taskManager")
-    # bot.load_extension("core.errors")
     bot.load_extension("core.admin")
 
     # Commands
