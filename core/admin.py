@@ -15,6 +15,28 @@ class Admin(commands.Cog):
     async def purge(self, ctx, limit: int):
         await ctx.channel.purge(limit=100)
 
+    @commands.command(aliases=['clearconsole', 'cc', 'clear'])
+    @has_permissions(administrator=True)
+    async def cleartrace(self, ctx):
+        """Clear the console."""
+        if os.name == 'nt':
+            os.system('cls')
+        else:
+            try:
+                os.system('clear')
+            except Exception:
+                for _ in range(100):
+                    print()
+
+        message = 'Logged in as %s.' % self.bot.user
+        try:
+            print(message)
+        except Exception as e:  # some bot usernames with special chars fail on shitty platforms
+            print(message.encode(errors='replace').decode())
+        await ctx.send('Console cleared successfully.', delete_after=5)
+
+        await ctx.message.delete()
+
 
 def setup(bot):
     bot.add_cog(Admin(bot))
