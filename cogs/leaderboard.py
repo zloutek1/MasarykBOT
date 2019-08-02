@@ -14,7 +14,15 @@ class Leaderboard(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    async def leaderboard(self, ctx, channel: Optional[TextChannel] = None, member: Optional[Member] = None):
+    async def leaderboard(self, ctx, channel: Optional[Union[TextChannel, Member]] = None, member: Optional[Union[Member, TextChannel]] = None):
+
+        channel, member = (channel if isinstance(channel, TextChannel) else
+                           member if isinstance(member, TextChannel) else
+                           None,
+
+                           member if isinstance(member, Member) else
+                           channel if isinstance(channel, Member) else
+                           None)
 
         guild = ctx.guild
         author = ctx.message.author
