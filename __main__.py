@@ -26,6 +26,7 @@ if __name__ == "__main__":
     bot.load_extension("cogs.leaderboard")
     bot.load_extension("cogs.antispam")
     bot.load_extension("cogs.backup")
+    # bot.load_extension("cogs.music")
     bot.load_extension("cogs.fun")
     print()
 
