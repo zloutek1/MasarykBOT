@@ -8,12 +8,15 @@ from typing import Optional, Union
 import core.utils.index
 import datetime
 
+from core.utils.checks import needs_database
+
 
 class Leaderboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
     @commands.command()
+    @needs_database
     async def leaderboard(self, ctx, channel: Optional[Union[TextChannel, Member]] = None, member: Optional[Union[Member, TextChannel]] = None):
 
         channel, member = (channel if isinstance(channel, TextChannel) else
@@ -139,6 +142,10 @@ class Leaderboard(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        # check database connection
+        if not self.bot.db:
+            return
+
         if (message.author.bot):
             return
 
@@ -158,6 +165,10 @@ class Leaderboard(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        # check database connection
+        if not self.bot.db:
+            return
+
         async def catchUpAfter(timestamp):
             async for message in channel.history(limit=10000, after=timestamp, oldest_first=True):
                 author = message.author

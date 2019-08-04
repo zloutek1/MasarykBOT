@@ -13,9 +13,9 @@ class MasarykBot(Bot):
         super().__init__(*args, **kwargs)
 
         self.ininial_params = args, kwargs
-        self.errors = []
 
-        self.handle_database_connection(**db_config)
+        self.db = None
+        self.loop.create_task(self.handle_database_connection(**db_config))
 
     async def process_commands(self, message):
         # send custom Context instead of the discord API's Context
@@ -26,7 +26,7 @@ class MasarykBot(Bot):
 
         await self.invoke(ctx)
 
-    def handle_database_connection(self, **db_config):
+    async def handle_database_connection(self, **db_config):
         ##
         # Connect to the database and try to reconnect every 2 minutes on fail
         ##
@@ -36,14 +36,14 @@ class MasarykBot(Bot):
                 print("Database connected.")
                 break
 
-            # except db.ConnectivityError as e:
-            #    print(f"{e}\nReconnecting to the database...")
-            #    time.sleep(120)
+            except db.DatabaseConnectionError as e:
+                print(f"{e}\nReconnecting to the database...")
+                self.db = None
+                await asyncio.sleep(100)
 
             except KeyboardInterrupt:
-                self.handle_exit()
+                break
                 print("Bot shut down by KeyboardInterrupt")
-                sys.exit(1)
 
     def handle_exit(self):
         # finish runnings tasks and logout bot

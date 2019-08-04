@@ -11,6 +11,7 @@ import json
 import re
 
 import core.utils.get
+from core.utils.checks import needs_database
 
 
 class ReactionPicker(commands.Cog):
@@ -19,6 +20,7 @@ class ReactionPicker(commands.Cog):
 
     @group(name='reactionmenu', aliases=('rolemenu', 'rlm'), invoke_without_command=True)
     @has_permissions(manage_channels=True)
+    @needs_database
     async def reactionmenu_group(self, ctx):
         pass
 
@@ -342,6 +344,10 @@ class ReactionPicker(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
+        # check database connection
+        if not self.bot.db:
+            return
+
         guild = self.bot.get_guild(payload.guild_id)
         author = guild.get_member(payload.user_id)
         channel = await self.get_channel(payload)
@@ -353,6 +359,10 @@ class ReactionPicker(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
+        # check database connection
+        if not self.bot.db:
+            return
+
         guild = self.bot.get_guild(payload.guild_id)
         author = guild.get_member(payload.user_id)
         channel = await self.get_channel(payload)

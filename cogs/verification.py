@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import Colour, Embed, Member, Object, File
 
 import core.utils.get
+from core.utils.checks import needs_database
 
 
 class Verification(commands.Cog):
@@ -10,6 +11,7 @@ class Verification(commands.Cog):
         self.bot = bot
 
     @commands.group(name="verification")
+    @needs_database
     async def verication_group(self, ctx):
         pass
 
@@ -27,6 +29,10 @@ class Verification(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
+        # check database connection
+        if not self.bot.db:
+            return
+
         guild = self.bot.get_guild(payload.guild_id)
         channel = self.bot.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
@@ -62,6 +68,10 @@ class Verification(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
+        # check database connection
+        if not self.bot.db:
+            return
+
         guild = self.bot.get_guild(payload.guild_id)
         channel = self.bot.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)

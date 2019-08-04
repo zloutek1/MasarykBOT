@@ -7,6 +7,8 @@ from discord import Colour, Embed, Member, Object, File
 
 from datetime import datetime, timedelta
 
+from core.utils.checks import needs_database
+
 
 class Backup(commands.Cog):
     def __init__(self, bot):
@@ -14,6 +16,10 @@ class Backup(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        # check database connection
+        if not self.bot.db:
+            return
+
         if (message.author.bot):
             return
 
@@ -27,6 +33,7 @@ class Backup(commands.Cog):
         self.bot.db.commit()
 
     @commands.command()
+    @needs_database
     async def backup(self, ctx):
         await ctx.message.delete()
 
