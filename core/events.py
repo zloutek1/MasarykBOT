@@ -3,6 +3,9 @@ from discord import Colour, Embed, Member, Object
 from discord.ext import commands
 from discord.ext.commands import Bot
 
+import traceback
+import datetime
+
 from config import BotConfig
 from core.utils.checks import needs_database
 
@@ -29,11 +32,18 @@ class Events(commands.Cog):
         if not self.bot.db:
             return
 
-        self.bot.db.executemany("INSERT IGNORE INTO guilds (id, name) VALUES (%s, %s)", [(guild.id, guild.name) for guild in self.bot.guilds])
+        for guild in self.bot.guilds:
+            self.bot.db.execute("INSERT IGNORE INTO guilds (id, name) VALUES (%s, %s)", (guild.id, guild.name))
 
-        self.bot.db.executemany("INSERT IGNORE INTO channels (guild_id, id, name) VALUES (%s, %s, %s)", [(guild.id, channel.id, channel.name) for guild in self.bot.guilds for channel in guild.channels if isinstance(channel, discord.channel.TextChannel)])
+        for guild in self.bot.guilds:
+            for channel in guild.channels:
+                if isinstance(channel, discord.channel.TextChannel):
+                    self.bot.db.execute("INSERT IGNORE INTO channels (guild_id, id, name) VALUES (%s, %s, %s)", (guild.id, channel.id, channel.name))
 
-        self.bot.db.executemany("INSERT IGNORE INTO members (id, name, nickname) VALUES (%s, %s, %s)", [(member.id, member.name, member.nick) for guild in self.bot.guilds for member in guild.members])
+        for guild in self.bot.guilds:
+            for member in guild.members:
+                self.bot.db.execute("INSERT IGNORE INTO members (id, name, nickname) VALUES (%s, %s, %s)", (member.id, member.name, member.nick))
+
         self.bot.db.commit()
 
     @commands.Cog.listener()
@@ -68,6 +78,10 @@ class Events(commands.Cog):
     async def ping(self, ctx):
         await ctx.send("pong!")
 
+    @commands.command()
+    async def invite(self, ctx):
+        await ctx.send(f"https://discordapp.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions=0")
+
     # https://github.com/python-discord/bot/blob/master/bot/cogs/events.py
 
     @commands.Cog.listener()
@@ -76,14 +90,14 @@ class Events(commands.Cog):
 
         ignored = (
             commands.NoPrivateMessage, commands.DisabledCommand, commands.CheckFailure,
-            commands.CommandNotFound, commands.UserInputError, discord.HTTPException
+            commands.CommandNotFound, commands.UserInputError
         )
         error = getattr(error, 'original', error)
 
         if isinstance(error, ignored):
             return
 
-        if ctx.message.server:
+        if ctx.message.guild:
             fmt = 'Channel: {0} (ID: {0.id})\nGuild: {1} (ID: {1.id})'
         else:
             fmt = 'Channel: {0} (ID: {0.id})'
@@ -94,10 +108,11 @@ class Events(commands.Cog):
 
         name = ctx.command.qualified_name
         author = '{0} (ID: {0.id})'.format(ctx.message.author)
-        location = fmt.format(ctx.message.channel, ctx.message.server)
+        location = fmt.format(ctx.message.channel, ctx.message.guild)
 
         message = '{0} at {1}: Called by: {2} in {3}. More info: {4}'.format(name, time, author, location, description)
 
+        print(message)
         # self.bot.logs['discord'].critical(message)
 
 
