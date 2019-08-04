@@ -170,14 +170,17 @@ class Leaderboard(commands.Cog):
             return
 
         async def catchUpAfter(timestamp):
-            async for message in channel.history(limit=10000, after=timestamp, before=datetime.datetime.now(), oldest_first=True):
-                author = message.author
+            try:
+                async for message in channel.history(limit=10000, after=timestamp, before=datetime.datetime.now(), oldest_first=True):
+                    author = message.author
 
-                self.bot.db.execute("""
-                    INSERT INTO leaderboard (guild_id, channel_id, author_id, messages_sent, `timestamp`) VALUES (%s, %s, %s, %s, %s)
-                    ON DUPLICATE KEY UPDATE messages_sent=messages_sent+1, `timestamp`=%s
-                """, (guild.id, channel.id, author.id, 1, message.created_at, message.created_at))
-                self.bot.db.commit()
+                    self.bot.db.execute("""
+                        INSERT INTO leaderboard (guild_id, channel_id, author_id, messages_sent, `timestamp`) VALUES (%s, %s, %s, %s, %s)
+                        ON DUPLICATE KEY UPDATE messages_sent=messages_sent+1, `timestamp`=%s
+                    """, (guild.id, channel.id, author.id, 1, message.created_at, message.created_at))
+                    self.bot.db.commit()
+            except discord.Forbidden:
+                pass
 
         self.bot.db.execute("""
             SELECT guild_id, channel_id, MAX(`timestamp`) AS `timestamp` FROM
