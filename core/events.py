@@ -86,7 +86,10 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        await ctx.message.delete()
+        try:
+            await ctx.message.delete()
+        except:
+            pass
 
         ignored = (
             commands.NoPrivateMessage, commands.DisabledCommand, commands.CheckFailure,
