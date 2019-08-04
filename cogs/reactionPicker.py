@@ -40,6 +40,11 @@ class ReactionPicker(commands.Cog):
         ctx.db.execute("INSERT INTO reactionmenu (guild_id, channel_id, message_id, name) VALUES (%s, %s, %s, %s)", (guild.id, channel.id, message.id, name))
         ctx.db.commit()
 
+        for role in guild.roles:
+            await channel.set_permissions(role,
+                                          add_reactions=False,
+                                          send_messages=False)
+
     @reactionmenu_group.command(name='delete', aliases=('del', 'remove', 'rm'))
     async def reactionmenu_delete(self, ctx, *, name: str):
         try:

@@ -18,8 +18,6 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print("{0.user.name} ready to serve!".format(self.bot))
-
         try:
             with open(BotConfig.icon, "rb") as f:
                 await self.bot.user.edit(username=BotConfig.name, avatar=f.read())
@@ -30,6 +28,7 @@ class Events(commands.Cog):
 
         # check database connection
         if not self.bot.db:
+            print("{0.user.name} ready to serve!".format(self.bot))
             return
 
         for guild in self.bot.guilds:
@@ -45,6 +44,8 @@ class Events(commands.Cog):
                 self.bot.db.execute("INSERT IGNORE INTO members (id, name, nickname) VALUES (%s, %s, %s)", (member.id, member.name, member.nick))
 
         self.bot.db.commit()
+
+        print("{0.user.name} ready to serve!".format(self.bot))
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
