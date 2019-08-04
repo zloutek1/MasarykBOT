@@ -2,6 +2,8 @@ from discord import Colour, Embed, Member, Object
 from discord.ext import commands
 from discord.ext.commands import Bot, has_permissions
 
+import os
+
 from config import BotConfig
 
 

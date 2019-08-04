@@ -18,6 +18,10 @@ class Database:
             db.conn = cls._handle_errors(mysql.connector.connect)(*args, **kwargs)
             db.cursor = db.conn.cursor(dictionary=True)
 
+            db.cursor.execute('SET NAMES utf8mb4')
+            db.cursor.execute("SET CHARACTER SET utf8mb4")
+            db.cursor.execute("SET character_set_connection=utf8mb4")
+
             return db
 
     @staticmethod

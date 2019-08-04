@@ -4,6 +4,7 @@ import requests
 import discord
 from discord.ext import commands
 from discord import Colour, Embed, Member, Object, File
+from discord.ext.commands import has_permissions
 
 from datetime import datetime, timedelta
 
@@ -14,63 +15,63 @@ class Backup(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        # check database connection
-        if not self.bot.db:
-            return
-
-        if (message.author.bot):
-            return
-
-        # valid message
-        if (message.channel is discord.TextChannel or not message.author or not message.guild or not message.channel.guild):
-            return
-
-        for attachment in message.attachments:
-            self.bot.db.execute("INSERT INTO backup_attachemnts VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", (message.guild.id, str(message.guild), message.channel.id, str(message.channel), message.id, attachment.width, attachment.height, attachment.size, attachment.filename, attachment.url))
-
-        self.bot.db.commit()
-
     @commands.command()
     @needs_database
+    @has_permissions(manage_messages=True)
     async def backup(self, ctx):
         await ctx.message.delete()
 
         guild = ctx.guild
         message = ctx.message
-        author = message.author
         ch = message.channel
 
-        ctx.db.execute("DELETE FROM backup_attachemnts WHERE guild_id=%s", (guild.id,))
+        ctx.db.execute("DELETE FROM backup WHERE guild_id=%s", (guild.id,))
+        ctx.db.execute("DELETE FROM backup_attachments WHERE guild_id=%s", (guild.id,))
         ctx.db.commit()
-        batch = []
+
+        message_batch = []
+        attachment_batch = []
 
         async def get_channel_msg(channel):
-            nonlocal batch
+            nonlocal message_batch, attachment_batch, messages_sent
+
             await asyncio.sleep(0)
             with requests.Session() as session:
                 async for message in channel.history(limit=1000000):
-                    for attachment in message.attachments:
-                        batch.append((message.guild.id, str(message.guild), message.channel.id, str(message.channel), message.id, attachment.width, attachment.height, attachment.size, attachment.filename, attachment.url))
+                    message_batch.append((guild.id, channel.id, message.id, message.author.id, message.content, message.created_at))
+                    messages_sent += 1
 
-                        if len(batch) > 100:
-                            self.bot.db.executemany("INSERT INTO backup_attachemnts VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", batch)
-                            batch = []
+                    if len(message_batch) > 100:
+                        ctx.db.executemany("INSERT INTO backup (guild_id, channel_id, message_id, author_id, content, `timestamp`) VALUES (%s, %s, %s, %s, %s, %s)", message_batch)
+                        ctx.db.commit()
+                        message_batch = []
+
+                    # --- Atteachment
+                    for attachment in message.attachments:
+                        attachment_batch.append((guild.id, channel.id, message.id, message.author.id, attachment.size, attachment.filename, attachment.url, message.created_at))
+
+                        if len(attachment_batch) > 100:
+                            ctx.db.executemany("INSERT INTO backup_attachments (guild_id, channel_id, message_id, author_id, size, filename, url, `timestamp`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", attachment_batch)
+                            ctx.db.commit()
+                            attachment_batch = []
 
         for channel in guild.channels:
+            messages_sent = 0
+
             if not type(channel) is discord.channel.TextChannel:
                 continue
 
             try:
                 task = await asyncio.ensure_future(get_channel_msg(channel))
-                print("[Backup] -", guild, ": Saved", channel)
+                print(f"[Backup] - {guild} : {messages_sent: >8} messages saved : Saved {channel}")
             except discord.Forbidden:
                 print("[Backup] -", guild, ": Forbidden", channel)
 
-        if len(batch) > 0:
-            print(batch)
-            ctx.db.executemany("INSERT INTO backup_attachemnts VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", batch)
+        if len(message_batch) > 0:
+            ctx.db.executemany("INSERT INTO backup (guild_id, channel_id, message_id, author_id, content, `timestamp`) VALUES (%s, %s, %s, %s, %s, %s)", message_batch)
+
+        if len(attachment_batch) > 0:
+            ctx.db.executemany("INSERT INTO backup_attachments (guild_id, channel_id, message_id, author_id, size, filename, url, `timestamp`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)", attachment_batch)
         ctx.db.commit()
 
         print("Backup done")
