@@ -34,6 +34,7 @@ class MasarykBot(Bot):
             try:
                 self.db = Database.connect(**db_config)
                 print("Database connected.")
+                print()
                 break
 
             except db.DatabaseConnectionError as e:
