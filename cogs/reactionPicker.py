@@ -45,6 +45,10 @@ class ReactionPicker(commands.Cog):
                                           add_reactions=False,
                                           send_messages=False)
 
+        await channel.set_permissions(self.bot.user,
+                                      add_reactions=True,
+                                      send_messages=True)
+
     @reactionmenu_group.command(name='delete', aliases=('del', 'remove', 'rm'))
     async def reactionmenu_delete(self, ctx, *, name: str):
         try:
@@ -66,6 +70,7 @@ class ReactionPicker(commands.Cog):
         categories = [core.utils.get(guild.categories, name=row["text"]) for row in rows]
         for category in categories:
             allEmpty = True
+
             for channel in category.channels:
                 if channel.last_message_id is None:
                     await channel.delete()
@@ -171,7 +176,8 @@ class ReactionPicker(commands.Cog):
         category = core.utils.get(guild.categories, name=name)
         if not category:
             perms = {
-                guild.default_role: discord.PermissionOverwrite(read_messages=False)
+                guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                me: discord.PermissionOverwrite(read_messages=True)
             }
             category = await guild.create_category(name, overwrites=perms)
 
