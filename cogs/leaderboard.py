@@ -170,7 +170,7 @@ class Leaderboard(commands.Cog):
             return
 
         async def catchUpAfter(timestamp):
-            async for message in channel.history(limit=10000, after=timestamp, oldest_first=True):
+            async for message in channel.history(limit=10000, after=timestamp, before=datetime.datetime.now(), oldest_first=True):
                 author = message.author
 
                 self.bot.db.execute("""
