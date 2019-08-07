@@ -12,7 +12,7 @@ class Context(commands.Context):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        try:
-            self.db = Database.connect(**BotConfig.db_config)
-        except db.DatabaseConnectionError as e:
-            self.db = None
+        self.db = self.bot.db.connect()
+
+    def __del__(self, *args, **kwargs):
+        self.db = self.bot.db.close()

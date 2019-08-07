@@ -1,3 +1,4 @@
+import sqlite3
 import mysql.connector
 from mysql.connector.errors import IntegrityError, InterfaceError
 
@@ -7,22 +8,24 @@ class DatabaseConnectionError(InterfaceError):
 
 
 class Database:
-    def __init__(self):
+    def __init__(self, db_config={}):
         self.conn = None
         self.cursor = None
 
-    @classmethod
-    def connect(cls, *args, **kwargs):
-        if args or kwargs:
-            db = Database()
-            db.conn = cls._handle_errors(mysql.connector.connect)(*args, **kwargs)
-            db.cursor = db.conn.cursor(dictionary=True)
+        if db_config:
+            self.conn = self._handle_errors(mysql.connector.connect)(**db_config)
 
-            db.cursor.execute('SET NAMES utf8mb4')
-            db.cursor.execute("SET CHARACTER SET utf8mb4")
-            db.cursor.execute("SET character_set_connection=utf8mb4")
+    def connect(self):
+        if self.conn is None:
+            return False
 
-            return db
+        self.cursor = self.conn.cursor(dictionary=True)
+
+        self.cursor.execute('SET NAMES utf8mb4')
+        self.cursor.execute("SET CHARACTER SET utf8mb4")
+        self.cursor.execute("SET character_set_connection=utf8mb4")
+
+        return self.cursor
 
     @staticmethod
     def _handle_errors(func):
@@ -52,3 +55,10 @@ class Database:
             raise ValueError(f"In {self.__class__} both self.conn and self.cursor have attibute {attr}, please be more specific")
 
         raise ValueError(f"{self.__class__} has no attribute {attr}")
+
+    def close(self):
+        self.cursor.close()
+
+    def __del__(self):
+        if self.conn is not None:
+            self.conn.close()
