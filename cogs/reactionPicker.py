@@ -37,70 +37,21 @@ class ReactionPicker(commands.Cog):
         channel = ctx.channel
         message = await ctx.send(f"**Reactionmenu {name}:**")
 
-        ctx.db.execute("INSERT INTO reactionmenu (guild_id, channel_id, message_id, name) VALUES (%s, %s, %s, %s)", (guild.id, channel.id, message.id, name))
-        ctx.db.commit()
-
-        for role in guild.roles:
-            await channel.set_permissions(role,
-                                          add_reactions=False,
-                                          send_messages=False)
-
-        await channel.set_permissions(self.bot.user,
-                                      add_reactions=True,
-                                      send_messages=True)
-
-    @reactionmenu_group.command(name='delete', aliases=('del', 'remove', 'rm'))
-    async def reactionmenu_delete(self, ctx, *, name: str):
         try:
-            await ctx.message.delete()
-        except:
-            pass
+            ctx.db.execute("INSERT INTO reactionmenu (channel_id, message_id, name) VALUES (%s, %s, %s)", (channel.id, message.id, name))
+            ctx.db.commit()
 
-        name = name.lower()
+            for role in guild.roles:
+                await channel.set_permissions(role,
+                                              add_reactions=False,
+                                              send_messages=False)
 
-        guild = ctx.guild
-        channel = ctx.channel
-
-        ctx.db.execute("""SELECT DISTINCT sec.text FROM reactionmenu AS menu
-            LEFT OUTER JOIN reactionmenu_section AS sec
-            ON menu.id = sec.reactionmenu_id
-            WHERE guild_id=%s AND channel_id=%s AND name=%s""", (guild.id, channel.id, name))
-        rows = ctx.db.fetchall()
-
-        categories = [core.utils.get(guild.categories, name=row["text"]) for row in rows]
-        for category in categories:
-            allEmpty = True
-
-            for channel in category.channels:
-                if channel.last_message_id is None:
-                    await channel.delete()
-                else:
-                    allEmpty = False
-            if allEmpty:
-                await category.delete()
-
-        ctx.db.execute("""SELECT DISTINCT menu.message_id as reactionmenuID, sec.message_id as sectionID, sec_opt.message_id as optionID FROM reactionmenu AS menu
-            LEFT OUTER JOIN reactionmenu_section AS sec
-            ON menu.id = sec.reactionmenu_id
-            LEFT OUTER JOIN reactionmenu_section_option AS sec_opt
-            ON sec.id = sec_opt.section_id
-            LEFT OUTER JOIN reactionmenu_option AS opt
-            ON sec_opt.message_id = opt.message_id
-            WHERE guild_id=%s AND channel_id=%s AND name=%s""", (guild.id, channel.id, name))
-        ids = ctx.db.fetchall()
-
-        to_delete = set(val for row in ids for val in row.values())
-        for msg_id in sorted(to_delete):
-            try:
-                message = await channel.fetch_message(msg_id)
-                await message.delete()
-            except:
-                pass
-
-        ctx.db.execute("TRUNCATE `reactionmenu_option`;")
-        ctx.db.execute("TRUNCATE `reactionmenu_section_option`;")
-        ctx.db.execute("TRUNCATE `reactionmenu_section`;")
-        ctx.db.execute("TRUNCATE `reactionmenu`;")
+            await channel.set_permissions(self.bot.user,
+                                          add_reactions=True,
+                                          send_messages=True)
+        except Exception as e:
+            await message.delete()
+            raise e
 
     @reactionmenu_group.group(name='section', aliases=('sec',), invoke_without_command=True)
     async def reactionmenu_section_group(self, ctx):
@@ -109,18 +60,15 @@ class ReactionPicker(commands.Cog):
     async def get_reactionmenu(self, ctx, by_mame: str = None):
         by_mame = by_mame.lower() if by_mame is not None else None
 
-        ctx.db.execute("""
-            SELECT * FROM reactionmenu WHERE
-                guild_id = %s AND
-                channel_id = %s""", (ctx.guild.id, ctx.channel.id))
+        ctx.db.execute("SELECT * FROM reactionmenu WHERE channel_id = %s", (ctx.channel.id,))
         reactionmenus = ctx.db.fetchall()
 
         if len(reactionmenus) == 0:
-            await ctx.send("You need to create a reactionmenu first")
+            await ctx.send("You need to create a reactionmenu first", delete_after=5)
             return False
 
         if by_mame is None and len(reactionmenus) > 1:
-            await ctx.send("You need to specify the name of the reactionmenu, since more exist")
+            await ctx.send("You need to specify the name of the reactionmenu, since more exist", delete_after=5)
             return False
 
         reactionmenu = core.utils.get(reactionmenus, name=by_mame) if by_mame is not None else reactionmenus[0]
@@ -145,7 +93,7 @@ class ReactionPicker(commands.Cog):
         name = name.upper()
 
         if len(name) > 11:
-            await ctx.send("section name can be up to 11 letters long")
+            await ctx.send("section name can be up to 11 letters long", delete_after=5)
             return
 
         guild = ctx.guild
@@ -164,26 +112,44 @@ class ReactionPicker(commands.Cog):
         os.remove(filename)
 
         # save section to db
-        ctx.db.execute("INSERT INTO reactionmenu_section (reactionmenu_id, message_id, `text`) VALUES (%s, %s, %s)", (reactionmenu["id"], msg.id, name))
-        ctx.db.commit()
+        try:
+            ctx.db.execute("INSERT INTO reactionmenu_section (reactionmenu_id, message_id, `text`) VALUES (%s, %s, %s)", (reactionmenu["id"], msg.id, name))
+        except Exception as e:
+            await msg.delete()
+            raise e
 
         # send 4 messages
         messages = []
+        opt_msgs = []
         for i in range(4):
             opt_msg = await ctx.send("_ _")
             messages.append((opt_msg.id,))
+            opt_msgs.append(opt_msg)
 
-        category = core.utils.get(guild.categories, name=name)
-        if not category:
-            perms = {
-                guild.default_role: discord.PermissionOverwrite(read_messages=False),
-                me: discord.PermissionOverwrite(read_messages=True)
-            }
-            category = await guild.create_category(name, overwrites=perms)
+        try:
+            category = core.utils.get(guild.categories, name=name)
+            if not category:
+                perms = {
+                    guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                    self.bot.user: discord.PermissionOverwrite(read_messages=True)
+                }
+                category = await guild.create_category(name, overwrites=perms)
 
-        # save each message to db
-        ctx.db.executemany("INSERT INTO reactionmenu_section_option (section_id, message_id) VALUES (LAST_INSERT_ID(), %s)", messages)
-        ctx.db.commit()
+                ctx.db.execute("INSERT INTO category (guild_id, id, name, position) VALUES (%s, %s, %s, %s)  ON DUPLICATE KEY UPDATE id=id", (category.guild.id, category.id, category.name, category.position))
+                ctx.db.commit()
+
+            # save each message to db
+            ctx.db.executemany("INSERT INTO reactionmenu_section_option (section_id, message_id) VALUES (LAST_INSERT_ID(), %s)", messages)
+            ctx.db.commit()
+
+        except Exception as e:
+            ctx.db.execute("DELETE FROM reactionmenu_section WHERE reactionmenu_id = %s AND message_id = %s AND `text` = %s", (reactionmenu["id"], msg.id, name))
+            ctx.db.commit()
+
+            await msg.delete()
+            for msg in opt_msgs:
+                await msg.delete()
+            raise e
 
     @reactionmenu_group.group(name='option', aliases=('opt', 'o'), invoke_without_command=True)
     async def reactionmenu_option_group(self, ctx):
@@ -201,11 +167,11 @@ class ReactionPicker(commands.Cog):
         sections = ctx.db.fetchall()
 
         if len(sections) == 0:
-            await ctx.send("You need to create a section first")
+            await ctx.send("You need to create a section first", delete_after=5)
             return False
 
         if by_mame is None and len(sections) > 1:
-            await ctx.send("You need to specify the name of the section, since more exist")
+            await ctx.send("You need to specify the name of the section, since more exist", delete_after=5)
             return False
 
         section = core.utils.get(sections, text=by_mame) if by_mame is not None else sections[0]
@@ -272,6 +238,9 @@ class ReactionPicker(commands.Cog):
         if not chnl:
             chnl = await guild.create_text_channel(text, category=category)
 
+            ctx.db.execute("INSERT INTO channel (guild_id, category_id, id, name, position) VALUES (%s, %s, %s, %s, %s)  ON DUPLICATE KEY UPDATE id=id", (chnl.guild.id, category.id, chnl.id, chnl.name, chnl.position))
+            ctx.db.commit()
+
     @staticmethod
     def generate_section_image(text):
         ##
@@ -302,12 +271,17 @@ class ReactionPicker(commands.Cog):
 
     @reactionmenu_group.command(name="setup")
     async def setup(self, ctx, filepath: str, reactionmenu_name: str):
+        try:
+            await ctx.delete()
+        except:
+            pass
+
         if not os.path.isfile(filepath):
-            await ctx.send(f"```ERROR :: file does not exist at {filepath}```")
+            await ctx.send(f"```ERROR :: file does not exist at {filepath}```", delete_after=5)
             return
 
         if os.path.splitext(filepath)[1] != ".json":
-            await ctx.send(f"```ERROR :: expected a json file but got {filepath}```")
+            await ctx.send(f"```ERROR :: expected a json file but got {filepath}```", delete_after=5)
             return
 
         with open(filepath, 'r', encoding="utf-8") as file:
