@@ -15,6 +15,10 @@ class Leaderboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    @commands.Cog.listener()
+    async def on_ready(self):
+        self.bot.add_catchup_task("leaderboard", self.catchup_leaderboard)
+
     @commands.command()
     @needs_database
     async def leaderboard(self, ctx, channel: Optional[Union[TextChannel, Member]] = None, member: Optional[Union[Member, TextChannel]] = None):
@@ -46,7 +50,7 @@ class Leaderboard(commands.Cog):
                 name AS author,
                 SUM(messages_sent) AS `count`
             FROM leaderboard AS ldb
-            INNER JOIN members AS mem
+            INNER JOIN `member` AS mem
             ON mem.id = ldb.author_id
             WHERE guild_id = %(guild_id)s {'AND channel_id = %(channel_id)s' if channel is not None else ''}
             GROUP BY author_id
@@ -73,7 +77,7 @@ class Leaderboard(commands.Cog):
                         name AS author,
                         SUM(messages_sent) AS `count`
                     FROM leaderboard AS ldb
-                    INNER JOIN members AS mem
+                    INNER JOIN `member` AS mem
                     ON mem.id = ldb.author_id
                     WHERE guild_id = %(guild_id)s {'AND channel_id = %(channel_id)s' if channel is not None else ''}
                     GROUP BY author_id
@@ -99,7 +103,7 @@ class Leaderboard(commands.Cog):
 
         author_index = core.utils.index(rows1, author=author.name)
 
-        template = "`{index:0>2}.` {medal} `{count}` {author}"
+        template = "`{index:0>2}.` {medal} `\u3000{count: >{top}}` {author}"
 
         embed = Embed(color=0x53acf2)
         if not member:
@@ -111,7 +115,8 @@ class Leaderboard(commands.Cog):
                         index=i + 1,
                         medal=self.get_medal(i + 1),
                         count=row["count"],
-                        author=row["author"]
+                        author=row["author"],
+                        top=len(str(rows1[0]["count"]))
                     )
                     for i, row in enumerate(rows1)
                 ]))
@@ -127,7 +132,8 @@ class Leaderboard(commands.Cog):
                             if row["author_id"] == (
                                 author.id if not member else member.id)
                             else
-                            row["author"])
+                            row["author"]),
+                    top=len(str(rows2[0]["count"]))
                 )
                 for j, row in enumerate(rows2)
             ]))
@@ -140,71 +146,12 @@ class Leaderboard(commands.Cog):
             3: core.utils.get(self.bot.emojis, name="bronze_medal")
         }.get(i, core.utils.get(self.bot.emojis, name="BLANK"))
 
-    @commands.Cog.listener()
-    async def on_message(self, message):
-        # check database connection
-        if not self.bot.db:
-            return
-
-        if (message.author.bot):
-            return
-
-        # valid message
-        if (message.channel is discord.TextChannel or not message.author or not message.guild or not message.channel.guild):
-            return
-
-        guild = message.guild
-        channel = message.channel
-        author = message.author
-
-        self.bot.db.execute("""
+    async def catchup_leaderboard(self, db, message):
+        db.execute("""
             INSERT INTO leaderboard (guild_id, channel_id, author_id, messages_sent, `timestamp`) VALUES (%s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE messages_sent=messages_sent+1, `timestamp`=%s
-        """, (guild.id, channel.id, author.id, 1, message.created_at, message.created_at))
-        self.bot.db.commit()
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        # check database connection
-        if not self.bot.db:
-            return
-
-        async def catchUpAfter(timestamp):
-            try:
-                async for message in channel.history(limit=10000, after=timestamp, before=datetime.datetime.now(), oldest_first=True):
-                    author = message.author
-
-                    self.bot.db.execute("""
-                        INSERT INTO leaderboard (guild_id, channel_id, author_id, messages_sent, `timestamp`) VALUES (%s, %s, %s, %s, %s)
                         ON DUPLICATE KEY UPDATE messages_sent=messages_sent+1, `timestamp`=%s
-                    """, (guild.id, channel.id, author.id, 1, message.created_at, message.created_at))
-                    self.bot.db.commit()
-            except discord.Forbidden:
-                pass
-
-        self.bot.db.execute("""
-            SELECT guild_id, channel_id, MAX(`timestamp`) AS `timestamp` FROM
-                (SELECT ch.guild_id, ch.id AS `channel_id`, ldb.author_id, ldb.messages_sent, ldb.timestamp FROM channels AS ch
-                LEFT OUTER JOIN leaderboard AS ldb
-                ON ldb.guild_id = ch.guild_id AND ldb.channel_id = ch.id) AS restul1
-            GROUP BY guild_id, channel_id
-        """)
-        rows = self.bot.db.fetchall()
-
-        for row in rows:
-            guild = self.bot.get_guild(row["guild_id"])
-            channel = guild.get_channel(row["channel_id"])
-
-            if not isinstance(channel, discord.TextChannel):
-                continue
-
-            timestamp_after = row["timestamp"]
-            if timestamp_after:
-                timestamp_after += datetime.timedelta(milliseconds=500)
-
-            await catchUpAfter(timestamp_after)
-
-        print("[leaderboard] is now up to date")
+                    """, (message.guild.id, message.channel.id, message.author.id, 1, message.created_at, message.created_at))
+        db.commit()
 
 
 def setup(bot):
