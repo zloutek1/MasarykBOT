@@ -26,54 +26,7 @@ class Events(commands.Cog):
         except discord.errors.HTTPException as e:
             pass
 
-        # check database connection
-        if not self.bot.db:
-            print("{0.user.name} ready to serve!".format(self.bot))
-            return
-
-        for guild in self.bot.guilds:
-            self.bot.db.execute("INSERT IGNORE INTO guilds (id, name) VALUES (%s, %s)", (guild.id, guild.name))
-
-        for guild in self.bot.guilds:
-            for channel in guild.channels:
-                if isinstance(channel, discord.channel.TextChannel):
-                    self.bot.db.execute("INSERT IGNORE INTO channels (guild_id, id, name) VALUES (%s, %s, %s)", (guild.id, channel.id, channel.name))
-
-        for guild in self.bot.guilds:
-            for member in guild.members:
-                self.bot.db.execute("INSERT IGNORE INTO members (id, name, nickname) VALUES (%s, %s, %s)", (member.id, member.name, member.nick))
-
-        self.bot.db.commit()
-
         print("{0.user.name} ready to serve!".format(self.bot))
-
-    @commands.Cog.listener()
-    async def on_member_join(self, member):
-        # check database connection
-        if not self.bot.db:
-            return
-
-        self.bot.db.execute("INSERT IGNORE INTO members (id, name, nickname) VALUES (%s, %s, %s)", (member.id, member.name, member.nick))
-        self.bot.db.commit()
-
-    @commands.Cog.listener()
-    async def on_member_join(self, member):
-        # check database connection
-        if not self.bot.db:
-            return
-
-        self.bot.db.execute("INSERT IGNORE INTO members (id, name, nickname) VALUES (%s, %s, %s)", (member.id, member.name, member.nick))
-        self.bot.db.commit()
-
-    @commands.Cog.listener()
-    async def on_member_update(self, before, after):
-        # check database connection
-        if not self.bot.db:
-            return
-
-        if before.nick != after.nick:
-            self.bot.db.execute("INSERT IGNORE INTO members (id, name, nickname) VALUES (%s, %s, %s)", (member.id, member.name, member.nick))
-            self.bot.db.commit()
 
     @commands.command()
     async def ping(self, ctx):
