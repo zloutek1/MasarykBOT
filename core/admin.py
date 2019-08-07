@@ -1,3 +1,4 @@
+import discord
 from discord import Colour, Embed, Member, Object
 from discord.ext import commands
 from discord.ext.commands import Bot, has_permissions
@@ -39,6 +40,18 @@ class Admin(commands.Cog):
 
         await ctx.message.delete()
 
+    @commands.command()
+    @has_permissions(administrator=True)
+    async def purge_category(self, ctx, category_id: int):
+        await ctx.message.delete()
+
+        category = ctx.guild.get_channel(category_id)
+        if not isinstance(category, discord.channel.CategoryChannel):
+            await ctx.send("channel is not a category", delete_after=5)
+
+        for channel in category.channels:
+            await channel.delete()
+        await category.delete()
 
 def setup(bot):
     bot.add_cog(Admin(bot))
