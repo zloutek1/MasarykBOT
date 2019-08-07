@@ -7,7 +7,6 @@ import traceback
 import datetime
 
 from config import BotConfig
-from core.utils.checks import needs_database
 
 
 class Events(commands.Cog):
@@ -18,6 +17,31 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        print("\n\n\n")
+        print("""               .,***,.
+        /.             *%&*
+     #%     /%&&&%            %#
+    &   *&&&&&*%     /&&/     &/
+   %*  &&&&&&& #&&%         (&&&%&,
+   /( %&&&&&&& /(*            .&&&%
+    ,%%&&         ....       .&%
+      %& *%&&&&&&&&&&&&&&,  ,(.
+      (&&&&&&&&&&&&&&%&&&&.   &&
+       /&%&%,.*&%&%%&     *&  %&
+        %&  ,%. .&,&. *&&  #*
+        %&  ,%. .& .&.    (&   (
+        (%&(   %&(   *%&&%     &
+         &&%  (&  *%(       ,&
+          &&&&&% ,&&(  .&   (
+          ,&   .**.    ,&   *
+           &%*#&&&%.. %&&&(
+           /&&&&&/           %
+             &&      /  (%&&(
+              %% %   #&&&&.
+               *&&, ,&&,
+                 /&&&.                 \n""")
+        print("     [BOT] {0.user.name} ready to serve! \n\n\n".format(self.bot))
+
         try:
             with open(BotConfig.icon, "rb") as f:
                 await self.bot.user.edit(username=BotConfig.name, avatar=f.read())
@@ -25,8 +49,6 @@ class Events(commands.Cog):
             print("Failed to set new name and avatar to the bot")
         except discord.errors.HTTPException as e:
             pass
-
-        print("{0.user.name} ready to serve!".format(self.bot))
 
     @commands.command()
     async def ping(self, ctx):
@@ -40,10 +62,6 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        try:
-            await ctx.message.delete()
-        except:
-            pass
 
         ignored = (
             commands.NoPrivateMessage, commands.DisabledCommand, commands.CheckFailure,
