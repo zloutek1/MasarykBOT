@@ -151,6 +151,58 @@ class ReactionPicker(commands.Cog):
                 await msg.delete()
             raise e
 
+    @reactionmenu_section_group.command(name='delete', aliases=('remove', 'del', 'rm'))
+    async def section_delete(self, ctx, *, name: str, from_reactionmenu: str = None):
+        # message ::: name: str, to_reactionmenu: str = None
+        if "from_reactionmenu" in name or "from_rolemenu" in name:
+            regex = r"(?:from_reactionmenu|from_rolemenu)\s*\=\s*(.*)"
+            from_reactionmenu = re.search(regex, name).group(1).strip()
+
+            regex = r"(.+?)(?=from_reactionmenu|from_rolemenu|$)"
+            name = re.search(regex, name).group(1).strip()
+
+        try:
+            await ctx.message.delete()
+        except:
+            pass
+
+        name = name.upper()
+
+        guild = ctx.guild
+        channel = ctx.channel
+
+        ctx.db.execute("SELECT * FROM `reactionmenu_section` WHERE `text` LIKE %s", (name,))
+        section_row = ctx.db.fetchone()
+
+        msg = await channel.fetch_message(section_row["message_id"])
+
+        ctx.db.execute("""
+            SELECT sec.text AS section_name, opt.text AS `text`
+            FROM reactionmenu_section AS sec INNER JOIN
+            reactionmenu_section_option AS rso ON sec.id=rso.section_id INNER JOIN
+            reactionmenu_option AS opt ON rso.message_id = opt.message_id
+            WHERE sec.id = %s""", (section_row["id"],))
+        rows = ctx.db.fetchall()
+
+        for row in rows:
+            await self.option_delete.callback(self, ctx, text=row["text"], from_section=row["section_name"])
+        await msg.delete()
+
+        ctx.db.execute("SELECT * FROM `reactionmenu_section_option` WHERE section_id = %s", (section_row["id"],))
+        rows = ctx.db.fetchall()
+
+        for row in rows:
+            message = channel.fetch_message(row["message_id"])
+            await message.delete()
+
+
+        category = core.utils.get(guild.categories, name=name)
+        if category and not category.channels:
+            await category.delete()
+
+        elif category:
+            await ctx.send("```ERROR :: Category still contains channels```", delete_after=5)
+
     @reactionmenu_group.group(name='option', aliases=('opt', 'o'), invoke_without_command=True)
     async def reactionmenu_option_group(self, ctx):
         pass
@@ -241,6 +293,63 @@ class ReactionPicker(commands.Cog):
             ctx.db.execute("INSERT INTO channel (guild_id, category_id, id, name, position) VALUES (%s, %s, %s, %s, %s)  ON DUPLICATE KEY UPDATE id=id", (chnl.guild.id, category.id, chnl.id, chnl.name, chnl.position))
             ctx.db.commit()
 
+    @reactionmenu_option_group.command(name='delete', aliases=('remove', 'del', 'rm'))
+    async def option_delete(self, ctx, *, text: str, from_section: str = None, from_reactionmenu: str = None):
+        if "from_section" in text or "from_reactionmenu" in text or "from_rolemenu" in text:
+            regex = r"from_section\s*\=\s*(.+?)(?=from_reactionmenu|from_rolemenu|$)"
+            from_section = re.search(regex, text)
+            from_section = from_section.group(1).strip() if from_section else None
+
+            regex = r"(?:to_reactionmenu|to_rolemenu)\s*\=\s*(.+?)(?=to_section|$)"
+            from_reactionmenu = re.search(regex, text)
+            from_reactionmenu = from_reactionmenu.group(1).strip() if from_reactionmenu else None
+
+            regex = r"(.+?)(?=from_reactionmenu|from_rolemenu|from_section|$)"
+            text = re.search(regex, text).group(1).strip()
+
+        try:
+            await ctx.message.delete()
+        except:
+            pass
+
+        guild = ctx.guild
+        channel = ctx.channel
+
+        section = await self.get_section(ctx, from_section, from_reactionmenu)
+        if not section:
+            return
+
+        ctx.db.execute("SELECT * FROM `reactionmenu_option` INNER JOIN reactionmenu_section_option USING (message_id) WHERE section_id = %s AND `text` LIKE %s", (section["id"], text))
+        row = ctx.db.fetchone()
+
+        msg = await channel.fetch_message(row["message_id"])
+        content = msg.content
+
+        if text not in content:
+            await ctx.send("```ERROR :: option not found```")
+            return
+
+        span = re.search(r".*\n?(.*{}.*)\n?.*".format(text), content).span(1)
+        new_content = content[:span[0]] + content[span[1]:]
+
+        emoji_name = re.search(r"\:(num\d+)\:", row["emoji"]).group(1)
+        emoji = discord.utils.get(self.bot.emojis, name=emoji_name)
+
+        reaction = core.utils.get(msg.reactions, emoji=emoji)
+        async for user in reaction.users():
+            await msg.remove_reaction(emoji, user)
+        await msg.edit(content=new_content)
+
+        chnl = core.utils.get(guild.channels, name=text.lower().replace(" ", "-"))
+        if chnl and not chnl.last_message_id:
+            await chnl.delete()
+
+        elif chnl:
+            await ctx.send("```ERROR :: Failed to remove channel since it contains messages```", delete_after=5)
+
+        ctx.db.execute("DELETE FROM reactionmenu_option WHERE id=%s", (row["id"],))
+        ctx.db.commit()
+
     @staticmethod
     def generate_section_image(text):
         ##
@@ -295,6 +404,7 @@ class ReactionPicker(commands.Cog):
                 for option_text in data["sections"][section_name]:
                     await self.option_create.callback(self, ctx, text=option_text, to_section=section_name, to_reactionmenu=reactionmenu_name)
 
+    """
     async def get_channel(self, payload):
         guild = self.bot.get_guild(payload.guild_id)
         channel = guild.get_channel(payload.channel_id)
@@ -305,11 +415,11 @@ class ReactionPicker(commands.Cog):
         if author is self.bot.user or author.bot:
             return
 
-        self.bot.db.execute("""
+        self.bot.db.execute(\"""
             SELECT message_id FROM reactionmenu UNION
             SELECT message_id FROM reactionmenu_section UNION
             SELECT message_id FROM reactionmenu_section_option UNION
-            SELECT message_id FROM reactionmenu_option""")
+            SELECT message_id FROM reactionmenu_option\""")
         rows = self.bot.db.fetchall()
         ids = [row["message_id"] for row in rows]
 
@@ -356,6 +466,7 @@ class ReactionPicker(commands.Cog):
             return
 
         await channel.set_permissions(author, read_messages=False)
+    """
 
 
 def setup(bot):
