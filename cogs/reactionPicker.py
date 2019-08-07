@@ -404,48 +404,23 @@ class ReactionPicker(commands.Cog):
                 for option_text in data["sections"][section_name]:
                     await self.option_create.callback(self, ctx, text=option_text, to_section=section_name, to_reactionmenu=reactionmenu_name)
 
-    """
-    async def get_channel(self, payload):
-        guild = self.bot.get_guild(payload.guild_id)
-        channel = guild.get_channel(payload.channel_id)
-        message = await channel.fetch_message(payload.message_id)
-        author = guild.get_member(payload.user_id)
-        emoji = payload.emoji
-
-        if author is self.bot.user or author.bot:
+    def get_channel(self, guild, message_id, emoji):
+        db = self.bot.db.connect()
+        if not db:
             return
 
-        self.bot.db.execute(\"""
-            SELECT message_id FROM reactionmenu UNION
-            SELECT message_id FROM reactionmenu_section UNION
-            SELECT message_id FROM reactionmenu_section_option UNION
-            SELECT message_id FROM reactionmenu_option\""")
-        rows = self.bot.db.fetchall()
-        ids = [row["message_id"] for row in rows]
+        db.execute("SELECT * FROM reactionmenu_option WHERE message_id = %s AND emoji LIKE %s", (message_id, f"%:{emoji.name}:%"))
+        row = db.fetchone()
 
-        if payload.message_id not in ids:
-            return
-
-        if not re.match(r"num(\d+)", emoji.name):
-            await message.remove_reaction(emoji, author)
-            return
-
-        self.bot.db.execute("SELECT `text` FROM reactionmenu_option WHERE message_id=%s AND emoji=%s", (message.id, str(emoji)))
-        text = self.bot.db.fetchone()["text"]
-        text = text.lower().replace(" ", "-")
-
+        text = row["text"].lower().replace(" ", "-")
         chnl = core.utils.get(guild.channels, name=text)
         return chnl
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        # check database connection
-        if not self.bot.db:
-            return
-
         guild = self.bot.get_guild(payload.guild_id)
         author = guild.get_member(payload.user_id)
-        channel = await self.get_channel(payload)
+        channel = self.get_channel(guild, payload.message_id, payload.emoji)
 
         if channel is None:
             return
@@ -454,19 +429,56 @@ class ReactionPicker(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
-        # check database connection
-        if not self.bot.db:
-            return
-
         guild = self.bot.get_guild(payload.guild_id)
         author = guild.get_member(payload.user_id)
-        channel = await self.get_channel(payload)
+        channel = self.get_channel(guild, payload.message_id, payload.emoji)
 
         if channel is None:
             return
 
         await channel.set_permissions(author, read_messages=False)
-    """
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        db = self.bot.db.connect()
+        if not db:
+            return
+
+        self.bot.readyCogs[self.__class__.__name__] = False
+
+        db.execute("""
+            SELECT channel_id, rso.message_id
+            FROM reactionmenu_section_option AS rso INNER JOIN
+                 reactionmenu_section AS sec ON rso.section_id = sec.id INNER JOIN
+                 reactionmenu AS menu ON sec.reactionmenu_id = menu.id""")
+        rows = db.fetchall()
+
+        for row in rows:
+            channel = self.bot.get_channel(row["channel_id"])
+            message = await channel.fetch_message(row["message_id"])
+            reactions = message.reactions
+
+            for reaction in reactions:
+                users = await reaction.users().flatten()
+
+                db.execute("SELECT * FROM reactionmenu_option WHERE message_id = %s AND emoji = %s", (message.id, str(reaction)))
+                row = db.fetchone()
+                chnl = core.utils.get(channel.guild.channels, name=row["text"])
+
+
+                # turn permission for non-added users ON
+                for user in users:
+                    if not user.permissions_in(chnl).read_messages:
+                        await chnl.set_permissions(user, read_messages=True)
+
+
+                # turn permission for non-removed users OFF
+                for member in chnl.members:
+                    if member not in users:
+                        await chnl.set_permissions(member, read_messages=False)
+
+        self.bot.readyCogs[self.__class__.__name__] = True
+
 
 
 def setup(bot):
