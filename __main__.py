@@ -15,19 +15,20 @@ if __name__ == "__main__":
     print()
     # Internal/debug
     print("---[ Internal ]---")
-    bot.load_extension("core.events")
-    bot.load_extension("core.taskManager")
+    # bot.load_extension("core.taskManager")
+    # bot.load_extension("core.events")
     bot.load_extension("core.admin")
 
     # Commands
     print("\n---[ Commands ]---")
-    bot.load_extension("cogs.reactionPicker")
+    # bot.load_extension("cogs.reactionPicker")
     # bot.load_extension("cogs.verification")
     # bot.load_extension("cogs.leaderboard")
     # bot.load_extension("cogs.antispam")
-    bot.load_extension("cogs.backup")
+    # bot.load_extension("cogs.backup")
     # bot.load_extension("cogs.music")
-    bot.load_extension("cogs.fun")
+    # bot.load_extension("cogs.fun")
+    bot.load_extension("cogs.logger")
     print()
 
     bot.start(BotConfig.token)
