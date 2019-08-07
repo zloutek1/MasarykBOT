@@ -26,6 +26,9 @@ class Logger(commands.Cog):
     async def log_messages(self, channel, since, message_data, attachment_data, messages_insert, attachment_insert):
         until = datetime.now()
 
+        if not channel.last_message_id:
+            return
+
         db = self.bot.db.connect()
         if not db:
             return
