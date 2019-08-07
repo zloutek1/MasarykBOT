@@ -8,8 +8,8 @@ class DatabaseConnectionError(InterfaceError):
 
 
 class Database:
-    def __init__(self, db_config={}):
-        self.conn = None
+    def __init__(self, db_config={}, conn=None):
+        self.conn = conn if conn else None
         self.cursor = None
 
         if db_config:
@@ -19,13 +19,14 @@ class Database:
         if self.conn is None:
             return False
 
-        self.cursor = self.conn.cursor(dictionary=True)
+        db = Database(conn=self.conn)
+        db.cursor = self.conn.cursor(dictionary=True)
 
-        self.cursor.execute('SET NAMES utf8mb4')
-        self.cursor.execute("SET CHARACTER SET utf8mb4")
-        self.cursor.execute("SET character_set_connection=utf8mb4")
+        db.cursor.execute('SET NAMES utf8mb4')
+        db.cursor.execute("SET CHARACTER SET utf8mb4")
+        db.cursor.execute("SET character_set_connection=utf8mb4")
 
-        return self.cursor
+        return db
 
     @staticmethod
     def _handle_errors(func):
@@ -58,7 +59,3 @@ class Database:
 
     def close(self):
         self.cursor.close()
-
-    def __del__(self):
-        if self.conn is not None:
-            self.conn.close()

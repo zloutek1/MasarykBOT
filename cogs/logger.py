@@ -44,7 +44,8 @@ class Logger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        if not self.bot.db.connect():
+        db = self.bot.db.connect()
+        if not db:
             return
 
         print("[Logger] Starting to get up to date with the guilds")
@@ -69,11 +70,11 @@ class Logger(commands.Cog):
                         for webhook in webhooks])
 
         # insert into SQL
-        self.bot.db.executemany("INSERT INTO guild (id, name, icon_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE id=id", guild_data)
-        self.bot.db.executemany("INSERT INTO category (guild_id, id, name, position) VALUES (%s, %s, %s, %s) ON DUPLICATE KEY UPDATE id=id", category_data)
-        self.bot.db.executemany("INSERT INTO channel (guild_id, category_id, id, name, position) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE id=id", channel_data)
-        self.bot.db.executemany("INSERT INTO `member` (id, name, avatar_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE id=id", member_data)
-        self.bot.db.commit()
+        db.executemany("INSERT INTO guild (id, name, icon_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE id=id", guild_data)
+        db.executemany("INSERT INTO category (guild_id, id, name, position) VALUES (%s, %s, %s, %s) ON DUPLICATE KEY UPDATE id=id", category_data)
+        db.executemany("INSERT INTO channel (guild_id, category_id, id, name, position) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE id=id", channel_data)
+        db.executemany("INSERT INTO `member` (id, name, avatar_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE id=id", member_data)
+        db.commit()
 
         # console print
         print("[Logger] Updated database values for:")
@@ -88,16 +89,16 @@ class Logger(commands.Cog):
         attachment_data = []
 
         # get last send message time in each channel
-        self.bot.db.execute("SELECT channel_id, MAX(created_at) AS created_at FROM (SELECT * FROM `message` WHERE 1) AS res1 GROUP BY channel_id")
-        rows = self.bot.db.fetchall()
+        db.execute("SELECT channel_id, MAX(created_at) AS created_at FROM (SELECT * FROM `message` WHERE 1) AS res1 GROUP BY channel_id")
+        rows = db.fetchall()
 
         def messages_insert(message_data):
-            self.bot.db.executemany("INSERT INTO message (channel_id, author_id, id, content, created_at) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE id=id", message_data)
-            self.bot.db.commit()
+            db.executemany("INSERT INTO message (channel_id, author_id, id, content, created_at) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE id=id", message_data)
+            db.commit()
 
         def attachment_insert(attachment_data):
-            self.bot.db.executemany("INSERT INTO attachment (message_id, id, filename, url) VALUES (%s, %s, %s, %s)", attachment_data)
-            self.bot.db.commit()
+            db.executemany("INSERT INTO attachment (message_id, id, filename, url) VALUES (%s, %s, %s, %s)", attachment_data)
+            db.commit()
 
         # insert messages into database
         for channel in channels:
@@ -122,110 +123,121 @@ class Logger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if not self.bot.db.connect():
+        db = self.bot.db.connect()
+        if not db:
             return
 
-        self.bot.db.execute("INSERT INTO message (channel_id, author_id, id, content, created_at) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE id=id", (message.channel.id, message.author.id, message.id, message.content, message.created_at))
+        db.execute("INSERT INTO message (channel_id, author_id, id, content, created_at) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE id=id", (message.channel.id, message.author.id, message.id, message.content, message.created_at))
 
         for attachment in message.attachments:
-            self.bot.db.execute("INSERT INTO attachment (message_id, id, filename, url) VALUES (%s, %s, %s, %s)", (message.id, attachment.id, attachment.filename, attachment.url))
+            db.execute("INSERT INTO attachment (message_id, id, filename, url) VALUES (%s, %s, %s, %s)", (message.id, attachment.id, attachment.filename, attachment.url))
 
-        self.bot.db.commit()
+        db.commit()
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
-        if not self.bot.db.connect():
+        db = self.bot.db.connect()
+        if not db:
             return
 
-        self.bot.db.execute("UPDATE message SET deleted = true WHERE id = %s", (message.id,))
-        self.bot.db.commit()
+        db.execute("UPDATE message SET deleted = true WHERE id = %s", (message.id,))
+        db.commit()
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
-        if not self.bot.db.connect():
+        db = self.bot.db.connect()
+        if not db:
             return
 
-        self.bot.db.execute("INSERT INTO guild (id, name, icon_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE id=id", (guild.id, guild.name, str(guild.icon_url)))
-        self.bot.db.commit()
+        db.execute("INSERT INTO guild (id, name, icon_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE id=id", (guild.id, guild.name, str(guild.icon_url)))
+        db.commit()
 
     @commands.Cog.listener()
     async def on_guild_update(self, before, after):
-        if not self.bot.db.connect():
+        db = self.bot.db.connect()
+        if not db:
             return
 
-        self.bot.db.execute("UPDATE guild SET name = %s, icon_url = %s WHERE id = %s", (after.name, str(after.icon_url), after.id))
-        self.bot.db.commit()
+        db.execute("UPDATE guild SET name = %s, icon_url = %s WHERE id = %s", (after.name, str(after.icon_url), after.id))
+        db.commit()
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
-        if not self.bot.db.connect():
+        db = self.bot.db.connect()
+        if not db:
             return
 
-        self.bot.db.execute("UPDATE guild SET deleted = true WHERE id = %s", (guild.id,))
-        self.bot.db.commit()
+        db.execute("UPDATE guild SET deleted = true WHERE id = %s", (guild.id,))
+        db.commit()
 
     @commands.Cog.listener()
     async def on_guild_channel_create(self, channel):
-        if not self.bot.db.connect():
+        db = self.bot.db.connect()
+        if not db:
             return
 
         if isinstance(channel, discord.channel.TextChannel):
-            self.bot.db.execute("INSERT INTO channel (guild_id, category_id, id, name, position) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE id=id", (channel.guild.id, channel.category_id, channel.id, channel.name, channel.position))
+            db.execute("INSERT INTO channel (guild_id, category_id, id, name, position) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE id=id", (channel.guild.id, channel.category_id, channel.id, channel.name, channel.position))
 
         elif isinstance(channel, discord.channel.CategoryChannel):
-            self.bot.db.execute("INSERT INTO category (guild_id, id, name, position) VALUES (%s, %s, %s, %s) ON DUPLICATE KEY UPDATE id=id", (channel.guild.id, channel.id, channel.name, channel.position))
+            db.execute("INSERT INTO category (guild_id, id, name, position) VALUES (%s, %s, %s, %s) ON DUPLICATE KEY UPDATE id=id", (channel.guild.id, channel.id, channel.name, channel.position))
 
-        self.bot.db.commit()
+        db.commit()
 
     @commands.Cog.listener()
     async def on_guild_channel_update(self, before, after):
-        if not self.bot.db.connect():
+        db = self.bot.db.connect()
+        if not db:
             return
 
         if isinstance(after, discord.channel.TextChannel):
-            self.bot.db.execute("UPDATE channel SET guild_id = %s, category_id = %s, name = %s, position = %s WHERE id = %s", (after.guild.id, after.category_id, after.name, after.position, after.id))
+            db.execute("UPDATE channel SET guild_id = %s, category_id = %s, name = %s, position = %s WHERE id = %s", (after.guild.id, after.category_id, after.name, after.position, after.id))
 
         elif isinstance(after, discord.channel.CategoryChannel):
-            self.bot.db.execute("UPDATE category SET guild_id = %s, name = %s, position = %s WHERE id = %s", (after.guild.id, after.id, after.name, after.position, after.id))
+            db.execute("UPDATE category SET guild_id = %s, name = %s, position = %s WHERE id = %s", (after.guild.id, after.id, after.name, after.position, after.id))
 
-        self.bot.db.commit()
+        db.commit()
 
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel):
-        if not self.bot.db.connect():
+        db = self.bot.db.connect()
+        if not db:
             return
 
         if isinstance(channel, discord.channel.TextChannel):
-            self.bot.db.execute("UPDATE channel SET deleted = true WHERE id = %s", (channel.id,))
+            db.execute("UPDATE channel SET deleted = true WHERE id = %s", (channel.id,))
 
         elif isinstance(channel, discord.channel.CategoryChannel):
-            self.bot.db.execute("UPDATE category SET deleted = true WHERE id = %s", (channel.id,))
+            db.execute("UPDATE category SET deleted = true WHERE id = %s", (channel.id,))
 
-        self.bot.db.commit()
+        db.commit()
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        if not self.bot.db.connect():
+        db = self.bot.db.connect()
+        if not db:
             return
 
-        self.bot.db.execute("INSERT INTO `member` (id, name, avatar_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE id=id", (member.id, member.name, str(member.avatar_url)))
-        self.bot.db.commit()
+        db.execute("INSERT INTO `member` (id, name, avatar_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE id=id", (member.id, member.name, str(member.avatar_url)))
+        db.commit()
 
     @commands.Cog.listener()
     async def on_user_update(self, before, after):
-        if not self.bot.db.connect():
+        db = self.bot.db.connect()
+        if not db:
             return
 
-        self.bot.db.execute("UPDATE `member` SET name = %s, avatar_url = %s WHERE id = %s", (after.name, str(after.avatar_url), after.id))
-        self.bot.db.commit()
+        db.execute("UPDATE `member` SET name = %s, avatar_url = %s WHERE id = %s", (after.name, str(after.avatar_url), after.id))
+        db.commit()
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        if not self.bot.db.connect():
+        db = self.bot.db.connect()
+        if not db:
             return
 
-        self.bot.db.execute("UPDATE member SET deleted = true WHERE id = %s", (member.id,))
-        self.bot.db.commit()
+        db.execute("UPDATE member SET deleted = true WHERE id = %s", (member.id,))
+        db.commit()
 
 
 def setup(bot):
