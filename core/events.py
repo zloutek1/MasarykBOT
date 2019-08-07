@@ -17,31 +17,7 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print("\n\n\n")
-        print("""               .,***,.
-        /.             *%&*
-     #%     /%&&&%            %#
-    &   *&&&&&*%     /&&/     &/
-   %*  &&&&&&& #&&%         (&&&%&,
-   /( %&&&&&&& /(*            .&&&%
-    ,%%&&         ....       .&%
-      %& *%&&&&&&&&&&&&&&,  ,(.
-      (&&&&&&&&&&&&&&%&&&&.   &&
-       /&%&%,.*&%&%%&     *&  %&
-        %&  ,%. .&,&. *&&  #*
-        %&  ,%. .& .&.    (&   (
-        (%&(   %&(   *%&&%     &
-         &&%  (&  *%(       ,&
-          &&&&&% ,&&(  .&   (
-          ,&   .**.    ,&   *
-           &%*#&&&%.. %&&&(
-           /&&&&&/           %
-             &&      /  (%&&(
-              %% %   #&&&&.
-               *&&, ,&&,
-                 /&&&.                 \n""")
-        print("     [BOT] {0.user.name} ready to serve! \n\n\n".format(self.bot))
-
+        self.bot.readyCogs[self.__class__.__name__] = False
         try:
             with open(BotConfig.icon, "rb") as f:
                 await self.bot.user.edit(username=BotConfig.name, avatar=f.read())
@@ -49,6 +25,8 @@ class Events(commands.Cog):
             print("Failed to set new name and avatar to the bot")
         except discord.errors.HTTPException as e:
             pass
+
+        self.bot.readyCogs[self.__class__.__name__] = True
 
     @commands.command()
     async def ping(self, ctx):

@@ -64,6 +64,7 @@ class Logger(commands.Cog):
         if not db:
             return
 
+        self.bot.readyCogs[self.__class__.__name__] = False
         print("[Logger] Starting to get up to date with the guilds")
 
         # get discord objects
@@ -141,6 +142,7 @@ class Logger(commands.Cog):
         print()
 
         print("[Logger] Bot caught up and is up to date")
+        self.bot.readyCogs[self.__class__.__name__] = True
 
     @commands.Cog.listener()
     async def on_message(self, message):

@@ -15,6 +15,9 @@ class MasarykBot(Bot):
         self.ininial_params = args, kwargs
 
         self.loop.create_task(self.handle_database_connection(db_config))
+        self.readyCogs = {}
+
+        self.loop.create_task(self.bot_ready())
 
     async def handle_database_connection(self, db_config):
         while True:
@@ -73,3 +76,35 @@ class MasarykBot(Bot):
 
             print("Bot restarting")
             super().__init__(*self.ininial_params[0], **self.ininial_params[1])
+
+    async def bot_ready(self):
+        await self.wait_until_ready()
+        while True:
+            await asyncio.sleep(1)
+            if all(self.readyCogs.values()):
+                break
+
+        print("\n\n\n")
+        print("""               .,***,.
+        /.             *%&*
+     #%     /%&&&%            %#
+    &   *&&&&&*%     /&&/     &/
+   %*  &&&&&&& #&&%         (&&&%&,
+   /( %&&&&&&& /(*            .&&&%
+    ,%%&&         ....       .&%
+      %& *%&&&&&&&&&&&&&&,  ,(.
+      (&&&&&&&&&&&&&&%&&&&.   &&
+       /&%&%,.*&%&%%&     *&  %&
+        %&  ,%. .&,&. *&&  #*
+        %&  ,%. .& .&.    (&   (
+        (%&(   %&(   *%&&%     &
+         &&%  (&  *%(       ,&
+          &&&&&% ,&&(  .&   (
+          ,&   .**.    ,&   *
+           &%*#&&&%.. %&&&(
+           /&&&&&/           %
+             &&      /  (%&&(
+              %% %   #&&&&.
+               *&&, ,&&,
+                 /&&&.                 \n""")
+        print("     [BOT] {0.user.name} ready to serve! \n\n\n".format(self))
