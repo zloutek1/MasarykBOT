@@ -57,5 +57,6 @@ class Database:
 
         raise ValueError(f"{self.__class__} has no attribute {attr}")
 
-    def close(self):
-        self.cursor.close()
+    def __del__(self):
+        if self.cursor:
+            self.cursor.close()
