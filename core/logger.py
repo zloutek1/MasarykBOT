@@ -58,6 +58,9 @@ class Logger(commands.Cog):
         except discord.Forbidden:
             pass
 
+        except discord.errors.NotFound:
+            pass
+
     @commands.Cog.listener()
     async def on_ready(self):
         db = self.bot.db.connect()
@@ -153,7 +156,7 @@ class Logger(commands.Cog):
         db.execute("INSERT INTO message (channel_id, author_id, id, content, created_at) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE id=id", (message.channel.id, message.author.id, message.id, message.content, message.created_at))
 
         for attachment in message.attachments:
-            db.execute("INSERT INTO attachment (message_id, id, filename, url) VALUES (%s, %s, %s, %s)", (message.id, attachment.id, attachment.filename, attachment.url))
+            db.execute("INSERT INTO attachment (message_id, id, filename, url) VALUES (%s, %s, %s, %s) ON DUPLICATE KEY UPDATE id=id", (message.id, attachment.id, attachment.filename, attachment.url))
 
         db.commit()
 
