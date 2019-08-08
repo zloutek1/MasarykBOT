@@ -64,13 +64,16 @@ class Logger(commands.Cog):
         except discord.errors.NotFound:
             pass
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     @commands.Cog.listener()
     async def on_ready(self):
+        self.bot.readyCogs[self.__class__.__name__] = False
+
         db = self.bot.db.connect()
         if not db:
             return
 
-        self.bot.readyCogs[self.__class__.__name__] = False
         print("[Logger] Starting to get up to date with the guilds")
 
         # get discord objects
@@ -150,6 +153,8 @@ class Logger(commands.Cog):
         print("[Logger] Bot caught up and is up to date")
         self.bot.readyCogs[self.__class__.__name__] = True
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     @commands.Cog.listener()
     async def on_message(self, message):
         db = self.bot.db.connect()
@@ -163,6 +168,8 @@ class Logger(commands.Cog):
 
         db.commit()
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload):
         db = self.bot.db.connect()
@@ -171,6 +178,8 @@ class Logger(commands.Cog):
 
         db.execute("UPDATE message SET deleted = true WHERE id = %s", (payload.message_id,))
         db.commit()
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
@@ -181,6 +190,8 @@ class Logger(commands.Cog):
         db.execute("INSERT INTO guild (id, name, icon_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE id=id", (guild.id, guild.name, str(guild.icon_url)))
         db.commit()
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     @commands.Cog.listener()
     async def on_guild_update(self, before, after):
         db = self.bot.db.connect()
@@ -190,6 +201,8 @@ class Logger(commands.Cog):
         db.execute("UPDATE guild SET name = %s, icon_url = %s WHERE id = %s", (after.name, str(after.icon_url), after.id))
         db.commit()
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
         db = self.bot.db.connect()
@@ -198,6 +211,8 @@ class Logger(commands.Cog):
 
         db.execute("UPDATE guild SET deleted = true WHERE id = %s", (guild.id,))
         db.commit()
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.Cog.listener()
     async def on_guild_channel_create(self, channel):
@@ -213,6 +228,8 @@ class Logger(commands.Cog):
 
         db.commit()
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     @commands.Cog.listener()
     async def on_guild_channel_update(self, before, after):
         db = self.bot.db.connect()
@@ -226,6 +243,8 @@ class Logger(commands.Cog):
             db.execute("UPDATE category SET guild_id = %s, name = %s, position = %s WHERE id = %s", (after.guild.id, after.id, after.name, after.position, after.id))
 
         db.commit()
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel):
@@ -241,6 +260,8 @@ class Logger(commands.Cog):
 
         db.commit()
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     @commands.Cog.listener()
     async def on_member_join(self, member):
         db = self.bot.db.connect()
@@ -250,6 +271,8 @@ class Logger(commands.Cog):
         db.execute("INSERT INTO `member` (id, name, avatar_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE id=id", (member.id, member.name, str(member.avatar_url)))
         db.commit()
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     @commands.Cog.listener()
     async def on_user_update(self, before, after):
         db = self.bot.db.connect()
@@ -258,6 +281,8 @@ class Logger(commands.Cog):
 
         db.execute("UPDATE `member` SET name = %s, avatar_url = %s WHERE id = %s", (after.name, str(after.avatar_url), after.id))
         db.commit()
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):

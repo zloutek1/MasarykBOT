@@ -15,6 +15,8 @@ class Events(commands.Cog):
     def __init__(self, bot: Bot):
         self.bot = bot
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     @commands.Cog.listener()
     async def on_ready(self):
         self.bot.readyCogs[self.__class__.__name__] = False
@@ -28,15 +30,21 @@ class Events(commands.Cog):
 
         self.bot.readyCogs[self.__class__.__name__] = True
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     @commands.command()
     async def ping(self, ctx):
         await ctx.send("pong!")
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.command()
     async def invite(self, ctx):
         await ctx.send(f"https://discordapp.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions=0")
 
     # https://github.com/python-discord/bot/blob/master/bot/cogs/events.py
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):

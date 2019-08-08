@@ -20,7 +20,6 @@ class ReactionPicker(commands.Cog):
 
     @group(name='reactionmenu', aliases=('rolemenu', 'rlm'), invoke_without_command=True)
     @has_permissions(manage_channels=True)
-    @needs_database
     async def reactionmenu_group(self, ctx):
         pass
 
@@ -194,7 +193,6 @@ class ReactionPicker(commands.Cog):
         for row in rows:
             message = channel.fetch_message(row["message_id"])
             await message.delete()
-
 
         category = core.utils.get(guild.categories, name=name)
         if category and not category.channels:
@@ -440,11 +438,11 @@ class ReactionPicker(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        self.bot.readyCogs[self.__class__.__name__] = False
+
         db = self.bot.db.connect()
         if not db:
             return
-
-        self.bot.readyCogs[self.__class__.__name__] = False
 
         db.execute("""
             SELECT channel_id, rso.message_id
@@ -465,12 +463,10 @@ class ReactionPicker(commands.Cog):
                 row = db.fetchone()
                 chnl = core.utils.get(channel.guild.channels, name=row["text"])
 
-
                 # turn permission for non-added users ON
                 for user in users:
                     if not user.permissions_in(chnl).read_messages:
                         await chnl.set_permissions(user, read_messages=True)
-
 
                 # turn permission for non-removed users OFF
                 for member in chnl.members:
@@ -478,7 +474,6 @@ class ReactionPicker(commands.Cog):
                         await chnl.set_permissions(member, read_messages=False)
 
         self.bot.readyCogs[self.__class__.__name__] = True
-
 
 
 def setup(bot):

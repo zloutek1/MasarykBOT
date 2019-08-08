@@ -15,9 +15,17 @@ class Leaderboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     @commands.Cog.listener()
     async def on_ready(self):
+        self.bot.readyCogs[self.__class__.__name__] = False
+
         self.bot.add_catchup_task("leaderboard", self.catchup_leaderboard)
+
+        self.bot.readyCogs[self.__class__.__name__] = True
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.command()
     @needs_database

@@ -13,10 +13,14 @@ class Admin(commands.Cog):
     def __init__(self, bot: Bot):
         self.bot = bot
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     @commands.command()
     @has_permissions(administrator=True)
     async def purge(self, ctx, limit: int):
         await ctx.channel.purge(limit=100)
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.command(aliases=['clearconsole', 'cc', 'clear'])
     @has_permissions(administrator=True)
@@ -40,6 +44,8 @@ class Admin(commands.Cog):
 
         await ctx.message.delete()
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     @commands.command()
     @has_permissions(administrator=True)
     async def purge_category(self, ctx, category_id: int):
@@ -52,6 +58,7 @@ class Admin(commands.Cog):
         for channel in category.channels:
             await channel.delete()
         await category.delete()
+
 
 def setup(bot):
     bot.add_cog(Admin(bot))
