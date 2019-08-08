@@ -23,6 +23,7 @@ class Events(commands.Cog):
         try:
             with open(BotConfig.icon, "rb") as f:
                 await self.bot.user.edit(username=BotConfig.name, avatar=f.read())
+            print("username and avatar changed successfully")
         except OSError as e:
             print("Failed to set new name and avatar to the bot")
         except discord.errors.HTTPException as e:

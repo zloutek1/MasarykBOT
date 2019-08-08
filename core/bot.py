@@ -84,6 +84,11 @@ class MasarykBot(Bot):
             if all(self.readyCogs.values()):
                 break
 
+        self.intorduce()
+
+    def intorduce(self):
+        bot_name = self.user.name.encode(errors='replace').decode()
+
         print("\n\n\n")
         print("""               .,***,.
         /.             *%&*
@@ -107,4 +112,18 @@ class MasarykBot(Bot):
               %% %   #&&&&.
                *&&, ,&&,
                  /&&&.                 \n""")
-        print("     [BOT] {0.user.name} ready to serve! \n\n\n".format(self))
+        print("     [BOT] {0} ready to serve! \n\n\n".format(bot_name))
+
+    async def trigger_event(self, event_name, *args, **kwargs):
+        events = []
+        for cog_name, cog in self.cogs.items():
+            event = list(
+                map(lambda event: event[1],
+                    filter(lambda listener: listener[0] == event_name,
+                           cog.get_listeners()))
+            )
+
+            events += event
+
+        for event in events:
+            await event(*args, **kwargs)

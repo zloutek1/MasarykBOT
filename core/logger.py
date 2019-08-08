@@ -96,10 +96,10 @@ class Logger(commands.Cog):
                         for webhook in webhooks])
 
         # insert into SQL
-        db.executemany("INSERT INTO guild (id, name, icon_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE id=id", guild_data)
-        db.executemany("INSERT INTO category (guild_id, id, name, position) VALUES (%s, %s, %s, %s) ON DUPLICATE KEY UPDATE id=id", category_data)
-        db.executemany("INSERT INTO channel (guild_id, category_id, id, name, position) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE id=id", channel_data)
-        db.executemany("INSERT INTO `member` (id, name, avatar_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE id=id", member_data)
+        db.executemany("INSERT INTO guild (id, name, icon_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE name=name", guild_data)
+        db.executemany("INSERT INTO category (guild_id, id, name, position) VALUES (%s, %s, %s, %s) ON DUPLICATE KEY UPDATE name=name", category_data)
+        db.executemany("INSERT INTO channel (guild_id, category_id, id, name, position) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE name=name", channel_data)
+        db.executemany("INSERT INTO `member` (id, name, avatar_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE name=name", member_data)
         db.commit()
 
         # console print
@@ -119,7 +119,7 @@ class Logger(commands.Cog):
         rows = db.fetchall()
 
         def messages_insert(db, message_data):
-            db.executemany("INSERT INTO message (channel_id, author_id, id, content, created_at) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE id=id", message_data)
+            db.executemany("INSERT INTO message (channel_id, author_id, id, content, created_at) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE content=content", message_data)
             db.commit()
 
         def attachment_insert(db, attachment_data):
@@ -161,10 +161,10 @@ class Logger(commands.Cog):
         if not db:
             return
 
-        db.execute("INSERT INTO message (channel_id, author_id, id, content, created_at) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE id=id", (message.channel.id, message.author.id, message.id, message.content, message.created_at))
+        db.execute("INSERT INTO message (channel_id, author_id, id, content, created_at) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE content=content", (message.channel.id, message.author.id, message.id, message.content, message.created_at))
 
         for attachment in message.attachments:
-            db.execute("INSERT INTO attachment (message_id, id, filename, url) VALUES (%s, %s, %s, %s) ON DUPLICATE KEY UPDATE id=id", (message.id, attachment.id, attachment.filename, attachment.url))
+            db.execute("INSERT INTO attachment (message_id, id, filename, url) VALUES (%s, %s, %s, %s) ON DUPLICATE KEY UPDATE filename=filename", (message.id, attachment.id, attachment.filename, attachment.url))
 
         db.commit()
 
@@ -187,7 +187,7 @@ class Logger(commands.Cog):
         if not db:
             return
 
-        db.execute("INSERT INTO guild (id, name, icon_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE id=id", (guild.id, guild.name, str(guild.icon_url)))
+        db.execute("INSERT INTO guild (id, name, icon_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE name=name", (guild.id, guild.name, str(guild.icon_url)))
         db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
@@ -221,12 +221,12 @@ class Logger(commands.Cog):
             return
 
         if isinstance(channel, discord.channel.TextChannel):
-            db.execute("INSERT INTO channel (guild_id, category_id, id, name, position) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE id=id", (channel.guild.id, channel.category_id, channel.id, channel.name, channel.position))
+            db.execute("INSERT INTO channel (guild_id, category_id, id, name, position) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE name=name", (channel.guild.id, channel.category_id, channel.id, channel.name, channel.position))
+            db.commit()
 
         elif isinstance(channel, discord.channel.CategoryChannel):
-            db.execute("INSERT INTO category (guild_id, id, name, position) VALUES (%s, %s, %s, %s) ON DUPLICATE KEY UPDATE id=id", (channel.guild.id, channel.id, channel.name, channel.position))
-
-        db.commit()
+            db.execute("INSERT INTO category (guild_id, id, name, position) VALUES (%s, %s, %s, %s) ON DUPLICATE KEY UPDATE name=name", (channel.guild.id, channel.id, channel.name, channel.position))
+            db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -240,7 +240,7 @@ class Logger(commands.Cog):
             db.execute("UPDATE channel SET guild_id = %s, category_id = %s, name = %s, position = %s WHERE id = %s", (after.guild.id, after.category_id, after.name, after.position, after.id))
 
         elif isinstance(after, discord.channel.CategoryChannel):
-            db.execute("UPDATE category SET guild_id = %s, name = %s, position = %s WHERE id = %s", (after.guild.id, after.id, after.name, after.position, after.id))
+            db.execute("UPDATE category SET guild_id = %s, name = %s, position = %s WHERE id = %s", (after.guild.id, after.name, after.position, after.id))
 
         db.commit()
 
@@ -268,7 +268,7 @@ class Logger(commands.Cog):
         if not db:
             return
 
-        db.execute("INSERT INTO `member` (id, name, avatar_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE id=id", (member.id, member.name, str(member.avatar_url)))
+        db.execute("INSERT INTO `member` (id, name, avatar_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE name=name", (member.id, member.name, str(member.avatar_url)))
         db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""

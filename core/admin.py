@@ -35,11 +35,7 @@ class Admin(commands.Cog):
                 for _ in range(100):
                     print()
 
-        message = 'Logged in as %s.' % self.bot.user
-        try:
-            print(message)
-        except Exception as e:  # some bot usernames with special chars fail on shitty platforms
-            print(message.encode(errors='replace').decode())
+        self.bot.intorduce()
         await ctx.send('Console cleared successfully.', delete_after=5)
 
         await ctx.message.delete()
