@@ -74,4 +74,3 @@ class Confessions(commands.Cog):
 
 def setup(bot):
     bot.add_cog(Confessions(bot))
-    print("Cog loaded: Confessions")

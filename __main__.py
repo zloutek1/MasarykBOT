@@ -4,8 +4,12 @@ from discord.ext.commands import when_mentioned_or
 from core.bot import MasarykBot
 from config import BotConfig
 
+from glob import glob
+import time
 
 if __name__ == "__main__":
+    print()
+
     bot = MasarykBot(
         command_prefix=when_mentioned_or(BotConfig.prefix),
         activity=Game(name="Commands: !help"),
@@ -13,22 +17,33 @@ if __name__ == "__main__":
         db_config=BotConfig.db_config
     )
 
-    print()
-    # Internal/debug
-    print("---[ Internal ]---")
-    bot.load_extension("core.logger")
-    bot.load_extension("core.events")
-    bot.load_extension("core.admin")
-    bot.load_extension("core.help")
+    modules = [
+        "core.logger",
+        "core.events",
+        "core.admin",
+        "core.help",
 
-    # Commands
-    print("\n---[ Commands ]---")
-    bot.load_extension("cogs.reactionPicker")
-    # bot.load_extension("cogs.verification")
-    bot.load_extension("cogs.leaderboard")
-    bot.load_extension("cogs.confessions")
-    # bot.load_extension("cogs.music")
-    bot.load_extension("cogs.fun")
+        "cogs.reactionPicker",
+        "cogs.leaderboard",
+        "cogs.confessions",
+        "cogs.fun"
+    ]
+
+    boot_message = """
+    Boot sequence initialised
+
+    Seeking cogs...
+    {} cogs found
+
+    Loading cogs...""".format(len(modules))
+
+    for letter in boot_message.strip("\n"):
+        print(letter, end="")
     print()
 
+    for module in modules:
+        bot.load_extension(module)
+    print("    Loaded:", ", ".join(bot.cogs.keys()))
+
+    print()
     bot.start(BotConfig.token)

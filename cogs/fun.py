@@ -71,4 +71,3 @@ class Fun(commands.Cog):
 
 def setup(bot):
     bot.add_cog(Fun(bot))
-    print("Cog loaded: Fun")

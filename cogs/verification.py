@@ -95,4 +95,3 @@ class Verification(commands.Cog):
 
 def setup(bot):
     bot.add_cog(Verification(bot))
-    print("Cog loaded: Verification")

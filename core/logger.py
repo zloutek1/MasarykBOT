@@ -19,11 +19,15 @@ class Logger(commands.Cog):
         self.bot.add_catchup_task = self.add_catchup_task
         self.catchup_tasks = {}
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     def add_catchup_task(self, name, task):
         self.catchup_tasks.setdefault(name, [])
         self.catchup_tasks[name].append(task)
 
-    async def log_messages(self, channel, since, message_data, attachment_data, messages_insert, attachment_insert):
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    async def log_messages(self, channel, since, message_data, attachment_data):
         until = datetime.now()
 
         if not channel.last_message_id:
@@ -41,7 +45,7 @@ class Logger(commands.Cog):
 
                 # insert into SQL
                 if len(message_data) > 100:
-                    messages_insert(db, message_data)
+                    self.messages_insert(db, message_data)
                     message_data.clear()
 
                 # -- Attachment --
@@ -50,7 +54,7 @@ class Logger(commands.Cog):
 
                     # insert into SQL
                     if len(attachment_data) > 100:
-                        attachment_insert(db, attachment_data)
+                        self.attachment_insert(db, attachment_data)
                         attachment_data.clear()
 
                 # -- Other catching up tasks --
@@ -66,6 +70,18 @@ class Logger(commands.Cog):
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
+    @staticmethod
+    def messages_insert(db, message_data):
+        db.executemany("INSERT INTO message (channel_id, author_id, id, content, created_at) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE content=content", message_data)
+        db.commit()
+
+    @staticmethod
+    def attachment_insert(db, attachment_data):
+        db.executemany("INSERT INTO attachment (message_id, id, filename, url) VALUES (%s, %s, %s, %s)", attachment_data)
+        db.commit()
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     @commands.Cog.listener()
     async def on_ready(self):
         self.bot.readyCogs[self.__class__.__name__] = False
@@ -73,8 +89,6 @@ class Logger(commands.Cog):
         db = self.bot.db.connect()
         if not db:
             return
-
-        print("[Logger] Starting to get up to date with the guilds")
 
         # get discord objects
         guilds = self.bot.guilds
@@ -103,11 +117,7 @@ class Logger(commands.Cog):
         db.commit()
 
         # console print
-        print("[Logger] Updated database values for:")
-        print(" - guilds")
-        print(" - categories")
-        print(" - channels")
-        print(" - members")
+        print("    [Logger] Updated database for: guilds, categories, channels, members")
         print()
 
         # get SQL data
@@ -118,14 +128,6 @@ class Logger(commands.Cog):
         db.execute("SELECT channel_id, MAX(created_at) AS created_at FROM (SELECT * FROM `message` WHERE 1) AS res1 GROUP BY channel_id")
         rows = db.fetchall()
 
-        def messages_insert(db, message_data):
-            db.executemany("INSERT INTO message (channel_id, author_id, id, content, created_at) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE content=content", message_data)
-            db.commit()
-
-        def attachment_insert(db, attachment_data):
-            db.executemany("INSERT INTO attachment (message_id, id, filename, url) VALUES (%s, %s, %s, %s)", attachment_data)
-            db.commit()
-
         # insert messages into database
         for channel in channels:
             row = core.utils.get(rows, channel_id=channel.id)
@@ -135,22 +137,25 @@ class Logger(commands.Cog):
                 since = row["created_at"]
                 since += timedelta(seconds=1)
 
-            await self.log_messages(channel, since, message_data, attachment_data, messages_insert, attachment_insert)
+            await self.log_messages(channel, since, message_data, attachment_data)
 
         # insert leftovers
         if len(message_data) > 0:
-            messages_insert(db, message_data)
+            self.messages_insert(db, message_data)
         if len(attachment_data) > 0:
-            attachment_insert(db, attachment_data)
+            self.attachment_insert(db, attachment_data)
 
         # console print
-        print("[Logger] Updated database values for:")
-        print(" - messages")
-        print(" - attachemnts")
-        [print(f" - {task_name}") for task_name in self.catchup_tasks]
+        values_for = [
+            "messages",
+            "attachemnts",
+            ", ".join(
+                task_name
+                for task_name in self.catchup_tasks)
+        ]
+        print("    [Logger] Updated database for:", ", ".join(values_for))
         print()
 
-        print("[Logger] Bot caught up and is up to date")
         self.bot.readyCogs[self.__class__.__name__] = True
 
     """--------------------------------------------------------------------------------------------------------------------------"""
@@ -161,12 +166,11 @@ class Logger(commands.Cog):
         if not db:
             return
 
-        db.execute("INSERT INTO message (channel_id, author_id, id, content, created_at) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE content=content", (message.channel.id, message.author.id, message.id, message.content, message.created_at))
+        message_data = [(message.channel.id, message.author.id, message.id, message.content, message.created_at)]
+        self.messages_insert(db, message_data)
 
-        for attachment in message.attachments:
-            db.execute("INSERT INTO attachment (message_id, id, filename, url) VALUES (%s, %s, %s, %s) ON DUPLICATE KEY UPDATE filename=filename", (message.id, attachment.id, attachment.filename, attachment.url))
-
-        db.commit()
+        attachment_data = [(message.id, attachment.id, attachment.filename, attachment.url) for attachment in message.attachments]
+        self.attachment_insert(db, attachment_data)
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -296,4 +300,3 @@ class Logger(commands.Cog):
 
 def setup(bot):
     bot.add_cog(Logger(bot))
-    print("Cog loaded: Logger")

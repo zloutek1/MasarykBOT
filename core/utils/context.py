@@ -13,7 +13,3 @@ class Context(commands.Context):
         super().__init__(*args, **kwargs)
 
         self.db = self.bot.db.connect()
-
-    def __del__(self, *args, **kwargs):
-        if self.db.cursor:
-            self.db.cursor.close()
