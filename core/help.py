@@ -5,7 +5,7 @@ from discord.ext.commands import Bot, has_permissions
 import itertools
 
 import core.utils.get
-from core.paginator import Pages
+from core.utils.paginator import Pages
 
 
 class Help(commands.Cog):
