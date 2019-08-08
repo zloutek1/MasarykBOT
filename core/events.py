@@ -1,12 +1,14 @@
 import discord
-from discord import Colour, Embed, Member, Object
+from discord import Color, Embed, Member, Object
 from discord.ext import commands
 from discord.ext.commands import Bot
 
 import traceback
 import datetime
+import json
 
 from config import BotConfig
+from core.utils import db
 
 
 class Events(commands.Cog):
@@ -23,9 +25,11 @@ class Events(commands.Cog):
         try:
             with open(BotConfig.icon, "rb") as f:
                 await self.bot.user.edit(username=BotConfig.name, avatar=f.read())
-            print("username and avatar changed successfully")
+            print("\n    [Events] username and avatar changed successfully\n")
+
         except OSError as e:
-            print("Failed to set new name and avatar to the bot")
+            print("\nERR [Events] Failed to set new name and avatar to the botn")
+
         except discord.errors.HTTPException as e:
             pass
 
@@ -59,6 +63,10 @@ class Events(commands.Cog):
         if isinstance(error, ignored):
             return
 
+        if isinstance(error, db.DatabaseConnectionError):
+            self.bot.loop.create_task(self.bot.handle_database_connection())
+            return
+
         if ctx.message.guild:
             fmt = 'Channel: {0} (ID: {0.id})\nGuild: {1} (ID: {1.id})'
         else:
@@ -73,11 +81,21 @@ class Events(commands.Cog):
         location = fmt.format(ctx.message.channel, ctx.message.guild)
 
         message = '{0} at {1}: Called by: {2} in {3}. More info: {4}'.format(name, time, author, location, description)
+        embed = Embed(
+            title='{0} at {1}: Called by: {2} in {3}. More info:'.format(name, time, author, location),
+            description=description,
+            color=Color.red()
+        )
+
+        with open("assets/local_db.json", "r", encoding="utf-8") as file:
+            local_db = json.load(file)
+            for channel_id in local_db["log_channels"]:
+                channel = self.bot.get_channel(channel_id)
+                if channel:
+                    await channel.send(embed=embed)
 
         print(message)
-        # self.bot.logs['discord'].critical(message)
 
 
 def setup(bot):
     bot.add_cog(Events(bot))
-    print("Cog loaded: Events")

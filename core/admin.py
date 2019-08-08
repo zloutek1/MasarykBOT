@@ -4,6 +4,7 @@ from discord.ext import commands
 from discord.ext.commands import Bot, has_permissions
 
 import os
+import json
 
 from config import BotConfig
 
@@ -55,7 +56,25 @@ class Admin(commands.Cog):
             await channel.delete()
         await category.delete()
 
+    @commands.group(name="log_channel")
+    @has_permissions(manage_channels=True)
+    async def log_channel(self, ctx):
+        pass
+
+    @log_channel.command(name="set")
+    async def log_channel_set(self, ctx):
+        with open("assets/local_db.json", "r", encoding="utf-8") as file:
+            local_db = json.load(file)
+            local_db.setdefault("log_channels", [])
+            if ctx.channel.id not in local_db["log_channels"]:
+                local_db["log_channels"].append(ctx.channel.id)
+
+        with open("assets/local_db.json", "w", encoding="utf-8") as file:
+            json.dump(local_db, file)
+
+        await ctx.delete()
+        await ctx.send("Log Channel set successfully", delete_after=5)
+
 
 def setup(bot):
     bot.add_cog(Admin(bot))
-    print("Cog loaded: Admin")
