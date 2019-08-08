@@ -1,9 +1,9 @@
 -- phpMyAdmin SQL Dump
--- version 4.8.5
+-- version 4.9.0.1
 -- https://www.phpmyadmin.net/
 --
--- Hostiteľ: 127.0.0.1:3306
--- Čas generovania: Ne 04.Aug 2019, 10:31
+-- Hostiteľ: localhost
+-- Čas generovania: Št 08.Aug 2019, 17:05
 -- Verzia serveru: 8.0.17
 -- Verzia PHP: 7.2.18
 
@@ -19,55 +19,63 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Databáza: `discord`
+-- Databáza: `discordv1.1`
 --
 
 -- --------------------------------------------------------
 
 --
--- Štruktúra tabuľky pre tabuľku `backup_attachemnts`
+-- Štruktúra tabuľky pre tabuľku `attachment`
 --
 
-DROP TABLE IF EXISTS `backup_attachemnts`;
-CREATE TABLE IF NOT EXISTS `backup_attachemnts` (
-  `guild_id` bigint(22) NOT NULL,
-  `channel_id` bigint(22) NOT NULL,
+CREATE TABLE `attachment` (
   `message_id` bigint(22) NOT NULL,
-  `width` int(11) DEFAULT NULL,
-  `height` int(11) DEFAULT NULL,
-  `size` int(11) NOT NULL,
-  `filename` text COLLATE utf8_czech_ci NOT NULL,
-  `url` varchar(1000) COLLATE utf8_czech_ci NOT NULL,
-  UNIQUE KEY `url` (`url`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_czech_ci;
+  `id` bigint(22) NOT NULL,
+  `filename` varchar(127) COLLATE utf8mb4_general_ci NOT NULL,
+  `url` text COLLATE utf8mb4_general_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
 --
--- Štruktúra tabuľky pre tabuľku `channels`
+-- Štruktúra tabuľky pre tabuľku `category`
 --
 
-DROP TABLE IF EXISTS `channels`;
-CREATE TABLE IF NOT EXISTS `channels` (
+CREATE TABLE `category` (
   `guild_id` bigint(22) NOT NULL,
   `id` bigint(22) NOT NULL,
-  `name` text COLLATE utf8_czech_ci NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `UNIQUE` (`guild_id`,`id`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_czech_ci;
+  `name` varchar(127) COLLATE utf8mb4_general_ci NOT NULL,
+  `position` int(11) NOT NULL,
+  `deleted` tinyint(1) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
 --
--- Štruktúra tabuľky pre tabuľku `guilds`
+-- Štruktúra tabuľky pre tabuľku `channel`
 --
 
-DROP TABLE IF EXISTS `guilds`;
-CREATE TABLE IF NOT EXISTS `guilds` (
+CREATE TABLE `channel` (
+  `guild_id` bigint(22) NOT NULL,
+  `category_id` bigint(22) DEFAULT '0',
   `id` bigint(22) NOT NULL,
-  `name` text COLLATE utf8_czech_ci NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_czech_ci;
+  `name` varchar(127) COLLATE utf8mb4_general_ci NOT NULL,
+  `position` int(11) NOT NULL,
+  `deleted` tinyint(1) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Štruktúra tabuľky pre tabuľku `guild`
+--
+
+CREATE TABLE `guild` (
+  `id` bigint(22) NOT NULL,
+  `name` varchar(127) COLLATE utf8mb4_general_ci NOT NULL,
+  `icon_url` text CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL,
+  `deleted` tinyint(1) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -75,32 +83,41 @@ CREATE TABLE IF NOT EXISTS `guilds` (
 -- Štruktúra tabuľky pre tabuľku `leaderboard`
 --
 
-DROP TABLE IF EXISTS `leaderboard`;
-CREATE TABLE IF NOT EXISTS `leaderboard` (
+CREATE TABLE `leaderboard` (
   `guild_id` bigint(22) NOT NULL,
   `channel_id` bigint(22) NOT NULL,
   `author_id` bigint(22) NOT NULL,
   `messages_sent` int(11) NOT NULL,
-  `timestamp` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`guild_id`,`channel_id`,`author_id`) USING BTREE,
-  KEY `channel_id` (`channel_id`),
-  KEY `author_id` (`author_id`)
+  `timestamp` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_czech_ci;
 
 -- --------------------------------------------------------
 
 --
--- Štruktúra tabuľky pre tabuľku `members`
+-- Štruktúra tabuľky pre tabuľku `member`
 --
 
-DROP TABLE IF EXISTS `members`;
-CREATE TABLE IF NOT EXISTS `members` (
+CREATE TABLE `member` (
   `id` bigint(22) NOT NULL,
-  `name` varchar(127) COLLATE utf8_czech_ci NOT NULL,
-  `nickname` varchar(127) COLLATE utf8_czech_ci NOT NULL,
-  `last_updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_czech_ci;
+  `name` varchar(127) COLLATE utf8mb4_general_ci NOT NULL,
+  `avatar_url` text COLLATE utf8mb4_general_ci NOT NULL,
+  `deleted` tinyint(1) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Štruktúra tabuľky pre tabuľku `message`
+--
+
+CREATE TABLE `message` (
+  `channel_id` bigint(22) NOT NULL,
+  `author_id` bigint(22) NOT NULL,
+  `id` bigint(22) NOT NULL,
+  `content` text COLLATE utf8mb4_general_ci NOT NULL,
+  `created_at` timestamp NOT NULL,
+  `deleted` tinyint(1) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -108,16 +125,11 @@ CREATE TABLE IF NOT EXISTS `members` (
 -- Štruktúra tabuľky pre tabuľku `reactionmenu`
 --
 
-DROP TABLE IF EXISTS `reactionmenu`;
-CREATE TABLE IF NOT EXISTS `reactionmenu` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `guild_id` bigint(22) NOT NULL,
+CREATE TABLE `reactionmenu` (
+  `id` int(11) NOT NULL,
   `channel_id` bigint(22) NOT NULL,
   `message_id` bigint(22) NOT NULL,
-  `name` varchar(127) COLLATE utf8_czech_ci NOT NULL,
-  PRIMARY KEY (`id`,`guild_id`,`channel_id`,`name`) USING BTREE,
-  KEY `guild_id` (`guild_id`),
-  KEY `channel_id` (`channel_id`)
+  `name` varchar(127) CHARACTER SET utf8 COLLATE utf8_czech_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_czech_ci;
 
 -- --------------------------------------------------------
@@ -126,20 +138,16 @@ CREATE TABLE IF NOT EXISTS `reactionmenu` (
 -- Štruktúra tabuľky pre tabuľku `reactionmenu_option`
 --
 
-DROP TABLE IF EXISTS `reactionmenu_option`;
-CREATE TABLE IF NOT EXISTS `reactionmenu_option` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `reactionmenu_option` (
+  `id` int(11) NOT NULL,
   `message_id` bigint(22) NOT NULL,
-  `emoji` text COLLATE utf8_czech_ci NOT NULL,
-  `text` text COLLATE utf8_czech_ci NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `message_id` (`message_id`)
+  `emoji` text CHARACTER SET utf8 COLLATE utf8_czech_ci NOT NULL,
+  `text` text CHARACTER SET utf8 COLLATE utf8_czech_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_czech_ci;
 
 --
 -- Spúšťače `reactionmenu_option`
 --
-DROP TRIGGER IF EXISTS `update_options_count`;
 DELIMITER $$
 CREATE TRIGGER `update_options_count` AFTER INSERT ON `reactionmenu_option` FOR EACH ROW UPDATE `reactionmenu_section` AS sec SET `options`=(SELECT COUNT(*) FROM `reactionmenu_section_option` AS rel INNER JOIN reactionmenu_option AS opt ON rel.message_id = opt.message_id WHERE rel.section_id = sec.id) WHERE 1
 $$
@@ -151,15 +159,12 @@ DELIMITER ;
 -- Štruktúra tabuľky pre tabuľku `reactionmenu_section`
 --
 
-DROP TABLE IF EXISTS `reactionmenu_section`;
-CREATE TABLE IF NOT EXISTS `reactionmenu_section` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `reactionmenu_section` (
+  `id` int(11) NOT NULL,
   `reactionmenu_id` int(11) NOT NULL,
   `message_id` bigint(22) NOT NULL,
   `options` int(11) NOT NULL DEFAULT '0',
-  `text` varchar(12) COLLATE utf8_czech_ci NOT NULL,
-  PRIMARY KEY (`id`,`reactionmenu_id`,`text`) USING BTREE,
-  KEY `reactionmenu_section_ibfk_1` (`reactionmenu_id`)
+  `text` varchar(12) CHARACTER SET utf8 COLLATE utf8_czech_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_czech_ci;
 
 -- --------------------------------------------------------
@@ -168,75 +173,189 @@ CREATE TABLE IF NOT EXISTS `reactionmenu_section` (
 -- Štruktúra tabuľky pre tabuľku `reactionmenu_section_option`
 --
 
-DROP TABLE IF EXISTS `reactionmenu_section_option`;
-CREATE TABLE IF NOT EXISTS `reactionmenu_section_option` (
+CREATE TABLE `reactionmenu_section_option` (
   `section_id` int(11) NOT NULL,
   `message_id` bigint(22) NOT NULL,
-  `order_id` int(11) NOT NULL AUTO_INCREMENT,
-  `is_full` tinyint(1) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`section_id`,`order_id`) USING BTREE,
-  KEY `order_id` (`order_id`),
-  KEY `is_full` (`is_full`),
-  KEY `message_id` (`message_id`)
+  `order_id` int(11) NOT NULL,
+  `is_full` tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_czech_ci;
 
--- --------------------------------------------------------
-
 --
--- Štruktúra tabuľky pre tabuľku `verification_channel`
+-- Kľúče pre exportované tabuľky
 --
 
-DROP TABLE IF EXISTS `verification_channel`;
-CREATE TABLE IF NOT EXISTS `verification_channel` (
-  `guild_id` bigint(22) NOT NULL,
-  `channel_id` bigint(22) NOT NULL,
-  `message_id` bigint(22) NOT NULL,
-  `emoji` text COLLATE utf8_czech_ci NOT NULL,
-  PRIMARY KEY (`guild_id`,`channel_id`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_czech_ci ROW_FORMAT=COMPACT;
+--
+-- Indexy pre tabuľku `attachment`
+--
+ALTER TABLE `attachment`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `message_id` (`message_id`);
+
+--
+-- Indexy pre tabuľku `category`
+--
+ALTER TABLE `category`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `guild` (`guild_id`,`id`) USING BTREE;
+
+--
+-- Indexy pre tabuľku `channel`
+--
+ALTER TABLE `channel`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `guild` (`guild_id`,`category_id`,`id`) USING BTREE,
+  ADD KEY `category_id` (`category_id`);
+
+--
+-- Indexy pre tabuľku `guild`
+--
+ALTER TABLE `guild`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexy pre tabuľku `leaderboard`
+--
+ALTER TABLE `leaderboard`
+  ADD PRIMARY KEY (`guild_id`,`channel_id`,`author_id`) USING BTREE,
+  ADD KEY `channel_id` (`channel_id`),
+  ADD KEY `author_id` (`author_id`);
+
+--
+-- Indexy pre tabuľku `member`
+--
+ALTER TABLE `member`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `name` (`id`,`name`) USING BTREE;
+
+--
+-- Indexy pre tabuľku `message`
+--
+ALTER TABLE `message`
+  ADD PRIMARY KEY (`id`) USING BTREE,
+  ADD KEY `author_id` (`author_id`),
+  ADD KEY `channel_id` (`channel_id`);
+
+--
+-- Indexy pre tabuľku `reactionmenu`
+--
+ALTER TABLE `reactionmenu`
+  ADD PRIMARY KEY (`id`,`channel_id`,`name`) USING BTREE,
+  ADD KEY `reactionmenu_ibfk_2` (`channel_id`),
+  ADD KEY `message_id` (`message_id`);
+
+--
+-- Indexy pre tabuľku `reactionmenu_option`
+--
+ALTER TABLE `reactionmenu_option`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `message_id` (`message_id`);
+
+--
+-- Indexy pre tabuľku `reactionmenu_section`
+--
+ALTER TABLE `reactionmenu_section`
+  ADD PRIMARY KEY (`id`,`reactionmenu_id`,`text`) USING BTREE,
+  ADD KEY `reactionmenu_section_ibfk_1` (`reactionmenu_id`),
+  ADD KEY `message_id` (`message_id`);
+
+--
+-- Indexy pre tabuľku `reactionmenu_section_option`
+--
+ALTER TABLE `reactionmenu_section_option`
+  ADD PRIMARY KEY (`section_id`,`order_id`) USING BTREE,
+  ADD KEY `order_id` (`order_id`),
+  ADD KEY `is_full` (`is_full`),
+  ADD KEY `message_id` (`message_id`);
+
+--
+-- AUTO_INCREMENT pre exportované tabuľky
+--
+
+--
+-- AUTO_INCREMENT pre tabuľku `reactionmenu`
+--
+ALTER TABLE `reactionmenu`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT pre tabuľku `reactionmenu_option`
+--
+ALTER TABLE `reactionmenu_option`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT pre tabuľku `reactionmenu_section`
+--
+ALTER TABLE `reactionmenu_section`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT pre tabuľku `reactionmenu_section_option`
+--
+ALTER TABLE `reactionmenu_section_option`
+  MODIFY `order_id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Obmedzenie pre exportované tabuľky
 --
 
 --
--- Obmedzenie pre tabuľku `channels`
+-- Obmedzenie pre tabuľku `attachment`
 --
-ALTER TABLE `channels`
-  ADD CONSTRAINT `channels_ibfk_1` FOREIGN KEY (`guild_id`) REFERENCES `guilds` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+ALTER TABLE `attachment`
+  ADD CONSTRAINT `attachment_ibfk_1` FOREIGN KEY (`message_id`) REFERENCES `message` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+--
+-- Obmedzenie pre tabuľku `category`
+--
+ALTER TABLE `category`
+  ADD CONSTRAINT `category_ibfk_1` FOREIGN KEY (`guild_id`) REFERENCES `guild` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+--
+-- Obmedzenie pre tabuľku `channel`
+--
+ALTER TABLE `channel`
+  ADD CONSTRAINT `channel_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `category` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  ADD CONSTRAINT `channel_ibfk_2` FOREIGN KEY (`guild_id`) REFERENCES `guild` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 --
 -- Obmedzenie pre tabuľku `leaderboard`
 --
 ALTER TABLE `leaderboard`
-  ADD CONSTRAINT `leaderboard_ibfk_1` FOREIGN KEY (`guild_id`) REFERENCES `guilds` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  ADD CONSTRAINT `leaderboard_ibfk_2` FOREIGN KEY (`channel_id`) REFERENCES `channels` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+  ADD CONSTRAINT `leaderboard_ibfk_1` FOREIGN KEY (`guild_id`) REFERENCES `guild` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  ADD CONSTRAINT `leaderboard_ibfk_2` FOREIGN KEY (`channel_id`) REFERENCES `channel` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  ADD CONSTRAINT `leaderboard_ibfk_3` FOREIGN KEY (`author_id`) REFERENCES `member` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 --
--- Obmedzenie pre tabuľku `members`
+-- Obmedzenie pre tabuľku `message`
 --
-ALTER TABLE `members`
-  ADD CONSTRAINT `members_ibfk_1` FOREIGN KEY (`id`) REFERENCES `leaderboard` (`author_id`);
+ALTER TABLE `message`
+  ADD CONSTRAINT `message_ibfk_2` FOREIGN KEY (`author_id`) REFERENCES `member` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  ADD CONSTRAINT `message_ibfk_3` FOREIGN KEY (`channel_id`) REFERENCES `channel` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 --
 -- Obmedzenie pre tabuľku `reactionmenu`
 --
 ALTER TABLE `reactionmenu`
-  ADD CONSTRAINT `reactionmenu_ibfk_1` FOREIGN KEY (`guild_id`) REFERENCES `guilds` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  ADD CONSTRAINT `reactionmenu_ibfk_2` FOREIGN KEY (`channel_id`) REFERENCES `channels` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+  ADD CONSTRAINT `reactionmenu_ibfk_1` FOREIGN KEY (`channel_id`) REFERENCES `channel` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 --
 -- Obmedzenie pre tabuľku `reactionmenu_option`
 --
 ALTER TABLE `reactionmenu_option`
-  ADD CONSTRAINT `reactionmenu_option_ibfk_1` FOREIGN KEY (`message_id`) REFERENCES `reactionmenu_section_option` (`message_id`);
+  ADD CONSTRAINT `reactionmenu_option_ibfk_2` FOREIGN KEY (`message_id`) REFERENCES `reactionmenu_section_option` (`message_id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 --
 -- Obmedzenie pre tabuľku `reactionmenu_section`
 --
 ALTER TABLE `reactionmenu_section`
-  ADD CONSTRAINT `reactionmenu_section_ibfk_1` FOREIGN KEY (`reactionmenu_id`) REFERENCES `reactionmenu` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  ADD CONSTRAINT `reactionmenu_section_ibfk_2` FOREIGN KEY (`id`) REFERENCES `reactionmenu_section_option` (`section_id`);
+  ADD CONSTRAINT `reactionmenu_section_ibfk_1` FOREIGN KEY (`reactionmenu_id`) REFERENCES `reactionmenu` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+--
+-- Obmedzenie pre tabuľku `reactionmenu_section_option`
+--
+ALTER TABLE `reactionmenu_section_option`
+  ADD CONSTRAINT `reactionmenu_section_option_ibfk_2` FOREIGN KEY (`section_id`) REFERENCES `reactionmenu_section` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
