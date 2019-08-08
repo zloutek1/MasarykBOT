@@ -15,4 +15,5 @@ class Context(commands.Context):
         self.db = self.bot.db.connect()
 
     def __del__(self, *args, **kwargs):
-        self.db.cursor.close()
+        if self.db.cursor:
+            self.db.cursor.close()
