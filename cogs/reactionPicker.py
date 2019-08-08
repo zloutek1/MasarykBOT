@@ -402,13 +402,20 @@ class ReactionPicker(commands.Cog):
                 for option_text in data["sections"][section_name]:
                     await self.option_create.callback(self, ctx, text=option_text, to_section=section_name, to_reactionmenu=reactionmenu_name)
 
-    def get_channel(self, guild, message_id, emoji):
+    def get_channel(self, guild, channel_id, message_id, emoji):
         db = self.bot.db.connect()
         if not db:
             return
 
         db.execute("SELECT * FROM reactionmenu_option WHERE message_id = %s AND emoji LIKE %s", (message_id, f"%:{emoji.name}:%"))
         row = db.fetchone()
+        if row is None:
+            return
+
+        db.execute("SELECT * FROM reactionmenu WHERE id=(SELECT reactionmenu_id FROM reactionmenu_section WHERE id=(SELECT section_id FROM reactionmenu_section_option WHERE message_id=(SELECT message_id FROM reactionmenu_option WHERE id=%s)))", (row["id"],))
+        row2 = db.fetchone()
+        if row2["channel_id"] != channel_id:
+            return
 
         text = row["text"].lower().replace(" ", "-")
         chnl = core.utils.get(guild.channels, name=text)
@@ -418,7 +425,7 @@ class ReactionPicker(commands.Cog):
     async def on_raw_reaction_add(self, payload):
         guild = self.bot.get_guild(payload.guild_id)
         author = guild.get_member(payload.user_id)
-        channel = self.get_channel(guild, payload.message_id, payload.emoji)
+        channel = self.get_channel(guild, payload.channel_id, payload.message_id, payload.emoji)
 
         if channel is None:
             return
@@ -429,7 +436,7 @@ class ReactionPicker(commands.Cog):
     async def on_raw_reaction_remove(self, payload):
         guild = self.bot.get_guild(payload.guild_id)
         author = guild.get_member(payload.user_id)
-        channel = self.get_channel(guild, payload.message_id, payload.emoji)
+        channel = self.get_channel(guild, payload.channel_id, payload.message_id, payload.emoji)
 
         if channel is None:
             return
