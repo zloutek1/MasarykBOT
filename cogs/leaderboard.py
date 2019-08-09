@@ -113,10 +113,10 @@ class Leaderboard(commands.Cog):
         self.db.execute(top10_SQL, params)
         rows1 = self.db.fetchall()
 
+        """
         results = self.db.execute(member_SQL, params, multi=True)
-        for result in results:
-            pass
-        rows2 = result.fetchall()
+        rows2 = results[10].fetchall()
+        """
 
         self.db.commit()
 
@@ -143,6 +143,7 @@ class Leaderboard(commands.Cog):
                     )
                     for i, row in enumerate(rows1)
                 ]))
+        """
         embed.add_field(
             name="Your position",
             inline=True,
@@ -160,6 +161,7 @@ class Leaderboard(commands.Cog):
                 )
                 for j, row in enumerate(rows2)
             ]))
+        """
         await ctx.send(embed=embed)
 
     def get_medal(self, i):
