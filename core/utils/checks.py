@@ -1,7 +1,9 @@
 from discord.ext import commands
+from functools import wraps
 
 
 def needs_database(func):
+    @wraps(func)
     async def wrapper(self, *args, **kwargs):
         if not hasattr(self.bot, "db"):
             return False
@@ -11,5 +13,4 @@ def needs_database(func):
             return False
 
         return await func(self, *args, **kwargs)
-    wrapper.__name__ = func.__name__
     return wrapper

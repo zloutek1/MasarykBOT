@@ -41,7 +41,7 @@ class Logger(commands.Cog):
 
                 # insert into SQL
                 if len(message_data) > 100:
-                    self.messages_insert(message_data)
+                    await self.messages_insert(message_data)
                     message_data.clear()
 
                 # -- Attachment --
@@ -50,7 +50,7 @@ class Logger(commands.Cog):
 
                     # insert into SQL
                     if len(attachment_data) > 100:
-                        self.attachment_insert(attachment_data)
+                        await self.attachment_insert(attachment_data)
                         attachment_data.clear()
 
                 # -- Other catching up tasks --
@@ -67,12 +67,12 @@ class Logger(commands.Cog):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    def messages_insert(self, message_data):
+    async def messages_insert(self, message_data):
         self.db.executemany("INSERT INTO message (channel_id, author_id, id, content, created_at) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE content=content", message_data)
         self.db.commit()
 
     @needs_database
-    def attachment_insert(self, attachment_data):
+    async def attachment_insert(self, attachment_data):
         self.db.executemany("INSERT INTO attachment (message_id, id, filename, url) VALUES (%s, %s, %s, %s)", attachment_data)
         self.db.commit()
 
@@ -134,9 +134,9 @@ class Logger(commands.Cog):
 
         # insert leftovers
         if len(message_data) > 0:
-            self.messages_insert(message_data)
+            await self.messages_insert(message_data)
         if len(attachment_data) > 0:
-            self.attachment_insert(attachment_data)
+            await self.attachment_insert(attachment_data)
 
         # console print
         values_for = [
@@ -156,12 +156,11 @@ class Logger(commands.Cog):
     @commands.Cog.listener()
     @needs_database
     async def on_message(self, message):
-
         message_data = [(message.channel.id, message.author.id, message.id, message.content, message.created_at)]
-        self.messages_insert(message_data)
+        await self.messages_insert(message_data)
 
         attachment_data = [(message.id, attachment.id, attachment.filename, attachment.url) for attachment in message.attachments]
-        self.attachment_insert(attachment_data)
+        await self.attachment_insert(attachment_data)
 
         for task_name in self.catchup_tasks:
             for catchup_task in self.catchup_tasks[task_name]:
