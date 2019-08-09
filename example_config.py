@@ -9,13 +9,10 @@ class BotConfig:
         "host": "localhost",
         "user": "root",
         "passwd": "",
-        "database": "discord"
+        "database": "discord",
+        "use_unicode": True,
+        "autocommit": False
     }
 
-    error_rooms = (
-        123456789,
-    )
-
-    reactionmenu_channels = (
-        123456789,
-    )
+    def __getattr__(self, attr):
+        return None
