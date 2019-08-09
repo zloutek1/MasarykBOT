@@ -53,7 +53,6 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-
         ignored = (
             commands.NoPrivateMessage, commands.DisabledCommand, commands.CheckFailure,
             commands.CommandNotFound, commands.UserInputError

@@ -12,7 +12,6 @@ if __name__ == "__main__":
 
     bot = MasarykBot(
         command_prefix=when_mentioned_or(BotConfig.prefix),
-        activity=Game(name="Commands: !help"),
         case_insensitive=True,
         db_config=BotConfig.db_config
     )
@@ -23,9 +22,7 @@ if __name__ == "__main__":
         "core.admin",
         "core.help",
 
-        "cogs.reactionPicker",
         "cogs.leaderboard",
-        "cogs.confessions",
         "cogs.fun"
     ]
 

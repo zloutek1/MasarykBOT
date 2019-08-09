@@ -3,7 +3,7 @@ import sys
 import time
 
 import discord
-from discord import Color, Embed
+from discord import Color, Embed, Game
 from discord.ext.commands import Bot
 
 import traceback
@@ -15,37 +15,49 @@ from core.utils.db import Database
 
 
 class MasarykBot(Bot):
-    def __init__(self, *args, db_config={}, **kwargs):
+    def __init__(self, *args, db_config={}, activity=Game(name="Commands: !help"), **kwargs):
         super().__init__(*args, **kwargs)
 
         self.ininial_params = args, kwargs
+        self.default_activity = activity
 
         self.db_config = db_config
         self.loop.create_task(self.handle_database_connection())
+
         self.readyCogs = {}
 
-        self.loop.create_task(self.bot_ready())
+    """--------------------------------------------------------------------------------------------------------------------------"""
 
     async def handle_database_connection(self):
+        await self.wait_until_ready()
+
         attempts = 0
-        reconnected = False
         while True:
             try:
                 self.db = Database(self.db_config)
                 print("\n    [BOT] Database online: connected.\n")
 
-                if reconnected:
+                await self.change_presence(status=discord.Status.online, activity=self.default_activity)
+
+                if attempts > 0:
                     await self.trigger_event("on_ready")
+
+                await self.bot_ready()
 
                 break
 
             except db.DatabaseConnectionError as e:
                 self.db = Database()
+
                 dots = ("." * (attempts % 3 + 1) + "   ")[:3]
                 print("\r    [BOT] Database offline: reconnecting" + dots, end="")
+
+                await self.change_presence(status=discord.Status.dnd, activity=Game(name="Database offline"))
+
                 await asyncio.sleep(2)
-                reconnected = True
                 attempts += 1
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
 
     async def process_commands(self, message):
         # send custom Context instead of the discord API's Context
@@ -55,6 +67,8 @@ class MasarykBot(Bot):
             return
 
         await self.invoke(ctx)
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
 
     def handle_exit(self):
         # finish runnings tasks and logout bot
@@ -77,6 +91,8 @@ class MasarykBot(Bot):
             except asyncio.CancelledError:
                 pass
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     def start(self, *args, **kwargs):
         while True:
             try:
@@ -93,14 +109,17 @@ class MasarykBot(Bot):
             print("Bot restarting")
             super().__init__(*self.ininial_params[0], **self.ininial_params[1])
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     async def bot_ready(self):
-        await self.wait_until_ready()
         while True:
             await asyncio.sleep(1)
             if all(self.readyCogs.values()):
                 break
 
         self.intorduce()
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
 
     def intorduce(self):
         bot_name = self.user.name.encode(errors='replace').decode()
@@ -130,6 +149,8 @@ class MasarykBot(Bot):
                  /&&&.                 \n""")
         print("     [BOT] {0} ready to serve! \n\n\n".format(bot_name))
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     async def trigger_event(self, event_name, *args, **kwargs):
         events = []
         for cog_name, cog in self.cogs.items():
@@ -141,11 +162,22 @@ class MasarykBot(Bot):
 
             events += event
 
+        if hasattr(self, event_name):
+            events.append(getattr(self, event_name))
+
         for event in events:
             await event(*args, **kwargs)
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     async def on_error(self, event, *args, **kwargs):
-        exc = traceback.format_exception(*sys.exc_info(), chain=False)
+        exc_type, exc_value, exc_traceback = sys.exc_info()
+
+        if exc_type is db.DatabaseConnectionError:
+            # self.loop.create_task(self.handle_database_connection())
+            return
+
+        exc = traceback.format_exception(exc_type, exc_value, exc_traceback, chain=False)
 
         description = '```py\n%s\n```' % ''.join(exc)
         time = datetime.datetime.utcnow()
