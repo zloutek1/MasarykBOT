@@ -68,7 +68,3 @@ class Database:
             raise ValueError(f"In {self.__class__} both self.conn and self.cursor have attibute {attr}, please be more specific")
 
         raise ValueError(f"{self.__class__} has no attribute {attr}")
-
-    def __del__(self):
-        if self.cursor:
-            self.cursor.close()
