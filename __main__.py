@@ -22,6 +22,7 @@ if __name__ == "__main__":
         "core.admin",
         "core.help",
 
+        "cogs.reactionPicker",
         "cogs.leaderboard",
         "cogs.fun"
     ]

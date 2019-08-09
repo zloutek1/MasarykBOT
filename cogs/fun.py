@@ -1,7 +1,9 @@
 import discord
 from discord.ext import commands
-from discord import Colour, Embed, Member, Object, File, PartialEmoji
+from discord import Color, Embed, Member, Object, File, PartialEmoji
 
+import os
+import requests
 from random import shuffle, choice
 
 
@@ -26,11 +28,25 @@ class Fun(commands.Cog):
         for i in range(0, len(emojis), 10):
             await ctx.send(" ".join(list(map(str, emojis[i:i + 10]))))
 
+        if len(emojis) == 0:
+            await ctx.send("This guild has not emojis")
+
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.command()
     async def emoji_url(self, ctx, emoji: PartialEmoji):
         await ctx.send(emoji.url)
+
+    @commands.command()
+    async def emoji(self, ctx, emoji: PartialEmoji):
+        filename = 'assets/cogs_fun_emoji.{ext}'.format(
+            ext="png" if not emoji.animated else "gif")
+
+        with open(filename, 'wb') as file:
+            file.write(requests.get(emoji.url).content)
+        await ctx.send(file=File(filename))
+
+        os.remove(filename)
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
