@@ -34,7 +34,7 @@ class Logger(commands.Cog):
             return
 
         try:
-            async for message in channel.history(limit=10000, after=since, before=until, oldest_first=True):
+            async for message in channel.history(limit=500000, after=since, before=until, oldest_first=True):
 
                 # -- Message --
                 message_data += [(message.channel.id, message.author.id, message.id, message.content, message.created_at)]
