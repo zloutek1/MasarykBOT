@@ -175,7 +175,7 @@ class PaginatedHelpCommand(commands.HelpCommand):
         await pages.paginate()
 
 
-class Meta(commands.Cog):
+class Help(commands.Cog):
     """Commands for utilities related to Discord or the Bot itself."""
 
     def __init__(self, bot):
@@ -194,4 +194,4 @@ class Meta(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(Meta(bot))
+    bot.add_cog(Help(bot))
