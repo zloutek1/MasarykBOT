@@ -29,7 +29,7 @@ class Leaderboard(commands.Cog):
 
     @commands.command()
     @needs_database
-    async def leaderboard(self, ctx, channel: Optional[Union[TextChannel, Member]] = None, member: Optional[Union[Member, TextChannel]] = None):
+    async def leaderboard(self, ctx, channel: Union[TextChannel, Member] = None, member: Union[Member, TextChannel] = None):
 
         channel, member = (channel if isinstance(channel, TextChannel) else
                            member if isinstance(member, TextChannel) else
@@ -111,7 +111,7 @@ class Leaderboard(commands.Cog):
 
         author_index = core.utils.index(rows1, author=author.name)
 
-        template = "`{index:0>2}.` {medal} `\u3000{count: >{top}}` {author}"
+        template = "`{index:0>2}.` {medal} `{count:\u0000>{top}}` {author}"
 
         embed = Embed(color=0x53acf2)
         if not member:
