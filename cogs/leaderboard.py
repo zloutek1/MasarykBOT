@@ -20,8 +20,8 @@ class Leaderboard(commands.Cog):
     @needs_database
     async def catchup_leaderboard(self, message):
         self.db.execute("""
-            INSERT INTO leaderboard (guild_id, channel_id, author_id, messages_sent, `timestamp`) VALUES (%s, %s, %s, %s, %s)
-                        ON DUPLICATE KEY UPDATE messages_sent=messages_sent+1, `timestamp`=%s
+            INSERT IGNORE INTO leaderboard (guild_id, channel_id, author_id, messages_sent, `timestamp`) VALUES (%s, %s, %s, %s, %s)
+                        ON DUPLICATE KEY UPDATE IGNORE messages_sent=messages_sent+1, `timestamp`=%s
                     """, (message.guild.id, message.channel.id, message.author.id, 1, message.created_at, message.created_at))
         self.db.commit()
 
