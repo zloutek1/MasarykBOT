@@ -8,84 +8,190 @@ import core.utils.get
 from core.utils.paginator import Pages
 
 
-class Help(commands.Cog):
-    def __init__(self, bot: Bot):
-        self.bot = bot
+class HelpPaginator(Pages):
+    def __init__(self, help_command, ctx, entries, *, per_page=4):
+        super().__init__(ctx, entries=entries, per_page=per_page)
+        self.reaction_emojis.append(('\N{WHITE QUESTION MARK ORNAMENT}', self.show_bot_help))
+        self.total = len(entries)
+        self.help_command = help_command
+        self.prefix = help_command.clean_prefix
+        self.is_bot = False
 
-        self.bot.remove_command("help")
+    def get_bot_page(self, page):
+        cog, description, commands = self.entries[page - 1]
+        self.title = f'{cog} Commands'
+        self.description = description
+        return commands
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    def prepare_embed(self, entries, page, *, first=False):
+        self.embed.clear_fields()
+        self.embed.title = self.title
 
-    @commands.command()
-    @has_permissions(add_reactions=True, embed_links=True)
-    async def help(self, ctx, *, command=None):
-        """Gets all cogs and commands of mine."""
-        def key(c):
-            return c.cog_name or '\u200bMisc'
+        self.embed.set_footer(text=f'Use "{self.prefix}help command" for more info on a command.')
 
-        if not command:
-            entries = []
-            commands = sorted(ctx.bot.commands, key=key)
-            for cog, commands in itertools.groupby(commands, key=key):
-                plausible = [cmd for cmd in commands if (await self._can_run(cmd, ctx)) and not cmd.hidden]
-                if len(plausible) == 0:
-                    continue
+        cmds = ""
+        for entry in entries:
+            signature = f'**» {entry.qualified_name} {entry.signature}**\n'
+            cmds += signature
+        self.embed.description = cmds
 
-                for entry in plausible:
-                    entries.append(self._command_signature(entry))
+        if self.maximum_pages:
+            self.embed.set_author(name=f'Page {page}/{self.maximum_pages} ({self.total} commands)')
 
-            p = Pages(ctx, entries=entries, per_page=10, title="Commands", template="**»** {entry}")
-            await p.paginate()
+    async def show_help(self):
+        """shows this message"""
 
+        self.embed.title = 'Paginator help'
+        self.embed.description = 'Hello! Welcome to the help page.'
+
+        messages = [f'{emoji} {func.__doc__}' for emoji, func in self.reaction_emojis]
+        self.embed.clear_fields()
+        self.embed.add_field(name='What are these reactions for?', value='\n'.join(messages), inline=False)
+
+        self.embed.set_footer(text=f'We were on page {self.current_page} before this message.')
+        await self.message.edit(embed=self.embed)
+
+        async def go_back_to_current_page():
+            await asyncio.sleep(30.0)
+            await self.show_current_page()
+
+        self.bot.loop.create_task(go_back_to_current_page())
+
+    async def show_bot_help(self):
+        """shows how to use the bot"""
+
+        self.embed.title = 'Using the bot'
+        self.embed.description = 'Hello! Welcome to the help page.'
+        self.embed.clear_fields()
+
+        entries = (
+            ('<argument>', 'This means the argument is __**required**__.'),
+            ('[argument]', 'This means the argument is __**optional**__.'),
+            ('[A|B]', 'This means the it can be __**either A or B**__.'),
+            ('[argument...]', 'This means you can have multiple arguments.\n'
+                              'Now that you know the basics, it should be noted that...\n'
+                              '__**You do not type in the brackets!**__')
+        )
+
+        self.embed.add_field(name='How do I use this bot?', value='Reading the bot signature is pretty simple.')
+
+        for name, value in entries:
+            self.embed.add_field(name=name, value=value, inline=False)
+
+        self.embed.set_footer(text=f'We were on page {self.current_page} before this message.')
+        await self.message.edit(embed=self.embed)
+
+        async def go_back_to_current_page():
+            await asyncio.sleep(30.0)
+            await self.show_current_page()
+
+        self.bot.loop.create_task(go_back_to_current_page())
+
+
+class PaginatedHelpCommand(commands.HelpCommand):
+    def __init__(self):
+        super().__init__(command_attrs={
+            'cooldown': commands.Cooldown(1, 3.0, commands.BucketType.member),
+            'help': 'Shows help about the bot, a command, or a category'
+        })
+
+    async def on_help_command_error(self, ctx, error):
+        if isinstance(error, commands.CommandInvokeError):
+            await ctx.send(str(error.original))
+
+    def get_command_signature(self, command):
+        parent = command.full_parent_name
+        if len(command.aliases) > 0:
+            aliases = '|'.join(command.aliases)
+            fmt = f'[{command.name}|{aliases}]'
+            if parent:
+                fmt = f'{parent} {fmt}'
+            alias = fmt
         else:
-            plausible = [cmd for cmd in ctx.bot.commands if (await self._can_run(cmd, ctx)) and not cmd.hidden]
-            entry = core.utils.get(plausible, name=command)
+            alias = command.name if not parent else f'{parent} {command.name}'
+        return f'{alias} {command.signature}'
 
-            if entry:
-                p = Pages(ctx, entries=[self._command_signature(entry)], per_page=10, title="Command", template="**»** {entry}")
-                await p.paginate()
+    async def send_bot_help(self, mapping):
+        def key(c):
+            return c.cog_name or '\u200bNo Category'
 
-            else:
-                embed = discord.Embed(title="Help Error", description=f"Command {command} not found. Try !help to get list of available commands.", color=discord.Color.red())
-                await ctx.send(embed=embed)
+        bot = self.context.bot
+        entries = await self.filter_commands(bot.commands, sort=True, key=key)
+        nested_pages = []
+        per_page = 9
+        total = 0
 
-    @staticmethod
-    async def _can_run(cmd, ctx):
-        try:
-            return await cmd.can_run(ctx)
-        except:
-            return False
+        for cog, commands in itertools.groupby(entries, key=key):
+            commands = sorted(commands, key=lambda c: c.name)
+            if len(commands) == 0:
+                continue
 
-    @staticmethod
-    def _command_signature(cmd):
-        # this is modified from discord.py source
-        # which I wrote myself lmao
+            total += len(commands)
+            actual_cog = bot.get_cog(cog)
+            # get the description if it exists (and the cog is valid) or return Empty embed.
+            description = (actual_cog and actual_cog.description) or discord.Embed.Empty
+            nested_pages.extend((cog, description, commands[i:i + per_page]) for i in range(0, len(commands), per_page))
 
-        result = [cmd.qualified_name]
-        if cmd.usage:
-            result.append(cmd.usage)
-            return ' '.join(result)
+        # a value of 1 forces the pagination session
+        pages = HelpPaginator(self, self.context, nested_pages, per_page=1)
 
-        params = cmd.clean_params
-        if not params:
-            return ' '.join(result)
+        # swap the get_page implementation to work with our nested pages.
+        pages.get_page = pages.get_bot_page
+        pages.is_bot = True
+        pages.total = total
 
-        for name, param in params.items():
-            if param.default is not param.empty:
-                # We don't want None or '' to trigger the [name=value] case and instead it should
-                # do [name] since [name=None] or [name=] are not exactly useful for the user.
-                should_print = param.default if isinstance(param.default, str) else param.default is not None
-                if should_print:
-                    result.append(f'[{name}={param.default!r}]')
-                else:
-                    result.append(f'[{name}]')
-            elif param.kind == param.VAR_POSITIONAL:
-                result.append(f'[{name}...]')
-            else:
-                result.append(f'<{name}>')
+        await pages.paginate()
 
-        return ' '.join(result)
+    async def send_cog_help(self, cog):
+        entries = await self.filter_commands(cog.get_commands(), sort=True)
+        pages = HelpPaginator(self, self.context, entries)
+        pages.title = f'{cog.qualified_name} Commands'
+        pages.description = cog.description
+
+        await pages.paginate()
+
+    def common_command_formatting(self, page_or_embed, command):
+        page_or_embed.title = self.get_command_signature(command)
+        if command.description:
+            page_or_embed.description = f'{command.description}\n\n{command.help}'
+        else:
+            page_or_embed.description = command.help or 'No help found...'
+
+    async def send_command_help(self, command):
+        # No pagination necessary for a single command.
+        embed = discord.Embed(colour=discord.Colour.blurple())
+        self.common_command_formatting(embed, command)
+        await self.context.send(embed=embed)
+
+    async def send_group_help(self, group):
+        subcommands = group.commands
+        if len(subcommands) == 0:
+            return await self.send_command_help(group)
+
+        entries = await self.filter_commands(subcommands, sort=True)
+        pages = HelpPaginator(self, self.context, entries)
+        self.common_command_formatting(pages, group)
+
+        await pages.paginate()
+
+
+class Meta(commands.Cog):
+    """Commands for utilities related to Discord or the Bot itself."""
+
+    def __init__(self, bot):
+        self.bot = bot
+        self.old_help_command = bot.help_command
+        bot.help_command = PaginatedHelpCommand()
+        bot.help_command.cog = self
+
+    def cog_unload(self):
+        self.bot.help_command = self.old_help_command
+
+    @commands.command(hidden=True)
+    async def hello(self, ctx):
+        """Displays my intro message."""
+        await ctx.send('Hello! I\'m a robot! Zloutek1 made me.')
 
 
 def setup(bot):
-    bot.add_cog(Help(bot))
+    bot.add_cog(Meta(bot))
