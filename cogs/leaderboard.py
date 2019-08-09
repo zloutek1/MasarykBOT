@@ -17,6 +17,14 @@ class Leaderboard(commands.Cog):
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
+    @needs_database
+    async def catchup_leaderboard(self, message):
+        self.db.execute("""
+            INSERT INTO leaderboard (guild_id, channel_id, author_id, messages_sent, `timestamp`) VALUES (%s, %s, %s, %s, %s)
+                        ON DUPLICATE KEY UPDATE messages_sent=messages_sent+1, `timestamp`=%s
+                    """, (message.guild.id, message.channel.id, message.author.id, 1, message.created_at, message.created_at))
+        self.db.commit()
+
     @commands.Cog.listener()
     async def on_ready(self):
         self.bot.readyCogs[self.__class__.__name__] = False
@@ -153,14 +161,6 @@ class Leaderboard(commands.Cog):
             2: core.utils.get(self.bot.emojis, name="silver_medal"),
             3: core.utils.get(self.bot.emojis, name="bronze_medal")
         }.get(i, core.utils.get(self.bot.emojis, name="BLANK"))
-
-    @needs_database
-    async def catchup_leaderboard(self, message):
-        self.db.execute("""
-            INSERT INTO leaderboard (guild_id, channel_id, author_id, messages_sent, `timestamp`) VALUES (%s, %s, %s, %s, %s)
-                        ON DUPLICATE KEY UPDATE messages_sent=messages_sent+1, `timestamp`=%s
-                    """, (message.guild.id, message.channel.id, message.author.id, 1, message.created_at, message.created_at))
-        self.db.commit()
 
 
 def setup(bot):

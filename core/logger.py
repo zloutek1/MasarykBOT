@@ -68,12 +68,12 @@ class Logger(commands.Cog):
 
     @needs_database
     async def messages_insert(self, message_data):
-        self.db.executemany("INSERT INTO message (channel_id, author_id, id, content, created_at) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE content=content", message_data)
+        self.db.executemany("INSERT IGNORE INTO message (channel_id, author_id, id, content, created_at) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE content=content", message_data)
         self.db.commit()
 
     @needs_database
     async def attachment_insert(self, attachment_data):
-        self.db.executemany("INSERT INTO attachment (message_id, id, filename, url) VALUES (%s, %s, %s, %s)", attachment_data)
+        self.db.executemany("INSERT IGNORE INTO attachment (message_id, id, filename, url) VALUES (%s, %s, %s, %s)", attachment_data)
         self.db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
