@@ -1,14 +1,15 @@
 from discord.ext import commands
 
 
-def needs_embed(ctx):
-    if not isinstance(ctx.channel, discord.abc.GuildChannel):
-        return True
-    if ctx.channel.permissions_for(ctx.guild.me).embed_links:
-        return True
-    raise exceptions.EmbedError
+def needs_database(func):
+    async def wrapper(self, *args, **kwargs):
+        if not hasattr(self.bot, "db"):
+            return False
 
+        self.db = self.bot.db.connect()
+        if not self.db:
+            return False
 
-@commands.check
-def needs_database(ctx):
-    return bool(ctx.db)
+        return await func(self, *args, **kwargs)
+    wrapper.__name__ = func.__name__
+    return wrapper

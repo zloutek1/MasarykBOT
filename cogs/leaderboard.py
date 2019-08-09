@@ -98,12 +98,12 @@ class Leaderboard(commands.Cog):
             SELECT * from (SELECT * FROM first_table UNION ALL SELECT * FROM middle_table UNION ALL SELECT * FROM last_table) result ORDER BY `count` DESC;
         """
 
-        ctx.db.execute(top10_SQL, params)
-        rows1 = ctx.db.fetchall()
+        self.db.execute(top10_SQL, params)
+        rows1 = self.db.fetchall()
 
-        result = ctx.db.execute(member_SQL, params, multi=True)
+        result = self.db.execute(member_SQL, params, multi=True)
         rows2 = list(result)[10].fetchall()
-        ctx.db.commit()
+        self.db.commit()
 
         """
         print the leaderboard
@@ -154,12 +154,13 @@ class Leaderboard(commands.Cog):
             3: core.utils.get(self.bot.emojis, name="bronze_medal")
         }.get(i, core.utils.get(self.bot.emojis, name="BLANK"))
 
-    async def catchup_leaderboard(self, db, message):
-        db.execute("""
+    @needs_database
+    async def catchup_leaderboard(self, message):
+        self.db.execute("""
             INSERT INTO leaderboard (guild_id, channel_id, author_id, messages_sent, `timestamp`) VALUES (%s, %s, %s, %s, %s)
                         ON DUPLICATE KEY UPDATE messages_sent=messages_sent+1, `timestamp`=%s
                     """, (message.guild.id, message.channel.id, message.author.id, 1, message.created_at, message.created_at))
-        db.commit()
+        self.db.commit()
 
 
 def setup(bot):

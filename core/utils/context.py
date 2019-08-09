@@ -11,5 +11,3 @@ from config import BotConfig
 class Context(commands.Context):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self.db = self.bot.db.connect()

@@ -36,8 +36,11 @@ class Database:
 
     @_handle_errors
     def connect(self):
-        if self.conn is None or not self.conn.is_connected():
+        if self.conn is None:
             return False
+
+        if not self.conn.is_connected():
+            raise DatabaseConnectionError()
 
         db = Database(conn=self.conn)
         db.cursor = _handle_errors(self.conn.cursor)(dictionary=True)
