@@ -19,6 +19,10 @@ class Leaderboard(commands.Cog):
 
     @needs_database
     async def catchup_leaderboard(self, message):
+        c = message.content.lower()
+        if c.startswith("!") or c.startswith("pls"):
+            return
+
         self.db.execute("""
             INSERT IGNORE INTO leaderboard (guild_id, channel_id, author_id, messages_sent, `timestamp`) VALUES (%s, %s, %s, %s, %s)
                         ON DUPLICATE KEY UPDATE messages_sent=messages_sent+1, `timestamp`=%s
@@ -109,8 +113,11 @@ class Leaderboard(commands.Cog):
         self.db.execute(top10_SQL, params)
         rows1 = self.db.fetchall()
 
-        result = self.db.execute(member_SQL, params, multi=True)
-        rows2 = list(result)[10].fetchall()
+        results = self.db.execute(member_SQL, params, multi=True)
+        for result in results:
+            pass
+        rows2 = result.fetchall()
+
         self.db.commit()
 
         """
