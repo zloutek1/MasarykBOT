@@ -122,7 +122,7 @@ class Logger(commands.Cog):
         rows = self.db.fetchall()
 
         # insert messages into database
-        for channel in channels:
+        for i, channel in enumerate(channels):
             row = core.utils.get(rows, channel_id=channel.id)
             since = None
 
@@ -130,7 +130,11 @@ class Logger(commands.Cog):
                 since = row["created_at"]
                 since += timedelta(seconds=1)
 
+            padding = " " * (max(map(lambda ch: len(ch.name), channels)) - len(channel.name))
+            print("\r    [Logger] Updating database for {}. {}/{}".format(channel, i + 1, len(channels)) + padding, end="")
+
             await self.log_messages(channel, since, message_data, attachment_data)
+        print()
 
         # insert leftovers
         if len(message_data) > 0:
