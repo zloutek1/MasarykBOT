@@ -228,31 +228,54 @@ class Logger(commands.Cog):
 
         self.bot.readyCogs[self.__class__.__name__] = True
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     @commands.Cog.listener()
     @needs_database
     async def on_message(self, message):
         message_data = (message.channel.id, message.author.id, message.id, message.content, message.created_at)
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
+        await self.db.execute("""
+            INSERT INTO message
+                (channel_id, author_id, id, content, created_at)
+            VALUES (%s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE id=id
+        """, message_data)
+        await self.db.commit()
 
     @commands.Cog.listener()
     @needs_database
     async def on_raw_message_edit(self, payload):
-        message_data = (payload.data["guild_id"], payload.data["channel_id"], payload.data["id"], payload.data["content"])
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
+        message_data = (payload.data.get("content", ""), payload.data["channel_id"], payload.data["id"])
+        await self.db.execute("""
+            UPDATE message
+            SET content = %s
+            WHERE channel_id = %s AND id = %s
+        """, message_data)
+        await self.db.commit()
 
     @commands.Cog.listener()
     @needs_database
     async def on_raw_message_delete(self, payload):
-        message_data = (payload.guild_id, payload.channel_id, payload.message_id)
+        message_data = (payload.channel_id, payload.message_id)
+        await self.db.execute("""
+            UPDATE message
+            SET deleted_at = NOW()
+            WHERE channel_id = %s AND id = %s
+        """, message_data)
+        await self.db.commit()
 
 
     @commands.Cog.listener()
     @needs_database
     async def on_raw_bulk_message_delete(self, payload):
-        messages_data = [(payload.guild_id, payload.channel_id, message_id)
+        messages_data = [(payload.channel_id, message_id)
                          for message_id in payload.message_ids]
+        await self.db.executemany("""
+            UPDATE message
+            SET deleted_at = NOW()
+            WHERE channel_id = %s AND id = %s
+        """, messages_data)
+        await self.db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -260,21 +283,35 @@ class Logger(commands.Cog):
     @needs_database
     async def on_guild_join(self, guild):
         guild_data = (guild.id, guild.name, str(guild.icon_url))
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
+        await self.db.execute("""
+            INSERT INTO guild (id, name, icon_url)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE id=id
+        """, guild_data)
+        await self.db.commit()
 
     @commands.Cog.listener()
     @needs_database
     async def on_guild_update(self, before, after):
         guild_data = (before.id, before.name, str(before.icon_url),
                       after.id, after.name, str(after.icon_url))
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
+        await self.db.execute("""
+            UPDATE guild
+            SET id=%s, name=%s, icon_url=%s
+            WHERE id=%s AND name=%s AND icon_url=%s
+        """, guild_data)
+        await self.db.commit()
 
     @commands.Cog.listener()
     @needs_database
     async def on_guild_remove(self, guild):
         guild_data = (guild.id, guild.name)
+        await self.db.execute("""
+            UPDATE guild
+            SET deleted_at=NOW()
+            WHERE id=%s AND name=%s
+        """, guild_data)
+        await self.db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -290,10 +327,22 @@ class Logger(commands.Cog):
     @needs_database
     async def on_category_create(self, category):
         category_data = (category.guild.id, category.id, category.name, category.position)
+        await self.db.execute("""
+            INSERT INTO category (guild_id, id, name, position)
+            VALUES (%s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE id=id
+        """, category_data)
+        await self.db.commit()
 
     @needs_database
     async def on_text_channel_create(self, text_channel):
         channel_data = (text_channel.guild.id, text_channel.category_id, text_channel.id, text_channel.name, text_channel.position)
+        await self.db.executemany("""
+            INSERT INTO channel (guild_id, category_id, id, name, position)
+            VALUES (%s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE id=id
+        """, channel_data)
+        await self.db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -309,11 +358,23 @@ class Logger(commands.Cog):
     @needs_database
     async def on_category_update(self, before, after):
         category_data = (before.guild.id, before.id, before.name, before.position, after.guild.id, after.id, after.name, after.position)
+        await self.db.execute("""
+            UPDATE category
+            SET guild_id=%s, id=%s, name=%s, position=%s
+            WHERE guild_id=%s AND id=%s AND name=%s AND position=%s
+        """, category_data)
+        await self.db.commit()
 
     @needs_database
     async def on_text_channel_update(self, before, after):
         channel_data = (before.guild.id, before.category_id, before.id, before.name, before.position,
             after.guild.id, after.category_id, after.id, after.name, after.position)
+        await self.db.executemany("""
+            UPDATE channel
+            SET guild_id=%s, category_id=%s, id=%s, name=%s, position=%s
+            WHERE guild_id=%s AND category_id=%s AND id=%s AND name=%s AND position=%s
+        """, channel_data)
+        await self.db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -327,12 +388,24 @@ class Logger(commands.Cog):
             await on_text_channel_delete(channel)
 
     @needs_database
-    async def on_category_update(self, category):
+    async def on_category_delete(self, category):
         category_data = (category.guild.id, category.id)
+        await self.db.execute("""
+            UPDATE category
+            SET deleted_at=NOW()
+            WHERE guild_id=%s AND id=%s
+        """, category_data)
+        await self.db.commit()
 
     @needs_database
-    async def on_text_channel_update(self, text_channel):
+    async def on_text_channel_delete(self, text_channel):
         channel_data = (text_channel.guild.id, text_channel.id)
+        await self.db.executemany("""
+            UPDATE channel
+            SET deleted_at=NOW()
+            WHERE guild_id=%s AND id=%s
+        """, channel_data)
+        await self.db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -340,6 +413,12 @@ class Logger(commands.Cog):
     @needs_database
     async def on_member_join(self, member):
         member_data = (member.id, member.name, str(member.avatar_url))
+        await self.db.executemany("""
+            INSERT INTO `member` (id, name, avatar_url)
+            VALUES (%s, %s, %s)
+            ON DUPLICATE KEY UPDATE id=id
+        """, member_data)
+        await self.db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -348,6 +427,12 @@ class Logger(commands.Cog):
     async def on_user_update(self, before, after):
         member_data = (before.id, before.name, str(before.avatar_url),
                        after.id, after.name, str(after.avatar_url))
+        await self.db.executemany("""
+            UPDATE `member`
+            SET id=%s, name=%s, avatar_url=%s
+            WHERE id=%s AND name=%s AND avatar_url=%s
+        """, member_data)
+        await self.db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -355,6 +440,13 @@ class Logger(commands.Cog):
     @needs_database
     async def on_member_remove(self, member):
         member_data = (member.id,)
+        await self.db.executemany("""
+            UPDATE `member`
+            SET deleted_at=NOW()
+            WHERE id=%s
+        """, member_data)
+        await self.db.commit()
+
 
 
 def setup(bot):
