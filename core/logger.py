@@ -21,60 +21,165 @@ class Logger(commands.Cog):
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
-    def add_catchup_task(self, name, task):
+    def add_catchup_task(self, name, task_get, task_insert):
         self.catchup_tasks.setdefault(name, [])
-        self.catchup_tasks[name].append(task)
+        self.catchup_tasks[name].append({
+            "get": task_get,
+            "insert": task_insert,
+            "data": []})
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
-    async def log_messages(self, channel, since, message_data, attachment_data):
-        until = datetime.now()
-
-        if not channel.last_message_id:
-            return
-
-        try:
-            async for message in channel.history(limit=500000, after=since, before=until, oldest_first=True):
-
-                # -- Message --
-                message_data += [(message.channel.id, message.author.id, message.id, message.content, message.created_at)]
-
-                # insert into SQL
-                if len(message_data) > 100:
-                    await self.messages_insert(message_data)
-                    message_data.clear()
-
-                # -- Attachment --
-                for attachment in message.attachments:
-                    attachment_data += [(message.id, attachment.id, attachment.filename, attachment.url)]
-
-                    # insert into SQL
-                    if len(attachment_data) > 100:
-                        await self.attachment_insert(attachment_data)
-                        attachment_data.clear()
-
-                # -- Other catching up tasks --
-                for task_name in self.catchup_tasks:
-                    for catchup_task in self.catchup_tasks[task_name]:
-                        await catchup_task(message)
-
-        except discord.Forbidden:
-            pass
-
-        except discord.errors.NotFound:
-            pass
+    @staticmethod
+    def chunks(l, n):
+        """Yield successive n-sized chunks from l."""
+        for i in range(0, len(l), n):
+            yield l[i:i + n]
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def messages_insert(self, message_data):
-        self.db.executemany("INSERT IGNORE INTO message (channel_id, author_id, id, content, created_at) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE content=content", message_data)
-        self.db.commit()
+    async def backup_guilds(self, guilds):
+        guilds_data = [(g.id, g.name, str(g.icon_url))
+                       for g in guilds]
+
+        chunks = self.chunks(guilds_data, 550)
+        for chunk in chunks:
+            await self.db.executemany("""
+                INSERT INTO guild (id, name, icon_url)
+                VALUES (%s, %s, %s)
+                ON DUPLICATE KEY UPDATE id=id""", chunk)
+        await self.db.commit()
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def attachment_insert(self, attachment_data):
-        self.db.executemany("INSERT IGNORE INTO attachment (message_id, id, filename, url) VALUES (%s, %s, %s, %s)", attachment_data)
-        self.db.commit()
+    async def backup_categories(self, categories):
+        category_data = [(c.guild.id, c.id, c.name, c.position)
+                         for c in categories]
+
+        chunks = self.chunks(category_data, 550)
+        for chunk in chunks:
+            await self.db.executemany("""
+                INSERT INTO category (guild_id, id, name, position)
+                VALUES (%s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE id=id""", chunk)
+        await self.db.commit()
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @needs_database
+    async def backup_text_channels(self, text_channels):
+        channels_data = [(c.guild.id, c.category_id, c.id, c.name, c.position)
+                         for c in text_channels]
+
+        chunks = self.chunks(channels_data, 550)
+        for chunk in chunks:
+            await self.db.executemany("""
+                INSERT INTO channel (guild_id, category_id, id, name, position)
+                VALUES (%s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE id=id""", chunk)
+        await self.db.commit()
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @needs_database
+    async def backup_users(self, users):
+        users_data = [(u.id, u.name, str(u.avatar_url))
+                      for u in users]
+
+        chunks = self.chunks(users_data, 550)
+        for chunk in chunks:
+            await self.db.executemany("""
+                INSERT INTO `member` (id, name, avatar_url)
+                VALUES (%s, %s, %s)
+                ON DUPLICATE KEY UPDATE id=id""", chunk)
+        await self.db.commit()
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @needs_database
+    async def backup_messages(self, in_channels):
+        await self.db.execute("""
+            UPDATE logger SET to_date=NOW() WHERE state='failed';
+            UPDATE logger SET from_date=to_date, to_date=NOW() WHERE state='success';
+            UPDATE logger SET state='failed', finished_at=NULL;
+        """)
+        await self.db.commit()
+
+        await self.db.execute("SELECT * FROM logger")
+        row = await self.db.fetchone()
+
+        ##
+        # backup messages for each channel
+        ##
+        for i, channel in enumerate(in_channels):
+            print("    [Logger] Backing up messages in", channel, f"({i} / {len(in_channels)})")
+
+            authors_data = set()
+            messages_data = []
+            attachments_data = []
+
+            await self.get_messages(channel, authors_data, messages_data, attachments_data, after=row["from_date"], before=row["to_date"])
+
+            await self.backup_users(list(authors_data))
+            await self.backup_messages_in(channel, messages_data)
+            await self.backup_attachments_in(channel, attachments_data)
+
+            for task_name in self.catchup_tasks:
+                for catchup_task in self.catchup_tasks[task_name]:
+                    catchup_task_insert = catchup_task["insert"]
+                    await catchup_task_insert(catchup_task["data"])
+                    catchup_task["data"].clear()
+
+        await self.db.execute("UPDATE logger SET state='success', finished_at=NOW() WHERE state='failed'")
+        await self.db.commit()
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @needs_database
+    async def get_messages(self, channel, authors_data, messages_data, attachments_data, after=None, before=None):
+
+        async for message in channel.history(
+                limit=1_000_000, after=after, before=before, oldest_first=True):
+
+            # -- Author --
+            authors_data.add(message.author)
+
+            # -- Message --
+            messages_data += [(message.channel.id, message.author.id, message.id, message.content, message.created_at)]
+
+            # -- Attachment --
+            attachments_data += [(message.id, a.id, a.filename, a.url)
+                                 for a in message.attachments]
+
+            # -- Other catching up tasks --
+            for task_name in self.catchup_tasks:
+                for catchup_task in self.catchup_tasks[task_name]:
+                    catchup_task_get = catchup_task["get"]
+                    await catchup_task_get(message, catchup_task["data"])
+
+    @needs_database
+    async def backup_messages_in(self, channel, messages_data):
+        chunks = self.chunks(messages_data, 550)
+        for chunk in chunks:
+            await self.db.executemany("""
+                INSERT INTO message
+                    (channel_id, author_id, id, content, created_at)
+                VALUES (%s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE id=id""", chunk)
+        await self.db.commit()
+
+    @needs_database
+    async def backup_attachments_in(self, channel, attachments_data):
+        chunks = self.chunks(attachments_data, 550)
+        for chunk in chunks:
+            await self.db.executemany("""
+                INSERT INTO attachment
+                    (message_id, id, filename, url)
+                VALUES (%s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE id=id""", chunk)
+        await self.db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -83,197 +188,22 @@ class Logger(commands.Cog):
     async def on_ready(self):
         self.bot.readyCogs[self.__class__.__name__] = False
 
-        # get discord objects
         guilds = self.bot.guilds
-        categories = [category for guild in guilds for category in guild.categories]
-        channels = [channel for guild in guilds for channel in guild.text_channels]
-        members = [member for guild in guilds for member in guild.members]
-        webhooks = [webhook for guild in guilds for webhook in await guild.webhooks()]
+        categories = [c for guild in guilds for c in guild.categories]
+        text_channels = [c for guild in guilds for c in guild.text_channels]
+        users = [m for guild in guilds for m in guild.members]
 
-        # get SQL data
-        guild_data = [(guild.id, guild.name, str(guild.icon_url))
-                      for guild in guilds]
-        category_data = [(category.guild.id, category.id, category.name, category.position)
-                         for category in categories]
-        channel_data = [(channel.guild.id, channel.category_id, channel.id, channel.name, channel.position)
-                        for channel in channels]
-        member_data = ([(member.id, member.name, str(member.avatar_url))
-                        for member in members] +
-                       [(webhook.id, webhook.name, str(webhook.avatar_url))
-                        for webhook in webhooks])
+        print("    [Logger] Begining backup")
+        await self.backup_guilds(guilds)
+        await self.backup_categories(categories)
+        await self.backup_text_channels(text_channels)
+        await self.backup_users(users)
+        print("    [Logger] Backed up guilds, categories, text_channels, users\n")
 
-        # insert into SQL
-        self.db.executemany("INSERT INTO guild (id, name, icon_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE name=name", guild_data)
-        self.db.executemany("INSERT INTO category (guild_id, id, name, position) VALUES (%s, %s, %s, %s) ON DUPLICATE KEY UPDATE name=name", category_data)
-        self.db.executemany("INSERT INTO channel (guild_id, category_id, id, name, position) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE name=name", channel_data)
-        self.db.executemany("INSERT INTO `member` (id, name, avatar_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE name=name", member_data)
-        self.db.commit()
-
-        # console print
-        print("    [Logger] Updated database for: guilds, categories, channels, members")
-        print()
-
-        # get SQL data
-        message_data = []
-        attachment_data = []
-
-        # get last send message time in each channel
-        self.db.execute("SELECT channel_id, MAX(created_at) AS created_at FROM (SELECT * FROM `message` WHERE 1) AS res1 GROUP BY channel_id")
-        rows = self.db.fetchall()
-
-        # insert messages into database
-        for i, channel in enumerate(channels):
-            row = core.utils.get(rows, channel_id=channel.id)
-            since = None
-
-            if row:
-                since = row["created_at"]
-                since += timedelta(seconds=1)
-
-            padding = " " * (max(map(lambda ch: len(ch.name), channels)) - len(channel.name))
-            print("\r    [Logger] Updating database for {}. {}/{}".format(channel, i + 1, len(channels)) + padding, end="")
-
-            await self.log_messages(channel, since, message_data, attachment_data)
-        print()
-
-        # insert leftovers
-        if len(message_data) > 0:
-            await self.messages_insert(message_data)
-        if len(attachment_data) > 0:
-            await self.attachment_insert(attachment_data)
-
-        # console print
-        values_for = [
-            "messages",
-            "attachemnts",
-            ", ".join(
-                task_name
-                for task_name in self.catchup_tasks)
-        ]
-        print("    [Logger] Updated database for:", ", ".join(values_for))
-        print()
+        await self.backup_messages(in_channels=text_channels)
+        print("    [Logger] Backed up messages")
 
         self.bot.readyCogs[self.__class__.__name__] = True
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_message(self, message):
-        message_data = [(message.channel.id, message.author.id, message.id, message.content, message.created_at)]
-        await self.messages_insert(message_data)
-
-        attachment_data = [(message.id, attachment.id, attachment.filename, attachment.url) for attachment in message.attachments]
-        await self.attachment_insert(attachment_data)
-
-        for task_name in self.catchup_tasks:
-            for catchup_task in self.catchup_tasks[task_name]:
-                await catchup_task(message)
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_raw_message_delete(self, payload):
-
-        self.db.execute("UPDATE message SET deleted = true WHERE id = %s", (payload.message_id,))
-        self.db.commit()
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_guild_join(self, guild):
-
-        self.db.execute("INSERT INTO guild (id, name, icon_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE name=name", (guild.id, guild.name, str(guild.icon_url)))
-        self.db.commit()
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_guild_update(self, before, after):
-
-        self.db.execute("UPDATE guild SET name = %s, icon_url = %s WHERE id = %s", (after.name, str(after.icon_url), after.id))
-        self.db.commit()
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_guild_remove(self, guild):
-
-        self.db.execute("UPDATE guild SET deleted = true WHERE id = %s", (guild.id,))
-        self.db.commit()
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_guild_channel_create(self, channel):
-
-        if isinstance(channel, discord.channel.TextChannel):
-            self.db.execute("INSERT INTO channel (guild_id, category_id, id, name, position) VALUES (%s, %s, %s, %s, %s) ON DUPLICATE KEY UPDATE name=name", (channel.guild.id, channel.category_id, channel.id, channel.name, channel.position))
-            self.db.commit()
-
-        elif isinstance(channel, discord.channel.CategoryChannel):
-            self.db.execute("INSERT INTO category (guild_id, id, name, position) VALUES (%s, %s, %s, %s) ON DUPLICATE KEY UPDATE name=name", (channel.guild.id, channel.id, channel.name, channel.position))
-            self.db.commit()
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_guild_channel_update(self, before, after):
-
-        if isinstance(after, discord.channel.TextChannel):
-            self.db.execute("UPDATE channel SET guild_id = %s, category_id = %s, name = %s, position = %s WHERE id = %s", (after.guild.id, after.category_id, after.name, after.position, after.id))
-
-        elif isinstance(after, discord.channel.CategoryChannel):
-            self.db.execute("UPDATE category SET guild_id = %s, name = %s, position = %s WHERE id = %s", (after.guild.id, after.name, after.position, after.id))
-
-        self.db.commit()
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_guild_channel_delete(self, channel):
-
-        if isinstance(channel, discord.channel.TextChannel):
-            self.db.execute("UPDATE channel SET deleted = true WHERE id = %s", (channel.id,))
-
-        elif isinstance(channel, discord.channel.CategoryChannel):
-            self.db.execute("UPDATE category SET deleted = true WHERE id = %s", (channel.id,))
-
-        self.db.commit()
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_member_join(self, member):
-
-        self.db.execute("INSERT INTO `member` (id, name, avatar_url) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE name=name", (member.id, member.name, str(member.avatar_url)))
-        self.db.commit()
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_user_update(self, before, after):
-
-        self.db.execute("UPDATE `member` SET name = %s, avatar_url = %s WHERE id = %s", (after.name, str(after.avatar_url), after.id))
-        self.db.commit()
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_member_remove(self, member):
-
-        self.db.execute("UPDATE member SET deleted = true WHERE id = %s", (member.id,))
-        self.db.commit()
 
 
 def setup(bot):
