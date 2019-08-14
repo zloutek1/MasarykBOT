@@ -15,33 +15,31 @@ from core.utils.db import Database
 
 
 class MasarykBot(Bot):
-    def __init__(self, *args, db_config={}, activity=Game(name="Commands: !help"), **kwargs):
+    def __init__(self, *args, activity=Game(name="Commands: !help"), **kwargs):
         super().__init__(*args, **kwargs)
 
         self.ininial_params = args, kwargs
         self.default_activity = activity
 
-        self.db_config = db_config
-        self.loop.create_task(self.handle_database_connection())
+        self.loop.create_task(self.handle_database())
 
         self.readyCogs = {}
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
-    async def handle_database_connection(self):
+    async def handle_database(self):
         await self.wait_until_ready()
-
         attempts = 0
+
         while True:
             try:
-                self.db = Database(self.db_config)
+                self.db = await Database.connect()
+
                 print("\n    [BOT] Database online: connected.\n")
 
                 await self.change_presence(status=discord.Status.online, activity=self.default_activity)
 
-                if attempts > 0:
-                    await self.trigger_event("on_ready")
-
+                await self.trigger_event("on_ready")
                 await self.bot_ready()
 
                 break
@@ -56,8 +54,6 @@ class MasarykBot(Bot):
 
                 await asyncio.sleep(2)
                 attempts += 1
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
 
     async def process_commands(self, message):
         # send custom Context instead of the discord API's Context
@@ -91,6 +87,10 @@ class MasarykBot(Bot):
             except asyncio.CancelledError:
                 pass
 
+        if self.db and self.db.pool:
+            self.db.pool.close()
+            self.loop.run_until_complete(self.db.pool.wait_closed())
+
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     def start(self, *args, **kwargs):
@@ -112,9 +112,11 @@ class MasarykBot(Bot):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     async def bot_ready(self):
+        await self.wait_until_ready()
+
         while True:
             await asyncio.sleep(1)
-            if all(self.readyCogs.values()):
+            if all(self.readyCogs.values()) or len(self.readyCogs.values()) == 0:
                 break
 
         self.intorduce()
@@ -173,10 +175,6 @@ class MasarykBot(Bot):
     async def on_error(self, event, *args, **kwargs):
         exc_type, exc_value, exc_traceback = sys.exc_info()
 
-        if exc_type is db.DatabaseConnectionError:
-            # self.loop.create_task(self.handle_database_connection())
-            return
-
         exc = traceback.format_exception(exc_type, exc_value, exc_traceback, chain=False)
 
         description = '```py\n%s\n```' % ''.join(exc)
@@ -185,7 +183,7 @@ class MasarykBot(Bot):
         message = 'Event {0} at {1}: More info: {2}'.format(event, time, description)
         embed = Embed(
             title='Event {0} at {1}:'.format(event, time),
-            description=description,
+            description=description[-2000:],
             color=Color.red()
         )
 
@@ -194,6 +192,6 @@ class MasarykBot(Bot):
             for channel_id in local_db["log_channels"]:
                 channel = self.get_channel(channel_id)
                 if channel:
-                    await channel.send(embed=embed)
+                    self.loop.create_task(channel.send(embed=embed))
 
         print(message)
