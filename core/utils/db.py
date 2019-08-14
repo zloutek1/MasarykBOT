@@ -1,25 +1,24 @@
-import sqlite3
-import mysql.connector
-from mysql.connector.errors import IntegrityError, InterfaceError, OperationalError
+import asyncio
+import aiomysql
+from pymysql.err import OperationalError
+
+from config import BotConfig
 
 
-class DatabaseConnectionError(InterfaceError):
+class DatabaseConnectionError(OperationalError):
     pass
 
 
 def _handle_errors(func):
-    def wrapper(*args, **kwargs):
+    async def wrapper(*args, **kwargs):
         try:
-            return func(*args, **kwargs)
-        except InterfaceError as e:
-            if e.errno == 2003:
-                raise DatabaseConnectionError(msg=e.msg, errno=e.errno, values=e.args, sqlstate=e.sqlstate) from None
-
-            raise e from None
+            return await func(*args, **kwargs)
 
         except OperationalError as e:
-            if e.errno == 2055 or e.msg == "MySQL Connection not available.":
-                raise DatabaseConnectionError(msg=e.msg, errno=e.errno, values=e.args, sqlstate=e.sqlstate) from None
+            errno = e.args[0]
+
+            if errno == 2003:
+                raise DatabaseConnectionError(e.args) from None
 
             raise e from None
 
@@ -27,32 +26,23 @@ def _handle_errors(func):
 
 
 class Database:
-    def __init__(self, db_config={}, conn=None):
-        self.conn = conn if conn else None
-        self.cursor = None
+    def __init__(self, conn=None, cursor=None, pool=None):
+        self.conn = conn
+        self.cursor = cursor
+        self.pool = pool
 
-        if db_config:
-            self.conn = _handle_errors(mysql.connector.connect)(**db_config)
-
+    @classmethod
     @_handle_errors
-    def connect(self):
-        if self.conn is None:
-            return False
+    async def connect(cls, loop=None):
+        db = Database()
 
-        if not self.conn.is_connected():
-            raise DatabaseConnectionError()
+        if not loop:
+            loop = asyncio.get_event_loop()
 
-        db = Database(conn=self.conn)
-        db.cursor = _handle_errors(self.conn.cursor)(dictionary=True)
-
-        db.cursor.execute('SET NAMES utf8mb4')
-        db.cursor.execute("SET CHARACTER SET utf8mb4")
-        db.cursor.execute("SET character_set_connection=utf8mb4")
+        pool = await aiomysql.create_pool(**BotConfig.mysql, loop=loop)
+        db.pool = pool
 
         return db
-
-    def __getattrib__(self, attr):
-        pass
 
     def __getattr__(self, attr):
         calling_conn = hasattr(self.conn, attr)
