@@ -100,6 +100,16 @@ class Logger(commands.Cog):
 
     @needs_database
     async def backup_messages(self, in_channels):
+        # assert row exists
+        await self.db.execute("""
+            INSERT INTO logger (state)
+            SELECT * FROM (SELECT 'failed') AS tmp
+            WHERE NOT EXISTS (
+                SELECT * FROM logger
+            ) LIMIT 1;
+        """)
+
+        # set state to 'failed' and time to NOW()
         await self.db.execute("""
             UPDATE logger SET to_date=NOW() WHERE state='failed';
             UPDATE logger SET from_date=to_date, to_date=NOW() WHERE state='success';
@@ -107,6 +117,7 @@ class Logger(commands.Cog):
         """)
         await self.db.commit()
 
+        # get process row
         await self.db.execute("SELECT * FROM logger")
         row = await self.db.fetchone()
 
