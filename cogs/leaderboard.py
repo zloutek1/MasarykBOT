@@ -5,6 +5,7 @@ from discord.channel import TextChannel
 
 from typing import Optional, Union
 
+import core.utils.get
 import core.utils.index
 import datetime
 
@@ -18,22 +19,28 @@ class Leaderboard(commands.Cog):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def catchup_leaderboard(self, message):
+    async def catchup_leaderboard_get(self, message, leaderboard_data):
         c = message.content.lower()
         if c.startswith("!") or c.startswith("pls"):
             return
 
-        self.db.execute("""
-            INSERT IGNORE INTO leaderboard (guild_id, channel_id, author_id, messages_sent, `timestamp`) VALUES (%s, %s, %s, %s, %s)
-                        ON DUPLICATE KEY UPDATE messages_sent=messages_sent+1, `timestamp`=%s
-                    """, (message.guild.id, message.channel.id, message.author.id, 1, message.created_at, message.created_at))
-        self.db.commit()
+        leaderboard_data.append((message.guild.id, message.channel.id, message.author.id, 1, message.created_at, message.created_at))
+
+    @needs_database
+    async def catchup_leaderboard_insert(self, leaderboard_data):
+        for row in leaderboard_data:
+            await self.db.execute("""
+                INSERT IGNORE INTO leaderboard (guild_id, channel_id, author_id, messages_sent, `timestamp`) VALUES (%s, %s, %s, %s, %s)
+                        ON DUPLICATE KEY UPDATE messages_sent=messages_sent+1, `timestamp`= %s
+            """, row)
+        await self.db.commit()
 
     @commands.Cog.listener()
     async def on_ready(self):
         self.bot.readyCogs[self.__class__.__name__] = False
 
-        self.bot.add_catchup_task("leaderboard", self.catchup_leaderboard)
+        if hasattr(self.bot, "add_catchup_task"):
+            self.bot.add_catchup_task("leaderboard", self.catchup_leaderboard_get, self.catchup_leaderboard_insert)
 
         self.bot.readyCogs[self.__class__.__name__] = True
 
@@ -107,18 +114,15 @@ class Leaderboard(commands.Cog):
             CREATE TEMPORARY TABLE first_table SELECT * FROM lookup WHERE `count` >= @desired_count AND author_id <> @desired_id ORDER BY `count` LIMIT 2;
             CREATE TEMPORARY TABLE middle_table SELECT * FROM lookup WHERE author_id = @desired_id;
             CREATE TEMPORARY TABLE  last_table SELECT * FROM lookup WHERE `count` < @desired_count AND author_id <> @desired_id LIMIT 2;
-            SELECT * from (SELECT * FROM first_table UNION ALL SELECT * FROM middle_table UNION ALL SELECT * FROM last_table) result ORDER BY `count` DESC;
         """
 
-        self.db.execute(top10_SQL, params)
-        rows1 = self.db.fetchall()
+        await self.db.execute(top10_SQL, params)
+        rows1 = await self.db.fetchall()
 
-        """
-        results = self.db.execute(member_SQL, params, multi=True)
-        rows2 = results[10].fetchall()
-        """
+        await self.db.execute(member_SQL, params)
+        await self.db.execute("SELECT * from (SELECT * FROM first_table UNION ALL SELECT * FROM middle_table UNION ALL SELECT * FROM last_table) result ORDER BY `count` DESC;")
+        rows2 = await self.db.fetchall()
 
-        self.db.commit()
 
         """
         print the leaderboard
@@ -138,12 +142,15 @@ class Leaderboard(commands.Cog):
                         index=i + 1,
                         medal=self.get_medal(i + 1),
                         count=row["count"],
-                        author=row["author"],
+                        author=f'**{row["author"]}**'
+                            if row["author_id"] == (
+                                author.id if not member else member.id)
+                            else
+                            row["author"],
                         top=len(str(rows1[0]["count"]))
                     )
                     for i, row in enumerate(rows1)
                 ]))
-        """
         embed.add_field(
             name="Your position",
             inline=True,
@@ -161,7 +168,6 @@ class Leaderboard(commands.Cog):
                 )
                 for j, row in enumerate(rows2)
             ]))
-        """
         await ctx.send(embed=embed)
 
     def get_medal(self, i):
