@@ -7,13 +7,13 @@ from config import BotConfig
 from glob import glob
 import time
 
+
 if __name__ == "__main__":
     print()
 
     bot = MasarykBot(
         command_prefix=when_mentioned_or(BotConfig.prefix),
-        case_insensitive=True,
-        db_config=BotConfig.db_config
+        case_insensitive=True
     )
 
     modules = [
@@ -26,6 +26,9 @@ if __name__ == "__main__":
         "cogs.fun"
     ]
 
+    ##
+    # print boot message
+    ##
     boot_message = """
     Boot sequence initialised
 
@@ -33,14 +36,19 @@ if __name__ == "__main__":
     {} cogs found
 
     Loading cogs...""".format(len(modules))
-
     for letter in boot_message.strip("\n"):
         print(letter, end="")
     print()
 
+    ##
+    # load cogs
+    ##
     for module in modules:
         bot.load_extension(module)
-    print("    Loaded:", ", ".join(bot.cogs.keys()))
-
+    print("    Loaded:", ", ".join(bot.cogs.keys()) or "No cogs found")
     print()
+
+    ##
+    # start bot
+    ##
     bot.start(BotConfig.token)
