@@ -22,6 +22,11 @@ class Logger(commands.Cog):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     def add_catchup_task(self, name, task_get, task_insert):
+        """
+        name: usually a cog name,
+        task_get: a function to format the data for database input
+        task_insert: a function that inserts data into database
+        """
         self.catchup_tasks.setdefault(name, [])
         self.catchup_tasks[name].append({
             "get": task_get,
@@ -173,6 +178,8 @@ class Logger(commands.Cog):
         except discord.errors.Forbidden:
             pass
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     @needs_database
     async def backup_messages_in(self, channel, messages_data):
         chunks = self.chunks(messages_data, 550)
@@ -183,6 +190,8 @@ class Logger(commands.Cog):
                 VALUES (%s, %s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE id=id""", chunk)
         await self.db.commit()
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
     async def backup_attachments_in(self, channel, attachments_data):
@@ -218,6 +227,134 @@ class Logger(commands.Cog):
         print("    [Logger] Backed up messages")
 
         self.bot.readyCogs[self.__class__.__name__] = True
+
+    @commands.Cog.listener()
+    @needs_database
+    async def on_message(self, message):
+        message_data = (message.channel.id, message.author.id, message.id, message.content, message.created_at)
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @commands.Cog.listener()
+    @needs_database
+    async def on_raw_message_edit(self, payload):
+        message_data = (payload.data["guild_id"], payload.data["channel_id"], payload.data["id"], payload.data["content"])
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @commands.Cog.listener()
+    @needs_database
+    async def on_raw_message_delete(self, payload):
+        message_data = (payload.guild_id, payload.channel_id, payload.message_id)
+
+
+    @commands.Cog.listener()
+    @needs_database
+    async def on_raw_bulk_message_delete(self, payload):
+        messages_data = [(payload.guild_id, payload.channel_id, message_id)
+                         for message_id in payload.message_ids]
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @commands.Cog.listener()
+    @needs_database
+    async def on_guild_join(self, guild):
+        guild_data = (guild.id, guild.name, str(guild.icon_url))
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @commands.Cog.listener()
+    @needs_database
+    async def on_guild_update(self, before, after):
+        guild_data = (before.id, before.name, str(before.icon_url),
+                      after.id, after.name, str(after.icon_url))
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @commands.Cog.listener()
+    @needs_database
+    async def on_guild_remove(self, guild):
+        guild_data = (guild.id, guild.name)
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @commands.Cog.listener()
+    @needs_database
+    async def on_guild_channel_create(self, channel):
+        if isinstance(channel, discord.CategoryChannel):
+            await on_category_create(channel)
+
+        elif isinstance(channel, discord.TextChannel):
+            await on_text_channel_create(channel)
+
+    @needs_database
+    async def on_category_create(self, category):
+        category_data = (category.guild.id, category.id, category.name, category.position)
+
+    @needs_database
+    async def on_text_channel_create(self, text_channel):
+        channel_data = (text_channel.guild.id, text_channel.category_id, text_channel.id, text_channel.name, text_channel.position)
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @commands.Cog.listener()
+    @needs_database
+    async def on_guild_channel_update(self, before, after):
+        if isinstance(after, discord.CategoryChannel):
+            await on_category_update(before, after)
+
+        elif isinstance(after, discord.TextChannel):
+            await on_text_channel_update(before, after)
+
+    @needs_database
+    async def on_category_update(self, before, after):
+        category_data = (before.guild.id, before.id, before.name, before.position, after.guild.id, after.id, after.name, after.position)
+
+    @needs_database
+    async def on_text_channel_update(self, before, after):
+        channel_data = (before.guild.id, before.category_id, before.id, before.name, before.position,
+            after.guild.id, after.category_id, after.id, after.name, after.position)
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @commands.Cog.listener()
+    @needs_database
+    async def on_guild_channel_delete(self, channel):
+        if isinstance(channel, discord.CategoryChannel):
+            await on_category_delete(channel)
+
+        elif isinstance(channel, discord.TextChannel):
+            await on_text_channel_delete(channel)
+
+    @needs_database
+    async def on_category_update(self, category):
+        category_data = (category.guild.id, category.id)
+
+    @needs_database
+    async def on_text_channel_update(self, text_channel):
+        channel_data = (text_channel.guild.id, text_channel.id)
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @commands.Cog.listener()
+    @needs_database
+    async def on_member_join(self, member):
+        member_data = (member.id, member.name, str(member.avatar_url))
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @commands.Cog.listener()
+    @needs_database
+    async def on_user_update(self, before, after):
+        member_data = (before.id, before.name, str(before.avatar_url),
+                       after.id, after.name, str(after.avatar_url))
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @commands.Cog.listener()
+    @needs_database
+    async def on_member_remove(self, member):
+        member_data = (member.id,)
 
 
 def setup(bot):
