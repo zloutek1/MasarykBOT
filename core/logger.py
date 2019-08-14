@@ -151,24 +151,27 @@ class Logger(commands.Cog):
     @needs_database
     async def get_messages(self, channel, authors_data, messages_data, attachments_data, after=None, before=None):
 
-        async for message in channel.history(
-                limit=1_000_000, after=after, before=before, oldest_first=True):
+        try:
+            async for message in channel.history(
+                    limit=1_000_000, after=after, before=before, oldest_first=True):
 
-            # -- Author --
-            authors_data.add(message.author)
+                # -- Author --
+                authors_data.add(message.author)
 
-            # -- Message --
-            messages_data += [(message.channel.id, message.author.id, message.id, message.content, message.created_at)]
+                # -- Message --
+                messages_data += [(message.channel.id, message.author.id, message.id, message.content, message.created_at)]
 
-            # -- Attachment --
-            attachments_data += [(message.id, a.id, a.filename, a.url)
-                                 for a in message.attachments]
+                # -- Attachment --
+                attachments_data += [(message.id, a.id, a.filename, a.url)
+                                     for a in message.attachments]
 
-            # -- Other catching up tasks --
-            for task_name in self.catchup_tasks:
-                for catchup_task in self.catchup_tasks[task_name]:
-                    catchup_task_get = catchup_task["get"]
-                    await catchup_task_get(message, catchup_task["data"])
+                # -- Other catching up tasks --
+                for task_name in self.catchup_tasks:
+                    for catchup_task in self.catchup_tasks[task_name]:
+                        catchup_task_get = catchup_task["get"]
+                        await catchup_task_get(message, catchup_task["data"])
+        except discord.errors.Forbidden:
+            pass
 
     @needs_database
     async def backup_messages_in(self, channel, messages_data):
