@@ -210,7 +210,6 @@ class MasarykBot(Bot):
             for channel_id in local_db["log_channels"]:
                 channel = self.get_channel(channel_id)
                 if channel:
-                    pass
-                    #await channel.send(embed=embed)
+                    await channel.send(embed=embed)
 
         print(message)
