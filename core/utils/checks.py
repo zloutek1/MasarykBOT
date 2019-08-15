@@ -11,17 +11,19 @@ def needs_database(func):
         if not hasattr(self.bot, "db"):
             return False
 
-        if hasattr(self, "db") and not self.db.cursor.closed:
-            return await func(self, *args, **kwargs)
-
         pool = self.bot.db.pool
         if not pool:
             return
 
         async with pool.acquire() as conn:
             async with conn.cursor(aiomysql.DictCursor) as cursor:
-                self.db = Database(conn, cursor, pool)
-
+                kwargs["db"] = Database(conn, cursor, pool)
                 retval = await func(self, *args, **kwargs)
+
         return retval
+
+        if not hasattr(self, "db"):
+            self.db = Database(conn, cursor, pool)
+
+
     return wrapper

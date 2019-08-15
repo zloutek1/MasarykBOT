@@ -9,6 +9,7 @@ from discord.ext.commands import has_permissions
 from datetime import datetime, timedelta
 
 import core.utils.get
+from core.utils.db import Database
 from core.utils.checks import needs_database
 
 
@@ -44,69 +45,69 @@ class Logger(commands.Cog):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def backup_guilds(self, guilds):
+    async def backup_guilds(self, guilds, db=Database()):
         guilds_data = [(g.id, g.name, str(g.icon_url))
                        for g in guilds]
 
         chunks = self.chunks(guilds_data, 550)
         for chunk in chunks:
-            await self.db.executemany("""
+            await db.executemany("""
                 INSERT INTO guild (id, name, icon_url)
                 VALUES (%s, %s, %s)
                 ON DUPLICATE KEY UPDATE id=id""", chunk)
-        await self.db.commit()
+        await db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def backup_categories(self, categories):
+    async def backup_categories(self, categories, db=Database()):
         category_data = [(c.guild.id, c.id, c.name, c.position)
                          for c in categories]
 
         chunks = self.chunks(category_data, 550)
         for chunk in chunks:
-            await self.db.executemany("""
+            await db.executemany("""
                 INSERT INTO category (guild_id, id, name, position)
                 VALUES (%s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE id=id""", chunk)
-        await self.db.commit()
+        await db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def backup_text_channels(self, text_channels):
+    async def backup_text_channels(self, text_channels, db=Database()):
         channels_data = [(c.guild.id, c.category_id, c.id, c.name, c.position)
                          for c in text_channels]
 
         chunks = self.chunks(channels_data, 550)
         for chunk in chunks:
-            await self.db.executemany("""
+            await db.executemany("""
                 INSERT INTO channel (guild_id, category_id, id, name, position)
                 VALUES (%s, %s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE id=id""", chunk)
-        await self.db.commit()
+        await db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def backup_users(self, users):
+    async def backup_users(self, users, db=Database()):
         users_data = [(u.id, u.name, str(u.avatar_url))
                       for u in users]
 
         chunks = self.chunks(users_data, 550)
         for chunk in chunks:
-            await self.db.executemany("""
+            await db.executemany("""
                 INSERT INTO `member` (id, name, avatar_url)
                 VALUES (%s, %s, %s)
                 ON DUPLICATE KEY UPDATE id=id""", chunk)
-        await self.db.commit()
+        await db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def backup_messages(self, in_channels):
+    async def backup_messages(self, in_channels, db=Database()):
         # assert row exists
-        await self.db.execute("""
+        await db.execute("""
             INSERT INTO logger (state)
             SELECT * FROM (SELECT 'failed') AS tmp
             WHERE NOT EXISTS (
@@ -115,21 +116,24 @@ class Logger(commands.Cog):
         """)
 
         # set state to 'failed' and time to NOW()
-        await self.db.execute("""
+        await db.execute("""
             UPDATE logger SET to_date=NOW() WHERE state='failed';
             UPDATE logger SET from_date=to_date, to_date=NOW() WHERE state='success';
             UPDATE logger SET state='failed', finished_at=NULL;
         """)
-        await self.db.commit()
+        await db.commit()
 
         # get process row
-        await self.db.execute("SELECT * FROM logger")
-        row = await self.db.fetchone()
+        await db.execute("SELECT * FROM logger")
+        row = await db.fetchone()
 
         ##
         # backup messages for each channel
         ##
         for i, channel in enumerate(in_channels):
+            if not channel.last_message_id:
+                continue
+
             print("    [Logger] Backing up messages in", channel, f"({i} / {len(in_channels)})")
 
             authors_data = set()
@@ -148,14 +152,13 @@ class Logger(commands.Cog):
                     await catchup_task_insert(catchup_task["data"])
                     catchup_task["data"].clear()
 
-        await self.db.execute("UPDATE logger SET state='success', finished_at=NOW() WHERE state='failed'")
-        await self.db.commit()
+        await db.execute("UPDATE logger SET state='success', finished_at=NOW() WHERE state='failed'")
+        await db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def get_messages(self, channel, authors_data, messages_data, attachments_data, after=None, before=None):
-
+    async def get_messages(self, channel, authors_data, messages_data, attachments_data, after=None, before=None, db=Database()):
         try:
             async for message in channel.history(
                     limit=1_000_000, after=after, before=before, oldest_first=True):
@@ -181,34 +184,34 @@ class Logger(commands.Cog):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def backup_messages_in(self, channel, messages_data):
+    async def backup_messages_in(self, channel, messages_data, db=Database()):
         chunks = self.chunks(messages_data, 550)
         for chunk in chunks:
-            await self.db.executemany("""
+            await db.executemany("""
                 INSERT INTO message
                     (channel_id, author_id, id, content, created_at)
                 VALUES (%s, %s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE id=id""", chunk)
-        await self.db.commit()
+        await db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def backup_attachments_in(self, channel, attachments_data):
+    async def backup_attachments_in(self, channel, attachments_data, db=Database()):
         chunks = self.chunks(attachments_data, 550)
         for chunk in chunks:
-            await self.db.executemany("""
+            await db.executemany("""
                 INSERT INTO attachment
                     (message_id, id, filename, url)
                 VALUES (%s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE id=id""", chunk)
-        await self.db.commit()
+        await db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.Cog.listener()
     @needs_database
-    async def on_ready(self):
+    async def on_ready(self, db=Database()):
         self.bot.readyCogs[self.__class__.__name__] = False
 
         guilds = self.bot.guilds
@@ -232,221 +235,51 @@ class Logger(commands.Cog):
 
     @commands.Cog.listener()
     @needs_database
-    async def on_message(self, message):
+    async def on_message(self, message, db=Database()):
         message_data = (message.channel.id, message.author.id, message.id, message.content, message.created_at)
-        await self.db.execute("""
+
+        await db.execute("""
             INSERT INTO message
                 (channel_id, author_id, id, content, created_at)
             VALUES (%s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE id=id
         """, message_data)
-        await self.db.commit()
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_raw_message_edit(self, payload):
-        message_data = (payload.data.get("content", ""), payload.data["channel_id"], payload.data["id"])
-        await self.db.execute("""
-            UPDATE message
-            SET content = %s
-            WHERE channel_id = %s AND id = %s
-        """, message_data)
-        await self.db.commit()
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_raw_message_delete(self, payload):
-        message_data = (payload.channel_id, payload.message_id)
-        await self.db.execute("""
-            UPDATE message
-            SET deleted_at = NOW()
-            WHERE channel_id = %s AND id = %s
-        """, message_data)
-        await self.db.commit()
-
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_raw_bulk_message_delete(self, payload):
-        messages_data = [(payload.channel_id, message_id)
-                         for message_id in payload.message_ids]
-        await self.db.executemany("""
-            UPDATE message
-            SET deleted_at = NOW()
-            WHERE channel_id = %s AND id = %s
-        """, messages_data)
-        await self.db.commit()
+        await db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.Cog.listener()
     @needs_database
-    async def on_guild_join(self, guild):
-        guild_data = (guild.id, guild.name, str(guild.icon_url))
-        await self.db.execute("""
-            INSERT INTO guild (id, name, icon_url)
-            VALUES (%s, %s, %s)
-            ON DUPLICATE KEY UPDATE id=id
-        """, guild_data)
-        await self.db.commit()
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_guild_update(self, before, after):
-        guild_data = (before.id, before.name, str(before.icon_url),
-                      after.id, after.name, str(after.icon_url))
-        await self.db.execute("""
-            UPDATE guild
-            SET id=%s, name=%s, icon_url=%s
-            WHERE id=%s AND name=%s AND icon_url=%s
-        """, guild_data)
-        await self.db.commit()
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_guild_remove(self, guild):
-        guild_data = (guild.id, guild.name)
-        await self.db.execute("""
-            UPDATE guild
-            SET deleted_at=NOW()
-            WHERE id=%s AND name=%s
-        """, guild_data)
-        await self.db.commit()
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_guild_channel_create(self, channel):
+    async def on_guild_channel_create(self, channel, db=Database()):
         if isinstance(channel, discord.CategoryChannel):
-            await on_category_create(channel)
+            await self.on_category_create(channel)
 
         elif isinstance(channel, discord.TextChannel):
-            await on_text_channel_create(channel)
+            await self.on_text_channel_create(channel)
 
     @needs_database
-    async def on_category_create(self, category):
+    async def on_category_create(self, category, db=Database()):
         category_data = (category.guild.id, category.id, category.name, category.position)
-        await self.db.execute("""
+
+        await db.execute("""
             INSERT INTO category (guild_id, id, name, position)
             VALUES (%s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE id=id
         """, category_data)
-        await self.db.commit()
+        await db.commit()
 
     @needs_database
-    async def on_text_channel_create(self, text_channel):
+    async def on_text_channel_create(self, text_channel, db=Database()):
         channel_data = (text_channel.guild.id, text_channel.category_id, text_channel.id, text_channel.name, text_channel.position)
-        await self.db.executemany("""
+
+        await db.execute("""
             INSERT INTO channel (guild_id, category_id, id, name, position)
             VALUES (%s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE id=id
         """, channel_data)
-        await self.db.commit()
+        await db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_guild_channel_update(self, before, after):
-        if isinstance(after, discord.CategoryChannel):
-            await on_category_update(before, after)
-
-        elif isinstance(after, discord.TextChannel):
-            await on_text_channel_update(before, after)
-
-    @needs_database
-    async def on_category_update(self, before, after):
-        category_data = (before.guild.id, before.id, before.name, before.position, after.guild.id, after.id, after.name, after.position)
-        await self.db.execute("""
-            UPDATE category
-            SET guild_id=%s, id=%s, name=%s, position=%s
-            WHERE guild_id=%s AND id=%s AND name=%s AND position=%s
-        """, category_data)
-        await self.db.commit()
-
-    @needs_database
-    async def on_text_channel_update(self, before, after):
-        channel_data = (before.guild.id, before.category_id, before.id, before.name, before.position,
-            after.guild.id, after.category_id, after.id, after.name, after.position)
-        await self.db.executemany("""
-            UPDATE channel
-            SET guild_id=%s, category_id=%s, id=%s, name=%s, position=%s
-            WHERE guild_id=%s AND category_id=%s AND id=%s AND name=%s AND position=%s
-        """, channel_data)
-        await self.db.commit()
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_guild_channel_delete(self, channel):
-        if isinstance(channel, discord.CategoryChannel):
-            await on_category_delete(channel)
-
-        elif isinstance(channel, discord.TextChannel):
-            await on_text_channel_delete(channel)
-
-    @needs_database
-    async def on_category_delete(self, category):
-        category_data = (category.guild.id, category.id)
-        await self.db.execute("""
-            UPDATE category
-            SET deleted_at=NOW()
-            WHERE guild_id=%s AND id=%s
-        """, category_data)
-        await self.db.commit()
-
-    @needs_database
-    async def on_text_channel_delete(self, text_channel):
-        channel_data = (text_channel.guild.id, text_channel.id)
-        await self.db.executemany("""
-            UPDATE channel
-            SET deleted_at=NOW()
-            WHERE guild_id=%s AND id=%s
-        """, channel_data)
-        await self.db.commit()
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_member_join(self, member):
-        member_data = (member.id, member.name, str(member.avatar_url))
-        await self.db.executemany("""
-            INSERT INTO `member` (id, name, avatar_url)
-            VALUES (%s, %s, %s)
-            ON DUPLICATE KEY UPDATE id=id
-        """, member_data)
-        await self.db.commit()
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_user_update(self, before, after):
-        member_data = (before.id, before.name, str(before.avatar_url),
-                       after.id, after.name, str(after.avatar_url))
-        await self.db.executemany("""
-            UPDATE `member`
-            SET id=%s, name=%s, avatar_url=%s
-            WHERE id=%s AND name=%s AND avatar_url=%s
-        """, member_data)
-        await self.db.commit()
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.Cog.listener()
-    @needs_database
-    async def on_member_remove(self, member):
-        member_data = (member.id,)
-        await self.db.executemany("""
-            UPDATE `member`
-            SET deleted_at=NOW()
-            WHERE id=%s
-        """, member_data)
-        await self.db.commit()
-
 
 
 def setup(bot):

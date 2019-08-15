@@ -9,6 +9,7 @@ import core.utils.get
 import core.utils.index
 import datetime
 
+from core.utils.db import Database
 from core.utils.checks import needs_database
 
 
@@ -19,7 +20,7 @@ class Leaderboard(commands.Cog):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def catchup_leaderboard_get(self, message, leaderboard_data):
+    async def catchup_leaderboard_get(self, message, leaderboard_data, db = Database()):
         c = message.content.lower()
         if c.startswith("!") or c.startswith("pls"):
             return
@@ -27,13 +28,13 @@ class Leaderboard(commands.Cog):
         leaderboard_data.append((message.guild.id, message.channel.id, message.author.id, 1, message.created_at, message.created_at))
 
     @needs_database
-    async def catchup_leaderboard_insert(self, leaderboard_data):
+    async def catchup_leaderboard_insert(self, leaderboard_data, db = Database()):
         for row in leaderboard_data:
-            await self.db.execute("""
+            await db.execute("""
                 INSERT IGNORE INTO leaderboard (guild_id, channel_id, author_id, messages_sent, `timestamp`) VALUES (%s, %s, %s, %s, %s)
                         ON DUPLICATE KEY UPDATE messages_sent=messages_sent+1, `timestamp`= %s
             """, row)
-        await self.db.commit()
+        await db.commit()
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -48,8 +49,7 @@ class Leaderboard(commands.Cog):
 
     @commands.command()
     @needs_database
-    async def leaderboard(self, ctx, channel: Union[TextChannel, Member] = None, member: Union[Member, TextChannel] = None):
-
+    async def leaderboard(self, ctx, channel: Union[TextChannel, Member] = None, member: Union[Member, TextChannel] = None, db = Database()):
         channel, member = (channel if isinstance(channel, TextChannel) else
                            member if isinstance(member, TextChannel) else
                            None,
@@ -116,12 +116,12 @@ class Leaderboard(commands.Cog):
             CREATE TEMPORARY TABLE  last_table SELECT * FROM lookup WHERE `count` < @desired_count AND author_id <> @desired_id LIMIT 2;
         """
 
-        await self.db.execute(top10_SQL, params)
-        rows1 = await self.db.fetchall()
+        await db.execute(top10_SQL, params)
+        rows1 = await db.fetchall()
 
-        await self.db.execute(member_SQL, params)
-        await self.db.execute("SELECT * from (SELECT * FROM first_table UNION ALL SELECT * FROM middle_table UNION ALL SELECT * FROM last_table) result ORDER BY `count` DESC;")
-        rows2 = await self.db.fetchall()
+        await db.execute(member_SQL, params)
+        await db.execute("SELECT * from (SELECT * FROM first_table UNION ALL SELECT * FROM middle_table UNION ALL SELECT * FROM last_table) result ORDER BY `count` DESC;")
+        rows2 = await db.fetchall()
 
 
         """
