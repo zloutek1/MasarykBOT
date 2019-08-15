@@ -1,11 +1,13 @@
 import asyncio
 import requests
+import logging
 
 import discord
 from discord.ext import commands
 from discord import Colour, Embed, Member, Object, File
 from discord.ext.commands import has_permissions
 
+import json
 from datetime import datetime, timedelta
 
 import core.utils.get
@@ -16,6 +18,7 @@ from core.utils.checks import needs_database
 class Logger(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.log = logging.getLogger(__name__)
 
         self.bot.add_catchup_task = self.add_catchup_task
         self.catchup_tasks = {}
@@ -106,6 +109,12 @@ class Logger(commands.Cog):
 
     @needs_database
     async def backup_messages(self, in_channels, db=Database()):
+        ignore_channels = []
+        with open("assets/local_db.json", "r", encoding="utf-8") as file:
+            local_db = json.load(file)
+            ignore_channels += local_db["log_channels"]
+            ignore_channels += local_db["error_channels"]
+
         # assert row exists
         await db.execute("""
             INSERT INTO logger (state)
@@ -131,10 +140,11 @@ class Logger(commands.Cog):
         # backup messages for each channel
         ##
         for i, channel in enumerate(in_channels):
-            if not channel.last_message_id:
+            if not channel.last_message_id or channel.id in ignore_channels:
+                self.log.info(f"Skipping channel {channel} ({i} / {len(in_channels)})")
                 continue
 
-            print("    [Logger] Backing up messages in", channel, f"({i} / {len(in_channels)})")
+            self.log.info(f"Backing up messages in {channel} ({i} / {len(in_channels)})")
 
             authors_data = set()
             messages_data = []
@@ -219,15 +229,15 @@ class Logger(commands.Cog):
         text_channels = [c for guild in guilds for c in guild.text_channels]
         users = [m for guild in guilds for m in guild.members]
 
-        print("    [Logger] Begining backup")
+        self.log.info("Begining backup")
         await self.backup_guilds(guilds)
         await self.backup_categories(categories)
         await self.backup_text_channels(text_channels)
         await self.backup_users(users)
-        print("    [Logger] Backed up guilds, categories, text_channels, users\n")
+        self.log.info("Backed up guilds, categories, text_channels, users\n")
 
         await self.backup_messages(in_channels=text_channels)
-        print("    [Logger] Backed up messages")
+        self.log.info("Backed up messages")
 
         self.bot.readyCogs[self.__class__.__name__] = True
 
