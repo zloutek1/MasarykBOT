@@ -146,7 +146,7 @@ class Events(commands.Cog):
 
         with open("assets/local_db.json", "r", encoding="utf-8") as file:
             local_db = json.load(file)
-            for channel_id in local_db["log_channels"]:
+            for channel_id in local_db["error_channels"]:
                 channel = self.bot.get_channel(channel_id)
                 if channel:
                     await channel.send(embed=embed)
