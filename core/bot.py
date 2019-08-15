@@ -1,6 +1,7 @@
 import asyncio
 import sys
 import time
+import logging
 
 import discord
 from discord import Color, Embed, Game
@@ -21,9 +22,22 @@ class MasarykBot(Bot):
         self.ininial_params = args, kwargs
         self.default_activity = activity
 
+        self.setup_logging()
         self.loop.create_task(self.handle_database())
 
         self.readyCogs = {}
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    def setup_logging(self):
+        log = logging.getLogger()
+        log.setLevel(logging.INFO)
+        handler = logging.FileHandler(filename='assets/masaryk.log', encoding='utf-8', mode='w')
+        dt_fmt = '%Y-%m-%d %H:%M:%S'
+        fmt = logging.Formatter('[{asctime}] [{levelname:<7}] {name}: {message}', dt_fmt, style='{')
+        handler.setFormatter(fmt)
+        log.addHandler(handler)
+        self.log = log
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -167,8 +181,12 @@ class MasarykBot(Bot):
         if hasattr(self, event_name):
             events.append(getattr(self, event_name))
 
+        tasks = []
         for event in events:
-            await event(*args, **kwargs)
+            task = self.loop.create_task(event(*args, **kwargs))
+            tasks.append(task)
+
+        await asyncio.wait(tasks)
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -183,7 +201,7 @@ class MasarykBot(Bot):
         message = 'Event {0} at {1}: More info: {2}'.format(event, time, description)
         embed = Embed(
             title='Event {0} at {1}:'.format(event, time),
-            description=description[-2000:],
+            description=description[-1500:],
             color=Color.red()
         )
 
@@ -192,6 +210,7 @@ class MasarykBot(Bot):
             for channel_id in local_db["log_channels"]:
                 channel = self.get_channel(channel_id)
                 if channel:
-                    self.loop.create_task(channel.send(embed=embed))
+                    pass
+                    #await channel.send(embed=embed)
 
         print(message)
