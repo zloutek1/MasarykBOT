@@ -10,7 +10,6 @@ from config import BotConfig
 
 
 class Admin(commands.Cog):
-
     def __init__(self, bot: Bot):
         self.bot = bot
 
@@ -18,8 +17,8 @@ class Admin(commands.Cog):
 
     @commands.command()
     @has_permissions(administrator=True)
-    async def purge(self, ctx, limit: int):
-        await ctx.channel.purge(limit=100)
+    async def purge(self, ctx, limit: int=0):
+        await ctx.channel.purge(limit=limit+1)
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
