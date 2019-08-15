@@ -6,12 +6,14 @@ import discord.utils
 from discord.ext import commands
 from discord.ext.commands import Bot, Converter, group, Context, has_permissions
 
-from config import BotConfig
 
 from PIL import Image, ImageDraw, ImageFont
 import os
 import json
 import re
+from datetime import datetime, timedelta
+
+from config import BotConfig
 
 import core.utils.get
 from core.utils.db import Database
@@ -22,6 +24,8 @@ class ReactionPicker(commands.Cog):
     def __init__(self, bot: Bot):
         self.bot = bot
         self.log = logging.getLogger(__name__)
+
+        self.users_on_cooldown = {}
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -46,7 +50,7 @@ class ReactionPicker(commands.Cog):
         guild, channel = ctx.guild, ctx.channel
 
         # 1
-        self.log.info("check if menu with <name> does not already exist")
+        self.log.info("[MENU CREATE] check if menu with <name> does not already exist")
         await db.execute("""
             SELECT * FROM   reactionmenu
             WHERE  channel_id = %s AND name LIKE %s AND deleted_at IS NULL
@@ -58,18 +62,18 @@ class ReactionPicker(commands.Cog):
             return
 
         # 2
-        self.log.info("send message \"Reactionmenu <name>\"")
-        message = await ctx.send(f"**Reactionmenu {name}**")
+        self.log.info("[MENU CREATE] send message \"Reactionmenu <name>\"")
+        message = await ctx.send(f"**────────────────[  {name}  ]───────────────**")
         await self.bot.trigger_event("on_message", message)
 
         # 3
-        self.log.info("insert menu into database")
+        self.log.info("[MENU CREATE] insert menu into database")
         await db.execute("""
             INSERT INTO reactionmenu (channel_id, message_id, name)
                    VALUES (%s, %s, %s)""", (channel.id, message.id, name))
 
         # 4
-        self.log.info("disable sending messages & reacting")
+        self.log.info("[MENU CREATE] disable sending messages & reacting")
         perms = {
             guild.default_role: discord.PermissionOverwrite(
                 add_reactions=False, send_messages=False),
@@ -80,7 +84,7 @@ class ReactionPicker(commands.Cog):
             await channel.set_permissions(target, overwrite=overwrite)
 
         # 5
-        self.log.info("commit and clean")
+        self.log.info("[MENU CREATE] commit and clean")
         await db.commit()
         try:
             await ctx.message.delete()
@@ -104,7 +108,7 @@ class ReactionPicker(commands.Cog):
         guild, channel = ctx.guild, ctx.channel
 
         # 1
-        self.log.info("fetch menu to delete")
+        self.log.info("[MENU DELETE] fetch menu to delete")
         await db.execute("""
             SELECT * FROM reactionmenu
             WHERE channel_id = %s AND name LIKE %s AND deleted_at IS NULL
@@ -117,19 +121,19 @@ class ReactionPicker(commands.Cog):
             return
 
         # 2
-        self.log.info("get section(s) which are to be deleted")
+        self.log.info("[MENU DELETE] get section(s) which are to be deleted")
         await db.execute("""
             SELECT * FROM   reactionmenu_section
             WHERE  reactionmenu_id = %s AND deleted_at IS NULL""", (row["id"],))
         rows = await db.fetchall()
 
         # 3
-        self.log.info("call section(s)_delete")
+        self.log.info("[MENU DELETE] call section(s)_delete")
         for section in rows:
             await self.section_delete.callback(self, ctx, name=section["text"], from_reactionmenu=name)
 
         # 4
-        self.log.info("delete message \"Reactionmenu <name>\"")
+        self.log.info("[MENU DELETE] delete message \"Reactionmenu <name>\"")
         try:
             message = await channel.fetch_message(row["message_id"])
             await message.delete()
@@ -137,7 +141,7 @@ class ReactionPicker(commands.Cog):
             pass
 
         # 5
-        self.log.info("mark menu as deleted")
+        self.log.info("[MENU DELETE] mark menu as deleted")
         await db.execute("""
             UPDATE reactionmenu
             SET deleted_at = NOW()
@@ -145,7 +149,7 @@ class ReactionPicker(commands.Cog):
         """, (channel.id, name))
 
         # 6
-        self.log.info("commit and clean")
+        self.log.info("[MENU DELETE] commit and clean")
         await db.commit()
         try:
             await ctx.message.delete()
@@ -182,25 +186,25 @@ class ReactionPicker(commands.Cog):
         guild, channel = ctx.guild, ctx.channel
 
         # 1
-        self.log.info("parse input")
+        self.log.info("[SECTION CREATE] parse input")
         args = self._parse_arguments(args)
         to_reactionmenu = args.get("to_reactionmenu", to_reactionmenu)
 
         # 2
-        self.log.info("validate input")
+        self.log.info("[SECTION CREATE] validate input")
         name = name.upper()
         if len(name) > 11:
             await ctx.send("`[ERROR] section name can be up to 11 letters long`", delete_after=5)
             return
 
         # 3
-        self.log.info("if not to_reactionmenu provided, get first or error on multiple")
+        self.log.info("[SECTION CREATE] if not to_reactionmenu provided, get first or error on multiple")
         reactionmenu = await self.get_reactionmenu(ctx, to_reactionmenu, db=db)
         if not reactionmenu:
             return
 
         # 4
-        self.log.info("get image with text {name} and send it")
+        self.log.info("[SECTION CREATE] get image with text {name} and send it")
         filename = f"assets/{reactionmenu['name']}-{name}.png"
         image = self.generate_section_image(name)
         image.save(filename)
@@ -208,7 +212,7 @@ class ReactionPicker(commands.Cog):
         os.remove(filename)
 
         # 5
-        self.log.info("create category, set permissions")
+        self.log.info("[SECTION CREATE] create category, set permissions")
         perms = {
             guild.default_role: discord.PermissionOverwrite(read_messages=False),
             self.bot.user: discord.PermissionOverwrite(read_messages=True)
@@ -217,7 +221,7 @@ class ReactionPicker(commands.Cog):
         await self.bot.trigger_event("on_guild_channel_create", category)
 
         # 6
-        self.log.info("insert section into database")
+        self.log.info("[SECTION CREATE] nsert section into database")
         await db.execute("""
             INSERT INTO reactionmenu_section
                 (reactionmenu_id, message_id, `text`, rep_category_id)
@@ -226,7 +230,7 @@ class ReactionPicker(commands.Cog):
         await db.commit()
 
         # 7
-        self.log.info("select inserted section (get id)")
+        self.log.info("[SECTION CREATE] select inserted section (get id)")
         await db.execute("""
             SELECT * FROM reactionmenu_section
             WHERE reactionmenu_id = %s AND message_id = %s AND deleted_at IS NULL
@@ -234,13 +238,13 @@ class ReactionPicker(commands.Cog):
         reactionmenu_section = await db.fetchone()
 
         # 8
-        self.log.info("send 5 messages for options")
+        self.log.info("[SECTION CREATE] send 5 messages for options")
         messages = []
         for i in range(5):
             messages.append(await ctx.send("_ _"))
 
         # 9
-        self.log.info("insert those 5 messages into database")
+        self.log.info("[SECTION CREATE] insert those 5 messages into database")
         await db.executemany("""
             INSERT INTO reactionmenu_section_option
                 (section_id, message_id)
@@ -248,7 +252,7 @@ class ReactionPicker(commands.Cog):
         """, [(reactionmenu_section["id"], msg.id) for msg in messages])
 
         # 10
-        self.log.info("commit and clean")
+        self.log.info("[SECTION CREATE] commit and clean")
         await db.commit()
         try:
             await ctx.message.delete()
@@ -279,22 +283,22 @@ class ReactionPicker(commands.Cog):
         guild, channel = ctx.guild, ctx.channel
 
         # 1
-        self.log.info("parse input")
+        self.log.info("[SECTION DELETE] parse input")
         args = self._parse_arguments(args)
         from_reactionmenu = args.get("from_reactionmenu", from_reactionmenu)
 
         # 2
-        self.log.info("validate input")
+        self.log.info("[SECTION DELETE] validate input")
         name = name.upper()
 
         # 3
-        self.log.info("if not to_reactionmenu provided, get first or error on multiple")
+        self.log.info("[SECTION DELETE] if not to_reactionmenu provided, get first or error on multiple")
         reactionmenu = await self.get_reactionmenu(ctx, from_reactionmenu, db=db)
         if not reactionmenu:
             return
 
         # 4
-        self.log.info("fetch section to delete")
+        self.log.info("[SECTION DELETE] fetch section to delete")
         await db.execute("""
             SELECT * FROM reactionmenu_section
             WHERE reactionmenu_id = %s AND `text` LIKE %s AND deleted_at IS NULL
@@ -306,7 +310,7 @@ class ReactionPicker(commands.Cog):
             return
 
         # 5
-        self.log.info("get option(s) which are to be deleted")
+        self.log.info("[SECTION DELETE] get option(s) which are to be deleted")
         await db.execute("""
             SELECT * FROM reactionmenu_section_option AS sec_opt
             INNER JOIN reactionmenu_option AS opt
@@ -316,12 +320,12 @@ class ReactionPicker(commands.Cog):
         rows = await db.fetchall()
 
         # 6
-        self.log.info("call option(s)_delete")
+        self.log.info("[SECTION DELETE] call option(s)_delete")
         for option in rows:
             await self.option_delete.callback(self, ctx, text=option["text"], from_section=name, from_reactionmenu=reactionmenu["name"])
 
         # 7
-        self.log.info("delete image with text {name}")
+        self.log.info("[SECTION DELETE] delete image with text {name}")
         try:
             message = await channel.fetch_message(section["message_id"])
             await message.delete()
@@ -329,7 +333,7 @@ class ReactionPicker(commands.Cog):
             pass
 
         # 8
-        self.log.info("mark section as deleted")
+        self.log.info("[SECTION DELETE] mark section as deleted")
         await db.execute("""
             UPDATE reactionmenu_section
             SET deleted_at = NOW()
@@ -337,13 +341,12 @@ class ReactionPicker(commands.Cog):
         """, (reactionmenu["id"], name))
 
         # 9
-        self.log.info("delete empty messages")
+        self.log.info("[SECTION DELETE] delete empty messages")
         await db.execute("""
             SELECT * FROM reactionmenu_section_option
             WHERE options = 0 AND section_id = %s AND deleted_at IS NULL
         """, (section["id"],))
         rows = await db.fetchall()
-        print(len(rows), rows)
 
         for row in rows:
             msg = await channel.fetch_message(row["message_id"])
@@ -352,17 +355,17 @@ class ReactionPicker(commands.Cog):
         await db.execute("""
             UPDATE reactionmenu_section_option
             SET deleted_at = NOW()
-            WHERE options = 0 AND section_id = %s
+            WHERE options = 0 AND section_id = %s AND deleted_at IS NULL
         """, (section["id"],))
 
         # 10
-        self.log.info("delete category channel")
+        self.log.info("[SECTION DELETE] delete category channel")
         category = core.utils.get(guild.categories, id=section["rep_category_id"])
         if category:
             await category.delete()
 
         # 11
-        self.log.info("commit and clean")
+        self.log.info("[SECTION DELETE] commit and clean")
         await db.commit()
         try:
             await ctx.message.delete()
@@ -427,24 +430,24 @@ class ReactionPicker(commands.Cog):
         guild, channel = ctx.guild, ctx.channel
 
         # 1
-        self.log.info("parse input")
+        self.log.info("[OPTION CREATE] parse input")
         args = self._parse_arguments(args)
         to_reactionmenu = args.get("to_reactionmenu", to_reactionmenu)
 
         # 2
-        self.log.info("if not to_reactionmenu provided, get first or error on multiple")
+        self.log.info("[OPTION CREATE] [OPTION CREATE] if not to_reactionmenu provided, get first or error on multiple")
         reactionmenu = await self.get_reactionmenu(ctx, to_reactionmenu, db=db)
         if not reactionmenu:
             return
 
         # 3
-        self.log.info("if not to_section provided, get first or error on multiple")
+        self.log.info("[OPTION CREATE] if not to_section provided, get first or error on multiple")
         section = await self.get_section(ctx, reactionmenu, to_section, db=db)
         if not section:
             return
 
         # 4
-        self.log.info("select the first non-full message")
+        self.log.info("[OPTION CREATE] select the first non-full message")
         await db.execute("""
             SELECT * FROM reactionmenu_section_option
             WHERE section_id = %s AND NOT is_full
@@ -457,13 +460,13 @@ class ReactionPicker(commands.Cog):
             return
 
         # 5
-        self.log.info("limit the options count to 40")
+        self.log.info("[OPTION CREATE] limit the options count to 40")
         if section['options'] > 40:
             await ctx.send("`[ERROR] Section can only have 40 options`")
             return
 
         # 6
-        self.log.info("append <emoji> <text> to the message")
+        self.log.info("[OPTION CREATE] append <emoji> <text> to the message")
         msg = await channel.fetch_message(messages[0]["message_id"])
         content = msg.content if msg.content != "_ _" else ""
         new_content = ""
@@ -488,16 +491,16 @@ class ReactionPicker(commands.Cog):
             content = new_content
 
         await msg.edit(content=new_content)
-        self.bot.loop.create_task(msg.add_reaction(emoji))
+        await msg.add_reaction(emoji)
 
         # 7
-        self.log.info("create text_channel, inherit permissions")
+        self.log.info("[OPTION CREATE] create text_channel, inherit permissions")
         category = core.utils.get(guild.categories, id=section["rep_category_id"])
         chnl = await guild.create_text_channel(text, category=category)
         await self.bot.trigger_event("on_guild_channel_create", chnl)
 
         # 8
-        self.log.info("insert option into database")
+        self.log.info("[OPTION CREATE] insert option into database")
         await db.execute("""
             INSERT INTO reactionmenu_option
                 (message_id, emoji, `text`, rep_channel_id)
@@ -505,7 +508,7 @@ class ReactionPicker(commands.Cog):
         """, (msg.id, str(emoji), text, chnl.id))
 
         # 9
-        self.log.info("commit and clean")
+        self.log.info("[OPTION CREATE] commit and clean")
         await db.commit()
         try:
             await ctx.message.delete()
@@ -534,25 +537,25 @@ class ReactionPicker(commands.Cog):
         guild, channel = ctx.guild, ctx.channel
 
         # 1
-        self.log.info("parse input")
+        self.log.info("[OPTION DELETE] parse input")
         args = self._parse_arguments(args)
         from_reactionmenu = args.get("from_reactionmenu", from_reactionmenu)
         from_section = args.get("from_section", from_section)
 
         # 2
-        self.log.info("if not to_reactionmenu provided, get first or error on multiple")
+        self.log.info("[OPTION DELETE] if not to_reactionmenu provided, get first or error on multiple")
         reactionmenu = await self.get_reactionmenu(ctx, from_reactionmenu, db=db)
         if not reactionmenu:
             return
 
         # 3
-        self.log.info("if not to_section provided, get first or error on multiple")
+        self.log.info("[OPTION DELETE] if not to_section provided, get first or error on multiple")
         section = await self.get_section(ctx, reactionmenu, from_section, db=db)
         if not section:
             return
 
         # 4
-        self.log.info("fetch option to delete")
+        self.log.info("[OPTION DELETE] fetch option to delete")
         await db.execute("""
             SELECT * FROM reactionmenu_option AS opt
             INNER JOIN reactionmenu_section_option AS sec_opt
@@ -566,7 +569,7 @@ class ReactionPicker(commands.Cog):
             return
 
         # 5
-        self.log.info("remove {emoji} {text} from message")
+        self.log.info("[OPTION DELETE] remove {emoji} {text} from message")
         msg = await channel.fetch_message(row["message_id"])
         content = msg.content if msg.content != "_ _" else ""
         new_content = ""
@@ -590,13 +593,13 @@ class ReactionPicker(commands.Cog):
         await msg.edit(content=new_content)
 
         # 6
-        self.log.info("remove reactions for {emoji}")
+        self.log.info("[OPTION DELETE] remove reactions for {emoji}")
         reaction = core.utils.get(msg.reactions, emoji=emoji)
         async for user in reaction.users():
             await msg.remove_reaction(emoji, user)
 
         # 7
-        self.log.info("mark option as deleted")
+        self.log.info("[OPTION DELETE] mark option as deleted")
         await db.execute("""
             UPDATE reactionmenu_option
             SET deleted_at = NOW()
@@ -604,7 +607,7 @@ class ReactionPicker(commands.Cog):
         """, (row["message_id"], text))
 
         # 8
-        self.log.info("delete text_channel")
+        self.log.info("[OPTION DELETE] delete text_channel")
         chnl = core.utils.get(channel.guild.channels, id=row["rep_channel_id"])
         if chnl:
             if chnl.last_message_id:
@@ -613,7 +616,7 @@ class ReactionPicker(commands.Cog):
                 await chnl.delete()
 
         # 9
-        self.log.info("commit and clean")
+        self.log.info("[OPTION DELETE] commit and clean")
         await db.commit()
         try:
             await ctx.message.delete()
@@ -654,7 +657,7 @@ class ReactionPicker(commands.Cog):
 
     @reactionmenu_group.command(name="setup")
     @needs_database
-    async def setup(self, ctx, filepath: str, reactionmenu_name: str, db=Database()):
+    async def setup(self, ctx, filepath: str, *, db=Database()):
         #
         # call reactionmenu_create
         # for section
@@ -662,30 +665,129 @@ class ReactionPicker(commands.Cog):
         #    for option
         #        call option_create
         #
-        pass
+        with open(filepath, "r", encoding="utf-8") as file:
+            menu = json.load(file)
+
+            await self.reactionmenu_create.callback(self, ctx, name=menu["name"])
+
+            sections = menu["sections"]
+            for section in sections:
+                await self.section_create.callback(self, ctx, name=section, to_reactionmenu=menu["name"])
+
+                options = menu["sections"][section]
+                for option in options:
+                    await self.option_create.callback(self, ctx, text=option, to_section=section, to_reactionmenu=menu["name"])
+
+        try:
+            await ctx.message.delete()
+        except:
+            pass
 
     """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @needs_database
+    async def on_raw_reaction_update(self, payload, event_type: str, db=Database()):
+        # skip event if user on cooldown
+        cooldown = self.users_on_cooldown.get(payload.user_id)
+        if cooldown and cooldown + timedelta(seconds=2) > datetime.now():
+            return  # on cooldown
+
+        # does the option exist? get it
+        await db.execute("""
+            SELECT * FROM reactionmenu_option
+            WHERE message_id = %s AND emoji LIKE %s AND deleted_at IS NULL
+            LIMIT 1
+        """, (payload.message_id, str(payload.emoji)))
+        row = await db.fetchone()
+        if not row:
+            return
+
+        # get channel
+        guild = self.bot.get_guild(payload.guild_id)
+        text = row["text"].lower().replace(" ", "-")
+        channel = core.utils.get(guild.channels, name=text)
+        if not channel:
+            return
+
+        author = guild.get_member(payload.user_id)
+        if event_type == "REACTION_ADD":
+            await channel.set_permissions(author, read_messages=True)
+        else:
+            await channel.set_permissions(author, read_messages=False)
+
+        self.users_on_cooldown[payload.user_id] = datetime.now()
 
     @commands.Cog.listener()
-    @needs_database
-    async def on_raw_reaction_add(self, payload, db=Database()):
-        pass
+    async def on_raw_reaction_add(self, payload):
+        await self.on_raw_reaction_update(payload, event_type="REACTION_ADD")
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """ - -------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.Cog.listener()
-    @needs_database
-    async def on_raw_reaction_remove(self, payload, db=Database()):
-        pass
+    async def on_raw_reaction_remove(self, payload):
+        await self.on_raw_reaction_update(payload, event_type="REACTION_REMOVE")
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """ - -------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.Cog.listener()
     @needs_database
     async def on_ready(self, db=Database()):
-        pass
+        self.bot.readyCogs[self.__class__.__name__] = False
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+        self.log.info("[ON_READY] getting options")
+        await db.execute("""
+            SELECT channel_id, opt.* FROM reactionmenu_option AS opt
+            INNER JOIN reactionmenu_section_option AS sec_opt USING (message_id)
+            INNER JOIN reactionmenu_section AS sec ON sec_opt.section_id = sec.id
+            INNER JOIN reactionmenu AS menu ON sec.reactionmenu_id = menu.id
+            WHERE opt.deleted_at IS NULL AND sec_opt.deleted_at IS NULL AND sec.deleted_at IS NULL AND menu.deleted_at IS NULL
+        """)
+        rows = await db.fetchall()
+        if not rows:
+            self.bot.readyCogs[self.__class__.__name__] = True
+            return
+
+        self.log.info("[ON_READY] parse each option")
+        for row in rows:
+            channel = self.bot.get_channel(row["channel_id"])
+            rep_channel = self.bot.get_channel(row["rep_channel_id"])
+            message = await channel.fetch_message(row["message_id"])
+
+            self.log.info("[ON_READY] get emoji")
+            found = re.search(r"\:([^:]+)\:", row["emoji"])
+            if not found:
+                await ctx.send("`[ERROR] Emoji not found`")
+                return
+            emoji_name = found.group(1)
+            emoji = core.utils.get(self.bot.emojis, name=emoji_name)
+
+            reaction = core.utils.get(message.reactions, emoji=emoji)
+            overwrites = rep_channel.overwrites
+
+            self.log.info("[ON_READY] get current values of reactions and permissions")
+            new_users = set(await reaction.users().flatten())
+            old_users = set(user for user, overwrite in overwrites.items()
+                            if isinstance(user, discord.Member) and
+                            overwrite.read_messages)
+
+            self.log.info("[ON_READY] get differences between reactions and permissions")
+            to_add = new_users - old_users
+            to_remove = old_users - new_users
+
+            for member in to_add:
+                self.log.info("[ON_READY] enabling {rep_channel} for {member}")
+                await rep_channel.set_permissions(member, read_messages=True)
+
+            for member in to_remove:
+                self.log.info("[ON_READY] disabling {rep_channel} for {member}")
+                await rep_channel.set_permissions(member, read_messages=False)
+
+            if not to_add and not to_remove:
+                self.log.info("[ON_READY] no changes made")
+
+        self.bot.readyCogs[self.__class__.__name__] = True
+
+    """ - -------------------------------------------------------------------------------------------------------------------------"""
 
     @staticmethod
     def generate_section_image(text):
