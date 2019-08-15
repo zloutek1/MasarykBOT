@@ -14,6 +14,26 @@ import json
 from core.utils import context, db
 from core.utils.db import Database
 
+class LoggingHandler(logging.StreamHandler):
+    def __init__(self, bot):
+        self.bot = bot
+        super().__init__(self)
+
+        self.temp = ""
+
+    def emit(self, record):
+        msg = self.format(record)
+
+        if len(self.temp) + len(msg) < 1900:
+            self.temp += f"{msg}\n"
+            return
+
+        with open("assets/local_db.json", "r", encoding="utf-8") as file:
+            local_db = json.load(file)
+            for channel_id in local_db["log_channels"]:
+                channel = self.bot.get_channel(channel_id)
+                if channel:
+                    self.bot.loop.create_task(channel.send(f"`{self.temp}`"))
 
 class MasarykBot(Bot):
     def __init__(self, *args, activity=Game(name="Commands: !help"), **kwargs):
@@ -32,11 +52,18 @@ class MasarykBot(Bot):
     def setup_logging(self):
         log = logging.getLogger()
         log.setLevel(logging.INFO)
-        handler = logging.FileHandler(filename='assets/masaryk.log', encoding='utf-8', mode='w')
+
         dt_fmt = '%Y-%m-%d %H:%M:%S'
         fmt = logging.Formatter('[{asctime}] [{levelname:<7}] {name}: {message}', dt_fmt, style='{')
+
+        handler = logging.FileHandler(filename='assets/masaryk.log', encoding='utf-8', mode='w')
         handler.setFormatter(fmt)
         log.addHandler(handler)
+
+        # handler = LoggingHandler(bot=self)
+        # handler.setFormatter(fmt)
+        # log.addHandler(handler)
+
         self.log = log
 
     """--------------------------------------------------------------------------------------------------------------------------"""
@@ -207,7 +234,7 @@ class MasarykBot(Bot):
 
         with open("assets/local_db.json", "r", encoding="utf-8") as file:
             local_db = json.load(file)
-            for channel_id in local_db["log_channels"]:
+            for channel_id in local_db["error_channels"]:
                 channel = self.get_channel(channel_id)
                 if channel:
                     await channel.send(embed=embed)
