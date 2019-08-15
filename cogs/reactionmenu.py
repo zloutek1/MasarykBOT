@@ -46,11 +46,11 @@ class ReactionPicker(commands.Cog):
         # ✓ disable sending messages & reacting
         # ✓ commit and clean
         #
-        self.log.info("")
+        self.log.debug("")
         guild, channel = ctx.guild, ctx.channel
 
         # 1
-        self.log.info("[MENU CREATE] check if menu with <name> does not already exist")
+        self.log.debug("[MENU CREATE] check if menu with <name> does not already exist")
         await db.execute("""
             SELECT * FROM   reactionmenu
             WHERE  channel_id = %s AND name LIKE %s AND deleted_at IS NULL
@@ -62,18 +62,18 @@ class ReactionPicker(commands.Cog):
             return
 
         # 2
-        self.log.info("[MENU CREATE] send message \"Reactionmenu <name>\"")
+        self.log.debug("[MENU CREATE] send message \"Reactionmenu <name>\"")
         message = await ctx.send(f"**────────────────[  {name}  ]───────────────**")
         await self.bot.trigger_event("on_message", message)
 
         # 3
-        self.log.info("[MENU CREATE] insert menu into database")
+        self.log.debug("[MENU CREATE] insert menu into database")
         await db.execute("""
             INSERT INTO reactionmenu (channel_id, message_id, name)
                    VALUES (%s, %s, %s)""", (channel.id, message.id, name))
 
         # 4
-        self.log.info("[MENU CREATE] disable sending messages & reacting")
+        self.log.debug("[MENU CREATE] disable sending messages & reacting")
         perms = {
             guild.default_role: discord.PermissionOverwrite(
                 add_reactions=False, send_messages=False),
@@ -84,14 +84,15 @@ class ReactionPicker(commands.Cog):
             await channel.set_permissions(target, overwrite=overwrite)
 
         # 5
-        self.log.info("[MENU CREATE] commit and clean")
+        self.log.debug("[MENU CREATE] commit and clean")
         await db.commit()
         try:
             await ctx.message.delete()
         except:
             pass
 
-        self.log.info("")
+        self.log.info(f"created a reactionmenu {name}")
+        self.log.debug("")
 
     @reactionmenu_group.command(name='delete', aliases=('remove', 'del', 'rm'))
     @needs_database
@@ -104,11 +105,11 @@ class ReactionPicker(commands.Cog):
         # ✓ mark menu as deleted
         # ✓ commit and clean
         #
-        self.log.info("")
+        self.log.debug("")
         guild, channel = ctx.guild, ctx.channel
 
         # 1
-        self.log.info("[MENU DELETE] fetch menu to delete")
+        self.log.debug("[MENU DELETE] fetch menu to delete")
         await db.execute("""
             SELECT * FROM reactionmenu
             WHERE channel_id = %s AND name LIKE %s AND deleted_at IS NULL
@@ -121,19 +122,19 @@ class ReactionPicker(commands.Cog):
             return
 
         # 2
-        self.log.info("[MENU DELETE] get section(s) which are to be deleted")
+        self.log.debug("[MENU DELETE] get section(s) which are to be deleted")
         await db.execute("""
             SELECT * FROM   reactionmenu_section
             WHERE  reactionmenu_id = %s AND deleted_at IS NULL""", (row["id"],))
         rows = await db.fetchall()
 
         # 3
-        self.log.info("[MENU DELETE] call section(s)_delete")
+        self.log.debug("[MENU DELETE] call section(s)_delete")
         for section in rows:
             await self.section_delete.callback(self, ctx, name=section["text"], from_reactionmenu=name)
 
         # 4
-        self.log.info("[MENU DELETE] delete message \"Reactionmenu <name>\"")
+        self.log.debug("[MENU DELETE] delete message \"Reactionmenu <name>\"")
         try:
             message = await channel.fetch_message(row["message_id"])
             await message.delete()
@@ -141,7 +142,7 @@ class ReactionPicker(commands.Cog):
             pass
 
         # 5
-        self.log.info("[MENU DELETE] mark menu as deleted")
+        self.log.debug("[MENU DELETE] mark menu as deleted")
         await db.execute("""
             UPDATE reactionmenu
             SET deleted_at = NOW()
@@ -149,14 +150,15 @@ class ReactionPicker(commands.Cog):
         """, (channel.id, name))
 
         # 6
-        self.log.info("[MENU DELETE] commit and clean")
+        self.log.debug("[MENU DELETE] commit and clean")
         await db.commit()
         try:
             await ctx.message.delete()
         except:
             pass
 
-        self.log.info("")
+        self.log.info(f"deleted a reactionmenu {name}")
+        self.log.debug("")
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -173,7 +175,7 @@ class ReactionPicker(commands.Cog):
         #
         # ✓ parse input
         # ✓ validate input
-        # ✓ if not to_reactionmenu provided, get first or error on multiple
+        # ✓ if not to_reactionmenu provided, get first or exit on multiple
         # ✓ get image with text {name} and send it
         # ✓ create category, set permissions
         # ✓ insert section into database
@@ -182,29 +184,29 @@ class ReactionPicker(commands.Cog):
         # ✓ insert those 5 messages into database
         # ✓ commit and clean
         #
-        self.log.info("")
+        self.log.debug("")
         guild, channel = ctx.guild, ctx.channel
 
         # 1
-        self.log.info("[SECTION CREATE] parse input")
+        self.log.debug("[SECTION CREATE] parse input")
         args = self._parse_arguments(args)
         to_reactionmenu = args.get("to_reactionmenu", to_reactionmenu)
 
         # 2
-        self.log.info("[SECTION CREATE] validate input")
+        self.log.debug("[SECTION CREATE] validate input")
         name = name.upper()
         if len(name) > 11:
             await ctx.send("`[ERROR] section name can be up to 11 letters long`", delete_after=5)
             return
 
         # 3
-        self.log.info("[SECTION CREATE] if not to_reactionmenu provided, get first or error on multiple")
+        self.log.debug("[SECTION CREATE] if not to_reactionmenu provided, get first or exit on multiple")
         reactionmenu = await self.get_reactionmenu(ctx, to_reactionmenu, db=db)
         if not reactionmenu:
             return
 
         # 4
-        self.log.info("[SECTION CREATE] get image with text {name} and send it")
+        self.log.debug("[SECTION CREATE] get image with text {name} and send it")
         filename = f"assets/{reactionmenu['name']}-{name}.png"
         image = self.generate_section_image(name)
         image.save(filename)
@@ -212,7 +214,7 @@ class ReactionPicker(commands.Cog):
         os.remove(filename)
 
         # 5
-        self.log.info("[SECTION CREATE] create category, set permissions")
+        self.log.debug("[SECTION CREATE] create category, set permissions")
         perms = {
             guild.default_role: discord.PermissionOverwrite(read_messages=False),
             self.bot.user: discord.PermissionOverwrite(read_messages=True)
@@ -221,7 +223,7 @@ class ReactionPicker(commands.Cog):
         await self.bot.trigger_event("on_guild_channel_create", category)
 
         # 6
-        self.log.info("[SECTION CREATE] nsert section into database")
+        self.log.debug("[SECTION CREATE] nsert section into database")
         await db.execute("""
             INSERT INTO reactionmenu_section
                 (reactionmenu_id, message_id, `text`, rep_category_id)
@@ -230,7 +232,7 @@ class ReactionPicker(commands.Cog):
         await db.commit()
 
         # 7
-        self.log.info("[SECTION CREATE] select inserted section (get id)")
+        self.log.debug("[SECTION CREATE] select inserted section (get id)")
         await db.execute("""
             SELECT * FROM reactionmenu_section
             WHERE reactionmenu_id = %s AND message_id = %s AND deleted_at IS NULL
@@ -238,13 +240,13 @@ class ReactionPicker(commands.Cog):
         reactionmenu_section = await db.fetchone()
 
         # 8
-        self.log.info("[SECTION CREATE] send 5 messages for options")
+        self.log.debug("[SECTION CREATE] send 5 messages for options")
         messages = []
         for i in range(5):
             messages.append(await ctx.send("_ _"))
 
         # 9
-        self.log.info("[SECTION CREATE] insert those 5 messages into database")
+        self.log.debug("[SECTION CREATE] insert those 5 messages into database")
         await db.executemany("""
             INSERT INTO reactionmenu_section_option
                 (section_id, message_id)
@@ -252,14 +254,15 @@ class ReactionPicker(commands.Cog):
         """, [(reactionmenu_section["id"], msg.id) for msg in messages])
 
         # 10
-        self.log.info("[SECTION CREATE] commit and clean")
+        self.log.debug("[SECTION CREATE] commit and clean")
         await db.commit()
         try:
             await ctx.message.delete()
         except:
             pass
 
-        self.log.info("")
+        self.log.info(f"created a section {name}")
+        self.log.debug("")
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -269,7 +272,7 @@ class ReactionPicker(commands.Cog):
         #
         # ✓ parse input
         # ✓ validate input
-        # ✓ if not to_reactionmenu provided, get first or error on multiple
+        # ✓ if not to_reactionmenu provided, get first or exit on multiple
         # ✓ fetch section to delete
         # ✓ get option(s) which are to be deleted
         # ✓ call option(s)_delete
@@ -279,26 +282,26 @@ class ReactionPicker(commands.Cog):
         # ✓ delete category channel
         # ✓ commit and clean
         #
-        self.log.info("")
+        self.log.debug("")
         guild, channel = ctx.guild, ctx.channel
 
         # 1
-        self.log.info("[SECTION DELETE] parse input")
+        self.log.debug("[SECTION DELETE] parse input")
         args = self._parse_arguments(args)
         from_reactionmenu = args.get("from_reactionmenu", from_reactionmenu)
 
         # 2
-        self.log.info("[SECTION DELETE] validate input")
+        self.log.debug("[SECTION DELETE] validate input")
         name = name.upper()
 
         # 3
-        self.log.info("[SECTION DELETE] if not to_reactionmenu provided, get first or error on multiple")
+        self.log.debug("[SECTION DELETE] if not to_reactionmenu provided, get first or exit on multiple")
         reactionmenu = await self.get_reactionmenu(ctx, from_reactionmenu, db=db)
         if not reactionmenu:
             return
 
         # 4
-        self.log.info("[SECTION DELETE] fetch section to delete")
+        self.log.debug("[SECTION DELETE] fetch section to delete")
         await db.execute("""
             SELECT * FROM reactionmenu_section
             WHERE reactionmenu_id = %s AND `text` LIKE %s AND deleted_at IS NULL
@@ -310,7 +313,7 @@ class ReactionPicker(commands.Cog):
             return
 
         # 5
-        self.log.info("[SECTION DELETE] get option(s) which are to be deleted")
+        self.log.debug("[SECTION DELETE] get option(s) which are to be deleted")
         await db.execute("""
             SELECT * FROM reactionmenu_section_option AS sec_opt
             INNER JOIN reactionmenu_option AS opt
@@ -320,12 +323,12 @@ class ReactionPicker(commands.Cog):
         rows = await db.fetchall()
 
         # 6
-        self.log.info("[SECTION DELETE] call option(s)_delete")
+        self.log.debug("[SECTION DELETE] call option(s)_delete")
         for option in rows:
             await self.option_delete.callback(self, ctx, text=option["text"], from_section=name, from_reactionmenu=reactionmenu["name"])
 
         # 7
-        self.log.info("[SECTION DELETE] delete image with text {name}")
+        self.log.debug("[SECTION DELETE] delete image with text {name}")
         try:
             message = await channel.fetch_message(section["message_id"])
             await message.delete()
@@ -333,7 +336,7 @@ class ReactionPicker(commands.Cog):
             pass
 
         # 8
-        self.log.info("[SECTION DELETE] mark section as deleted")
+        self.log.debug("[SECTION DELETE] mark section as deleted")
         await db.execute("""
             UPDATE reactionmenu_section
             SET deleted_at = NOW()
@@ -341,7 +344,7 @@ class ReactionPicker(commands.Cog):
         """, (reactionmenu["id"], name))
 
         # 9
-        self.log.info("[SECTION DELETE] delete empty messages")
+        self.log.debug("[SECTION DELETE] delete empty messages")
         await db.execute("""
             SELECT * FROM reactionmenu_section_option
             WHERE options = 0 AND section_id = %s AND deleted_at IS NULL
@@ -359,20 +362,21 @@ class ReactionPicker(commands.Cog):
         """, (section["id"],))
 
         # 10
-        self.log.info("[SECTION DELETE] delete category channel")
+        self.log.debug("[SECTION DELETE] delete category channel")
         category = core.utils.get(guild.categories, id=section["rep_category_id"])
         if category:
             await category.delete()
 
         # 11
-        self.log.info("[SECTION DELETE] commit and clean")
+        self.log.debug("[SECTION DELETE] commit and clean")
         await db.commit()
         try:
             await ctx.message.delete()
         except:
             pass
 
-        self.log.info("")
+        self.log.info(f"deleted a section {name}")
+        self.log.debug("")
 
     async def get_reactionmenu(self, ctx, to_reactionmenu: str = None, db=Database()):
         guild, channel = ctx.guild, ctx.channel
@@ -417,8 +421,8 @@ class ReactionPicker(commands.Cog):
     async def option_create(self, ctx, text: str, *, args: str = None, to_section: str = None, to_reactionmenu: str = None, db=Database()):
         #
         # ✓ parse input
-        # ✓ if not to_reactionmenu provided, get first or error on multiple
-        # ✓ if not to_section provided, get first or error on multiple
+        # ✓ if not to_reactionmenu provided, get first or exit on multiple
+        # ✓ if not to_section provided, get first or exit on multiple
         # ✓ select the first non-full message
         # ✓ limit the options count to 40
         # ✓ append <emoji> <text> to the message
@@ -426,28 +430,28 @@ class ReactionPicker(commands.Cog):
         # ✓ insert option into database
         # ✓ commit and clean
         #
-        self.log.info("")
+        self.log.debug("")
         guild, channel = ctx.guild, ctx.channel
 
         # 1
-        self.log.info("[OPTION CREATE] parse input")
+        self.log.debug("[OPTION CREATE] parse input")
         args = self._parse_arguments(args)
         to_reactionmenu = args.get("to_reactionmenu", to_reactionmenu)
 
         # 2
-        self.log.info("[OPTION CREATE] [OPTION CREATE] if not to_reactionmenu provided, get first or error on multiple")
+        self.log.debug("[OPTION CREATE] [OPTION CREATE] if not to_reactionmenu provided, get first or exit on multiple")
         reactionmenu = await self.get_reactionmenu(ctx, to_reactionmenu, db=db)
         if not reactionmenu:
             return
 
         # 3
-        self.log.info("[OPTION CREATE] if not to_section provided, get first or error on multiple")
+        self.log.debug("[OPTION CREATE] if not to_section provided, get first or exit on multiple")
         section = await self.get_section(ctx, reactionmenu, to_section, db=db)
         if not section:
             return
 
         # 4
-        self.log.info("[OPTION CREATE] select the first non-full message")
+        self.log.debug("[OPTION CREATE] select the first non-full message")
         await db.execute("""
             SELECT * FROM reactionmenu_section_option
             WHERE section_id = %s AND NOT is_full
@@ -460,13 +464,13 @@ class ReactionPicker(commands.Cog):
             return
 
         # 5
-        self.log.info("[OPTION CREATE] limit the options count to 40")
+        self.log.debug("[OPTION CREATE] limit the options count to 40")
         if section['options'] > 40:
             await ctx.send("`[ERROR] Section can only have 40 options`")
             return
 
         # 6
-        self.log.info("[OPTION CREATE] append <emoji> <text> to the message")
+        self.log.debug("[OPTION CREATE] append <emoji> <text> to the message")
         msg = await channel.fetch_message(messages[0]["message_id"])
         content = msg.content if msg.content != "_ _" else ""
         new_content = ""
@@ -494,13 +498,13 @@ class ReactionPicker(commands.Cog):
         await msg.add_reaction(emoji)
 
         # 7
-        self.log.info("[OPTION CREATE] create text_channel, inherit permissions")
+        self.log.debug("[OPTION CREATE] create text_channel, inherit permissions")
         category = core.utils.get(guild.categories, id=section["rep_category_id"])
         chnl = await guild.create_text_channel(text, category=category)
         await self.bot.trigger_event("on_guild_channel_create", chnl)
 
         # 8
-        self.log.info("[OPTION CREATE] insert option into database")
+        self.log.debug("[OPTION CREATE] insert option into database")
         await db.execute("""
             INSERT INTO reactionmenu_option
                 (message_id, emoji, `text`, rep_channel_id)
@@ -508,14 +512,15 @@ class ReactionPicker(commands.Cog):
         """, (msg.id, str(emoji), text, chnl.id))
 
         # 9
-        self.log.info("[OPTION CREATE] commit and clean")
+        self.log.debug("[OPTION CREATE] commit and clean")
         await db.commit()
         try:
             await ctx.message.delete()
         except:
             pass
 
-        self.log.info("")
+        self.log.info(f"created an option {name}")
+        self.log.debug("")
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -524,8 +529,8 @@ class ReactionPicker(commands.Cog):
     async def option_delete(self, ctx, text: str, *, args: str = None, from_section: str = None, from_reactionmenu: str = None, db=Database()):
         #
         # ✓ parse input
-        # ✓ if not to_reactionmenu provided, get first or error on multiple
-        # ✓ if not to_section provided, get first or error on multiple
+        # ✓ if not to_reactionmenu provided, get first or exit on multiple
+        # ✓ if not to_section provided, get first or exit on multiple
         # ✓ fetch option to delete
         # ✓ remove {emoji} {text} from message
         # ✓ remove reactions for {emoji}
@@ -533,29 +538,29 @@ class ReactionPicker(commands.Cog):
         # ✓ delete text_channel
         # ✓ commit and clean
         #
-        self.log.info("")
+        self.log.debug("")
         guild, channel = ctx.guild, ctx.channel
 
         # 1
-        self.log.info("[OPTION DELETE] parse input")
+        self.log.debug("[OPTION DELETE] parse input")
         args = self._parse_arguments(args)
         from_reactionmenu = args.get("from_reactionmenu", from_reactionmenu)
         from_section = args.get("from_section", from_section)
 
         # 2
-        self.log.info("[OPTION DELETE] if not to_reactionmenu provided, get first or error on multiple")
+        self.log.debug("[OPTION DELETE] if not to_reactionmenu provided, get first or exit on multiple")
         reactionmenu = await self.get_reactionmenu(ctx, from_reactionmenu, db=db)
         if not reactionmenu:
             return
 
         # 3
-        self.log.info("[OPTION DELETE] if not to_section provided, get first or error on multiple")
+        self.log.debug("[OPTION DELETE] if not to_section provided, get first or exit on multiple")
         section = await self.get_section(ctx, reactionmenu, from_section, db=db)
         if not section:
             return
 
         # 4
-        self.log.info("[OPTION DELETE] fetch option to delete")
+        self.log.debug("[OPTION DELETE] fetch option to delete")
         await db.execute("""
             SELECT * FROM reactionmenu_option AS opt
             INNER JOIN reactionmenu_section_option AS sec_opt
@@ -569,7 +574,7 @@ class ReactionPicker(commands.Cog):
             return
 
         # 5
-        self.log.info("[OPTION DELETE] remove {emoji} {text} from message")
+        self.log.debug("[OPTION DELETE] remove {emoji} {text} from message")
         msg = await channel.fetch_message(row["message_id"])
         content = msg.content if msg.content != "_ _" else ""
         new_content = ""
@@ -593,13 +598,13 @@ class ReactionPicker(commands.Cog):
         await msg.edit(content=new_content)
 
         # 6
-        self.log.info("[OPTION DELETE] remove reactions for {emoji}")
+        self.log.debug("[OPTION DELETE] remove reactions for {emoji}")
         reaction = core.utils.get(msg.reactions, emoji=emoji)
         async for user in reaction.users():
             await msg.remove_reaction(emoji, user)
 
         # 7
-        self.log.info("[OPTION DELETE] mark option as deleted")
+        self.log.debug("[OPTION DELETE] mark option as deleted")
         await db.execute("""
             UPDATE reactionmenu_option
             SET deleted_at = NOW()
@@ -607,7 +612,7 @@ class ReactionPicker(commands.Cog):
         """, (row["message_id"], text))
 
         # 8
-        self.log.info("[OPTION DELETE] delete text_channel")
+        self.log.debug("[OPTION DELETE] delete text_channel")
         chnl = core.utils.get(channel.guild.channels, id=row["rep_channel_id"])
         if chnl:
             if chnl.last_message_id:
@@ -616,14 +621,15 @@ class ReactionPicker(commands.Cog):
                 await chnl.delete()
 
         # 9
-        self.log.info("[OPTION DELETE] commit and clean")
+        self.log.debug("[OPTION DELETE] commit and clean")
         await db.commit()
         try:
             await ctx.message.delete()
         except:
             pass
 
-        self.log.info("")
+        self.log.info(f"deleted an option {name}")
+        self.log.debug("")
 
     async def get_section(self, ctx, reactionmenu, to_section: str = None, db=Database()):
         guild, channel = ctx.guild, ctx.channel
@@ -665,6 +671,10 @@ class ReactionPicker(commands.Cog):
         #    for option
         #        call option_create
         #
+        self.log.info(f"starting a reactionmenu setup")
+        await ctx.channel.set_permissions(self.bot.user, read_messages=True)
+        await ctx.channel.set_permissions(ctx.guild.default_role, read_messages=False)
+
         with open(filepath, "r", encoding="utf-8") as file:
             menu = json.load(file)
 
@@ -682,6 +692,9 @@ class ReactionPicker(commands.Cog):
             await ctx.message.delete()
         except:
             pass
+
+        await ctx.channel.set_permissions(ctx.guild.default_role, read_messages=True)
+        self.log.info(f"finished a reactionmenu setup")
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -753,7 +766,6 @@ class ReactionPicker(commands.Cog):
             rep_channel = self.bot.get_channel(row["rep_channel_id"])
             message = await channel.fetch_message(row["message_id"])
 
-            self.log.info("[ON_READY] get emoji")
             found = re.search(r"\:([^:]+)\:", row["emoji"])
             if not found:
                 await ctx.send("`[ERROR] Emoji not found`")
@@ -764,13 +776,11 @@ class ReactionPicker(commands.Cog):
             reaction = core.utils.get(message.reactions, emoji=emoji)
             overwrites = rep_channel.overwrites
 
-            self.log.info("[ON_READY] get current values of reactions and permissions")
             new_users = set(await reaction.users().flatten())
             old_users = set(user for user, overwrite in overwrites.items()
                             if isinstance(user, discord.Member) and
                             overwrite.read_messages)
 
-            self.log.info("[ON_READY] get differences between reactions and permissions")
             to_add = new_users - old_users
             to_remove = old_users - new_users
 
@@ -781,9 +791,6 @@ class ReactionPicker(commands.Cog):
             for member in to_remove:
                 self.log.info("[ON_READY] disabling {rep_channel} for {member}")
                 await rep_channel.set_permissions(member, read_messages=False)
-
-            if not to_add and not to_remove:
-                self.log.info("[ON_READY] no changes made")
 
         self.bot.readyCogs[self.__class__.__name__] = True
 
