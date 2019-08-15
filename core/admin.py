@@ -51,10 +51,14 @@ class Admin(commands.Cog):
         if not isinstance(category, discord.channel.CategoryChannel):
             await ctx.send("channel is not a category", delete_after=5)
 
+        del_cat = True
         for channel in category.channels:
             if not channel.last_message_id:
                 await channel.delete()
-        await category.delete()
+            else:
+                del_cat = False
+        if del_cat:
+            await category.delete()
 
     @commands.group(name="log_channel")
     @has_permissions(manage_channels=True)
