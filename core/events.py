@@ -1,3 +1,5 @@
+import logging
+
 import discord
 from discord import Color, Embed, Member, Object
 from discord.ext import commands
@@ -8,6 +10,7 @@ import datetime
 import json
 
 from config import BotConfig
+import core.utils.get
 from core.utils import db
 
 
@@ -16,6 +19,7 @@ class Events(commands.Cog):
 
     def __init__(self, bot: Bot):
         self.bot = bot
+        self.log = logging.getLogger(__name__)
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -43,6 +47,61 @@ class Events(commands.Cog):
     @commands.command()
     async def ping(self, ctx):
         await ctx.send("pong!")
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @commands.command()
+    async def info(self, ctx):
+        status = {}
+        for member in ctx.guild.members:
+            status[member.status.name] = status.get(member.status.name, 0) + 1
+
+        online = core.utils.get(self.bot.emojis, name="status_online")
+        idle = core.utils.get(self.bot.emojis, name="status_idle")
+        dnd = core.utils.get(self.bot.emojis, name="status_dnd")
+        streaming = core.utils.get(self.bot.emojis, name="status_streaming")
+        offline = core.utils.get(self.bot.emojis, name="status_offline")
+
+        text = core.utils.get(self.bot.emojis, name="text_channel")
+        voice = core.utils.get(self.bot.emojis, name="voice_channel")
+
+        embed = Embed(
+            title=f"{ctx.guild.name}",
+            description=f"{ctx.guild.description if ctx.guild.description else ''}",
+            color=Color.from_rgb(0, 0, 0))
+        embed.add_field(
+            name="ID",
+            value=(f"{ctx.guild.id}")
+        )
+        embed.add_field(
+            name="Owner",
+            value=(f"{ctx.guild.owner}")
+        )
+        embed.add_field(
+            name="Channels",
+            value=("{text} {text_count} " +
+                   "{voice} {voice_count}").format(
+                 text=text, text_count=len(ctx.guild.text_channels),
+                 voice=voice, voice_count=len(ctx.guild.voice_channels)),
+            inline=False
+        )
+        embed.add_field(
+            name="members",
+            value=("{online} {online_count} " +
+                   "{idle} {idle_count} " +
+                   "{dnd} {dnd_count} " +
+                   "{streaming} {streaming_count} " +
+                   "{offline} {offline_count}").format(
+                online=online, online_count=status.get("online", 0),
+                idle=idle, idle_count=status.get("idle", 0),
+                dnd=dnd, dnd_count=status.get("dnd", 0),
+                streaming=streaming, streaming_count=status.get("streaming", 0),
+                offline=offline, offline_count=status.get("offline", 0)) +
+            f"\n**Total:** {len(ctx.guild.members)}",
+            inline=False
+        )
+
+        await ctx.send(embed=embed)
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
