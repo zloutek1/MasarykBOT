@@ -30,8 +30,6 @@ class AboutMenu(commands.Cog):
         self.bot = bot
         self.imagePath = "https://gitlab.com/zloutek1/MasarykBOT/raw/master/"
 
-        self.users_on_cooldown = {}
-
     @commands.group(name="aboutmenu")
     async def aboutmenu(self, ctx):
         pass
@@ -46,6 +44,11 @@ class AboutMenu(commands.Cog):
         if len(roles) != len(emojis):
             await ctx.send("`len(roles) != len(emojis)`", delete_after=5)
             return
+
+        await ctx.channel.set_permissions(self.bot.user,
+            add_reactions=True, send_messages=True)
+        await ctx.channel.set_permissions(ctx.guild.default_role,
+            add_reactions=False, send_messages=False)
 
         embed = Embed(title=text)
         embed.set_image(url=os.path.join(self.imagePath, image_path))
@@ -84,11 +87,6 @@ class AboutMenu(commands.Cog):
 
     @needs_database
     async def on_raw_reaction_update(self, payload, event_type: str, db=Database()):
-        # skip event if user on cooldown
-        cooldown = self.users_on_cooldown.get(payload.user_id)
-        if cooldown and cooldown + timedelta(seconds=2) > datetime.now():
-            return  # on cooldown
-
         # does the option exist? get it
         await db.execute("""
             SELECT channel_id, message_id, image, `text`, emoji, role
@@ -114,8 +112,6 @@ class AboutMenu(commands.Cog):
             await author.add_roles(role)
         else:
             await author.remove_roles(role)
-
-        self.users_on_cooldown[payload.user_id] = datetime.now()
 
     """---------------------------------------------------------------------------------------------------------------------------"""
 
