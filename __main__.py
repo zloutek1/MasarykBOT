@@ -25,7 +25,8 @@ if __name__ == "__main__":
         "cogs.leaderboard",
         "cogs.fun",
         "cogs.reactionmenu",
-        "cogs.aboutmenu"
+        "cogs.aboutmenu",
+        "cogs.math"
     ]
 
     ##

@@ -14,6 +14,7 @@ import json
 from core.utils import context, db
 from core.utils.db import Database
 
+
 class LoggingHandler(logging.StreamHandler):
     def __init__(self, bot):
         self.bot = bot
@@ -35,6 +36,7 @@ class LoggingHandler(logging.StreamHandler):
                 if channel:
                     self.bot.loop.create_task(channel.send(f"`{self.temp}`"))
 
+
 class MasarykBot(Bot):
     def __init__(self, *args, activity=Game(name="Commands: !help"), **kwargs):
         super().__init__(*args, **kwargs)
@@ -46,7 +48,6 @@ class MasarykBot(Bot):
         self.loop.create_task(self.handle_database())
 
         self.readyCogs = {}
-
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -90,6 +91,7 @@ class MasarykBot(Bot):
                 self.db = Database()
 
                 dots = ("." * (attempts % 3 + 1) + "   ")[:3]
+                self.log.error(e)
                 print("\r    [BOT] Database offline: reconnecting" + dots, end="")
 
                 await self.change_presence(status=discord.Status.dnd, activity=Game(name="Database offline"))
