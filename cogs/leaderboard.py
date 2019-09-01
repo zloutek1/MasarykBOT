@@ -1,8 +1,10 @@
 import discord
 from discord.ext import commands
-from discord import Colour, Embed, Member, Object, File
+from discord import Colour, Embed, Member, Object, File, PartialEmoji
 from discord.channel import TextChannel
 
+import re
+from emoji import UNICODE_EMOJI
 from typing import Optional, Union
 
 import core.utils.get
@@ -20,7 +22,7 @@ class Leaderboard(commands.Cog):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def catchup_leaderboard_get(self, message, leaderboard_data, db = Database()):
+    async def catchup_leaderboard_get(self, message, leaderboard_data, *, db=Database()):
         c = message.content.lower()
         if c.startswith("!") or c.startswith("pls"):
             return
@@ -28,13 +30,43 @@ class Leaderboard(commands.Cog):
         leaderboard_data.append((message.guild.id, message.channel.id, message.author.id, 1, message.created_at, message.created_at))
 
     @needs_database
-    async def catchup_leaderboard_insert(self, leaderboard_data, db = Database()):
+    async def catchup_leaderboard_insert(self, leaderboard_data, *, db=Database()):
         for row in leaderboard_data:
             await db.execute("""
                 INSERT IGNORE INTO leaderboard (guild_id, channel_id, author_id, messages_sent, `timestamp`) VALUES (%s, %s, %s, %s, %s)
                         ON DUPLICATE KEY UPDATE messages_sent=messages_sent+1, `timestamp`= %s
             """, row)
         await db.commit()
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @needs_database
+    async def catchup_leaderboard_emoji_get(self, message, leaderboard_emoji_data, *, db=Database()):
+        c = message.content.lower()
+
+        emojis = (re.findall(r"\<\:\w+\:(\d+)\>", c) +
+                  [em for em in c if em in UNICODE_EMOJI])
+
+        for emoji in emojis:
+            if emoji.isdigit():
+                emoji = self.bot.get_emoji(int(emoji))
+                if emoji is None:
+                    emoji = core.utils.get(self.bot.emojis, name="nitroEmotes")
+
+                emoji = emoji.id
+
+            leaderboard_emoji_data.append((message.guild.id, message.channel.id, emoji, 1, message.created_at, message.created_at))
+
+    @needs_database
+    async def catchup_leaderboard_emoji_insert(self, leaderboard_emoji_data, *, db=Database()):
+        for row in leaderboard_emoji_data:
+            await db.execute("""
+                INSERT INTO leaderboard_emoji (guild_id, channel_id, emoji, sent_times, `timestamp`) VALUES (%s, %s, %s, %s, %s)
+                        ON DUPLICATE KEY UPDATE sent_times=sent_times+1, `timestamp`= %s
+            """, row)
+        await db.commit()
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -43,13 +75,15 @@ class Leaderboard(commands.Cog):
         if hasattr(self.bot, "add_catchup_task"):
             self.bot.add_catchup_task("leaderboard", self.catchup_leaderboard_get, self.catchup_leaderboard_insert)
 
+            self.bot.add_catchup_task("leaderboard_emoji", self.catchup_leaderboard_emoji_get, self.catchup_leaderboard_emoji_insert)
+
         self.bot.readyCogs[self.__class__.__name__] = True
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.command()
     @needs_database
-    async def leaderboard(self, ctx, channel: Union[TextChannel, Member] = None, member: Union[Member, TextChannel] = None, db = Database()):
+    async def leaderboard(self, ctx, channel: Union[TextChannel, Member] = None, member: Union[Member, TextChannel] = None, *, db=Database()):
         channel, member = (channel if isinstance(channel, TextChannel) else
                            member if isinstance(member, TextChannel) else
                            None,
@@ -123,7 +157,6 @@ class Leaderboard(commands.Cog):
         await db.execute("SELECT * from (SELECT * FROM first_table UNION ALL SELECT * FROM middle_table UNION ALL SELECT * FROM last_table) result ORDER BY `count` DESC;")
         rows2 = await db.fetchall()
 
-
         """
         print the leaderboard
         """
@@ -143,10 +176,10 @@ class Leaderboard(commands.Cog):
                         medal=self.get_medal(i + 1),
                         count=row["count"],
                         author=f'**{row["author"]}**'
-                            if row["author_id"] == (
-                                author.id if not member else member.id)
-                            else
-                            row["author"],
+                        if row["author_id"] == (
+                            author.id if not member else member.id)
+                        else
+                        row["author"],
                         top=len(str(rows1[0]["count"]))
                     )
                     for i, row in enumerate(rows1)
@@ -177,6 +210,78 @@ class Leaderboard(commands.Cog):
             3: core.utils.get(self.bot.emojis, name="bronze_medal")
         }.get(i, core.utils.get(self.bot.emojis, name="BLANK"))
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @commands.command(name="emojiboard", aliases=("emoji_leaderboard", "leadermoji"))
+    @needs_database
+    async def emojiboard(self, ctx, channel: Union[TextChannel, Member] = None, *, db=Database()):
+        channel = channel if isinstance(channel, TextChannel) else None
+
+        guild = ctx.guild
+        author = ctx.message.author
+
+        params = {"guild_id": guild.id}
+
+        if channel:
+            params["channel_id"] = channel.id
+
+        top10_SQL = f"""
+            SELECT
+                emoji,
+                SUM(sent_times) AS `count`
+            FROM leaderboard_emoji AS ldb
+            WHERE emoji != 617744996497621025 AND
+            guild_id = %(guild_id)s {'AND channel_id = %(channel_id)s' if channel is not None else ''}
+            GROUP BY emoji
+            ORDER BY `count` DESC
+            LIMIT 10
+        """
+
+        await db.execute(top10_SQL, params)
+        rows = await db.fetchall()
+
+        nitro_SQL = f"""
+        SELECT
+            emoji,
+            SUM(sent_times) AS `count`
+        FROM leaderboard_emoji AS ldb
+        WHERE emoji = 617744996497621025 AND
+        guild_id = %(guild_id)s {'AND channel_id = %(channel_id)s' if channel is not None else ''}
+        GROUP BY emoji
+        ORDER BY `count` DESC
+        LIMIT 1;
+        """
+        await db.execute(nitro_SQL, params)
+        nitro_row = await db.fetchone()
+
+        """
+        print the emoji leaderboard
+        """
+
+        template = "`{index:0>2}.` {emoji} `{count:.>30}`"
+
+        embed = Embed(color=0x53acf2)
+        embed.add_field(
+            name=f"FI MUNI emoji Leaderboard! ({len(rows)})",
+            inline=False,
+            value="\n".join([
+                template.format(
+                    index=i + 1,
+                    count=row["count"],
+                    emoji=self.bot.get_emoji(int(row["emoji"])) if row["emoji"].isdigit() else row["emoji"]
+                )
+                for i, row in enumerate(rows)
+            ]))
+        embed.add_field(
+            name="Nitro emojis",
+            inline=False,
+            value="{emoji} `{count:\u0000>{top}}`".format(
+                count=nitro_row["count"],
+                emoji=self.bot.get_emoji(int(nitro_row["emoji"])),
+                top=len(str(nitro_row["count"]))
+            )
+        )
+        await ctx.send(embed=embed)
 
 def setup(bot):
     bot.add_cog(Leaderboard(bot))
