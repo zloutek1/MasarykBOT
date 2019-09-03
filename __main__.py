@@ -20,6 +20,7 @@ if __name__ == "__main__":
         "core.logger",
         "core.events",
         "core.admin",
+        "core.rules",
         "core.help",
 
         "cogs.leaderboard",
