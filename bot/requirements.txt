@@ -1,0 +1,6 @@
+discord.py
+aiomysql
+requests
+emoji
+Pillow
+mysql.connector
