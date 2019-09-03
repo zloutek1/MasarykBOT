@@ -98,6 +98,34 @@ class Admin(commands.Cog):
         await ctx.delete()
         await ctx.send("Log Channel set successfully", delete_after=5)
 
+    @commands.command()
+    @has_permissions(administrator=True)
+    async def load(self, ctx, extension):
+        client.load_extension(f'cogs.{extension}')
+
+        with open("assets/loaded_cogs.json", "r") as fileR:
+            with open("assets/loaded_cogs.json", "w") as fileW:
+                cogs = json.load(fileR)
+                cogs = list(set(cogs) | {extension})  # union
+                fileW.write(json.dumps(cogs))
+
+    @commands.command()
+    @has_permissions(administrator=True)
+    async def unload(self, ctx, extension):
+        client.unload_extension(f'cogs.{extension}')
+
+        with open("assets/loaded_cogs.json", "r") as fileR:
+            with open("assets/loaded_cogs.json", "w") as fileW:
+                cogs = json.load(fileR)
+                cogs = list(set(cogs) ^ {extension})  # difference
+                fileW.write(json.dumps(cogs))
+
+    @commands.command()
+    @has_permissions(administrator=True)
+    async def reload(self, ctx, extension):
+        client.unload_extension(f'cogs.{extension}')
+        client.load_extension(f'cogs.{extension}')
+
 
 def setup(bot):
     bot.add_cog(Admin(bot))
