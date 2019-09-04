@@ -22,7 +22,7 @@ services:
             MYSQL_USER: devMasaryk
             MYSQL_PASSWORD: devMUNI
         volumes:
-            - ./mysql-dump:/docker-entrypoint-initdb.d
+            - ./sql-scripts:/docker-entrypoint-initdb.d
         ports:
             - 6033:3306
     phpmyadmin:

@@ -170,6 +170,7 @@ class MasarykBot(Bot):
     def intorduce(self):
         bot_name = self.user.name.encode(errors='replace').decode()
 
+        self.log.info("Bot is now all ready to go")
         print("\n\n\n")
         print("""               .,***,.
         /.             *%&*
