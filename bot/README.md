@@ -22,7 +22,7 @@ Prerequirements:
 
 Install python packages:
 ```
-python3 -m pip install -r requirements.txt
+python3 -m pip install -U -r requirements.txt
 ```
 
 Run the bot:
