@@ -148,7 +148,7 @@ class MasarykBot(Bot):
                 self.handle_exit()
                 self.loop.close()
                 print("Bot shut down by KeyboardInterrupt")
-                break
+                sys.exit(0)
 
             print("Bot restarting")
             super().__init__(*self.ininial_params[0], **self.ininial_params[1])

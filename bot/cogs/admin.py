@@ -131,9 +131,8 @@ class Admin(commands.Cog):
     @commands.command()
     @has_permissions(administrator=True)
     async def shutdown(self, ctx):
-        self.bot.handle_exit()
-        self.bot.loop.close()
         print("Shutting down...")
+        raise KeyboardInterrupt
 
 
 def setup(bot):
