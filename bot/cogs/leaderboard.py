@@ -45,7 +45,8 @@ class Leaderboard(commands.Cog):
         c = message.content.lower()
 
         emojis = (re.findall(r"\<\:\w+\:(\d+)\>", c) +
-                  [em for em in c if em in UNICODE_EMOJI])
+                  [em for em in c if em in UNICODE_EMOJI] +
+                  re.findall(r"(?:\s|^)(:\)|<3|:\(|;\(|:P|:\*|:o|:'\))(?:\s|$)", c))
 
         for emoji in emojis:
             if emoji.isdigit():
@@ -282,6 +283,7 @@ class Leaderboard(commands.Cog):
             )
         )
         await ctx.send(embed=embed)
+
 
 def setup(bot):
     bot.add_cog(Leaderboard(bot))
