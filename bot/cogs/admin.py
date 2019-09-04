@@ -60,24 +60,16 @@ class Admin(commands.Cog):
         if del_cat:
             await category.delete()
 
-    @commands.group(name="log_channel")
-    @has_permissions(manage_channels=True)
-    async def log_channel(self, ctx):
-        pass
+    """--------------------------------------------------------------------------------------------------------------------------"""
 
-    @log_channel.command(name="set")
-    async def log_channel_set(self, ctx):
-        with open("assets/local_db.json", "r", encoding="utf-8") as file:
-            local_db = json.load(file)
-            local_db.setdefault("log_channels", [])
-            if ctx.channel.id not in local_db["log_channels"]:
-                local_db["log_channels"].append(ctx.channel.id)
+    @commands.command()
+    @has_permissions(administrator=True)
+    async def getlogs(self, ctx):
+        with open("assets/masaryk.log", "r") as file:
+            data = file.read()
+            await ctx.send("```..." + data[-1900:] + "```")
 
-        with open("assets/local_db.json", "w", encoding="utf-8") as file:
-            json.dump(local_db, file)
-
-        await ctx.delete()
-        await ctx.send("Log Channel set successfully", delete_after=5)
+    """--------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.group(name="error_channel")
     @has_permissions(manage_channels=True)
@@ -98,10 +90,12 @@ class Admin(commands.Cog):
         await ctx.delete()
         await ctx.send("Log Channel set successfully", delete_after=5)
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
     @commands.command()
     @has_permissions(administrator=True)
     async def load(self, ctx, extension):
-        client.load_extension(f'cogs.{extension}')
+        self.bot.load_extension(f'cogs.{extension}')
 
         with open("assets/loaded_cogs.json", "r") as fileR:
             with open("assets/loaded_cogs.json", "w") as fileW:
@@ -109,10 +103,12 @@ class Admin(commands.Cog):
                 cogs = list(set(cogs) | {extension})  # union
                 fileW.write(json.dumps(cogs))
 
+        print("Loaded", extension, "successfully")
+
     @commands.command()
     @has_permissions(administrator=True)
     async def unload(self, ctx, extension):
-        client.unload_extension(f'cogs.{extension}')
+        self.bot.unload_extension(f'cogs.{extension}')
 
         with open("assets/loaded_cogs.json", "r") as fileR:
             with open("assets/loaded_cogs.json", "w") as fileW:
@@ -120,11 +116,24 @@ class Admin(commands.Cog):
                 cogs = list(set(cogs) ^ {extension})  # difference
                 fileW.write(json.dumps(cogs))
 
+        print("Unloaded", extension, "successfully")
+
     @commands.command()
     @has_permissions(administrator=True)
     async def reload(self, ctx, extension):
-        client.unload_extension(f'cogs.{extension}')
-        client.load_extension(f'cogs.{extension}')
+        self.bot.unload_extension(f'cogs.{extension}')
+        self.bot.load_extension(f'cogs.{extension}')
+
+        print("Reloaded", extension, "successfully")
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @commands.command()
+    @has_permissions(administrator=True)
+    async def shutdown(self, ctx):
+        self.bot.handle_exit()
+        self.bot.loop.close()
+        print("Shutting down...")
 
 
 def setup(bot):

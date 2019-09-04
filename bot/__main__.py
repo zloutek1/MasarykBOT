@@ -19,7 +19,6 @@ if __name__ == "__main__":
     modules = [
         "core.logger",
         "core.events",
-        "core.admin",
         "core.rules",
         "core.help",
 
@@ -27,6 +26,7 @@ if __name__ == "__main__":
         "cogs.fun",
         "cogs.reactionmenu",
         "cogs.aboutmenu",
+        "cogs.admin",
         "cogs.math"
     ]
 
