@@ -3,7 +3,7 @@
     "sections": {
         "BXXXX": [
             "BStaz Bakalářská stáž",
-            "BVV14Keng Theory of Cyber-Law",
+            "BVV14Keng Theory of Cyber-Law"
         ],
         "DXXXX": [
             "DACSE Academic Communication Skills in English",
@@ -31,7 +31,7 @@
             "DVBDP Vedení bakalářské/diplomové práce",
             "DVVVT Vedení výzkumně-vývojového týmu",
             "DZAST Zahraniční stáž",
-            "DZPJUI Pokročilé metody zpracování přirozeného jazyka a umělé inteligence",
+            "DZPJUI Pokročilé metody zpracování přirozeného jazyka a umělé inteligence"
         ],
         "IAXXX": [
             "IA006 Vybrané kapitoly z teorie automatů",
@@ -56,7 +56,7 @@
             "IA159 Formal Verification Methods",
             "IA161 Pokročilé techniky zpracování přirozeného jazyka",
             "IA168 Algorithmic game theory",
-            "IA169 System Verification and Assurance",
+            "IA169 System Verification and Assurance"
         ],
         "IBXXX": [
             "IB000 Matematické základy informatiky",
@@ -75,7 +75,7 @@
             "IB110 Základy informatiky",
             "IB111 Základy programování",
             "IB113 Úvod do programování a algoritmizace",
-            "IB114 Úvod do programování a algoritmizace II",
+            "IB114 Úvod do programování a algoritmizace II"
         ],
         "IVXXX": [
             "IV003 Algorithms and Data Structures II",
@@ -106,10 +106,10 @@
             "IV126 Umělá inteligence II",
             "IV127 Seminář laboratoře adaptabilní výuky",
             "IV128 Online Communication under Perspective of Social Sciences",
-            "IV129 Laboratoř Sybila",
+            "IV129 Laboratoř Sybila"
         ],
         "JXXX": [
-            "J012 Digital Forensics",
+            "J012 Digital Forensics"
         ],
         "MAXXX": [
             "MA002 Matematická analýza",
@@ -119,7 +119,7 @@
             "MA012 Statistika II",
             "MA015 Graph Algorithms",
             "MA017 Geometric Algorithms",
-            "MA018 Numerical Methods",
+            "MA018 Numerical Methods"
         ],
         "MBXXX": [
             "MB102 Diferenciální a integrální počet",
@@ -128,12 +128,12 @@
             "MB141 Lineární algebra a diskrétní matematika",
             "MB151 Lineární modely",
             "MB203 Spojité modely a statistika B",
-            "MB204 Diskrétní matematika B",
+            "MB204 Diskrétní matematika B"
         ],
         "MVXXX": [
             "MV008 Algebra I",
             "MV011 Statistika I",
-            "MV013 Statististics",
+            "MV013 Statististics"
         ],
         "PA0XX": [
             "PA008 Překladače",
@@ -150,7 +150,7 @@
             "PA055 Vizualizace komplexních dat",
             "PA081 Programování numerických výpočtů",
             "PA093 Computational Geometry Project",
-            "PA096 Seminář laboratoře dialogových systémů",
+            "PA096 Seminář laboratoře dialogových systémů"
       ],
       "PA1XX": [
             "PA103 Object-oriented Methods for Design of Information Systems",
@@ -193,7 +193,7 @@
             "PA196 Pattern Recognition",
             "PA197 Secure Network Design",
             "PA198 Augmented Reality Interfaces",
-            "PA199 Advanced Game Development",
+            "PA199 Advanced Game Development"
       ],
       "PA2XX": [
             "PA200 Cloud Computing",
@@ -206,7 +206,7 @@
             "PA216 Game Design II",
             "PA217 Artificial Intelligence for Computer Games",
             "PA218 Internship - Computer Games",
-            "PA221 Hardware description languages II",
+            "PA221 Hardware description languages II"
         ],
         "PBXXX": [
             "PB001 Úvod do informačních technologií",
@@ -240,7 +240,7 @@
             "PB171 Seminar on Digital System Architecture",
             "PB172 Seminář ze systémové biologie",
             "PB173 Tematicky zaměřený vývoj aplikací v jazyce C/C++",
-            "PB175 Správa projektu a projekt",
+            "PB175 Správa projektu a projekt"
         ],
         "PV0XX": [
             "PV003 Architektura relačních databázových systémů",
@@ -272,7 +272,7 @@
             "PV085 Type Design II",
             "PV090 UNIX -- seminář ze správy systému",
             "PV094 Technické vybavení počítačů",
-            "PV097 Visual creativity informatics",
+            "PV097 Visual creativity informatics"
       ],
       "PV1XX": [
             "PV101 Type Design III",
@@ -316,7 +316,7 @@
             "PV193 Akcelerace algoritmů na obvodové úrovni",
             "PV194 Vnější prostředí digitálních systémů",
             "PV197 GPU Programming",
-            "PV198 Onechip Controllers",
+            "PV198 Onechip Controllers"
       ],
       "PV2XX - PV250": [
             "PV200 Introduction to hardware description languages",
@@ -353,7 +353,7 @@
             "PV245 Služby přepínání pro vytváření velkých podnikových sítí",
             "PV247 Modern Development of User Interfaces",
             "PV248 Python",
-            "PV249 Vývoj v jazyce Ruby",
+            "PV249 Vývoj v jazyce Ruby"
       ],
       "PV250+": [
             "PV250 Marketing Information Systems",
@@ -379,7 +379,7 @@
             "PV274 Data Quality Management Seminar",
             "PV275 Introduction to Quantum Computer Programming",
             "PV276 Seminář simulace kyberútoků",
-            "PV277 Programování aplikací pro sociální roboty",
+            "PV277 Programování aplikací pro sociální roboty"
         ],
         "SXXXX": [
             "SBAPR Bakalářská práce",
@@ -392,7 +392,7 @@
             "SOBHA Obhajoba závěrečné práce",
             "SPRAC Zahraniční pracovní pobyt",
             "SZB Státní zkouška (bakalářský studijní program)",
-            "SZMGR Státní zkouška (magisterský studijní program)",
+            "SZMGR Státní zkouška (magisterský studijní program)"
         ],
         "UXXXX": [
             "UA104 Didaktika informatiky I",
@@ -402,7 +402,7 @@
             "UA642 Pedagogická praxe z informatiky III",
             "UA742 Pedagogická praxe z informatiky IV",
             "UA842 Pedagogická praxe z informatiky V",
-            "UB001 Hodnocení výuky informatického předmětu",
+            "UB001 Hodnocení výuky informatického předmětu"
         ],
         "VBXXX": [
             "VB000 Základy odborného stylu",
@@ -420,7 +420,7 @@
             "VB039 Presentations in English I",
             "VB040 Presentations in English II",
             "VB041 Principy právního myšlení",
-            "VB042 Právo duševního vlastnictví",
+            "VB042 Právo duševního vlastnictví"
         ],
         "VVXXX": [
             "VV014 Religionistika",
@@ -456,7 +456,7 @@
             "VV071 Biochemie pro informatiky",
             "VV072 Molekulární biologie pro informatiky",
             "VV073 Francais de l'informatique",
-            "VV074 Laboratoř divadelní tvorby",
+            "VV074 Laboratoř divadelní tvorby"
         ]
     }
 }
