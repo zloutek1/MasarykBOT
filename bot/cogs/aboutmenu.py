@@ -5,7 +5,7 @@ from discord import Color, Embed, Member, File, Role, Emoji, PartialEmoji
 
 import core.utils.get
 from core.utils.db import Database
-from core.utils.checks import needs_database
+from core.utils.checks import needs_database, safe
 
 import os
 from typing import Union
@@ -25,10 +25,10 @@ class UnicodeEmoji(Converter):
         return argument
 
 
-class AboutMenu(commands.Cog):
+class Aboutmenu(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.imagePath = "https://gitlab.com/zloutek1/MasarykBOT/raw/master/"
+        self.imagePath = "https://gitlab.com/zloutek1/MasarykBOT/raw/develop/bot/assets/"
 
     @commands.group(name="aboutmenu")
     async def aboutmenu(self, ctx):
@@ -36,19 +36,25 @@ class AboutMenu(commands.Cog):
 
     @aboutmenu.command(name="create", aliases=("add",))
     @needs_database
-    async def aboutmenu_create(self, ctx, image_path: str, roles: Greedy[Role], emojis: Greedy[Union[Emoji, PartialEmoji, UnicodeEmoji]], *, text: str, db=Database()):
-        if not os.path.isfile(image_path):
+    async def aboutmenu_create(self, ctx, image_path: str,
+                               roles: Greedy[Role],
+                               emojis: Greedy[Union[Emoji, PartialEmoji, UnicodeEmoji]],
+                               *, text: str, db=Database()):
+
+        if not os.path.isfile("assets/" + image_path):
+            await safe(ctx.message.delete)(delay=5)
             await ctx.send("`Invalid file path`", delete_after=5)
             return
 
         if len(roles) != len(emojis):
+            await safe(ctx.message.delete)(delay=5)
             await ctx.send("`len(roles) != len(emojis)`", delete_after=5)
             return
 
         await ctx.channel.set_permissions(self.bot.user,
-            add_reactions=True, send_messages=True)
+                                          add_reactions=True, send_messages=True)
         await ctx.channel.set_permissions(ctx.guild.default_role,
-            add_reactions=False, send_messages=False)
+                                          add_reactions=False, send_messages=False)
 
         embed = Embed(title=text)
         embed.set_image(url=os.path.join(self.imagePath, image_path))
@@ -81,7 +87,7 @@ class AboutMenu(commands.Cog):
             """, (menu_id, str(emoji), str(role)))
         await db.commit()
 
-        await ctx.message.delete()
+        await safe(ctx.message.delete)()
 
     """---------------------------------------------------------------------------------------------------------------------------"""
 
@@ -127,4 +133,4 @@ class AboutMenu(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(AboutMenu(bot))
+    bot.add_cog(Aboutmenu(bot))
