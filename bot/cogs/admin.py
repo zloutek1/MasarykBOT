@@ -120,11 +120,20 @@ class Admin(commands.Cog):
 
     @commands.command()
     @has_permissions(administrator=True)
-    async def reload(self, ctx, extension):
-        self.bot.unload_extension(f'cogs.{extension}')
-        self.bot.load_extension(f'cogs.{extension}')
+    async def reload(self, ctx, extension=None):
+        if extension is not None:
+            self.bot.unload_extension(f'cogs.{extension}')
+            self.bot.load_extension(f'cogs.{extension}')
 
-        print("Reloaded", extension, "successfully")
+            print("Reloaded", extension, "successfully")
+            await ctx.send(f"Reloaded {extension} successfully")
+
+        else:
+            for extension in self.bot.extensions:
+                self.bot.unload_extension(extension)
+                self.bot.load_extension(extension)
+            await ctx.send(f"All extensions successfully")
+
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
