@@ -27,5 +27,6 @@ Once all that is ready clone the repo:
 ```
 git clone https://gitlab.com/zloutek1/MasarykBOT.git
 cd MasarykBOT/
-docker-compose down && docker-compose up --build
+docker-compose build
+docker-compose down && docker-compose up
 ```
