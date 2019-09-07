@@ -31,11 +31,10 @@ class Logger(commands.Cog):
         task_get: a function to format the data for database input
         task_insert: a function that inserts data into database
         """
-        self.catchup_tasks.setdefault(name, [])
-        self.catchup_tasks[name].append({
+        self.catchup_tasks[name] = {
             "get": task_get,
             "insert": task_insert,
-            "data": []})
+            "data": []}
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -141,10 +140,12 @@ class Logger(commands.Cog):
         ##
         for i, channel in enumerate(in_channels):
             if not channel.last_message_id or channel.id in ignore_channels:
-                self.log.info(f"Skipping channel {channel} ({i} / {len(in_channels)})")
+                self.log.info(
+                    f"Skipping channel {channel} ({i} / {len(in_channels)})")
                 continue
 
-            self.log.info(f"Backing up messages in {channel} ({i} / {len(in_channels)})")
+            self.log.info(
+                f"Backing up messages in {channel} ({i} / {len(in_channels)})")
 
             authors_data = set()
             messages_data = []
@@ -157,10 +158,11 @@ class Logger(commands.Cog):
             await self.backup_attachments_in(channel, attachments_data)
 
             for task_name in self.catchup_tasks:
-                for catchup_task in self.catchup_tasks[task_name]:
-                    catchup_task_insert = catchup_task["insert"]
-                    await catchup_task_insert(catchup_task["data"])
-                    catchup_task["data"].clear()
+                catchup_task = self.catchup_tasks[task_name]
+
+                catchup_task_insert = catchup_task["insert"]
+                await catchup_task_insert(catchup_task["data"])
+                catchup_task["data"].clear()
 
         await db.execute("UPDATE logger SET state='success', finished_at=NOW() WHERE state='failed'")
         await db.commit()
@@ -177,7 +179,8 @@ class Logger(commands.Cog):
                 authors_data.add(message.author)
 
                 # -- Message --
-                messages_data += [(message.channel.id, message.author.id, message.id, message.content, message.created_at)]
+                messages_data += [(message.channel.id, message.author.id,
+                                   message.id, message.content, message.created_at)]
 
                 # -- Attachment --
                 attachments_data += [(message.id, a.id, a.filename, a.url)
@@ -185,9 +188,10 @@ class Logger(commands.Cog):
 
                 # -- Other catching up tasks --
                 for task_name in self.catchup_tasks:
-                    for catchup_task in self.catchup_tasks[task_name]:
-                        catchup_task_get = catchup_task["get"]
-                        await catchup_task_get(message, catchup_task["data"])
+                    catchup_task = self.catchup_tasks[task_name]
+
+                    catchup_task_get = catchup_task["get"]
+                    await catchup_task_get(message, catchup_task["data"])
         except discord.errors.Forbidden:
             pass
 
@@ -246,7 +250,8 @@ class Logger(commands.Cog):
     @commands.Cog.listener()
     @needs_database
     async def on_message(self, message, db=Database()):
-        message_data = (message.channel.id, message.author.id, message.id, message.content, message.created_at)
+        message_data = (message.channel.id, message.author.id,
+                        message.id, message.content, message.created_at)
 
         await db.execute("""
             INSERT INTO message
@@ -254,6 +259,18 @@ class Logger(commands.Cog):
             VALUES (%s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE id=id
         """, message_data)
+
+        for task_name in self.catchup_tasks:
+            catchup_task = self.catchup_tasks[task_name]
+
+            catchup_task_get = catchup_task["get"]
+            catchup_task_insert = catchup_task["insert"]
+
+            await catchup_task_get(message, catchup_task["data"])
+            await catchup_task_insert(catchup_task["data"])
+
+            catchup_task["data"].clear()
+
         await db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
@@ -269,7 +286,8 @@ class Logger(commands.Cog):
 
     @needs_database
     async def on_category_create(self, category, db=Database()):
-        category_data = (category.guild.id, category.id, category.name, category.position)
+        category_data = (category.guild.id, category.id,
+                         category.name, category.position)
 
         await db.execute("""
             INSERT INTO category (guild_id, id, name, position)
@@ -280,7 +298,8 @@ class Logger(commands.Cog):
 
     @needs_database
     async def on_text_channel_create(self, text_channel, db=Database()):
-        channel_data = (text_channel.guild.id, text_channel.category_id, text_channel.id, text_channel.name, text_channel.position)
+        channel_data = (text_channel.guild.id, text_channel.category_id,
+                        text_channel.id, text_channel.name, text_channel.position)
 
         await db.execute("""
             INSERT INTO channel (guild_id, category_id, id, name, position)
