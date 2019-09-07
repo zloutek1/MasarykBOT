@@ -1,4 +1,5 @@
 import aiomysql
+import discord
 from discord.ext import commands
 from functools import wraps
 
@@ -25,5 +26,14 @@ def needs_database(func):
         if not hasattr(self, "db"):
             self.db = Database(conn, cursor, pool)
 
+    return wrapper
 
+
+def safe(func):
+    @wraps(func)
+    async def wrapper(*args, **kwargs):
+        try:
+            await func(*args, **kwargs)
+        except discord.errors.NotFound:
+            pass
     return wrapper
