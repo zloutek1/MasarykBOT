@@ -22,12 +22,13 @@ if __name__ == "__main__":
         "core.rules",
         "core.help",
 
-        "cogs.leaderboard",
-        "cogs.fun",
+        "cogs.transitionToMUNI",
         "cogs.reactionmenu",
+        "cogs.leaderboard",
         "cogs.aboutmenu",
         "cogs.admin",
-        "cogs.math"
+        "cogs.math",
+        "cogs.fun"
     ]
 
     ##
