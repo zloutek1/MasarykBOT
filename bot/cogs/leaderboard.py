@@ -27,7 +27,8 @@ class Leaderboard(commands.Cog):
         if c.startswith("!") or c.startswith("pls"):
             return
 
-        leaderboard_data.append((message.guild.id, message.channel.id, message.author.id, 1, message.created_at, message.created_at))
+        leaderboard_data.append((message.guild.id, message.channel.id,
+                                 message.author.id, 1, message.created_at, message.created_at))
 
     @needs_database
     async def catchup_leaderboard_insert(self, leaderboard_data, *, db=Database()):
@@ -56,7 +57,8 @@ class Leaderboard(commands.Cog):
 
                 emoji = emoji.id
 
-            leaderboard_emoji_data.append((message.guild.id, message.channel.id, emoji, 1, message.created_at, message.created_at))
+            leaderboard_emoji_data.append(
+                (message.guild.id, message.channel.id, emoji, 1, message.created_at, message.created_at))
 
     @needs_database
     async def catchup_leaderboard_emoji_insert(self, leaderboard_emoji_data, *, db=Database()):
@@ -74,9 +76,11 @@ class Leaderboard(commands.Cog):
         self.bot.readyCogs[self.__class__.__name__] = False
 
         if hasattr(self.bot, "add_catchup_task"):
-            self.bot.add_catchup_task("leaderboard", self.catchup_leaderboard_get, self.catchup_leaderboard_insert)
+            self.bot.add_catchup_task(
+                "leaderboard", self.catchup_leaderboard_get, self.catchup_leaderboard_insert)
 
-            self.bot.add_catchup_task("leaderboard_emoji", self.catchup_leaderboard_emoji_get, self.catchup_leaderboard_emoji_insert)
+            self.bot.add_catchup_task(
+                "leaderboard_emoji", self.catchup_leaderboard_emoji_get, self.catchup_leaderboard_emoji_insert)
 
         self.bot.readyCogs[self.__class__.__name__] = True
 
@@ -231,7 +235,7 @@ class Leaderboard(commands.Cog):
                 emoji,
                 SUM(sent_times) AS `count`
             FROM leaderboard_emoji AS ldb
-            WHERE emoji != 617744996497621025 AND
+            WHERE emoji != "617744996497621025" AND
             guild_id = %(guild_id)s {'AND channel_id = %(channel_id)s' if channel is not None else ''}
             GROUP BY emoji
             ORDER BY `count` DESC
@@ -246,7 +250,7 @@ class Leaderboard(commands.Cog):
             emoji,
             SUM(sent_times) AS `count`
         FROM leaderboard_emoji AS ldb
-        WHERE emoji = 617744996497621025 AND
+        WHERE emoji = "617744996497621025" AND
         guild_id = %(guild_id)s {'AND channel_id = %(channel_id)s' if channel is not None else ''}
         GROUP BY emoji
         ORDER BY `count` DESC
@@ -269,7 +273,8 @@ class Leaderboard(commands.Cog):
                 template.format(
                     index=i + 1,
                     count=row["count"],
-                    emoji=self.bot.get_emoji(int(row["emoji"])) if row["emoji"].isdigit() else row["emoji"]
+                    emoji=self.bot.get_emoji(
+                        int(row["emoji"])) if row["emoji"].isdigit() else row["emoji"]
                 )
                 for i, row in enumerate(rows)
             ]))
