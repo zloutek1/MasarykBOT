@@ -21,6 +21,11 @@ class Rules(commands.Cog):
         if not rules_channel:
             rules_channel = await ctx.guild.create_text_channel("pravidla")
 
+        await rules_channel.set_permissions(self.bot.user,
+                                            add_reactions=True, send_messages=True)
+        await rules_channel.set_permissions(ctx.guild.default_role,
+                                            add_reactions=False, send_messages=False)
+
         mentions = {
             "NSFW": ("@NSFW"
                      if ctx.get_role("NSFW") is None else
