@@ -318,7 +318,7 @@
             "PV197 GPU Programming",
             "PV198 Onechip Controllers"
       ],
-      "PV2XX - PV250": [
+      "PV2XX-PV250": [
             "PV200 Introduction to hardware description languages",
             "PV202 Laboratoř servisních systémů",
             "PV203 IT Services Management",
@@ -329,14 +329,14 @@
             "PV209 Person Centered Communication",
             "PV210 Kybernetická bezpečnost v organizaci",
             "PV211 Introduction to Information Retrieval",
-            "PV212 Readings in Digital Typography, Scientific Visualization, Information Retrieval and Machine Learning",
+            "PV212 Readings in Dig. Typography, Sci. Visualization, Inf. Retrieval and Machine Learning",
             "PV214 IT service management vycházející z ITIL",
             "PV215 Management by Competencies",
             "PV216 Marketing Strategy in Service Business",
             "PV217 Service Oriented Architecture",
             "PV219 Seminář webdesignu",
             "PV225 Laboratoř systémové biologie",
-            "PV226 Seminář Laboratoře softwarových architektur a informačních systémů",
+            "PV226 Seminář LaSArIS",
             "PV227 GPU Rendering",
             "PV229 Multimedia Similarity Searching in Practice",
             "PV233 Networks and Routing Protocols",
