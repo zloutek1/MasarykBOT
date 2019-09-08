@@ -82,7 +82,8 @@ class Events(commands.Cog):
             value=("{text} {text_count} " +
                    "{voice} {voice_count}").format(
                  text=text, text_count=len(ctx.guild.text_channels),
-                 voice=voice, voice_count=len(ctx.guild.voice_channels)),
+                 voice=voice, voice_count=len(ctx.guild.voice_channels)) +
+            f"\n**Total:** {len(ctx.guild.channels)}",
             inline=False
         )
         embed.add_field(
@@ -95,7 +96,8 @@ class Events(commands.Cog):
                 online=online, online_count=status.get("online", 0),
                 idle=idle, idle_count=status.get("idle", 0),
                 dnd=dnd, dnd_count=status.get("dnd", 0),
-                streaming=streaming, streaming_count=status.get("streaming", 0),
+                streaming=streaming, streaming_count=status.get(
+                    "streaming", 0),
                 offline=offline, offline_count=status.get("offline", 0)) +
             f"\n**Total:** {len(ctx.guild.members)}",
             inline=False
@@ -129,7 +131,8 @@ class Events(commands.Cog):
         else:
             fmt = 'Channel: {0} (ID: {0.id})'
 
-        exc = traceback.format_exception(type(error), error, error.__traceback__, chain=False)
+        exc = traceback.format_exception(
+            type(error), error, error.__traceback__, chain=False)
         description = '```py\n%s\n```' % ''.join(exc)
         time = datetime.datetime.utcnow()
 
@@ -137,9 +140,16 @@ class Events(commands.Cog):
         author = '{0} (ID: {0.id})'.format(ctx.message.author)
         location = fmt.format(ctx.message.channel, ctx.message.guild)
 
-        message = '{0} at {1}: Called by: {2} in {3}. More info: {4}'.format(name, time, author, location, description)
+        message = '{0} at {1}: Called by: {2} in {3}. More info: {4}'.format(
+            name, time, author, location, description)
+
+        if len(message) > 2000:
+            print(message)
+            return
+
         embed = Embed(
-            title='{0} at {1}: Called by: {2} in {3}. More info:'.format(name, time, author, location),
+            title='{0} at {1}: Called by: {2} in {3}. More info:'.format(
+                name, time, author, location),
             description=description,
             color=Color.red()
         )
