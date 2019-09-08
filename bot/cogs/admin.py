@@ -1,5 +1,5 @@
 import discord
-from discord import Colour, Embed, Member, Object
+from discord import Colour, Embed, Member, Object, TextChannel, VoiceChannel
 from discord.ext import commands
 from discord.ext.commands import Bot, has_permissions
 
@@ -53,7 +53,9 @@ class Admin(commands.Cog):
 
         del_cat = True
         for channel in category.channels:
-            if not channel.last_message_id:
+            if isinstance(channel, TextChannel) and not channel.last_message_id:
+                await channel.delete()
+            elif isinstance(channel, VoiceChannel):
                 await channel.delete()
             else:
                 del_cat = False
@@ -133,7 +135,6 @@ class Admin(commands.Cog):
                 self.bot.unload_extension(extension)
                 self.bot.load_extension(extension)
             await ctx.send(f"All extensions successfully")
-
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
