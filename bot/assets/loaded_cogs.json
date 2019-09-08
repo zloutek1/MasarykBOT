@@ -1,0 +1,14 @@
+[
+        "core.logger",
+        "core.events",
+        "core.rules",
+        "core.help",
+
+        "cogs.transitionToMUNI",
+        "cogs.reactionmenu",
+        "cogs.leaderboard",
+        "cogs.aboutmenu",
+        "cogs.admin",
+        "cogs.math",
+        "cogs.fun"
+]
