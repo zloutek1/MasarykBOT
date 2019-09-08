@@ -97,21 +97,22 @@ class Reactionmenu(commands.Cog):
         guild = ctx.guild
         channel = ctx.channel
 
-        # select reactionmenu from db
-        self.log.info("selecting reactionmenu from database")
-        await db.execute("""
-            SELECT * FROM reactionmenu
-            WHERE message_id = %s
-        """, (to_menu,))
-        reactionmenu = await db.fetchone()
+        async def select_reactionmenu_from_db(to_menu):
+            self.log.info("selecting reactionmenu from database")
+            await db.execute("""
+                SELECT * FROM reactionmenu
+                WHERE message_id = %s
+            """, (to_menu,))
+            reactionmenu = await db.fetchone()
 
-        if not reactionmenu:
-            await safe(ctx.message.delete(delay=5))
-            await ctx.send("Unknown reactionmenu, argument to_menu must be id of the message", delete_after=5)
-            return False
+            if not reactionmenu:
+                await safe(ctx.message.delete(delay=5))
+                await ctx.send("Unknown reactionmenu, argument to_menu must be id of the message", delete_after=5)
+                return False
 
-        while True:
-            # get options count
+            return reactionmenu
+
+        async def get_option_count(reactionmenu):
             self.log.info("getting No. of options in reactionmenu")
             await db.execute("""
                 SELECT COUNT(*) AS `count` FROM reactionmenu_options
@@ -119,8 +120,9 @@ class Reactionmenu(commands.Cog):
                 WHERE reactionmenu_message_id = %s
             """, (reactionmenu["message_id"],))
             options = (await db.fetchone())["count"]
+            return options
 
-            # select message from db
+        async def select_message_from_db(reactionmenu):
             self.log.info("selecting messages from database")
             await db.execute("""
                 SELECT * FROM reactionmenu_messages
@@ -133,34 +135,50 @@ class Reactionmenu(commands.Cog):
                 await ctx.send("All messages in the reactionmenu are full", delete_after=5)
                 return False
 
-            # get Discord message object
+            return reactionmenu_message
+
+        async def get_DC_message(reactionmenu_message):
             self.log.info("getting Discord's message object")
             option_message = await channel.fetch_message(reactionmenu_message["message_id"])
             if not option_message:
                 await safe(ctx.message.delete(delay=5))
                 await ctx.send("It appears that the message does not exist", delete_after=5)
                 return False
+            return option_message
 
-            # modify content, add option
+        async def modify_content(option_message, options):
+            nonlocal emoji
+
             self.log.info("preparing the new content of the message")
             content = option_message.content
             emoji = ctx.get_emoji(name=f"num{options+1}")
             option_text = f"{emoji}   {text}"
 
             if len(content) + len(option_text) < 2000 and content.count("\n") < 10:
+                print("    adding")
                 self.log.info("editing to new content")
                 await option_message.edit(content=content + f"\n{option_text}")
                 await option_message.add_reaction(emoji)
-                break
+                return True
 
-            else:
-                self.log.info("marking the message as full, retrying...")
-                await db.execute("""
-                    UPDATE reactionmenu_messages
-                    SET is_full = true
-                    WHERE message_id = %s
-                """, (option_message.id))
-                continue
+            self.log.info("marking the message as full, retrying...")
+            await db.execute("""
+                UPDATE reactionmenu_messages
+                SET is_full = true
+                WHERE message_id = %s
+            """, (option_message.id))
+            await db.commit()
+            print("    extending")
+
+        emoji = None
+        reactionmenu = await select_reactionmenu_from_db(to_menu)
+        while True:
+            options = await get_option_count(reactionmenu)
+            print(options)
+            reactionmenu_message = await select_message_from_db(reactionmenu)
+            option_message = await get_DC_message(reactionmenu_message)
+            if await modify_content(option_message, options):
+                break
 
         # create channel
         # category = ctx.get_category(id=reactionmenu["rep_category_id"])
@@ -174,6 +192,7 @@ class Reactionmenu(commands.Cog):
                 (message_id, rep_channel_id, emoji, `text`)
             VALUES (%s, %s, %s, %s)
         """, (option_message.id, None, str(emoji), text))
+        await db.commit()
 
         # clean
         self.log.info("finishing option addition")
