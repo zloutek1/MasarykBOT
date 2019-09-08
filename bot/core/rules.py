@@ -57,7 +57,7 @@ class Rules(commands.Cog):
             return m.author == self.bot.user
         await rules_channel.purge(check=is_me)
 
-        embed = Embed()
+        embed = Embed(color=Color.blurple())
         embed.set_image(
             url="https://www.fi.muni.cz/files/news-img/2168-9l6ttGALboD3Vj-jcgWlcA.jpg"
         )
