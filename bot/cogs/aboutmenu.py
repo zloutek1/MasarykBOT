@@ -81,10 +81,10 @@ class Aboutmenu(commands.Cog):
         for emoji, role in zip(emojis, roles):
             await db.execute("""
                 INSERT INTO aboutmenu_options
-                    (menu_id, emoji, role)
+                    (menu_id, emoji, role_id)
                 VALUES
                     (%s, %s, %s)
-            """, (menu_id, str(emoji), str(role)))
+            """, (menu_id, str(emoji), role.id))
         await db.commit()
 
         await safe(ctx.message.delete)()
@@ -93,9 +93,18 @@ class Aboutmenu(commands.Cog):
 
     @needs_database
     async def on_raw_reaction_update(self, payload, event_type: str, db=Database()):
+        # reacted in aboutmenu channel?
+        await db.execute("""
+            SELECT * FROM aboutmenu
+            WHERE channel_id = %s AND deleted_at IS NULL
+            LIMIT 1
+        """, (payload.channel_id,))
+        if not await db.fetchone():
+            return
+
         # does the option exist? get it
         await db.execute("""
-            SELECT channel_id, message_id, image, `text`, emoji, role
+            SELECT channel_id, message_id, image, `text`, emoji, role_id
             FROM aboutmenu
             INNER JOIN aboutmenu_options AS opt
             ON aboutmenu.id = opt.menu_id
@@ -108,8 +117,7 @@ class Aboutmenu(commands.Cog):
 
         # get role
         guild = self.bot.get_guild(payload.guild_id)
-        text = row["role"]
-        role = core.utils.get(guild.roles, name=text)
+        role = core.utils.get(guild.roles, id=row["role_id"])
         if not role:
             return
 
@@ -125,11 +133,64 @@ class Aboutmenu(commands.Cog):
     async def on_raw_reaction_add(self, payload):
         await self.on_raw_reaction_update(payload, event_type="REACTION_ADD")
 
-    """---------------------------------------------------------------------------------------------------------------------------"""
-
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
         await self.on_raw_reaction_update(payload, event_type="REACTION_REMOVE")
+
+    """---------------------------------------------------------------------------------------------------------------------------"""
+
+    @commands.Cog.listener()
+    @needs_database
+    async def on_ready(self, *, db=Database()):
+        self.bot.readyCogs[self.__class__.__name__] = False
+
+        await db.execute("""
+            SELECT * FROM aboutmenu
+            WHERE deleted_at IS NULL
+        """)
+        rows = await db.fetchall()
+
+        # check each message
+        channels = {}
+        for row in rows:
+            # cache channel or get the channel
+            channel_id = row["channel_id"]
+            if channels.get(channel_id) is None:
+                channels[channel_id] = self.bot.get_channel(channel_id)
+            channel = channels.get(channel_id)
+
+            # get the message
+            message = await channel.fetch_message(row["message_id"])
+            if message is None:
+                print("Message does not exist in aboutmenu")
+                continue
+
+            # get reactions
+            for reaction in message.reactions:
+                await db.execute("""
+                    SELECT * FROM aboutmenu_options
+                    WHERE menu_id = %s AND emoji = %s AND deleted_at is NULL
+                """, (row["id"], str(reaction)))
+                react_db = await db.fetchone()
+
+                # get the role
+                role = channel.guild.get_role(react_db["role_id"])
+
+                new_reacted = set(await reaction.users().flatten())
+                old_reacted = set(role.members)
+
+                # get the difference
+                to_add = new_reacted - old_reacted
+                to_remove = old_reacted - new_reacted
+
+                # balance the difference
+                for member in to_add:
+                    await member.add_roles(role)
+
+                for member in to_remove:
+                    await member.remove_roles(role)
+
+        self.bot.readyCogs[self.__class__.__name__] = True
 
 
 def setup(bot):
