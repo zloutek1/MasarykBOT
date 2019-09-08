@@ -6,6 +6,7 @@ from config import BotConfig
 
 from glob import glob
 import time
+import json
 
 
 if __name__ == "__main__":
@@ -16,20 +17,8 @@ if __name__ == "__main__":
         case_insensitive=True
     )
 
-    modules = [
-        "core.logger",
-        "core.events",
-        "core.rules",
-        "core.help",
-
-        "cogs.transitionToMUNI",
-        "cogs.reactionmenu",
-        "cogs.leaderboard",
-        "cogs.aboutmenu",
-        "cogs.admin",
-        "cogs.math",
-        "cogs.fun"
-    ]
+    with open("assets/loaded_cogs.json", "r") as fileR:
+        modules = json.load(fileR)
 
     ##
     # print boot message
