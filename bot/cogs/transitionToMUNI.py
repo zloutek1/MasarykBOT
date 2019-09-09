@@ -1,3 +1,5 @@
+import asyncio
+
 import discord
 from discord.ext import commands
 from discord.ext.commands import Bot, has_permissions
@@ -134,6 +136,15 @@ class TransitionToMUNI(commands.Cog):
             await ctx.send(f"[Reactionmenu] {menu_channel.mention} not empty. Skipping")
             return False
 
+        perms = {
+            guild.default_role: discord.PermissionOverwrite(
+                read_messages=False),
+            self.bot.user: discord.PermissionOverwrite(
+                read_messages=True)
+        }
+        for target, overwrite in perms.items():
+            await menu_channel.set_permissions(target, overwrite=overwrite)
+
         cog = self.bot.get_cog("Reactionmenu")
         reactionmenu_create = self.bot.get_command("reactionmenu create")
         option_add = self.bot.get_command("reactionmenu option add")
@@ -144,14 +155,23 @@ class TransitionToMUNI(commands.Cog):
             data = json.load(fileR)
 
         for section, options in data["sections"].items():
-            print("creating section", section, "with", len(options), "options")
             # create menu
             menu_id = await reactionmenu_create.callback(cog, ctx, name=section)
             if not menu_id:
                 await ctx.send("[Reactionmenu] Error while creating section")
                 continue
 
+            perms = {
+                guild.default_role: discord.PermissionOverwrite(
+                    read_messages=False),
+                self.bot.user: discord.PermissionOverwrite(
+                    read_messages=True)
+            }
+            for target, overwrite in perms.items():
+                await menu_channel.set_permissions(target, overwrite=overwrite)
+
             # get reactionmenu
+            await db.commit()
             await db.execute("""
                 SELECT * FROM reactionmenu
                 WHERE message_id = %s
@@ -161,7 +181,7 @@ class TransitionToMUNI(commands.Cog):
 
             # parse options
             for i, option in enumerate(options):
-                await option_add.callback(cog, ctx, menu_id, text=option)
+                option_id = await option_add.callback(cog, ctx, menu_id, text=option)
 
                 # channel already exists? get it
                 code = option.split(" ", 1)[0].lower()
@@ -169,15 +189,32 @@ class TransitionToMUNI(commands.Cog):
                     code), guild.text_channels))
                 if not chnls:
                     continue
+                ch = chnls[0]
 
                 category = guild.get_channel(
                     reactionmenu_db["rep_category_id"])
 
-                for ch in chnls:
-                    await ch.edit(
-                        category=category,
-                        position=i
-                    )
+                await ch.edit(
+                    category=category,
+                    position=i,
+                    sync_permissions=True
+                )
+
+                await db.execute("""
+                    UPDATE reactionmenu_options
+                    SET rep_channel_id = %s
+                    WHERE message_id = %s AND `text` LIKE %s
+                """, (ch.id, option_id, option))
+                await db.commit()
+
+        perms = {
+            guild.default_role: discord.PermissionOverwrite(
+                read_messages=True),
+            self.bot.user: discord.PermissionOverwrite(
+                read_messages=True)
+        }
+        for target, overwrite in perms.items():
+            await menu_channel.set_permissions(target, overwrite=overwrite)
 
         ctx.channel = channel
         return True
