@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 
 import core.utils.get
 from core.utils.db import Database
-from core.utils.checks import needs_database
+from core.utils.checks import needs_database, safe
 
 
 class Logger(commands.Cog):
@@ -151,7 +151,7 @@ class Logger(commands.Cog):
             messages_data = []
             attachments_data = []
 
-            await self.get_messages(channel, authors_data, messages_data, attachments_data, after=row["from_date"], before=row["to_date"])
+            await safe(self.get_messages)(channel, authors_data, messages_data, attachments_data, after=row["from_date"], before=row["to_date"])
 
             await self.backup_users(list(authors_data))
             await self.backup_messages_in(channel, messages_data)
