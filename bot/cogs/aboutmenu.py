@@ -158,6 +158,15 @@ class Aboutmenu(commands.Cog):
             if channels.get(channel_id) is None:
                 channels[channel_id] = self.bot.get_channel(channel_id)
             channel = channels.get(channel_id)
+            if channel is None:
+                # Channel not existant, remove from db
+                await db.execute("""
+                    UPDATE aboutmenu
+                    SET deleted_at=NOW()
+                    WHERE channel_id = %s
+                """, (channel_id,))
+                await db.commit()
+                continue
 
             # get the message
             message = await channel.fetch_message(row["message_id"])
