@@ -268,8 +268,6 @@ class Reactionmenu(commands.Cog):
         """, (payload.message_id, str(payload.emoji)))
         row = await db.fetchone()
         subject_code = row["text"].split(" ", 1)[0]
-        print(row)
-        print(subject_code)
 
         # get Discord API python objects
         channel = self.bot.get_channel(payload.channel_id)
