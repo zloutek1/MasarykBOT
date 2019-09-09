@@ -314,7 +314,8 @@ class Reactionmenu(commands.Cog):
                 """, (rep_channel.id, payload.message_id, str(payload.emoji)))
                 await db.commit()
 
-                await rep_channel.set_permissions(user, read_messages=True)
+                for reactor in reaction.users:
+                    await rep_channel.set_permissions(reactor, read_messages=True)
 
         elif event_type == "REACTION_REMOVE":
             # still in queue
@@ -357,6 +358,7 @@ class Reactionmenu(commands.Cog):
     async def on_ready(self, *, db=Database()):
         self.bot.readyCogs[self.__class__.__name__] = False
 
+        # load channels into memory for faster checks
         await db.execute("""
             SELECT DISTINCT channel_id, deleted_at
             FROM reactionmenu
