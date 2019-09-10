@@ -6,6 +6,7 @@
 
         "cogs.transitionToMUNI",
         "cogs.reactionmenu",
+        "cogs.verification",
         "cogs.leaderboard",
         "cogs.aboutmenu",
         "cogs.admin",
