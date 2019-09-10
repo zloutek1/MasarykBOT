@@ -2,95 +2,88 @@ import discord
 from discord.ext import commands
 from discord import Colour, Embed, Member, Object, File
 
+from datetime import datetime, timedelta
+
 import core.utils.get
+from core.utils.db import Database
 from core.utils.checks import needs_database
 
 
 class Verification(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.in_channels = set()
+        self.users_on_cooldown = {}
 
-    @commands.group(name="verification")
+    """---------------------------------------------------------------------------------------------------------------------------"""
+
+    @commands.command()
+    async def add_verification_message(self, ctx, message_id: int):
+        self.in_channels.add(message_id)
+        print(self.in_channels)
+
+    """---------------------------------------------------------------------------------------------------------------------------"""
+
     @needs_database
-    async def verication_group(self, ctx):
-        pass
+    async def on_raw_reaction_update(self, payload, event_type: str, *, db=Database()):
+        if (payload.user_id == self.bot.user.id or
+                payload.channel_id not in self.in_channels):
+            return
 
-    @verication_group.command(name="setup")
-    async def verification_setup(self, ctx, message_id: int):
-        await ctx.message.delete()
+        cooldown = self.users_on_cooldown.get(payload.user_id)
+        if cooldown and cooldown + timedelta(seconds=1) > datetime.now():
+            return  # on cooldown
 
-        guild = ctx.guild
-        channel = ctx.channel
-        message = await channel.fetch_message(message_id)
+        # --[]
 
-        ctx.db.execute("INSERT INTO verification_channel (guild_id, channel_id, message_id, emoji) VALUES (%s, %s, %s, %s)", (guild.id, channel.id, message.id, emoji.name))
+        await db.execute("""
+            SELECT * FROM verification
+            WHERE channel_id = %s AND deleted_at IS NULL
+            LIMIT 1
+        """, (payload.channel_id,))
+        row = await db.fetchone()
 
-        await message.add_reaction(core.utils.get(self.bot.emojis, name="Verification"))
+        channel = self.bot.get_channel(payload.channel_id)
+        guild = channel.guild
+        role = guild.get_role(row["verified_role_id"])
+
+        author = guild.get_member(payload.user_id)
+        if event_type == "REACTION_ADD":
+            await author.add_roles(role)
+        else:
+            await author.remove_roles(role)
+
+        # --[]
+
+        self.users_on_cooldown[payload.user_id] = datetime.now()
+
+    """---------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        # check database connection
-        if not self.bot.db:
-            return
-
-        guild = self.bot.get_guild(payload.guild_id)
-        channel = self.bot.get_channel(payload.channel_id)
-        message = await channel.fetch_message(payload.message_id)
-        author = guild.get_member(payload.user_id)
-        emoji = payload.emoji
-
-        if author.bot:
-            return
-
-        self.bot.db.execute("SELECT * FROM verification_channel WHERE (guild_id = %s AND channel_id = %s)", (guild.id, channel.id))
-        rows = self.bot.db.fetchall()
-
-        row = core.utils.get(rows, message_id=message.id)
-        if not row:
-            return
-
-        if emoji.name != row["emoji"]:
-            await message.remove_reaction(emoji, author)
-            return
-
-        studentRole = core.utils.get(guild.roles, name="Student")
-        await author.add_roles(studentRole)
-
-        # -- send DM with detail how to verify yourself
-
-        embed = Embed(
-            title=f"Welcome to {guild.name} discord",
-            description="*Before you go, could you please verify yourself as a student of MUNI? We would appreciate it, but it is not a requirement to enter*",
-            color=0x000000
-        )
-
-        await author.send(embed=embed)
+        await self.on_raw_reaction_update(payload, event_type="REACTION_ADD")
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
-        # check database connection
-        if not self.bot.db:
-            return
+        await self.on_raw_reaction_update(payload, event_type="REACTION_REMOVE")
 
-        guild = self.bot.get_guild(payload.guild_id)
-        channel = self.bot.get_channel(payload.channel_id)
-        message = await channel.fetch_message(payload.message_id)
-        author = guild.get_member(payload.user_id)
-        emoji = payload.emoji
+    """---------------------------------------------------------------------------------------------------------------------------"""
 
-        if author.bot:
-            return
+    @commands.Cog.listener()
+    @needs_database
+    async def on_ready(self, *, db=Database()):
+        self.bot.readyCogs[self.__class__.__name__] = False
 
-        self.bot.db.execute("SELECT * FROM verification_channel WHERE (guild_id = %s AND channel_id = %s)", (guild.id, channel.id))
-        rows = self.bot.db.fetchall()
+        # load channels into memory for faster checks
+        await db.execute("""
+            SELECT DISTINCT channel_id, deleted_at
+            FROM verification
+            WHERE deleted_at IS NULL
+        """)
+        rows = await db.fetchall()
+        self.in_channels = set(row["channel_id"] for row in rows)
 
-        row = core.utils.get(rows, message_id=message.id)
-        if not row:
-            return
-
-        if emoji.name == row["emoji"]:
-            studentRole = core.utils.get(guild.roles, name="Student")
-            await author.remove_roles(studentRole)
+        self.bot.readyCogs[self.__class__.__name__] = True
 
 
 def setup(bot):
