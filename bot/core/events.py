@@ -46,7 +46,7 @@ class Events(commands.Cog):
 
     @commands.command()
     async def ping(self, ctx):
-        await ctx.send('Pong! {0}'.format(round(self.bot.latency, 1)))
+        await ctx.send('Pong! {0}ms'.format(round(self.bot.latency, 1)))
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
