@@ -3,7 +3,7 @@ import asyncio
 import discord
 from discord.ext import commands
 from discord.ext.commands import Bot, has_permissions
-from discord import Color, Embed, Member, File, Role, Emoji, PartialEmoji
+from discord import Color, Embed, Member, File, Role, Emoji, PartialEmoji, PermissionOverwrite, Permissions
 
 import json
 
@@ -96,7 +96,8 @@ class TransitionToMUNI(commands.Cog):
         ctx.channel = channel
         return True
 
-    async def init_rules(self, ctx):
+    @needs_database
+    async def init_rules(self, ctx, *, db=Database()):
         #
         # Rules
         ##################
@@ -116,6 +117,27 @@ class TransitionToMUNI(commands.Cog):
         setup_rules = self.bot.get_command("rules setup")
         ctx.channel = rules_channel
         await setup_rules.callback(cog, ctx)
+
+        verified_role = ctx.get_role("Student")
+        if not verified_role:
+            perms = Permissions()
+            perms.read_messages = True
+
+            verified_role = await ctx.guild.create_role(
+                name="Student",
+                color=Color(0x9cadb8),
+                permissions=perms)
+
+        await db.execute("""
+            INSERT INTO verification
+                (channel_id, verified_role_id)
+            VALUES (%s, %s)
+        """, (rules_channel.id, verified_role.id))
+        await db.commit()
+
+        cog = self.bot.get_cog("Verification")
+        add_verification = self.bot.get_command("add_verification_message")
+        await add_verification.callback(cog, ctx, rules_channel.id)
 
         ctx.channel = channel
         return True
@@ -207,14 +229,14 @@ class TransitionToMUNI(commands.Cog):
                 """, (ch.id, option_id, option))
                 await db.commit()
 
-        perms = {
-            guild.default_role: discord.PermissionOverwrite(
-                read_messages=True),
-            self.bot.user: discord.PermissionOverwrite(
-                read_messages=True)
-        }
-        for target, overwrite in perms.items():
-            await menu_channel.set_permissions(target, overwrite=overwrite)
+            perms = {
+                guild.default_role: discord.PermissionOverwrite(
+                    read_messages=None),
+                self.bot.user: discord.PermissionOverwrite(
+                    read_messages=True)
+            }
+            for target, overwrite in perms.items():
+                await menu_channel.set_permissions(target, overwrite=overwrite)
 
         ctx.channel = channel
         return True
