@@ -312,7 +312,7 @@ class Reactionmenu(commands.Cog):
                 """, (rep_channel.id, payload.message_id, str(payload.emoji)))
                 await db.commit()
 
-                for reactor in reaction.users:
+                async for reactor in reaction.users():
                     await rep_channel.set_permissions(reactor, read_messages=True)
 
         elif event_type == "REACTION_REMOVE":
