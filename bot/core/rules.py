@@ -22,9 +22,9 @@ class Rules(commands.Cog):
             rules_channel = await ctx.guild.create_text_channel("pravidla")
 
         await rules_channel.set_permissions(self.bot.user,
-                                            add_reactions=True, send_messages=True)
+                                            add_reactions=True, send_messages=True, read_messages=True)
         await rules_channel.set_permissions(ctx.guild.default_role,
-                                            add_reactions=False, send_messages=False)
+                                            add_reactions=False, send_messages=False, read_messages=True)
 
         mentions = {
             "NSFW": ("@NSFW"
