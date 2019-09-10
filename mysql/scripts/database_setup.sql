@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost
--- Generation Time: Sep 10, 2019 at 02:27 PM
+-- Generation Time: Sep 10, 2019 at 09:13 PM
 -- Server version: 8.0.17
 -- PHP Version: 7.3.9
 
@@ -403,8 +403,7 @@ ALTER TABLE `channel`
 --
 ALTER TABLE `leaderboard`
   ADD CONSTRAINT `leaderboard_ibfk_1` FOREIGN KEY (`guild_id`) REFERENCES `guild` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  ADD CONSTRAINT `leaderboard_ibfk_2` FOREIGN KEY (`channel_id`) REFERENCES `channel` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
-  ADD CONSTRAINT `leaderboard_ibfk_3` FOREIGN KEY (`author_id`) REFERENCES `member` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+  ADD CONSTRAINT `leaderboard_ibfk_2` FOREIGN KEY (`channel_id`) REFERENCES `channel` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
 -- Constraints for table `leaderboard_emoji`
@@ -421,6 +420,12 @@ ALTER TABLE `message`
   ADD CONSTRAINT `message_ibfk_3` FOREIGN KEY (`channel_id`) REFERENCES `channel` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
+-- Constraints for table `reactionmenu`
+--
+ALTER TABLE `reactionmenu`
+  ADD CONSTRAINT `reactionmenu_ibfk_1` FOREIGN KEY (`channel_id`) REFERENCES `channel` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+--
 -- Constraints for table `reactionmenu_messages`
 --
 ALTER TABLE `reactionmenu_messages`
@@ -431,6 +436,12 @@ ALTER TABLE `reactionmenu_messages`
 --
 ALTER TABLE `reactionmenu_options`
   ADD CONSTRAINT `reactionmenu_options_ibfk_1` FOREIGN KEY (`message_id`) REFERENCES `reactionmenu_messages` (`message_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+--
+-- Constraints for table `verification`
+--
+ALTER TABLE `verification`
+  ADD CONSTRAINT `verification_ibfk_1` FOREIGN KEY (`channel_id`) REFERENCES `channel` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
