@@ -165,10 +165,12 @@ class Leaderboard(commands.Cog):
         """
         print the leaderboard
         """
+        def right_justify(text, by=0, pad=" "):
+            return pad * (by - len(str(text))) + str(text)
 
         author_index = core.utils.index(rows1, author=author.name)
 
-        template = "`{index:0>2}.` {medal} `{count:\u0000>{top}}` {author}"
+        template = "`{index:0>2}.` {medal} `{count}` {author}"
 
         embed = Embed(color=0x53acf2)
         if not member:
@@ -179,13 +181,13 @@ class Leaderboard(commands.Cog):
                     template.format(
                         index=i + 1,
                         medal=self.get_medal(i + 1),
-                        count=row["count"],
+                        count=right_justify(row["count"], len(
+                            str(rows1[0]["count"])), "\u2063 "),
                         author=f'**{row["author"]}**'
                         if row["author_id"] == (
                             author.id if not member else member.id)
                         else
-                        row["author"],
-                        top=len(str(rows1[0]["count"]))
+                        row["author"]
                     )
                     for i, row in enumerate(rows1)
                 ]))
@@ -196,13 +198,13 @@ class Leaderboard(commands.Cog):
                 template.format(
                     index=row["row_number"],
                     medal=self.get_medal(row["row_number"]),
-                    count=row["count"],
+                    count=right_justify(row["count"], len(
+                        str(rows1[0]["count"])), "\u2063 "),
                     author=(f'**{row["author"]}**'
                             if row["author_id"] == (
                                 author.id if not member else member.id)
                             else
-                            row["author"]),
-                    top=len(str(rows2[0]["count"]))
+                            row["author"])
                 )
                 for j, row in enumerate(rows2)
             ]))
@@ -262,6 +264,8 @@ class Leaderboard(commands.Cog):
         """
         print the emoji leaderboard
         """
+        def right_justify(text, by=0, pad=" "):
+            return pad * (by - len(str(text))) + str(text)
 
         template = "`{index:0>2}.` {emoji} `{count:.>30}`"
 
@@ -281,10 +285,10 @@ class Leaderboard(commands.Cog):
         embed.add_field(
             name="Nitro emojis",
             inline=False,
-            value="{emoji} `{count:\u0000>{top}}`".format(
-                count=nitro_row["count"],
+            value="{emoji} `{count}`".format(
+                count=right_justify(nitro_row["count"], len(
+                    str(nitro_row["count"])), "\u2063 "),
                 emoji=self.bot.get_emoji(int(nitro_row["emoji"])),
-                top=len(str(nitro_row["count"]))
             )
         )
         await ctx.send(embed=embed)
