@@ -10,7 +10,7 @@ services:
         volumes:
             - ./web:/var/www/html/
         ports:
-            - 80:80
+            - 81:80
     db:
         container_name: mysql8
         image: mysql:8.0
@@ -22,7 +22,7 @@ services:
             MYSQL_USER: devMasaryk
             MYSQL_PASSWORD: devMUNI
         volumes:
-            - ./sql-scripts:/docker-entrypoint-initdb.d
+            - ./mysql/scripts:/docker-entrypoint-initdb.d
         ports:
             - 6033:3306
     phpmyadmin:
@@ -30,7 +30,7 @@ services:
         image: phpmyadmin/phpmyadmin:latest
         restart: always
         ports:
-            - 81:80
+            - 82:80
         environment:
             PMA_HOST: db
             MYSQL_ROOT_PASSWORD: root
