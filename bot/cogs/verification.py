@@ -20,7 +20,6 @@ class Verification(commands.Cog):
     @commands.command()
     async def add_verification_message(self, ctx, message_id: int):
         self.in_channels.add(message_id)
-        print(self.in_channels)
 
     """---------------------------------------------------------------------------------------------------------------------------"""
 
