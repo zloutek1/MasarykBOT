@@ -93,33 +93,6 @@ class Rules(commands.Cog):
             inline=False)
 
         embed.add_field(
-            name="**__Místnosti__**\n**Informace**",
-            value="""{pravidla}
-• Zde se nacházíš
-{oznameni}
-• Novinky o serveru
-{feedback}
-• Nápady na zlepšní serveru""".format(
-                pravidla=mentions.get("pravidla"),
-                oznameni=mentions.get("oznámení"),
-                feedback=mentions.get("feedback")
-            ),
-            inline=True)
-
-        embed.add_field(
-            name="**General**",
-            value="""{shitposting} a {spam}
-• skoro nemonitorovaná místnost
-{seznamka} a {lidi_na_pivo}
-• místo na seznámení se s lidmi""".format(
-                shitposting=mentions.get("shitposting"),
-                spam=mentions.get("spam"),
-                seznamka=mentions.get("seznamka"),
-                lidi_na_pivo=mentions.get("lidi-na-pivo")
-            ),
-            inline=False)
-
-        embed.add_field(
             name="**__Užitečné linky__**",
             value="""❯ [IS MUNI](https://is.muni.cz/auth)
 ❯ [ISKAM koleje]( https://iskam.skm.muni.cz/PrehledUbytovani)
