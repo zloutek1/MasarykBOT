@@ -45,21 +45,6 @@ class TransitionToMUNI(commands.Cog):
         aboutmenu_create = self.bot.get_command("aboutmenu create")
         ctx.channel = chnl
 
-        roles = [("light", Color(0xe4e4e4)),
-                 ("dark", Color(0x000001))]
-        for i, role in enumerate(roles):
-            r = ctx.get_role(role[0])
-            if r:
-                roles[i] = r
-            else:
-                roles[i] = await guild.create_role(name=role[0], color=role[1])
-        # roles = [ctx.get_role("light"), ctx.get_role("dark")]
-
-        emojis = ["🌕", "🌑"]
-        await aboutmenu_create.callback(cog, ctx,
-                                        "light-dark.jpg", roles, emojis,
-                                        text="Light mode vs Dark mode")
-
         roles = [("bot development", Color.blue()),
                  ("NSFW", Color(0x000001)),
                  ("anime", Color(0xdb6565)),
@@ -237,6 +222,12 @@ class TransitionToMUNI(commands.Cog):
             }
             for target, overwrite in perms.items():
                 await menu_channel.set_permissions(target, overwrite=overwrite)
+
+        embed = Embed(
+            title="Reactni/Unreactni předmět pro Zobrazení/Schování",
+            description="Upozorňujeme, že cooldown na react jsou **3 sekundy**",
+            color=Color.blurple())
+        await menu_channel.send(embed=embed)
 
         ctx.channel = channel
         return True
