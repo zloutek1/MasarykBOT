@@ -5,6 +5,7 @@ from discord.ext.commands import Bot, has_permissions
 
 import os
 import json
+import logging
 
 from config import BotConfig
 
@@ -12,6 +13,7 @@ from config import BotConfig
 class Admin(commands.Cog):
     def __init__(self, bot: Bot):
         self.bot = bot
+        self.log = logging.getLogger(__name__)
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -97,7 +99,7 @@ class Admin(commands.Cog):
     @commands.command()
     @has_permissions(administrator=True)
     async def load(self, ctx, extension):
-        self.bot.load_extension(f'cogs.{extension}')
+        self.bot.load_extension(extension)
 
         with open("assets/loaded_cogs.json", "r") as fileR:
             with open("assets/loaded_cogs.json", "w") as fileW:
@@ -105,12 +107,13 @@ class Admin(commands.Cog):
                 cogs = list(set(cogs) | {extension})  # union
                 fileW.write(json.dumps(cogs))
 
-        print("Loaded", extension, "successfully")
+        self.log.info(f"Loaded {extension} successfully")
+        await ctx.send(f"Loaded {extension} successfully", delete_after=5)
 
     @commands.command()
     @has_permissions(administrator=True)
     async def unload(self, ctx, extension):
-        self.bot.unload_extension(f'cogs.{extension}')
+        self.bot.unload_extension(extension)
 
         with open("assets/loaded_cogs.json", "r") as fileR:
             with open("assets/loaded_cogs.json", "w") as fileW:
@@ -118,23 +121,26 @@ class Admin(commands.Cog):
                 cogs = list(set(cogs) ^ {extension})  # difference
                 fileW.write(json.dumps(cogs))
 
-        print("Unloaded", extension, "successfully")
+        self.log.info(f"Unloaded {extension} successfully")
+        await ctx.send(f"Unloaded {extension} successfully", delete_after=5)
 
     @commands.command()
     @has_permissions(administrator=True)
     async def reload(self, ctx, extension=None):
         if extension is not None:
-            self.bot.unload_extension(f'cogs.{extension}')
-            self.bot.load_extension(f'cogs.{extension}')
+            self.bot.unload_extension(extension)
+            self.bot.load_extension(extension)
 
-            print("Reloaded", extension, "successfully")
-            await ctx.send(f"Reloaded {extension} successfully")
+            self.log.info(f"Reloaded {extension} successfully")
+            await ctx.send(f"Reloaded {extension} successfully", delete_after=5)
 
         else:
             for extension in self.bot.extensions:
                 self.bot.unload_extension(extension)
                 self.bot.load_extension(extension)
-            await ctx.send(f"All extensions successfully")
+
+            self.log.info(f"All extensions successfully")
+            await ctx.send(f"All extensions successfully", delete_after=5)
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
