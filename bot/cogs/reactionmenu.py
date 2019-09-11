@@ -39,7 +39,7 @@ class Reactionmenu(commands.Cog):
         # set permissions to current channel
         self.log.info("setting permission to current channel")
         perms = {
-            guild.default_role: PermissionOverwrite(
+            ctx.get_role("Student"): PermissionOverwrite(
                 add_reactions=False, send_messages=False),
             self.bot.user: PermissionOverwrite(
                 add_reactions=True, send_messages=True)
@@ -50,7 +50,7 @@ class Reactionmenu(commands.Cog):
         # create category and set permissions
         self.log.info("createing category with permissions")
         perms = {
-            guild.default_role: PermissionOverwrite(
+            ctx.get_role("Student"): PermissionOverwrite(
                 read_messages=False),
             self.bot.user: PermissionOverwrite(
                 read_messages=True)
@@ -225,10 +225,10 @@ class Reactionmenu(commands.Cog):
 
         W, H = (799, 186)
 
-        bg = (255, 255, 255)
-        fg = (0, 0, 0)
+        bg = (54, 57, 63, 0)
+        fg = (173, 216, 230)
 
-        im = Image.new('RGBA', (W, H), bg + (255,))
+        im = Image.new('RGBA', (W, H), bg)
         fnt = ImageFont.truetype('assets/muni-regular.ttf', 96)
 
         draw = ImageDraw.Draw(im)
