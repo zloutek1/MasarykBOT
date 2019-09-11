@@ -277,7 +277,7 @@ class Reactionmenu(commands.Cog):
             message.reactions, key=lambda react: str(react) == str(payload.emoji))
         user = guild.get_member(payload.user_id)
 
-        NEED_RERACTIONS = 1
+        NEED_RERACTIONS = 5
         if event_type == "REACTION_ADD":
             # wait in queue
             if reaction.count <= NEED_RERACTIONS:
