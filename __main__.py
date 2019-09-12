@@ -2,8 +2,8 @@ from discord import Game
 from discord.ext.commands import when_mentioned_or
 
 from core.bot import MasarykBot
-from config import BotConfig
 
+import os
 from glob import glob
 import time
 import json
@@ -13,7 +13,7 @@ if __name__ == "__main__":
     print()
 
     bot = MasarykBot(
-        command_prefix=when_mentioned_or(BotConfig.prefix),
+        command_prefix=when_mentioned_or(os.environ.get("PREFIX")),
         case_insensitive=True
     )
 
@@ -45,4 +45,4 @@ if __name__ == "__main__":
     ##
     # start bot
     ##
-    bot.start(BotConfig.token)
+    bot.start(os.environ.get("TOKEN"))

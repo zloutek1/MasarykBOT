@@ -1,8 +1,7 @@
+import os
 import asyncio
 import aiomysql
 from pymysql.err import OperationalError
-
-from config import BotConfig
 
 
 class DatabaseConnectionError(OperationalError):
@@ -39,7 +38,15 @@ class Database:
         if not loop:
             loop = asyncio.get_event_loop()
 
-        pool = await aiomysql.create_pool(**BotConfig.mysql, loop=loop)
+        pool = await aiomysql.create_pool(
+            host="localhost",
+            user="devMasaryk",
+            password=os.environ.get("DATABASE_PASSWORD"),
+            db="discordv1.1",
+            charset="utf8mb4",
+            connect_timeout=60,
+            loop=loop
+        )
         db.pool = pool
 
         return db
@@ -55,6 +62,7 @@ class Database:
             return _handle_errors(getattr(self.cursor, attr))
 
         elif calling_conn and calling_cursor:
-            raise ValueError(f"In {self.__class__} both self.conn and self.cursor have attibute {attr}, please be more specific")
+            raise ValueError(
+                f"In {self.__class__} both self.conn and self.cursor have attibute {attr}, please be more specific")
 
         raise ValueError(f"{self.__class__} has no attribute {attr}")
