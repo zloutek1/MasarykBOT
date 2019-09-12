@@ -9,7 +9,6 @@ import traceback
 import datetime
 import json
 
-from config import BotConfig
 import core.utils.get
 from core.utils import db
 
