@@ -7,8 +7,6 @@ import os
 import json
 import logging
 
-from config import BotConfig
-
 
 class Admin(commands.Cog):
     def __init__(self, bot: Bot):
