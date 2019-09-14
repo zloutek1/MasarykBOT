@@ -7,13 +7,14 @@ import os
 from glob import glob
 import time
 import json
-
+from dotenv import load_dotenv
 
 if __name__ == "__main__":
+    load_dotenv()
     print()
 
     bot = MasarykBot(
-        command_prefix=when_mentioned_or(os.environ.get("PREFIX")),
+        command_prefix=when_mentioned_or(os.getenv("PREFIX")),
         case_insensitive=True
     )
 
@@ -45,4 +46,4 @@ if __name__ == "__main__":
     ##
     # start bot
     ##
-    bot.start(os.environ.get("TOKEN"))
+    bot.start(os.getenv("TOKEN"))

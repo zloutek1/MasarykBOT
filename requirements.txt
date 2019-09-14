@@ -3,3 +3,4 @@ aiomysql
 requests
 emoji
 Pillow
+python-dotenv

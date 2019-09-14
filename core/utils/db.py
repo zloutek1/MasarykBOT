@@ -2,6 +2,8 @@ import os
 import asyncio
 import aiomysql
 from pymysql.err import OperationalError
+from dotenv import load_dotenv
+load_dotenv()
 
 
 class DatabaseConnectionError(OperationalError):
@@ -39,10 +41,11 @@ class Database:
             loop = asyncio.get_event_loop()
 
         pool = await aiomysql.create_pool(
-            host="localhost",
-            user="devMasaryk",
-            password=os.environ.get("DATABASE_PASSWORD"),
-            db="discordv1.1",
+            host=os.getenv("DB_HOST"),
+            port=int(os.getenv("DB_PORT")),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASS"),
+            db=os.getenv("DB_DATABASE"),
             charset="utf8mb4",
             connect_timeout=60,
             loop=loop
