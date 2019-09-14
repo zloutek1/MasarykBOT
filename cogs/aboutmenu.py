@@ -39,7 +39,7 @@ class Aboutmenu(commands.Cog):
     async def aboutmenu_create(self, ctx, image_path: str,
                                roles: Greedy[Role],
                                emojis: Greedy[Union[Emoji, PartialEmoji, UnicodeEmoji]],
-                               *, text: str, db=Database()):
+                               *, text: str, db: Database = None):
 
         if not os.path.isfile("assets/" + image_path):
             await safe(ctx.message.delete)(delay=5)
@@ -92,7 +92,7 @@ class Aboutmenu(commands.Cog):
     """---------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def on_raw_reaction_update(self, payload, event_type: str, db=Database()):
+    async def on_raw_reaction_update(self, payload, event_type: str, db: Database = None):
         # reacted in aboutmenu channel?
         await db.execute("""
             SELECT * FROM aboutmenu
@@ -141,7 +141,7 @@ class Aboutmenu(commands.Cog):
 
     @commands.Cog.listener()
     @needs_database
-    async def on_ready(self, *, db=Database()):
+    async def on_ready(self, *, db: Database = None):
         self.bot.readyCogs[self.__class__.__name__] = False
 
         await db.execute("""

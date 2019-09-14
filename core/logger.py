@@ -47,7 +47,7 @@ class Logger(commands.Cog):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def backup_guilds(self, guilds, db=Database()):
+    async def backup_guilds(self, guilds, db: Database = None):
         guilds_data = [(g.id, g.name, str(g.icon_url))
                        for g in guilds]
 
@@ -62,7 +62,7 @@ class Logger(commands.Cog):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def backup_categories(self, categories, db=Database()):
+    async def backup_categories(self, categories, db: Database = None):
         category_data = [(c.guild.id, c.id, c.name, c.position)
                          for c in categories]
 
@@ -77,7 +77,7 @@ class Logger(commands.Cog):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def backup_text_channels(self, text_channels, db=Database()):
+    async def backup_text_channels(self, text_channels, db: Database = None):
         channels_data = [(c.guild.id, c.category_id, c.id, c.name, c.position)
                          for c in text_channels]
 
@@ -92,7 +92,7 @@ class Logger(commands.Cog):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def backup_users(self, users, db=Database()):
+    async def backup_users(self, users, db: Database = None):
         users_data = [(u.id, u.name, str(u.avatar_url))
                       for u in users]
 
@@ -107,7 +107,7 @@ class Logger(commands.Cog):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def backup_messages(self, in_channels, db=Database()):
+    async def backup_messages(self, in_channels, db: Database = None):
         ignore_channels = []
         with open("assets/local_db.json", "r", encoding="utf-8") as file:
             local_db = json.load(file)
@@ -170,7 +170,7 @@ class Logger(commands.Cog):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def get_messages(self, channel, authors_data, messages_data, attachments_data, after=None, before=None, db=Database()):
+    async def get_messages(self, channel, authors_data, messages_data, attachments_data, after=None, before=None, db: Database = None):
         try:
             async for message in channel.history(
                     limit=1_000_000, after=after, before=before, oldest_first=True):
@@ -198,7 +198,7 @@ class Logger(commands.Cog):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def backup_messages_in(self, channel, messages_data, db=Database()):
+    async def backup_messages_in(self, channel, messages_data, db: Database = None):
         chunks = self.chunks(messages_data, 550)
         for chunk in chunks:
             await db.executemany("""
@@ -211,7 +211,7 @@ class Logger(commands.Cog):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def backup_attachments_in(self, channel, attachments_data, db=Database()):
+    async def backup_attachments_in(self, channel, attachments_data, db: Database = None):
         chunks = self.chunks(attachments_data, 550)
         for chunk in chunks:
             await db.executemany("""
@@ -225,7 +225,7 @@ class Logger(commands.Cog):
 
     @commands.Cog.listener()
     @needs_database
-    async def on_ready(self, db=Database()):
+    async def on_ready(self, db: Database = None):
         self.bot.readyCogs[self.__class__.__name__] = False
 
         guilds = self.bot.guilds
@@ -249,7 +249,7 @@ class Logger(commands.Cog):
 
     @commands.Cog.listener()
     @needs_database
-    async def on_message(self, message, db=Database()):
+    async def on_message(self, message, db: Database = None):
         message_data = (message.channel.id, message.author.id,
                         message.id, message.content, message.created_at)
 
@@ -277,7 +277,7 @@ class Logger(commands.Cog):
 
     @commands.Cog.listener()
     @needs_database
-    async def on_guild_channel_create(self, channel, db=Database()):
+    async def on_guild_channel_create(self, channel, db: Database = None):
         if isinstance(channel, discord.CategoryChannel):
             await self.on_category_create(channel)
 
@@ -285,7 +285,7 @@ class Logger(commands.Cog):
             await self.on_text_channel_create(channel)
 
     @needs_database
-    async def on_category_create(self, category, db=Database()):
+    async def on_category_create(self, category, db: Database = None):
         category_data = (category.guild.id, category.id,
                          category.name, category.position)
 
@@ -297,7 +297,7 @@ class Logger(commands.Cog):
         await db.commit()
 
     @needs_database
-    async def on_text_channel_create(self, text_channel, db=Database()):
+    async def on_text_channel_create(self, text_channel, db: Database = None):
         channel_data = (text_channel.guild.id, text_channel.category_id,
                         text_channel.id, text_channel.name, text_channel.position)
 

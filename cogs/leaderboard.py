@@ -22,7 +22,7 @@ class Leaderboard(commands.Cog):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def catchup_leaderboard_get(self, message, leaderboard_data, *, db=Database()):
+    async def catchup_leaderboard_get(self, message, leaderboard_data, *, db: Database = None):
         c = message.content.lower()
         if c.startswith("!") or c.startswith("pls"):
             return
@@ -31,7 +31,7 @@ class Leaderboard(commands.Cog):
                                  message.author.id, 1, message.created_at, message.created_at))
 
     @needs_database
-    async def catchup_leaderboard_insert(self, leaderboard_data, *, db=Database()):
+    async def catchup_leaderboard_insert(self, leaderboard_data, *, db: Database = None):
         for row in leaderboard_data:
             await db.execute("""
                 INSERT IGNORE INTO leaderboard (guild_id, channel_id, author_id, messages_sent, `timestamp`) VALUES (%s, %s, %s, %s, %s)
@@ -42,7 +42,7 @@ class Leaderboard(commands.Cog):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def catchup_leaderboard_emoji_get(self, message, leaderboard_emoji_data, *, db=Database()):
+    async def catchup_leaderboard_emoji_get(self, message, leaderboard_emoji_data, *, db: Database = None):
         c = message.content.lower()
 
         emojis = (re.findall(r"\<\:\w+\:(\d+)\>", c) +
@@ -61,7 +61,7 @@ class Leaderboard(commands.Cog):
                 (message.guild.id, message.channel.id, emoji, 1, message.created_at, message.created_at))
 
     @needs_database
-    async def catchup_leaderboard_emoji_insert(self, leaderboard_emoji_data, *, db=Database()):
+    async def catchup_leaderboard_emoji_insert(self, leaderboard_emoji_data, *, db: Database = None):
         for row in leaderboard_emoji_data:
             await db.execute("""
                 INSERT INTO leaderboard_emoji (guild_id, channel_id, emoji, sent_times, `timestamp`) VALUES (%s, %s, %s, %s, %s)
@@ -88,7 +88,7 @@ class Leaderboard(commands.Cog):
 
     @commands.command()
     @needs_database
-    async def leaderboard(self, ctx, channel: Union[TextChannel, Member] = None, member: Union[Member, TextChannel] = None, *, db=Database()):
+    async def leaderboard(self, ctx, channel: Union[TextChannel, Member] = None, member: Union[Member, TextChannel] = None, *, db: Database = None):
         channel, member = (channel if isinstance(channel, TextChannel) else
                            member if isinstance(member, TextChannel) else
                            None,
@@ -221,7 +221,7 @@ class Leaderboard(commands.Cog):
 
     @commands.command(name="emojiboard", aliases=("emoji_leaderboard", "leadermoji"))
     @needs_database
-    async def emojiboard(self, ctx, channel: Union[TextChannel, Member] = None, *, db=Database()):
+    async def emojiboard(self, ctx, channel: Union[TextChannel, Member] = None, *, db: Database = None):
         channel = channel if isinstance(channel, TextChannel) else None
 
         guild = ctx.guild

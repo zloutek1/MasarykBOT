@@ -31,7 +31,7 @@ class Reactionmenu(commands.Cog):
 
     @reactionmenu_group.command(name="create", aliases=("add",))
     @needs_database
-    async def reactionmenu_create(self, ctx, *, name: str, db=Database()):
+    async def reactionmenu_create(self, ctx, *, name: str, db: Database = None):
         guild = ctx.guild
         channel = ctx.channel
         self.in_channels.add(channel.id)
@@ -103,7 +103,7 @@ class Reactionmenu(commands.Cog):
 
     @option_group.command(name="create", aliases=("add",))
     @needs_database
-    async def option_create(self, ctx, to_menu: int=None, *, text: str, db=Database()):
+    async def option_create(self, ctx, to_menu: int=None, *, text: str, db: Database = None):
         guild = ctx.guild
         channel = ctx.channel
 
@@ -246,7 +246,7 @@ class Reactionmenu(commands.Cog):
     """---------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def on_raw_reaction_update(self, payload, event_type: str, db=Database()):
+    async def on_raw_reaction_update(self, payload, event_type: str, db: Database = None):
         # is it a user and in right channel?
         if (payload.user_id == self.bot.user.id or
                 payload.channel_id not in self.in_channels):
@@ -353,7 +353,7 @@ class Reactionmenu(commands.Cog):
 
     @commands.Cog.listener()
     @needs_database
-    async def on_ready(self, *, db=Database()):
+    async def on_ready(self, *, db: Database = None):
         self.bot.readyCogs[self.__class__.__name__] = False
 
         # load channels into memory for faster checks

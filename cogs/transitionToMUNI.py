@@ -82,7 +82,7 @@ class TransitionToMUNI(commands.Cog):
         return True
 
     @needs_database
-    async def init_rules(self, ctx, *, db=Database()):
+    async def init_rules(self, ctx, *, db: Database = None):
         #
         # Rules
         ##################
@@ -128,7 +128,7 @@ class TransitionToMUNI(commands.Cog):
         return True
 
     @needs_database
-    async def init_reactionmenu(self, ctx, *, db=Database()):
+    async def init_reactionmenu(self, ctx, *, db: Database = None):
         #
         # Reactionmenu
         ##################

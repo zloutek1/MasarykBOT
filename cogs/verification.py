@@ -24,7 +24,7 @@ class Verification(commands.Cog):
     """---------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def on_raw_reaction_update(self, payload, event_type: str, *, db=Database()):
+    async def on_raw_reaction_update(self, payload, event_type: str, *, db: Database = None):
         if (payload.user_id == self.bot.user.id or
                 payload.channel_id not in self.in_channels):
             return
@@ -70,7 +70,7 @@ class Verification(commands.Cog):
 
     @commands.Cog.listener()
     @needs_database
-    async def on_ready(self, *, db=Database()):
+    async def on_ready(self, *, db: Database = None):
         self.bot.readyCogs[self.__class__.__name__] = False
 
         # load channels into memory for faster checks
