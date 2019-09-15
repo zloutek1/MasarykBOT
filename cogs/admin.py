@@ -64,9 +64,9 @@ class Admin(commands.Cog):
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
-    @commands.command(aliases=("logs", "getlog", "getlogs"))
+    @commands.command(name="log", aliases=("logs", "getlog", "getlogs"))
     @has_permissions(administrator=True)
-    async def log(self, ctx, N=10):
+    async def _log(self, ctx, N=10):
         with open("assets/masaryk.log", "r") as file:
             lines = file.read().splitlines()
             last_lines = lines[-N:]
@@ -148,7 +148,7 @@ class Admin(commands.Cog):
     @has_permissions(administrator=True)
     async def shutdown(self, ctx):
         self.log.info("Shutting down...")
-        await ctx.delete(delay=5)
+        await ctx.delete()
         raise KeyboardInterrupt
 
 
