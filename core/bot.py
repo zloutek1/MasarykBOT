@@ -56,9 +56,11 @@ class MasarykBot(Bot):
         log.setLevel(logging.INFO)
 
         dt_fmt = '%Y-%m-%d %H:%M:%S'
-        fmt = logging.Formatter('[{asctime}] [{levelname:<7}] {name}: {message}', dt_fmt, style='{')
+        fmt = logging.Formatter(
+            '[{asctime}] [{levelname:<7}] {name}: {message}', dt_fmt, style='{')
 
-        handler = logging.FileHandler(filename='assets/masaryk.log', encoding='utf-8', mode='w')
+        handler = logging.FileHandler(
+            filename='assets/masaryk.log', encoding='utf-8', mode='w')
         handler.setFormatter(fmt)
         log.addHandler(handler)
 
@@ -72,6 +74,8 @@ class MasarykBot(Bot):
 
     async def handle_database(self):
         await self.wait_until_ready()
+        await self.change_presence(
+            status=discord.Status.offline)
         attempts = 0
 
         while True:
@@ -79,8 +83,6 @@ class MasarykBot(Bot):
                 self.db = await Database.connect()
 
                 print("\n    [BOT] Database online: connected.\n")
-
-                await self.change_presence(status=discord.Status.online, activity=self.default_activity)
 
                 await self.trigger_event("on_ready")
                 await self.bot_ready()
@@ -92,7 +94,8 @@ class MasarykBot(Bot):
 
                 dots = ("." * (attempts % 3 + 1) + "   ")[:3]
                 self.log.error(e)
-                print("\r    [BOT] Database offline: reconnecting" + dots, end="")
+                print(
+                    "\r    [BOT] Database offline: reconnecting" + dots, end="")
 
                 await self.change_presence(status=discord.Status.dnd, activity=Game(name="Database offline"))
 
@@ -122,7 +125,8 @@ class MasarykBot(Bot):
             task.cancel()
 
             try:
-                self.loop.run_until_complete(asyncio.wait_for(task, 5, loop=self.loop))
+                self.loop.run_until_complete(
+                    asyncio.wait_for(task, 5, loop=self.loop))
                 task.exception()
             except asyncio.InvalidStateError:
                 pass
@@ -196,6 +200,9 @@ class MasarykBot(Bot):
                  /&&&.                 \n""")
         print("     [BOT] {0} ready to serve! \n\n\n".format(bot_name))
 
+        self.loop.create_task(self.change_presence(
+            activity=self.default_activity))
+
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     async def trigger_event(self, event_name, *args, **kwargs):
@@ -224,12 +231,14 @@ class MasarykBot(Bot):
     async def on_error(self, event, *args, **kwargs):
         exc_type, exc_value, exc_traceback = sys.exc_info()
 
-        exc = traceback.format_exception(exc_type, exc_value, exc_traceback, chain=False)
+        exc = traceback.format_exception(
+            exc_type, exc_value, exc_traceback, chain=False)
 
         description = '```py\n%s\n```' % ''.join(exc)
         time = datetime.datetime.utcnow()
 
-        message = 'Event {0} at {1}: More info: {2}'.format(event, time, description)
+        message = 'Event {0} at {1}: More info: {2}'.format(
+            event, time, description)
         embed = Embed(
             title='Event {0} at {1}:'.format(event, time),
             description=description[-1500:],
