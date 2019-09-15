@@ -277,11 +277,11 @@ class Reactionmenu(commands.Cog):
             message.reactions, key=lambda react: str(react) == str(payload.emoji))
         user = guild.get_member(payload.user_id)
 
-        NEED_RERACTIONS = 5
+        NEED_REACTIONS = 5
         if event_type == "REACTION_ADD":
             # wait in queue
-            if reaction.count <= NEED_RERACTIONS:
-                need_more = (NEED_RERACTIONS + 1) - reaction.count
+            if reaction.count <= NEED_REACTIONS:
+                need_more = (NEED_REACTIONS + 1) - reaction.count
                 embed = Embed(
                     description=f"Díky za zájem o {subject_code} {user.mention}. Uživatel přidán na čekací listinu, čekáte ještě na {need_more} studenty.", color=Color.green())
                 await channel.send(embed=embed, delete_after=5)
