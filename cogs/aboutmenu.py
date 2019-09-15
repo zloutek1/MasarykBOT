@@ -193,11 +193,15 @@ class Aboutmenu(commands.Cog):
                 to_remove = old_reacted - new_reacted
 
                 # balance the difference
-                for member in to_add:
-                    await member.add_roles(role)
+                for user in to_add:
+                    member = core.utils.get(channel.guild.members, id=user.id)
+                    if member:
+                        await member.add_roles(role)
 
-                for member in to_remove:
-                    await member.remove_roles(role)
+                for user in to_remove:
+                    member = core.utils.get(channel.guild.members, id=user.id)
+                    if member:
+                        await member.remove_roles(role)
 
         self.bot.readyCogs[self.__class__.__name__] = True
 
