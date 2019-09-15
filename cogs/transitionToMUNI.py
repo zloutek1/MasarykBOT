@@ -38,7 +38,7 @@ class TransitionToMUNI(commands.Cog):
             chnl = await guild.create_text_channel("about-you")
 
         elif chnl.last_message_id:
-            await ctx.send(f"[Aboutmenu] {chnl.mention} not empty. Skipping")
+            await ctx.send(f"[Aboutmenu] {chnl.mention} not empty. Skipping", delete_after=5)
             return False
 
         cog = self.bot.get_cog("Aboutmenu")
@@ -95,7 +95,7 @@ class TransitionToMUNI(commands.Cog):
             rules_channel = await ctx.guild.create_text_channel("pravidla")
 
         elif rules_channel.last_message_id:
-            await ctx.send(f"[Rules] {rules_channel.mention} not empty. Skipping")
+            await ctx.send(f"[Rules] {rules_channel.mention} not empty. Skipping", delete_after=5)
             return False
 
         cog = self.bot.get_cog("Rules")
@@ -140,7 +140,7 @@ class TransitionToMUNI(commands.Cog):
             menu_channel = await ctx.guild.create_text_channel("vyber-predmetov")
 
         elif menu_channel.last_message_id:
-            await ctx.send(f"[Reactionmenu] {menu_channel.mention} not empty. Skipping")
+            await ctx.send(f"[Reactionmenu] {menu_channel.mention} not empty. Skipping", delete_after=5)
             return False
 
         perms = {
