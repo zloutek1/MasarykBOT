@@ -101,7 +101,10 @@ class Rules(commands.Cog):
 ❯ [katalog předmětů od 2019/2020](https://www.fi.muni.cz/catalogue2019/)
 ❯ [harmonogram fakult](https://is.muni.cz/predmety/obdobi)
 ❯ [fi.muny.cz](http://fi.muny.cz/)
-❯ [kabell drill](https://kabell.sk/fi_muni_drill/)""",
+❯ [kabell drill](https://kabell.sk/fi_muni_drill/)
+❯ [statistika studia](https://is.muni.cz/studium/statistika)
+❯ [statistika kreditů](https://is.muni.cz/auth/ucitel/statistika_kreditu)
+❯ [statistika bodů](https://is.muni.cz/auth/student/poznamkove_bloky_statistika)""",
             inline=False)
 
         embed.add_field(
