@@ -64,12 +64,14 @@ class Admin(commands.Cog):
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
-    @commands.command()
+    @commands.command(aliases=("logs", "getlog", "getlogs"))
     @has_permissions(administrator=True)
-    async def getlogs(self, ctx):
+    async def log(self, ctx, N=10):
         with open("assets/masaryk.log", "r") as file:
-            data = file.read()
-            await ctx.send("```..." + data[-1900:] + "```")
+            lines = file.read().splitlines()
+            last_lines = lines[-N:]
+            embed = Embed(title="Log", description="\n".join(last_lines))
+            await ctx.send(embed=embed)
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -145,7 +147,8 @@ class Admin(commands.Cog):
     @commands.command()
     @has_permissions(administrator=True)
     async def shutdown(self, ctx):
-        print("Shutting down...")
+        self.log.info("Shutting down...")
+        await ctx.delete(delay=5)
         raise KeyboardInterrupt
 
 
