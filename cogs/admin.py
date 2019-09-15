@@ -148,7 +148,7 @@ class Admin(commands.Cog):
     @has_permissions(administrator=True)
     async def shutdown(self, ctx):
         self.log.info("Shutting down...")
-        await ctx.delete()
+        await ctx.message.delete()
         raise KeyboardInterrupt
 
 
