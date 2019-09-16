@@ -172,6 +172,7 @@ class Logger(commands.Cog):
     @needs_database
     async def get_messages(self, channel, authors_data, messages_data, attachments_data, after=None, before=None, db: Database = None):
         try:
+            counter = 0
             async for message in channel.history(
                     limit=1_000_000, after=after, before=before, oldest_first=True):
 
@@ -192,6 +193,12 @@ class Logger(commands.Cog):
 
                     catchup_task_get = catchup_task["get"]
                     await catchup_task_get(message, catchup_task["data"])
+
+                if counter % 1000 == 0 and counter != 0:
+                    self.log.info(
+                        f"Stored {counter} messages in {channel.name}")
+
+                counter += 1
         except discord.errors.Forbidden:
             pass
 
@@ -247,18 +254,19 @@ class Logger(commands.Cog):
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
+    """
     @commands.Cog.listener()
     @needs_database
     async def on_message(self, message, db: Database = None):
         message_data = (message.channel.id, message.author.id,
                         message.id, message.content, message.created_at)
 
-        await db.execute("""
+        await db.execute(\"""
             INSERT INTO message
                 (channel_id, author_id, id, content, created_at)
             VALUES (%s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE id=id
-        """, message_data)
+        \""", message_data)
 
         for task_name in self.catchup_tasks:
             catchup_task = self.catchup_tasks[task_name]
@@ -272,9 +280,11 @@ class Logger(commands.Cog):
             catchup_task["data"].clear()
 
         await db.commit()
+    """
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
+    """
     @commands.Cog.listener()
     @needs_database
     async def on_guild_channel_create(self, channel, db: Database = None):
@@ -289,11 +299,11 @@ class Logger(commands.Cog):
         category_data = (category.guild.id, category.id,
                          category.name, category.position)
 
-        await db.execute("""
+        await db.execute("\""
             INSERT INTO category (guild_id, id, name, position)
             VALUES (%s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE id=id
-        """, category_data)
+        \""", category_data)
         await db.commit()
 
     @needs_database
@@ -301,12 +311,13 @@ class Logger(commands.Cog):
         channel_data = (text_channel.guild.id, text_channel.category_id,
                         text_channel.id, text_channel.name, text_channel.position)
 
-        await db.execute("""
+        await db.execute(\"""
             INSERT INTO channel (guild_id, category_id, id, name, position)
             VALUES (%s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE id=id
-        """, channel_data)
+        \""", channel_data)
         await db.commit()
+    """
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
