@@ -4,6 +4,7 @@ from discord import Colour, Embed, Member, Object, File, PartialEmoji
 from discord.channel import TextChannel
 
 import re
+import logging
 from emoji import UNICODE_EMOJI
 from typing import Optional, Union
 
@@ -18,31 +19,48 @@ from core.utils.checks import needs_database
 class Leaderboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.log = logging.getLogger(__name__)
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @staticmethod
+    def chunks(l, n):
+        """Yield successive n-sized chunks from l."""
+        for i in range(0, len(l), n):
+            yield l[i:i + n]
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def catchup_leaderboard_get(self, message, leaderboard_data, *, db: Database = None):
+    async def catchup_leaderboard_get(self, message, leaderboard_data: dict, *, db: Database = None):
         c = message.content.lower()
         if c.startswith("!") or c.startswith("pls"):
             return
 
-        leaderboard_data.append((message.guild.id, message.channel.id,
-                                 message.author.id, 1, message.created_at, message.created_at))
+        key = (message.guild.id, message.channel.id, message.author.id)
+        entry = leaderboard_data.get(key, (0, None))
+        leaderboard_data[key] = (entry[0] + 1, message.created_at)
 
     @needs_database
-    async def catchup_leaderboard_insert(self, leaderboard_data, *, db: Database = None):
-        for row in leaderboard_data:
-            await db.execute("""
-                INSERT IGNORE INTO leaderboard (guild_id, channel_id, author_id, messages_sent, `timestamp`) VALUES (%s, %s, %s, %s, %s)
-                        ON DUPLICATE KEY UPDATE messages_sent=messages_sent+1, `timestamp`= %s
-            """, row)
-        await db.commit()
+    async def catchup_leaderboard_insert(self, leaderboard_data: dict, *, db: Database = None):
+        leaderboard_data = [key + val for key, val in leaderboard_data.items()]
+        chunks = self.chunks(leaderboard_data, 550)
+        for i, chunk in enumerate(chunks):
+            await db.executemany("""
+                INSERT IGNORE INTO leaderboard
+                    (guild_id, channel_id, author_id, messages_sent, `timestamp`)
+                VALUES (%s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE messages_sent = messages_sent+1
+            """, chunk)
+
+            await db.commit()
+            self.log.info(
+                f"Saved {(i + 1) * 550} rows for leaderboard to database")
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def catchup_leaderboard_emoji_get(self, message, leaderboard_emoji_data, *, db: Database = None):
+    async def catchup_leaderboard_emoji_get(self, message, leaderboard_emoji_data: dict, *, db: Database = None):
         c = message.content.lower()
 
         emojis = (re.findall(r"\<\:\w+\:(\d+)\>", c) +
@@ -57,17 +75,26 @@ class Leaderboard(commands.Cog):
 
                 emoji = emoji.id
 
-            leaderboard_emoji_data.append(
-                (message.guild.id, message.channel.id, emoji, 1, message.created_at, message.created_at))
+            key = (message.guild.id, message.channel.id, emoji)
+            entry = leaderboard_emoji_data.get(key, (0, None))
+            leaderboard_emoji_data[key] = (entry[0] + 1, message.created_at)
 
     @needs_database
     async def catchup_leaderboard_emoji_insert(self, leaderboard_emoji_data, *, db: Database = None):
-        for row in leaderboard_emoji_data:
-            await db.execute("""
-                INSERT INTO leaderboard_emoji (guild_id, channel_id, emoji, sent_times, `timestamp`) VALUES (%s, %s, %s, %s, %s)
-                        ON DUPLICATE KEY UPDATE sent_times=sent_times+1, `timestamp`= %s
-            """, row)
-        await db.commit()
+        leaderboard_emoji_data = [key + val for key,
+                                  val in leaderboard_emoji_data.items()]
+        chunks = self.chunks(leaderboard_emoji_data, 550)
+        for i, chunk in enumerate(chunks):
+            await db.executemany("""
+                INSERT INTO leaderboard_emoji
+                    (guild_id, channel_id, emoji, sent_times, `timestamp`)
+                VALUES (%s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE sent_times=sent_times+1
+            """, chunk)
+            await db.commit()
+            self.log.info(
+                f"Saved {(i + 1) * 550} rows for leaderboard_emoji to database")
+
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -77,10 +104,10 @@ class Leaderboard(commands.Cog):
 
         if hasattr(self.bot, "add_catchup_task"):
             self.bot.add_catchup_task(
-                "leaderboard", self.catchup_leaderboard_get, self.catchup_leaderboard_insert)
+                "leaderboard", self.catchup_leaderboard_get, self.catchup_leaderboard_insert, task_data=dict())
 
             self.bot.add_catchup_task(
-                "leaderboard_emoji", self.catchup_leaderboard_emoji_get, self.catchup_leaderboard_emoji_insert)
+                "leaderboard_emoji", self.catchup_leaderboard_emoji_get, self.catchup_leaderboard_emoji_insert, task_data=dict())
 
         self.bot.readyCogs[self.__class__.__name__] = True
 

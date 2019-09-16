@@ -25,7 +25,7 @@ class Logger(commands.Cog):
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
-    def add_catchup_task(self, name, task_get, task_insert):
+    def add_catchup_task(self, name, task_get, task_insert, task_data=[]):
         """
         name: usually a cog name,
         task_get: a function to format the data for database input
@@ -34,7 +34,7 @@ class Logger(commands.Cog):
         self.catchup_tasks[name] = {
             "get": task_get,
             "insert": task_insert,
-            "data": []}
+            "data": task_data}
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -158,6 +158,7 @@ class Logger(commands.Cog):
             await self.backup_attachments_in(channel, attachments_data)
 
             for task_name in self.catchup_tasks:
+                self.log.info(f"Running catchup task named {task_name}")
                 catchup_task = self.catchup_tasks[task_name]
 
                 catchup_task_insert = catchup_task["insert"]
@@ -207,13 +208,15 @@ class Logger(commands.Cog):
     @needs_database
     async def backup_messages_in(self, channel, messages_data, db: Database = None):
         chunks = self.chunks(messages_data, 550)
-        for chunk in chunks:
+        for i, chunk in enumerate(chunks):
             await db.executemany("""
                 INSERT INTO message
                     (channel_id, author_id, id, content, created_at)
                 VALUES (%s, %s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE id=id""", chunk)
-        await db.commit()
+            await db.commit()
+            self.log.info(
+                f"Saved {(i + 1) * 550} messages in {channel.name} to database")
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
