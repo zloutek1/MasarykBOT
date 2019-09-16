@@ -6,6 +6,7 @@ from discord.ext.commands import Bot, has_permissions
 import os
 import json
 import logging
+import asyncio
 
 
 class Admin(commands.Cog):
@@ -64,14 +65,32 @@ class Admin(commands.Cog):
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
-    @commands.command(name="log", aliases=("logs", "getlog", "getlogs"))
+    @commands.group(name="getlogs", aliases=("logs", "getlog"))
     @has_permissions(administrator=True)
-    async def _log(self, ctx, N=10):
+    async def getlogs(self, ctx):
         with open("assets/masaryk.log", "r") as file:
             lines = file.read().splitlines()
-            last_lines = lines[-N:]
-            embed = Embed(title="Log", description="\n".join(last_lines))
-            await ctx.send(embed=embed)
+            self.last_log_lines = lines[-10:]
+            embed = Embed(title="Log", description="\n".join(
+                self.last_log_lines))
+            self.logmsg = await ctx.send(embed=embed)
+
+    @getlogs.command(name="-f", aliases=("--follow",))
+    async def follow(self, ctx):
+        attempts = 0
+        while True:
+            with open("assets/masaryk.log", "r") as file:
+                lines = file.read().splitlines()
+                new_last_lines = lines[-10:]
+                if new_last_lines != self.last_log_lines:
+                    embed = Embed(
+                        title="Log", description="\n".join(new_last_lines))
+                    await self.logmsg.edit(embed=embed)
+                await asyncio.sleep(2)
+            attempts += 1
+
+            if attempts > 100:
+                break
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
