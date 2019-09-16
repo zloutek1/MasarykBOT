@@ -1,10 +1,7 @@
-import discord
 from discord.ext import commands
-from discord import Colour, Embed, Member, Object, File
 
 from datetime import datetime, timedelta
 
-import core.utils.get
 from core.utils.db import Database
 from core.utils.checks import needs_database
 

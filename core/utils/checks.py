@@ -1,6 +1,5 @@
 import aiomysql
 import discord
-from discord.ext import commands
 from functools import wraps
 
 from core.utils.db import Database

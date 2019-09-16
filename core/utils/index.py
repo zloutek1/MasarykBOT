@@ -1,5 +1,4 @@
 import sys
-import discord.utils
 
 
 class IndexModule(sys.modules[__name__].__class__):

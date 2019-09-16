@@ -1,7 +1,6 @@
 import logging
 
-import discord
-from discord import Color, Embed, Member, Object
+from discord import Color, Embed
 from discord.ext import commands
 from discord.ext.commands import Bot
 
@@ -10,7 +9,6 @@ import datetime
 import json
 
 import core.utils.get
-from core.utils import db
 
 
 class Events(commands.Cog):

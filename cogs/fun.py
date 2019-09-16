@@ -1,12 +1,10 @@
 import discord
 from discord.ext import commands
-from discord import Color, Embed, Member, Object, File, PartialEmoji
+from discord import Embed, Member, File, PartialEmoji
 
 import os
-import inspect
 import requests
 from random import shuffle, choice
-from types import FunctionType
 
 
 class Fun(commands.Cog):

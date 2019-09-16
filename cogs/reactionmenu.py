@@ -1,11 +1,10 @@
 import os
 import logging
-import asyncio
 from PIL import Image, ImageFont, ImageDraw
 from datetime import datetime, timedelta
 
 
-from discord import File, PermissionOverwrite, TextChannel, Embed, Color
+from discord import File, PermissionOverwrite, Embed, Color
 from discord.ext import commands
 from discord.ext.commands import has_permissions
 
@@ -104,7 +103,6 @@ class Reactionmenu(commands.Cog):
     @option_group.command(name="create", aliases=("add",))
     @needs_database
     async def option_create(self, ctx, to_menu: int=None, *, text: str, db: Database = None):
-        guild = ctx.guild
         channel = ctx.channel
 
         await db.commit()
@@ -317,7 +315,7 @@ class Reactionmenu(commands.Cog):
 
         elif event_type == "REACTION_REMOVE":
             # still in queue
-            if reaction.count < NEED_RERACTIONS:
+            if reaction.count < NEED_REACTIONS:
                 embed = Embed(
                     description=f"Uživatel {user.mention} uspěšně odstráněn z čekací listiny na předmět {subject_code}.", color=Color.green())
                 await channel.send(embed=embed, delete_after=5)

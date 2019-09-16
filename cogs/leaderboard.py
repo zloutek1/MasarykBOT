@@ -95,7 +95,6 @@ class Leaderboard(commands.Cog):
             self.log.info(
                 f"Saved {(i + 1) * 550} rows for leaderboard_emoji to database")
 
-
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.Cog.listener()

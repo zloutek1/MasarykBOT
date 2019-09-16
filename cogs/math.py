@@ -1,9 +1,8 @@
 import discord
 from discord.ext import commands
-from discord import Colour, Embed, Member, Object, File
 
-import re
 import urllib
+
 
 class Math(commands.Cog):
     def __init__(self, bot):

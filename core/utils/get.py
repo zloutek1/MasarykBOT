@@ -1,5 +1,4 @@
 import sys
-import discord.utils
 
 
 class GetModule(sys.modules[__name__].__class__):

@@ -1,5 +1,4 @@
-import discord
-from discord import Color, Embed, Member, Object
+from discord import Color, Embed
 from discord.ext import commands
 from discord.ext.commands import Bot, has_permissions
 

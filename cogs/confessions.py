@@ -63,11 +63,13 @@ class Confessions(commands.Cog):
         embed = discord.Embed(
             title="Confession",
             description=message.content,
-            color=discord.Color.from_rgb(randint(0, 255), randint(0, 255), randint(0, 255))
+            color=discord.Color.from_rgb(
+                randint(0, 255), randint(0, 255), randint(0, 255))
         )
         embed.set_footer(text="All confessions are anonymous.")
 
-        confession_channel = core.utils.get(message.guild.text_channels, name="confession")
+        confession_channel = core.utils.get(
+            message.guild.text_channels, name="confession")
         if confession_channel:
             await confession_channel.send(embed=embed)
 

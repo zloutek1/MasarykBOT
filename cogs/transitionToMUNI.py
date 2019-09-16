@@ -1,13 +1,10 @@
-import asyncio
-
 import discord
 from discord.ext import commands
-from discord.ext.commands import Bot, has_permissions
-from discord import Color, Embed, Member, File, Role, Emoji, PartialEmoji, PermissionOverwrite, Permissions
+from discord.ext.commands import has_permissions
+from discord import Color, Embed, Permissions
 
 import json
 
-import core.utils.get
 from core.utils.checks import needs_database, safe
 from core.utils.db import Database
 
@@ -87,7 +84,6 @@ class TransitionToMUNI(commands.Cog):
         # Rules
         ##################
 
-        guild = ctx.guild
         channel = ctx.channel
 
         rules_channel = ctx.get_channel("pravidla")

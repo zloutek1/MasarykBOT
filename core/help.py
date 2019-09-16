@@ -1,18 +1,17 @@
 import discord
 from discord.ext import commands
-from discord.ext.commands import Bot, has_permissions
 
 import asyncio
 import itertools
 
-import core.utils.get
 from core.utils.paginator import Pages
 
 
 class HelpPaginator(Pages):
     def __init__(self, help_command, ctx, entries, *, per_page=4):
         super().__init__(ctx, entries=entries, per_page=per_page)
-        self.reaction_emojis.append(('\N{WHITE QUESTION MARK ORNAMENT}', self.show_bot_help))
+        self.reaction_emojis.append(
+            ('\N{WHITE QUESTION MARK ORNAMENT}', self.show_bot_help))
         self.total = len(entries)
         self.help_command = help_command
         self.prefix = help_command.clean_prefix
@@ -28,7 +27,8 @@ class HelpPaginator(Pages):
         self.embed.clear_fields()
         self.embed.title = self.title
 
-        self.embed.set_footer(text=f'Use "{self.prefix}help command" for more info on a command.')
+        self.embed.set_footer(
+            text=f'Use "{self.prefix}help command" for more info on a command.')
 
         cmds = ""
         for entry in entries:
@@ -37,7 +37,8 @@ class HelpPaginator(Pages):
         self.embed.description = cmds
 
         if self.maximum_pages:
-            self.embed.set_author(name=f'Page {page}/{self.maximum_pages} ({self.total} commands)')
+            self.embed.set_author(
+                name=f'Page {page}/{self.maximum_pages} ({self.total} commands)')
 
     async def show_help(self):
         """shows this message"""
@@ -45,11 +46,14 @@ class HelpPaginator(Pages):
         self.embed.title = 'Paginator help'
         self.embed.description = 'Hello! Welcome to the help page.'
 
-        messages = [f'{emoji} {func.__doc__}' for emoji, func in self.reaction_emojis]
+        messages = [f'{emoji} {func.__doc__}' for emoji,
+                    func in self.reaction_emojis]
         self.embed.clear_fields()
-        self.embed.add_field(name='What are these reactions for?', value='\n'.join(messages), inline=False)
+        self.embed.add_field(name='What are these reactions for?',
+                             value='\n'.join(messages), inline=False)
 
-        self.embed.set_footer(text=f'We were on page {self.current_page} before this message.')
+        self.embed.set_footer(
+            text=f'We were on page {self.current_page} before this message.')
         await self.message.edit(embed=self.embed)
 
         async def go_back_to_current_page():
@@ -74,12 +78,14 @@ class HelpPaginator(Pages):
                               '__**You do not type in the brackets!**__')
         )
 
-        self.embed.add_field(name='How do I use this bot?', value='Reading the bot signature is pretty simple.')
+        self.embed.add_field(name='How do I use this bot?',
+                             value='Reading the bot signature is pretty simple.')
 
         for name, value in entries:
             self.embed.add_field(name=name, value=value, inline=False)
 
-        self.embed.set_footer(text=f'We were on page {self.current_page} before this message.')
+        self.embed.set_footer(
+            text=f'We were on page {self.current_page} before this message.')
         await self.message.edit(embed=self.embed)
 
         async def go_back_to_current_page():
@@ -122,16 +128,18 @@ class PaginatedHelpCommand(commands.HelpCommand):
         per_page = 9
         total = 0
 
-        for cog, commands in itertools.groupby(entries, key=key):
-            commands = sorted(commands, key=lambda c: c.name)
-            if len(commands) == 0:
+        for cog, _commands in itertools.groupby(entries, key=key):
+            _commands = sorted(_commands, key=lambda c: c.name)
+            if len(_commands) == 0:
                 continue
 
-            total += len(commands)
+            total += len(_commands)
             actual_cog = bot.get_cog(cog)
             # get the description if it exists (and the cog is valid) or return Empty embed.
-            description = (actual_cog and actual_cog.description) or discord.Embed.Empty
-            nested_pages.extend((cog, description, commands[i:i + per_page]) for i in range(0, len(commands), per_page))
+            description = (
+                actual_cog and actual_cog.description) or discord.Embed.Empty
+            nested_pages.extend(
+                (cog, description, commands[i:i + per_page]) for i in range(0, len(_commands), per_page))
 
         # a value of 1 forces the pagination session
         pages = HelpPaginator(self, self.context, nested_pages, per_page=1)

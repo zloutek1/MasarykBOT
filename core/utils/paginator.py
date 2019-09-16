@@ -53,10 +53,12 @@ class Pages:
         self.paginating = len(entries) > per_page
         self.show_entry_count = show_entry_count
         self.reaction_emojis = [
-            ('\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}', self.first_page),
+            ('\N{BLACK LEFT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}',
+             self.first_page),
             ('\N{BLACK LEFT-POINTING TRIANGLE}', self.previous_page),
             ('\N{BLACK RIGHT-POINTING TRIANGLE}', self.next_page),
-            ('\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}', self.last_page),
+            ('\N{BLACK RIGHT-POINTING DOUBLE TRIANGLE WITH VERTICAL BAR}',
+             self.last_page),
             ('\N{INPUT SYMBOL FOR NUMBERS}', self.numbered_page),
             ('\N{BLACK SQUARE FOR STOP}', self.stop_pages),
             ('\N{INFORMATION SOURCE}', self.show_help),
@@ -79,10 +81,12 @@ class Pages:
         if self.paginating:
             # verify we can actually use the pagination session
             if not self.permissions.add_reactions:
-                raise CannotPaginate('Bot does not have add reactions permission.')
+                raise CannotPaginate(
+                    'Bot does not have add reactions permission.')
 
             if not self.permissions.read_message_history:
-                raise CannotPaginate('Bot does not have Read Message History permission.')
+                raise CannotPaginate(
+                    'Bot does not have Read Message History permission.')
 
     def get_page(self, page):
         base = (page - 1) * self.per_page
@@ -110,7 +114,8 @@ class Pages:
 
         if self.paginating and first:
             p.append('')
-            p.append('Confused? React with \N{INFORMATION SOURCE} for more info.')
+            p.append(
+                'Confused? React with \N{INFORMATION SOURCE} for more info.')
 
         self.embed.description = '\n'.join(p)
 
@@ -202,7 +207,8 @@ class Pages:
         embed = self.embed.copy()
         embed.clear_fields()
         embed.description = '\n'.join(messages)
-        embed.set_footer(text=f'We were on page {self.current_page} before this message.')
+        embed.set_footer(
+            text=f'We were on page {self.current_page} before this message.')
         await self.message.edit(content=None, embed=embed)
 
         async def go_back_to_current_page():
@@ -245,14 +251,14 @@ class Pages:
                 self.paginating = False
                 try:
                     await self.message.clear_reactions()
-                except:
+                except Exception:
                     pass
                 finally:
                     break
 
             try:
                 await self.message.remove_reaction(reaction, user)
-            except:
+            except Exception:
                 pass  # can't remove it so don't bother doing so
 
             await self.match()
@@ -283,7 +289,8 @@ class TextPages(Pages):
     """Uses a commands.Paginator internally to paginate some text."""
 
     def __init__(self, ctx, text, *, prefix='```', suffix='```', max_size=2000):
-        paginator = CommandPaginator(prefix=prefix, suffix=suffix, max_size=max_size - 200)
+        paginator = CommandPaginator(
+            prefix=prefix, suffix=suffix, max_size=max_size - 200)
         for line in text.split('\n'):
             paginator.add_line(line)
 

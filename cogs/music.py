@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-from discord import Colour, Embed, Member, Object, File
 
 import core.utils.get
 
@@ -70,7 +69,8 @@ class Music(commands.Cog):
                 print(f"Renamed File: {file}\n")
                 os.rename(file, "song.mp3")
 
-        voice.play(discord.FFmpegPCMAudio("song.mp3"), after=lambda e: print("Song done!"))
+        voice.play(discord.FFmpegPCMAudio("song.mp3"),
+                   after=lambda e: print("Song done!"))
         voice.source = discord.PCMVolumeTransformer(voice.source)
         voice.source.volume = 0.2
 

@@ -1,7 +1,6 @@
-import discord
 from discord.ext import commands
-from discord.ext.commands import Greedy, Converter
-from discord import Color, Embed, Member, File, Role, Emoji, PartialEmoji
+from discord.ext.commands import Greedy, Converter, BadArgument
+from discord import Embed, Role, Emoji, PartialEmoji
 
 import core.utils.get
 from core.utils.db import Database
@@ -10,7 +9,6 @@ from core.utils.checks import needs_database, safe
 import os
 from typing import Union
 from emoji import UNICODE_EMOJI
-from datetime import datetime, timedelta
 
 
 class UnicodeEmoji(Converter):

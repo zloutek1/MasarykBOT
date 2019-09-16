@@ -1,16 +1,10 @@
-import asyncio
-import requests
 import logging
 
 import discord
 from discord.ext import commands
-from discord import Colour, Embed, Member, Object, File
-from discord.ext.commands import has_permissions
 
 import json
-from datetime import datetime, timedelta
 
-import core.utils.get
 from core.utils.db import Database
 from core.utils.checks import needs_database, safe
 
