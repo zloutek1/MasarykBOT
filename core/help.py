@@ -139,7 +139,7 @@ class PaginatedHelpCommand(commands.HelpCommand):
             description = (
                 actual_cog and actual_cog.description) or discord.Embed.Empty
             nested_pages.extend(
-                (cog, description, commands[i:i + per_page]) for i in range(0, len(_commands), per_page))
+                (cog, description, _commands[i:i + per_page]) for i in range(0, len(_commands), per_page))
 
         # a value of 1 forces the pagination session
         pages = HelpPaginator(self, self.context, nested_pages, per_page=1)
