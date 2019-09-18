@@ -28,7 +28,8 @@ class Logger(commands.Cog):
         self.catchup_tasks[name] = {
             "get": task_get,
             "insert": task_insert,
-            "data": task_data}
+            "data": task_data
+        }
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -51,7 +52,7 @@ class Logger(commands.Cog):
                 INSERT INTO guild (id, name, icon_url)
                 VALUES (%s, %s, %s)
                 ON DUPLICATE KEY UPDATE id=id""", chunk)
-        await db.commit()
+            await db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -66,7 +67,7 @@ class Logger(commands.Cog):
                 INSERT INTO category (guild_id, id, name, position)
                 VALUES (%s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE id=id""", chunk)
-        await db.commit()
+            await db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -81,7 +82,7 @@ class Logger(commands.Cog):
                 INSERT INTO channel (guild_id, category_id, id, name, position)
                 VALUES (%s, %s, %s, %s, %s)
                 ON DUPLICATE KEY UPDATE id=id""", chunk)
-        await db.commit()
+            await db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -96,7 +97,7 @@ class Logger(commands.Cog):
                 INSERT INTO `member` (id, name, avatar_url)
                 VALUES (%s, %s, %s)
                 ON DUPLICATE KEY UPDATE id=id""", chunk)
-        await db.commit()
+            await db.commit()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 

@@ -1,16 +1,14 @@
-import discord
 from discord.ext import commands
-from discord import Colour, Embed, Member, Object, File, PartialEmoji
+from discord import Embed, Member
 from discord.channel import TextChannel
 
 import re
 import logging
 from emoji import UNICODE_EMOJI
-from typing import Optional, Union
+from typing import Union
 
 import core.utils.get
 import core.utils.index
-import datetime
 
 from core.utils.db import Database
 from core.utils.checks import needs_database
@@ -194,8 +192,6 @@ class Leaderboard(commands.Cog):
         def right_justify(text, by=0, pad=" "):
             return pad * (by - len(str(text))) + str(text)
 
-        author_index = core.utils.index(rows1, author=author.name)
-
         template = "`{index:0>2}.` {medal} `{count}` {author}"
 
         embed = Embed(color=0x53acf2)
@@ -251,7 +247,6 @@ class Leaderboard(commands.Cog):
         channel = channel if isinstance(channel, TextChannel) else None
 
         guild = ctx.guild
-        author = ctx.message.author
 
         params = {"guild_id": guild.id}
 

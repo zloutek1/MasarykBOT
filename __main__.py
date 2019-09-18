@@ -1,11 +1,8 @@
-from discord import Game
 from discord.ext.commands import when_mentioned_or
 
 from core.bot import MasarykBot
 
 import os
-from glob import glob
-import time
 import json
 from dotenv import load_dotenv
 
