@@ -111,7 +111,8 @@ nesete **sami**. """,
 ❯ [kabell drill](https://kabell.sk/fi_muni_drill/)
 ❯ [statistika studia](https://is.muni.cz/studium/statistika)
 ❯ [statistika kreditů](https://is.muni.cz/auth/ucitel/statistika_kreditu)
-❯ [statistika bodů](https://is.muni.cz/auth/student/poznamkove_bloky_statistika)""",
+❯ [statistika bodů](https://is.muni.cz/auth/student/poznamkove_bloky_statistika)
+❯ [záznamy přednášek](http://www.video.muni.cz)""",
             inline=False)
 
         embed.add_field(
