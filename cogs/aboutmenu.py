@@ -1,6 +1,6 @@
 from discord.ext import commands
 from discord.ext.commands import Greedy, Converter, BadArgument
-from discord import Embed, Role, Emoji, PartialEmoji
+from discord import Embed, Role, Emoji, PartialEmoji, Member
 
 import core.utils.get
 from core.utils.db import Database
@@ -31,6 +31,19 @@ class Aboutmenu(commands.Cog):
     @commands.group(name="aboutmenu")
     async def aboutmenu(self, ctx):
         pass
+
+    @aboutmenu.command()
+    @needs_database
+    async def remove_user(self, ctx, member: Member, *, db: Database):
+        await db.execute("SELECT * FROM aboutmenu")
+        menus = await db.fetchall()
+
+        for menu in menus:
+            channel = self.bot.get_channel(menu["channel_id"])
+            message = await channel.fetch_message(menu["message_id"])
+
+            for reaction in message.reactions:
+                await message.remove_reaction(reaction, member)
 
     @aboutmenu.command(name="create", aliases=("add",))
     @needs_database
@@ -193,7 +206,9 @@ class Aboutmenu(commands.Cog):
                 # balance the difference
                 for user in to_add:
                     member = core.utils.get(channel.guild.members, id=user.id)
-                    if member:
+                    member_student_role = core.utils.get(
+                        member.roles, name="Student")
+                    if member and member_student_role:
                         await member.add_roles(role)
 
                 for user in to_remove:

@@ -47,8 +47,13 @@ class Verification(commands.Cog):
         if event_type == "REACTION_ADD":
             await author.add_roles(role)
         else:
-            await author.remove_roles(role)
+            cog = self.bot.get_cog("Aboutmenu")
+            aboutmenu_remove_user = self.bot.get_command(
+                "aboutmenu remove_user")
+            await aboutmenu_remove_user.callback(cog, None, author)
 
+            ignore_roles = ("@everyone", "muted")
+            await author.remove_roles(*list(filter(lambda role: role.name.lower() not in ignore_roles, author.roles)))
         # --[]
 
         self.users_on_cooldown[payload.user_id] = datetime.now()
