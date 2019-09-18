@@ -160,6 +160,20 @@ class Events(commands.Cog):
 
         print(message)
 
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        await member.send("""
+**Vítej na discordu Fakulty Informatiky Masarykovy Univerzity v Brně**
+
+❯ Pro vstup je potřeba přečíst #pravidla a **KLIKNOUT NA {Verification} REAKCI!!!**
+❯ Když jsem {offline_tag} offline, tak ne všechno proběhne hned.
+❯ Pokud nedostanete hned roli @Student, tak zkuste odkliknout, chvíli počkat a znova zakliknout.
+""".format(
+            Verification=core.utils.get(self.bot.emojis, name="Verification"),
+            offline_tag=core.utils.get(self.bot.emojis, name="status_offline")))
+
 
 def setup(bot):
     bot.add_cog(Events(bot))

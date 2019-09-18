@@ -228,6 +228,27 @@ class TransitionToMUNI(commands.Cog):
         ctx.channel = channel
         return True
 
+    @commands.command()
+    async def resend_join_message(self, ctx):
+        members = ctx.guild.members
+        role = ctx.get_role("Student")
+        for member in members:
+            if member.bot:
+                continue
+
+            if role in member.roles:
+                continue
+
+            await member.send("""
+**Vítej na discordu Fakulty Informatiky Masarykovy Univerzity v Brně**
+
+❯ Pro vstup je potřeba přečíst #pravidla a **KLIKNOUT NA {Verification} REAKCI!!!**
+❯ Když jsem {offline_tag} offline, tak ne všechno proběhne hned.
+❯ Pokud nedostanete hned roli @Student, tak zkuste odkliknout, chvíli počkat a znova zakliknout.
+""".format(
+                Verification=ctx.get_emoji("Verification"),
+                offline_tag=ctx.get_emoji("status_offline")))
+
 
 def setup(bot):
     bot.add_cog(TransitionToMUNI(bot))
