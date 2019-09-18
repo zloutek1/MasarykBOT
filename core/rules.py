@@ -92,6 +92,14 @@ class Rules(commands.Cog):
             inline=False)
 
         embed.add_field(
+            name="**Disclaimer**",
+            value="""Tento server není nijak spřízněn s FI jako takovou, je to čistě studentská iniciativa bez oficiálního dohledu.
+To ovšem neznamená, že tu nejsou zaměstnanci FI - právě naopak. Z toho důvodu **důrazně doporučujeme veřejně nesdílet** příspěvky, které
+porušují školní řád, např. screeny vyplněných odpovědníků, zadání písemek atd. Pokud už se rozhodnete tak učinit, tak zodpovědnost
+nesete **sami**. """,
+            inline = False)
+
+        embed.add_field(
             name="**__Užitečné linky__**",
             value="""❯ [IS MUNI](https://is.muni.cz/auth)
 ❯ [ISKAM koleje]( https://iskam.skm.muni.cz/PrehledUbytovani)
