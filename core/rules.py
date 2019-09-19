@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord.ext.commands import Bot, has_permissions
 
 import core.utils.get
+from core.utils.checks import safe
 
 
 class Rules(commands.Cog):
@@ -52,29 +53,25 @@ class Rules(commands.Cog):
                              ctx.get_channel("lidi-na-pivo").mention)
         }
 
-        def is_me(m):
-            return m.author == self.bot.user
-        await rules_channel.purge(check=is_me)
-
-        embed = Embed(color=Color.blurple())
-        embed.set_image(
+        embeds = {}
+        embeds[0] = Embed(color=Color.blurple())
+        embeds[0].set_image(
             url="https://www.fi.muni.cz/files/news-img/2168-9l6ttGALboD3Vj-jcgWlcA.jpg"
         )
-        await rules_channel.send(embed=embed)
 
-        embed = Embed(
+        embeds[1] = Embed(
             title="{fi_muni} Vítejte na discordu Fakulty Informatiky Masarykovy Univerzity v Brně".format(
                 fi_muni=ctx.get_emoji("fi_logo")
             ),
             description="⁣",
             color=Color.blurple())
 
-        embed.add_field(
+        embeds[1].add_field(
             name="**__Na úvod__**",
             value="• Před vstupem na náš server se prosím seznamte s pravidly, která budete muset dodržovat při interakci s ostatními uživateli a boty. Prosím berte na vědomí, že tyto pravidla nepokrývají vše za co můžete být potrestáni.",
             inline=False)
 
-        embed.add_field(
+        embeds[1].add_field(
             name="**__Pravidla__**",
             value="""**#1** - Neurážejte se, neznevažujte ostatní, nenadávejte
 **#2** - Poznejte kdy je něco debata a kdy to je už hádka
@@ -91,7 +88,7 @@ class Rules(commands.Cog):
             ),
             inline=False)
 
-        embed.add_field(
+        embeds[1].add_field(
             name="**__Užitečné linky__**",
             value="""❯ [IS MUNI](https://is.muni.cz/auth)
 ❯ [ISKAM koleje]( https://iskam.skm.muni.cz/PrehledUbytovani)
@@ -106,14 +103,26 @@ class Rules(commands.Cog):
 ❯ [statistika bodů](https://is.muni.cz/auth/student/poznamkove_bloky_statistika)""",
             inline=False)
 
-        embed.add_field(
+        embeds[1].add_field(
             name="**Ready?**",
             value="• Připravený vstoupit?",
             inline=False)
-        msg_to_react_to = await rules_channel.send(embed=embed)
 
-        verify_emoji = core.utils.get(self.bot.emojis, name="Verification")
-        await msg_to_react_to.add_reaction(verify_emoji)
+        i = 0
+        async for message in rules_channel.history(oldest_first=True):
+            for embed in message.embeds:
+                if embed != embeds[i]:
+                    await message.edit(embed=embeds[i])
+                i += 1
+
+        if i == 0:
+            await rules_channel.send(embed=embeds[0])
+            msg_to_react_to = await rules_channel.send(embed=embeds[1])
+
+            verify_emoji = core.utils.get(self.bot.emojis, name="Verification")
+            await msg_to_react_to.add_reaction(verify_emoji)
+
+        await safe(ctx.message.delete)()
 
 
 def setup(bot):
