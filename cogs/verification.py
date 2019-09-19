@@ -87,18 +87,20 @@ class Verification(commands.Cog):
 
         for channel_id in self.in_channels:
             channel = self.bot.get_channel(channel_id)
-            student_role = core.utils.get(channel.guild.roles, name="Student")
-            async for message in channel.history():
-                for reaction in message.reactions:
-                    if reaction.emoji.name != "Verification":
-                        continue
+            if channel:
+                student_role = core.utils.get(
+                    channel.guild.roles, name="Student")
+                async for message in channel.history():
+                    for reaction in message.reactions:
+                        if reaction.emoji.name != "Verification":
+                            continue
 
-                    print(reaction)
-                    async for user in reaction.users():
-                        member = core.utils.get(
-                            channel.guild.members, id=user.id)
-                        if member:
-                            await member.add_roles(student_role)
+                        print(reaction)
+                        async for user in reaction.users():
+                            member = core.utils.get(
+                                channel.guild.members, id=user.id)
+                            if member:
+                                await member.add_roles(student_role)
 
         self.bot.readyCogs[self.__class__.__name__] = True
 
