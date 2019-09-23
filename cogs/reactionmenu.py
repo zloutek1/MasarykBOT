@@ -484,7 +484,7 @@ class Reactionmenu(commands.Cog):
                         new_reacted = set(await reaction.users().flatten())
                         if len(new_reacted) > self.NEED_REACTIONS:
                             rep_channel = await channel.guild.create_text_channel(
-                                name=row["text"],
+                                name=react_db["text"],
                                 position=int(
                                     payload.emoji.name.lstrip("num")) - 1,
                                 category=self.bot.get_channel(
