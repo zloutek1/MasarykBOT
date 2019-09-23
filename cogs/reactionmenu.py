@@ -247,6 +247,7 @@ class Reactionmenu(commands.Cog):
     @needs_database
     @has_permissions(administrator=True)
     async def recover_database(self, ctx, channel: TextChannel, *, db: Database = None):
+        await ctx.message.delete()
         menu_id = None
 
         async for message in channel.history(limit=1_000_000, oldest_first=True):
@@ -292,8 +293,6 @@ class Reactionmenu(commands.Cog):
                     """, (message.id, rep_channel.id if rep_channel else None, emoji, text))
                     await db.commit()
                     self.log.info(f"recovered reactionmenu option {text}")
-
-        await ctx.message.delete()
 
     """---------------------------------------------------------------------------------------------------------------------------"""
 
