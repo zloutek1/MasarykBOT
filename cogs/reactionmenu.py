@@ -258,7 +258,7 @@ class Reactionmenu(commands.Cog):
                     "-", 1)[1].rstrip(".png")
                 rep_category = ctx.get_category(text)
                 if rep_category is None:
-                    rep_category = ctx.get_category(text+"+")
+                    rep_category = ctx.get_category(text + "+")
 
                 await db.execute("""
                     INSERT INTO reactionmenu
@@ -300,7 +300,6 @@ class Reactionmenu(commands.Cog):
     @needs_database
     async def on_raw_reaction_update(self, payload, event_type: str, db: Database = None):
         # is it a user and in right channel?
-        print("reaction")
         if (payload.user_id == self.bot.user.id or
                 payload.channel_id not in self.in_channels):
             return
@@ -308,7 +307,6 @@ class Reactionmenu(commands.Cog):
         cooldown = self.users_on_cooldown.get(payload.user_id)
         if cooldown and cooldown + timedelta(seconds=3) > datetime.now():
             return  # on cooldown
-        print("oki pass")
 
         # --[]
 
