@@ -483,7 +483,7 @@ class Reactionmenu(commands.Cog):
                     else:
                         new_reacted = set(await reaction.users().flatten())
                         if len(new_reacted) > self.NEED_REACTIONS:
-                            rep_channel = await guild.create_text_channel(
+                            rep_channel = await channel.guild.create_text_channel(
                                 name=row["text"],
                                 position=int(
                                     payload.emoji.name.lstrip("num")) - 1,
