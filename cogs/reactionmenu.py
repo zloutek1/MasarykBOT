@@ -21,6 +21,8 @@ class Reactionmenu(commands.Cog):
         self.users_on_cooldown = {}
         self.channel_cache = {}
 
+        self.NEED_REACTIONS = 5
+
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.group(name='reactionmenu', aliases=('rolemenu', 'rlm'))
@@ -328,11 +330,10 @@ class Reactionmenu(commands.Cog):
             message.reactions, key=lambda react: str(react) == str(payload.emoji))
         user = guild.get_member(payload.user_id)
 
-        NEED_REACTIONS = 5
         if event_type == "REACTION_ADD":
             # wait in queue
-            if reaction.count <= NEED_REACTIONS:
-                need_more = (NEED_REACTIONS + 1) - reaction.count
+            if reaction.count <= self.NEED_REACTIONS:
+                need_more = (self.NEED_REACTIONS + 1) - reaction.count
                 embed = Embed(
                     description=f"Díky za zájem o {subject_code} {user.mention}. Uživatel přidán na čekací listinu, čekáte ještě na {need_more} studenty.", color=Color.green())
                 await channel.send(embed=embed, delete_after=5)
@@ -368,7 +369,7 @@ class Reactionmenu(commands.Cog):
 
         elif event_type == "REACTION_REMOVE":
             # still in queue
-            if reaction.count < NEED_REACTIONS:
+            if reaction.count < self.NEED_REACTIONS:
                 embed = Embed(
                     description=f"Uživatel {user.mention} uspěšně odstráněn z čekací listiny na předmět {subject_code}.", color=Color.green())
                 await channel.send(embed=embed, delete_after=5)
@@ -409,12 +410,96 @@ class Reactionmenu(commands.Cog):
 
         # load channels into memory for faster checks
         await db.execute("""
-            SELECT DISTINCT channel_id, deleted_at
+            SELECT DISTINCT channel_id, message_id, deleted_at
             FROM reactionmenu
             WHERE deleted_at IS NULL
         """)
         rows = await db.fetchall()
         self.in_channels = set(row["channel_id"] for row in rows)
+
+        self.log.info("Catching up reactionmenu")
+
+        channels = {}
+        for row in rows:
+            channel_id = row["channel_id"]
+            if channels.get(channel_id) is None:
+                channels[channel_id] = self.bot.get_channel(channel_id)
+            channel = channels.get(channel_id)
+
+            if channel is None:
+                # Channel not existant, remove from db
+                await db.execute("""
+                    UPDATE reactionmenu
+                    SET deleted_at=NOW()
+                    WHERE channel_id = %s
+                """, (row["channel_id"],))
+                await db.commit()
+                continue
+
+            await db.execute("""
+                SELECT * FROM reactionmenu_messages
+                WHERE reactionmenu_message_id = %s
+            """, (row["message_id"],))
+            rows2 = await db.fetchall()
+
+            self.log.info(f"catching up channel {channel}")
+            for row2 in rows2:
+                message = await channel.fetch_message(row2["message_id"])
+                if message is None:
+                    print("Message does not exist in aboutmenu")
+                    continue
+
+                self.log.info(f"catching up message {message.id} in {channel}")
+                for reaction in message.reactions:
+                    await db.execute("""
+                        SELECT * FROM reactionmenu_options
+                        WHERE message_id = %s AND emoji = %s AND deleted_at is NULL
+                    """, (row2["message_id"], str(reaction)))
+                    react_db = await db.fetchone()
+
+                    rep_channel = channel.guild.get_channel(
+                        react_db["rep_channel_id"])
+
+                    if rep_channel:
+                        new_reacted = set(await reaction.users().flatten())
+                        old_reacted = set(rep_channel.members)
+
+                        # get the difference
+                        to_add = new_reacted - old_reacted
+                        to_remove = old_reacted - new_reacted
+
+                        for user in to_add:
+                            member = core.utils.get(
+                                channel.guild.members, id=user.id)
+                            if member:
+                                await rep_channel.set_permissions(member, read_messages=True)
+
+                        for user in to_remove:
+                            member = core.utils.get(
+                                channel.guild.members, id=user.id)
+                            if member:
+                                await rep_channel.set_permissions(member, read_messages=False)
+
+                    else:
+                        new_reacted = set(await reaction.users().flatten())
+                        if len(new_reacted) > self.NEED_REACTIONS:
+                            rep_channel = await guild.create_text_channel(
+                                name=row["text"],
+                                position=int(
+                                    payload.emoji.name.lstrip("num")) - 1,
+                                category=self.bot.get_channel(
+                                    row["rep_category_id"])
+                            )
+                            for member in new_reacted:
+                                await rep_channel.set_permissions(member, read_messages=True)
+
+                            await db.execute("""
+                                UPDATE reactionmenu_options
+                                SET rep_channel_id = %s
+                                WHERE message_id = %s AND emoji = %s AND deleted_at is NULL
+                                """, (rep_channel.id, row2["message_id"], str(reaction)))
+
+        self.log.info("caught up reactionmenu")
 
         self.bot.readyCogs[self.__class__.__name__] = True
 
