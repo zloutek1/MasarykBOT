@@ -7,6 +7,7 @@ from core.utils.db import Database
 from core.utils.checks import needs_database, safe
 
 import os
+import logging
 from typing import Union
 from emoji import UNICODE_EMOJI
 
@@ -26,6 +27,7 @@ class UnicodeEmoji(Converter):
 class Aboutmenu(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.log = logging.getLogger(__name__)
         self.imagePath = "https://gitlab.com/zloutek1/MasarykBOT/raw/develop/bot/assets/"
 
     @commands.group(name="aboutmenu")
