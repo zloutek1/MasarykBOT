@@ -210,10 +210,11 @@ class Aboutmenu(commands.Cog):
                 # balance the difference
                 for user in to_add:
                     member = core.utils.get(channel.guild.members, id=user.id)
-                    member_student_role = core.utils.get(
-                        member.roles, name="Student")
-                    if member and member_student_role:
-                        await member.add_roles(role)
+                    if member:
+                        member_student_role = core.utils.get(
+                            member.roles, name="Student")
+                        if member_student_role:
+                            await member.add_roles(role)
 
                 for user in to_remove:
                     member = core.utils.get(channel.guild.members, id=user.id)
