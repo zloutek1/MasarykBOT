@@ -85,9 +85,13 @@ class Verification(commands.Cog):
         rows = await db.fetchall()
         self.in_channels = set(row["channel_id"] for row in rows)
 
+        self.log.info(f"Catching up verification")
+
         for channel_id in self.in_channels:
             channel = self.bot.get_channel(channel_id)
             if channel:
+                self.log.info(f"Catching up channel {channel}")
+
                 student_role = core.utils.get(
                     channel.guild.roles, name="Student")
                 async for message in channel.history():
@@ -101,6 +105,8 @@ class Verification(commands.Cog):
                                 channel.guild.members, id=user.id)
                             if member:
                                 await member.add_roles(student_role)
+
+        self.log.info(f"Caught up verification")
 
         self.bot.readyCogs[self.__class__.__name__] = True
 
