@@ -2,6 +2,7 @@ from discord.ext import commands
 
 from datetime import datetime, timedelta
 
+import logging
 import core.utils.get
 from core.utils.db import Database
 from core.utils.checks import needs_database
@@ -12,6 +13,7 @@ class Verification(commands.Cog):
         self.bot = bot
         self.in_channels = set()
         self.users_on_cooldown = {}
+        self.log = logging.getLogger(__name__)
 
     """---------------------------------------------------------------------------------------------------------------------------"""
 
@@ -99,7 +101,6 @@ class Verification(commands.Cog):
                         if reaction.emoji.name != "Verification":
                             continue
 
-                        print(reaction)
                         async for user in reaction.users():
                             member = core.utils.get(
                                 channel.guild.members, id=user.id)
