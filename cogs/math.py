@@ -17,7 +17,7 @@ class Math(commands.Cog):
         return embed
 
     @commands.command()
-    async def latex(self, ctx, equasion):
+    async def latex(self, ctx, *equasion):
         embed = await self.get_math_equasion(equasion)
         await ctx.send(embed=embed)
 
