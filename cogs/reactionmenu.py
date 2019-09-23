@@ -4,7 +4,7 @@ from PIL import Image, ImageFont, ImageDraw
 from datetime import datetime, timedelta
 
 
-from discord import File, PermissionOverwrite, Embed, Color
+from discord import File, PermissionOverwrite, Embed, Color, TextChannel
 from discord.ext import commands
 from discord.ext.commands import has_permissions
 
@@ -243,9 +243,64 @@ class Reactionmenu(commands.Cog):
 
     """---------------------------------------------------------------------------------------------------------------------------"""
 
+    @reactionmenu_group.command(name="recover_database")
+    @needs_database
+    @has_permissions(administrator=True)
+    async def recover_database(self, ctx, channel: TextChannel, *, db: Database = None):
+        menu_id = None
+
+        async for message in channel.history(limit=1_000_000, oldest_first=True):
+            if message.embeds:
+                continue
+
+            if message.attachments:
+                text = message.attachments[0].filename.split(
+                    "-", 1)[1].rstrip(".png")
+                rep_category = ctx.get_category(text)
+                if rep_category is None:
+                    rep_category = ctx.get_category(text+"+")
+
+                await db.execute("""
+                    INSERT INTO reactionmenu
+                        (channel_id, message_id, rep_category_id, name)
+                    VALUES (%s, %s, %s, %s)
+                """, (channel.id, message.id, rep_category.id, text))
+                await db.commit()
+
+                menu_id = message.id
+                self.log.info(f"recovered reactionmenu section {text}")
+                continue
+
+            await db.execute("""
+                INSERT INTO reactionmenu_messages
+                    (reactionmenu_message_id, message_id)
+                VALUES (%s, %s)
+            """, (menu_id, message.id))
+            await db.commit()
+
+            content = message.content.replace("_ _", "").strip()
+            if content:
+                for line in content.split("\n"):
+                    emoji, text = line.split(" ", 1)
+                    rep_channel = ctx.get_channel(
+                        "-".join(text.lower().split()))
+
+                    await db.execute("""
+                        INSERT INTO reactionmenu_options
+                            (message_id, rep_channel_id, emoji, `text`)
+                        VALUES (%s, %s, %s, %s)
+                    """, (message.id, rep_channel.id if rep_channel else None, emoji, text))
+                    await db.commit()
+                    self.log.info(f"recovered reactionmenu option {text}")
+
+        await ctx.message.delete()
+
+    """---------------------------------------------------------------------------------------------------------------------------"""
+
     @needs_database
     async def on_raw_reaction_update(self, payload, event_type: str, db: Database = None):
         # is it a user and in right channel?
+        print("reaction")
         if (payload.user_id == self.bot.user.id or
                 payload.channel_id not in self.in_channels):
             return
@@ -253,6 +308,7 @@ class Reactionmenu(commands.Cog):
         cooldown = self.users_on_cooldown.get(payload.user_id)
         if cooldown and cooldown + timedelta(seconds=3) > datetime.now():
             return  # on cooldown
+        print("oki pass")
 
         # --[]
 
