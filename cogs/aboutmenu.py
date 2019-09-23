@@ -161,6 +161,7 @@ class Aboutmenu(commands.Cog):
         """)
         rows = await db.fetchall()
 
+        self.log.info("Catching up aboutmenu")
         # check each message
         channels = {}
         for row in rows:
@@ -178,6 +179,7 @@ class Aboutmenu(commands.Cog):
                 """, (channel_id,))
                 await db.commit()
                 continue
+            self.log.info(f"Catching up channel {channel}")
 
             # get the message
             message = await channel.fetch_message(row["message_id"])
@@ -215,6 +217,8 @@ class Aboutmenu(commands.Cog):
                     member = core.utils.get(channel.guild.members, id=user.id)
                     if member:
                         await member.remove_roles(role)
+
+        self.log.info(f"caught up aboutmenu")
 
         self.bot.readyCogs[self.__class__.__name__] = True
 
