@@ -4,5 +4,4 @@ requests
 emoji
 Pillow
 python-dotenv
-pygraphviz
 graphviz
