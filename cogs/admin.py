@@ -92,6 +92,10 @@ class Admin(commands.Cog):
             if attempts > 100:
                 break
 
+    @getlogs.command(name="ready")
+    async def ready(self, ctx):
+        await ctx.send("```" + str(self.bot.readyCogs) + "```")
+
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.group(name="error_channel")
