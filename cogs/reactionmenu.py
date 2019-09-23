@@ -410,7 +410,7 @@ class Reactionmenu(commands.Cog):
 
         # load channels into memory for faster checks
         await db.execute("""
-            SELECT DISTINCT channel_id, message_id, deleted_at
+            SELECT DISTINCT channel_id, deleted_at
             FROM reactionmenu
             WHERE deleted_at IS NULL
         """)
@@ -418,6 +418,11 @@ class Reactionmenu(commands.Cog):
         self.in_channels = set(row["channel_id"] for row in rows)
 
         self.log.info("Catching up reactionmenu")
+        await db.execute("""
+            SELECT * FROM reactionmenu
+            WHERE deleted_at IS NULL
+        """)
+        rows = await db.fetchall()
 
         channels = {}
         for row in rows:
@@ -477,7 +482,10 @@ class Reactionmenu(commands.Cog):
                         for user in to_remove:
                             member = core.utils.get(
                                 channel.guild.members, id=user.id)
-                            if member:
+                            if not member:
+                                continue
+
+                            if rep_channel.permissions_for(member).read_messages == True:
                                 await rep_channel.set_permissions(member, read_messages=False)
 
                     else:
@@ -486,7 +494,7 @@ class Reactionmenu(commands.Cog):
                             rep_channel = await channel.guild.create_text_channel(
                                 name=react_db["text"],
                                 position=int(
-                                    payload.emoji.name.lstrip("num")) - 1,
+                                    reaction.emoji.name.lstrip("num")) - 1,
                                 category=self.bot.get_channel(
                                     row["rep_category_id"])
                             )
