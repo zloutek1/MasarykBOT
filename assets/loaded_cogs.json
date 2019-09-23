@@ -5,11 +5,11 @@
         "core.help",
 
         "cogs.transitionToMUNI",
-        "cogs.reactionmenu",
         "cogs.verification",
         "cogs.leaderboard",
         "cogs.aboutmenu",
         "cogs.admin",
         "cogs.math",
+        "cogs.eval",
         "cogs.fun"
 ]
