@@ -1,7 +1,7 @@
-from discord import Color, Embed
+from discord import Color, Embed, File
 from discord.ext import commands
-import inspect
 import time
+import os
 
 """
 All Process classes where taken from
@@ -14,8 +14,6 @@ import asyncio.streams
 import signal
 import subprocess
 import sys
-import pickle
-from copy import deepcopy
 
 
 INF = float("inf")
@@ -527,13 +525,11 @@ class ProcessIterator:
 
 
 async def eval_coro(body):
-    from textwrap import indent
     with open("assets/eval_template.py", "r") as file:
-        to_compile = file.read().format(
-            body=indent(body.strip(), "    "))
+        to_compile = file.read().replace("{{{body}}}", body.strip())
 
+    tempimage = None
     import tempfile
-
     prog = tempfile.NamedTemporaryFile()
     prog.write(bytes(to_compile, "utf-8"))
     prog.flush()
@@ -545,14 +541,17 @@ async def eval_coro(body):
             async for fdn, line in proc.communicate(output_timeout=5, timeout=5):
                 lines.append(line.decode("utf-8"))
 
+            if os.path.isfile(f"{prog.name}.jpg"):
+                tempimage = f"{prog.name}.jpg"
+
         except asyncio.queues.QueueFull:
-            return 2, "Infinite loop, code terminated"
+            return 2, "Infinite loop, code terminated", tempimage
 
         except ProcTimeoutError as exc:
-            return 1, exc
+            return 1, exc, tempimage
 
         else:
-            return 0, "\n".join(lines)
+            return 0, "\n".join(lines), tempimage
 
 
 class Eval(commands.Cog):
@@ -562,7 +561,6 @@ class Eval(commands.Cog):
     @commands.command(name='eval')
     async def _eval(self, ctx, *, body):
         """Evaluates python code"""
-        print(body.count("\n"))
         if not self.is_evaluatable_message(body):
             return
 
@@ -583,8 +581,6 @@ class Eval(commands.Cog):
         time_start = time.time()
 
         embed = Embed(color=Color(0xffffcc))
-        dots = "..." if len(body) > 1000 else ""
-        embed.add_field(name="Input", value=body[:1000] + dots)
 
         def paginate(text: str):
             '''Simple generator that paginates text.'''
@@ -600,7 +596,7 @@ class Eval(commands.Cog):
             return list(filter(lambda a: a != '', pages))
 
         # eval body
-        ret_code, value = await eval_coro(body)
+        ret_code, value, image = await eval_coro(body)
 
         time_end = time.time()
         elapsed_time = time.strftime(
@@ -612,7 +608,11 @@ class Eval(commands.Cog):
                 name="Output", value=f'```py\n{value[:1000]}{dots}\n```')
             embed.set_footer(
                 text=f"Finished in: {elapsed_time}", icon_url=ctx.author.avatar_url)
-            out = await ctx.send(embed=embed)
+
+            if image:
+                out = await ctx.send(embed=embed, file=File(image))
+            else:
+                out = await ctx.send(embed=embed)
 
         else:
             embed.color = Color.red()
@@ -620,7 +620,11 @@ class Eval(commands.Cog):
                 name="Error", value=f'```\n{value}\n```')
             embed.set_footer(
                 text=f"Finished in: {elapsed_time}", icon_url=ctx.author.avatar_url)
-            err = await ctx.send(embed=embed)
+
+            if image:
+                err = await ctx.send(embed=embed, file=File(image))
+            else:
+                err = await ctx.send(embed=embed)
 
         if out:
             await ctx.message.add_reaction('\u2705')  # tick
