@@ -282,7 +282,6 @@ class Logger(commands.Cog):
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
-    """
     @commands.Cog.listener()
     @needs_database
     async def on_guild_channel_create(self, channel, db: Database = None):
@@ -297,11 +296,11 @@ class Logger(commands.Cog):
         category_data = (category.guild.id, category.id,
                          category.name, category.position)
 
-        await db.execute("\""
+        await db.execute("""
             INSERT INTO category (guild_id, id, name, position)
             VALUES (%s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE id=id
-        \""", category_data)
+        """, category_data)
         await db.commit()
 
     @needs_database
@@ -309,13 +308,12 @@ class Logger(commands.Cog):
         channel_data = (text_channel.guild.id, text_channel.category_id,
                         text_channel.id, text_channel.name, text_channel.position)
 
-        await db.execute(\"""
+        await db.execute("""
             INSERT INTO channel (guild_id, category_id, id, name, position)
             VALUES (%s, %s, %s, %s, %s)
             ON DUPLICATE KEY UPDATE id=id
-        \""", channel_data)
+        """, channel_data)
         await db.commit()
-    """
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
