@@ -197,11 +197,13 @@ class TransitionToMUNI(commands.Cog):
                 category = guild.get_channel(
                     reactionmenu_db["rep_category_id"])
 
+                old_category = ch.category
                 await ch.edit(
                     category=category,
-                    position=i,
                     sync_permissions=True
                 )
+                if len(old_category.channels) == 0:
+                    await old_category.delete()
 
                 await db.execute("""
                     UPDATE reactionmenu_options
@@ -220,8 +222,8 @@ class TransitionToMUNI(commands.Cog):
                 await menu_channel.set_permissions(target, overwrite=overwrite)
 
         embed = Embed(
-            title="Reactni/Unreactni předmět pro Zobrazení/Schování",
-            description="Upozorňujeme, že cooldown na react jsou **3 sekundy**",
+            title="Pro Zobrazení/Schování předmětu použij `!subject show/hide <code>`",
+            description="Upozorňujeme, že cooldown na správu je **5 sekund**",
             color=Color.blurple())
         await menu_channel.send(embed=embed)
 
