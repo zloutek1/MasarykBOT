@@ -10,7 +10,6 @@
         "cogs.leaderboard",
         "cogs.aboutmenu",
         "cogs.admin",
-        "cogs.math",
         "cogs.eval",
         "cogs.fun"
 ]
