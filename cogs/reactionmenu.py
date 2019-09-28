@@ -48,6 +48,7 @@ class Reactionmenu(commands.Cog):
         }
         for target, overwrite in perms.items():
             await channel.set_permissions(target, overwrite=overwrite)
+        await channel.edit(slowmode_delay=5)
 
         # create category and set permissions
         self.log.info("createing category with permissions")
@@ -322,6 +323,8 @@ class Reactionmenu(commands.Cog):
         text = row["text"]
         subject_code = row["text"].split(" ", 1)[0]
 
+        self.log.info(f"updating subject with code {subject_code}")
+
         # get  user count for subject
         async def get_count():
             await db.execute("""
@@ -362,9 +365,11 @@ class Reactionmenu(commands.Cog):
             return rep_channel
 
         count = await get_count()
+        self.log.info(f"users count {count}")
 
         if event_type == "REACTION_ADD":
             if count < self.NEED_REACTIONS:
+                self.log.info(f"need more reactions")
                 # needs more users
                 need_more = (self.NEED_REACTIONS) - count
                 embed = Embed(
@@ -372,12 +377,14 @@ class Reactionmenu(commands.Cog):
                 await ctx.channel.send(embed=embed, delete_after=5)
 
             else:
+                self.log.info(f"got enough reactions")
                 # adding user
                 embed = Embed(
                     description=f"Předmět {subject_code} úspěšně zapsán studentem {ctx.author.mention}.", color=Color.green())
                 await ctx.channel.send(embed=embed, delete_after=5)
 
                 rep_channel = await get_rep_channel(row, also_create=True)
+                self.log.info(f"got rep_channel {rep_channel}")
 
                 await db.execute("""
                     SELECT * FROM reactionmenu_users
@@ -385,8 +392,9 @@ class Reactionmenu(commands.Cog):
                 """, (row["channel_id"], text))
                 rows = await db.fetchall()
                 users = [ctx.get_user(id=row["user_id"]) for row in rows]
+                self.log.info(f"found users {list(map(str, users))}")
 
-                for user in users:
+                for user in users + [ctx.author]:
                     await rep_channel.set_permissions(user, read_messages=True)
 
             await db.execute("""
@@ -396,28 +404,35 @@ class Reactionmenu(commands.Cog):
                 ON DUPLICATE KEY UPDATE user_id=user_id
             """, (ctx.channel.id, text, ctx.author.id))
             await db.commit()
+            self.log.info(f"inserted user {ctx.author} into database")
 
         elif event_type == "REACTION_REMOVE":
             if count < self.NEED_REACTIONS:
+                self.log.info(f"not enough reactions on subject to remove")
                 embed = Embed(
                     description=f"Uživatel {ctx.author.mention} uspěšně odstráněn z čekací listiny na předmět {subject_code}.", color=Color.green())
                 await ctx.channel.send(embed=embed, delete_after=5)
 
             else:
+                self.log.info(f"enough reactions on subject to remove")
                 embed = Embed(
                     description=f"Předmět {subject_code} úspěšně odepsán studentem {ctx.author.mention}.", color=Color.green())
                 await ctx.channel.send(embed=embed, delete_after=5)
 
                 rep_channel = await get_rep_channel(row, also_create=False)
+                self.log.info(f"rep_channel to remove user from {rep_channel}")
 
                 if rep_channel is not None:
                     await rep_channel.set_permissions(ctx.author, read_messages=False)
+                    self.log.info(
+                        f"disabling permission from {str(ctx.author)}")
 
             await db.execute("""
                 DELETE FROM reactionmenu_users
                 WHERE channel_id = %s AND `text` LIKE %s AND user_id = %s
             """, (ctx.channel.id, text, ctx.author.id))
             await db.commit()
+            self.log.info(f"deleting {str(ctx.author)} from database")
 
         await safe(ctx.message.delete)()
 
@@ -427,11 +442,11 @@ class Reactionmenu(commands.Cog):
     async def subject(self, ctx):
         pass
 
-    @subject.command(name="add", aliases=("create",))
+    @subject.command(name="show", aliases=("create", "add"))
     async def subject_add(self, ctx, *, text):
         await self.subject_update(ctx, text, event_type="REACTION_ADD")
 
-    @subject.command(name="remove", aliases=("del",))
+    @subject.command(name="hide", aliases=("del", "remove"))
     async def subject_remove(self, ctx, *, text):
         await self.subject_update(ctx, text, event_type="REACTION_REMOVE")
 
