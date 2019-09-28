@@ -20,8 +20,9 @@ class Reactionmenu(commands.Cog):
 
         self.users_on_cooldown = {}
         self.channel_cache = {}
+        self.in_channels = {}
 
-        self.NEED_REACTIONS = 5
+        self.NEED_REACTIONS = 0
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -41,7 +42,7 @@ class Reactionmenu(commands.Cog):
         self.log.info("setting permission to current channel")
         perms = {
             ctx.get_role("Student"): PermissionOverwrite(
-                add_reactions=False, send_messages=False),
+                add_reactions=False, send_messages=True),
             self.bot.user: PermissionOverwrite(
                 add_reactions=True, send_messages=True)
         }
@@ -178,7 +179,7 @@ class Reactionmenu(commands.Cog):
             if len(content) + len(option_text) < 2000 and content.count("\n") < 10:
                 self.log.info("editing to new content")
                 await option_message.edit(content=content + f"\n{option_text}")
-                await option_message.add_reaction(emoji)
+                # await option_message.add_reaction(emoji)
 
                 await insert_option_into_db(option_message, emoji)
                 return True
@@ -299,107 +300,140 @@ class Reactionmenu(commands.Cog):
     """---------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def on_raw_reaction_update(self, payload, event_type: str, db: Database = None):
-        # is it a user and in right channel?
-        if (payload.user_id == self.bot.user.id or
-                payload.channel_id not in self.in_channels):
+    async def subject_update(self, ctx, text, event_type, *, db: Database = None):
+        if ctx.channel.id not in self.in_channels:
             return
 
-        cooldown = self.users_on_cooldown.get(payload.user_id)
-        if cooldown and cooldown + timedelta(seconds=3) > datetime.now():
-            return  # on cooldown
-
-        # --[]
-
+        # get reactionmenu database data
         await db.execute("""
             SELECT channel_id, rep_category_id, opts.* FROM (
                 SELECT * FROM reactionmenu_options
-                WHERE message_id = %s AND emoji = %s AND deleted_at IS NULL
+                WHERE `text` LIKE %s AND deleted_at IS NULL
                 LIMIT 1) AS opts
             INNER JOIN reactionmenu_messages AS msgs USING (message_id)
             INNER JOIN reactionmenu AS menu ON (menu.message_id = msgs.reactionmenu_message_id)
-        """, (payload.message_id, str(payload.emoji)))
+            WHERE channel_id = %s
+        """, (text + "%", ctx.channel.id))
         row = await db.fetchone()
+        if not row:
+            await ctx.send(f"subject {text} not found", delete_after=5)
+            return
+
+        text = row["text"]
         subject_code = row["text"].split(" ", 1)[0]
 
-        # get Discord API python objects
-        channel = self.bot.get_channel(payload.channel_id)
-        guild = channel.guild
-        message = await channel.fetch_message(payload.message_id)
-        reaction = core.utils.get(
-            message.reactions, key=lambda react: str(react) == str(payload.emoji))
-        user = guild.get_member(payload.user_id)
+        # get  user count for subject
+        async def get_count():
+            await db.execute("""
+                SELECT COUNT(*) AS `count` FROM reactionmenu_users
+                WHERE channel_id = %s AND `text` LIKE %s
+            """, (row["channel_id"], text))
+            count = (await db.fetchone())["count"]
+            return count
+
+        async def get_rep_channel(row, also_create=True):
+            rep_channel = self.channel_cache.get(row["rep_channel_id"])
+            if rep_channel is None:
+                rep_channel = ctx.get_channel(
+                    id=row["rep_channel_id"])
+
+            if rep_channel is None:
+                rep_channel = ctx.get_channel(ctx.channel_name(text))
+                if rep_channel:
+                    row["rep_channel_id"] = rep_channel.id
+
+            if rep_channel is None and also_create:
+                rep_channel = await ctx.guild.create_text_channel(
+                    name=row["text"],
+                    position=int(row["emoji"].split(":")[1].lstrip("num")) - 1,
+                    category=self.bot.get_channel(row["rep_category_id"])
+                )
+                row["rep_channel_id"] = rep_channel.id
+
+            self.channel_cache[row["rep_channel_id"]] = rep_channel
+
+            await db.execute("""
+                UPDATE reactionmenu_options
+                SET rep_channel_id = %s
+                WHERE message_id = %s AND emoji = %s
+            """, (rep_channel.id, row["message_id"], row["emoji"]))
+            await db.commit()
+
+            return rep_channel
+
+        count = await get_count()
 
         if event_type == "REACTION_ADD":
-            # wait in queue
-            if reaction.count <= self.NEED_REACTIONS:
-                need_more = (self.NEED_REACTIONS + 1) - reaction.count
+            if count < self.NEED_REACTIONS:
+                # needs more users
+                need_more = (self.NEED_REACTIONS) - count
                 embed = Embed(
-                    description=f"Díky za zájem o {subject_code} {user.mention}. Uživatel přidán na čekací listinu, čekáte ještě na {need_more} studenty.", color=Color.green())
-                await channel.send(embed=embed, delete_after=5)
+                    description=f"Díky za zájem o {subject_code} {ctx.author.mention}. Uživatel přidán na čekací listinu, čekáte ještě na {need_more} studenty.", color=Color.green())
+                await ctx.channel.send(embed=embed, delete_after=5)
 
-            # add the subject
             else:
+                # adding user
                 embed = Embed(
-                    description=f"Předmět {subject_code} úspěšně zapsán studentem {user.mention}.", color=Color.green())
-                await channel.send(embed=embed, delete_after=5)
+                    description=f"Předmět {subject_code} úspěšně zapsán studentem {ctx.author.mention}.", color=Color.green())
+                await ctx.channel.send(embed=embed, delete_after=5)
 
-                rep_channel = self.channel_cache.get(row["rep_channel_id"])
-                if rep_channel is None:
-                    rep_channel = self.bot.get_channel(row["rep_channel_id"])
-
-                if rep_channel is None:
-                    rep_channel = await guild.create_text_channel(
-                        name=row["text"],
-                        position=int(payload.emoji.name.lstrip("num")) - 1,
-                        category=self.bot.get_channel(row["rep_category_id"])
-                    )
-                    row["rep_channel_id"] = rep_channel.id
-                self.channel_cache[row["rep_channel_id"]] = rep_channel
+                rep_channel = await get_rep_channel(row, also_create=True)
 
                 await db.execute("""
-                    UPDATE reactionmenu_options
-                    SET rep_channel_id = %s
-                    WHERE message_id = %s AND emoji = %s
-                """, (rep_channel.id, payload.message_id, str(payload.emoji)))
-                await db.commit()
+                    SELECT * FROM reactionmenu_users
+                    WHERE channel_id = %s AND `text` LIKE %s
+                """, (row["channel_id"], text))
+                rows = await db.fetchall()
+                users = [ctx.get_user(id=row["user_id"]) for row in rows]
 
-                async for reactor in reaction.users():
-                    await rep_channel.set_permissions(reactor, read_messages=True)
+                for user in users:
+                    await rep_channel.set_permissions(user, read_messages=True)
+
+            await db.execute("""
+                INSERT INTO reactionmenu_users
+                    (channel_id, `text`, user_id)
+                VALUES (%s, %s, %s)
+                ON DUPLICATE KEY UPDATE user_id=user_id
+            """, (ctx.channel.id, text, ctx.author.id))
+            await db.commit()
 
         elif event_type == "REACTION_REMOVE":
-            # still in queue
-            if reaction.count < self.NEED_REACTIONS:
+            if count < self.NEED_REACTIONS:
                 embed = Embed(
-                    description=f"Uživatel {user.mention} uspěšně odstráněn z čekací listiny na předmět {subject_code}.", color=Color.green())
-                await channel.send(embed=embed, delete_after=5)
+                    description=f"Uživatel {ctx.author.mention} uspěšně odstráněn z čekací listiny na předmět {subject_code}.", color=Color.green())
+                await ctx.channel.send(embed=embed, delete_after=5)
 
-            # remove the subject
             else:
                 embed = Embed(
-                    description=f"Předmět {subject_code} úspěšně odepsán studentem {user.mention}.", color=Color.green())
-                await channel.send(embed=embed, delete_after=5)
+                    description=f"Předmět {subject_code} úspěšně odepsán studentem {ctx.author.mention}.", color=Color.green())
+                await ctx.channel.send(embed=embed, delete_after=5)
 
-                rep_channel = self.channel_cache.get(row["rep_channel_id"])
-                if rep_channel is None:
-                    rep_channel = self.bot.get_channel(row["rep_channel_id"])
+                rep_channel = await get_rep_channel(row, also_create=False)
 
                 if rep_channel is not None:
-                    await rep_channel.set_permissions(user, read_messages=False)
+                    await rep_channel.set_permissions(ctx.author, read_messages=False)
 
-        # --[]
+            await db.execute("""
+                DELETE FROM reactionmenu_users
+                WHERE channel_id = %s AND `text` LIKE %s AND user_id = %s
+            """, (ctx.channel.id, text, ctx.author.id))
+            await db.commit()
 
-        self.users_on_cooldown[payload.user_id] = datetime.now()
+        await safe(ctx.message.delete)()
 
     """---------------------------------------------------------------------------------------------------------------------------"""
 
-    @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
-        await self.on_raw_reaction_update(payload, event_type="REACTION_ADD")
+    @commands.group(name="subject", aliases=("predmet",))
+    async def subject(self, ctx):
+        pass
 
-    @commands.Cog.listener()
-    async def on_raw_reaction_remove(self, payload):
-        await self.on_raw_reaction_update(payload, event_type="REACTION_REMOVE")
+    @subject.command(name="add", aliases=("create",))
+    async def subject_add(self, ctx, *, text):
+        await self.subject_update(ctx, text, event_type="REACTION_ADD")
+
+    @subject.command(name="remove", aliases=("del",))
+    async def subject_remove(self, ctx, *, text):
+        await self.subject_update(ctx, text, event_type="REACTION_REMOVE")
 
     """---------------------------------------------------------------------------------------------------------------------------"""
 
@@ -408,108 +442,47 @@ class Reactionmenu(commands.Cog):
     async def on_ready(self, *, db: Database = None):
         self.bot.readyCogs[self.__class__.__name__] = False
 
-        # load channels into memory for faster checks
         await db.execute("""
-            SELECT DISTINCT channel_id, deleted_at
-            FROM reactionmenu
-            WHERE deleted_at IS NULL
+            SELECT channel_id, rep_category_id, opts.* FROM (
+                SELECT * FROM reactionmenu_options
+                WHERE deleted_at IS NULL) AS opts
+            INNER JOIN reactionmenu_messages AS msgs USING (message_id)
+            INNER JOIN reactionmenu AS menu ON (menu.message_id = msgs.reactionmenu_message_id)
+            ORDER BY `text` DESC
         """)
         rows = await db.fetchall()
+
         self.in_channels = set(row["channel_id"] for row in rows)
 
-        self.log.info("Catching up reactionmenu")
-        await db.execute("""
-            SELECT * FROM reactionmenu
-            WHERE deleted_at IS NULL
-        """)
-        rows = await db.fetchall()
-
-        channels = {}
+        self.log.info("Starting reordering channels")
+        categories = {}
         for row in rows:
-            channel_id = row["channel_id"]
-            if channels.get(channel_id) is None:
-                channels[channel_id] = self.bot.get_channel(channel_id)
-            channel = channels.get(channel_id)
+            category_id = row["rep_category_id"]
+            if categories.get(category_id) is None:
+                categories[category_id] = self.bot.get_channel(category_id)
+            category = categories.get(category_id)
 
-            if channel is None:
-                # Channel not existant, remove from db
-                await db.execute("""
-                    UPDATE reactionmenu
-                    SET deleted_at=NOW()
-                    WHERE channel_id = %s
-                """, (row["channel_id"],))
-                await db.commit()
+            # skip if already sorted
+            channels = list(map(str, category.channels))
+            if channels == sorted(channels):
                 continue
 
-            await db.execute("""
-                SELECT * FROM reactionmenu_messages
-                WHERE reactionmenu_message_id = %s
-            """, (row["message_id"],))
-            rows2 = await db.fetchall()
+            channel = self.bot.get_channel(row["rep_channel_id"])
+            if channel:
+                await channel.edit(
+                    name=row["text"],
+                    position=0,
+                    category=category
+                )
+                self.log.info(f"reordered channel {channel}")
 
-            self.log.info(f"catching up channel {channel}")
-            for row2 in rows2:
-                message = await channel.fetch_message(row2["message_id"])
-                if message is None:
-                    print("Message does not exist in aboutmenu")
-                    continue
-
-                self.log.info(f"catching up message {message.id} in {channel}")
-                for reaction in message.reactions:
-                    await db.execute("""
-                        SELECT * FROM reactionmenu_options
-                        WHERE message_id = %s AND emoji = %s AND deleted_at is NULL
-                    """, (row2["message_id"], str(reaction)))
-                    react_db = await db.fetchone()
-
-                    rep_channel = channel.guild.get_channel(
-                        react_db["rep_channel_id"])
-
-                    if rep_channel:
-                        new_reacted = set(await reaction.users().flatten())
-                        old_reacted = set(rep_channel.members)
-
-                        # get the difference
-                        to_add = new_reacted - old_reacted
-                        to_remove = old_reacted - new_reacted
-
-                        for user in to_add:
-                            member = core.utils.get(
-                                channel.guild.members, id=user.id)
-                            if member:
-                                await rep_channel.set_permissions(member, read_messages=True)
-
-                        for user in to_remove:
-                            member = core.utils.get(
-                                channel.guild.members, id=user.id)
-                            if not member:
-                                continue
-
-                            if rep_channel.permissions_for(member).read_messages == True:
-                                await rep_channel.set_permissions(member, read_messages=False)
-
-                    else:
-                        new_reacted = set(await reaction.users().flatten())
-                        if len(new_reacted) > self.NEED_REACTIONS:
-                            rep_channel = await channel.guild.create_text_channel(
-                                name=react_db["text"],
-                                position=int(
-                                    reaction.emoji.name.lstrip("num")) - 1,
-                                category=self.bot.get_channel(
-                                    row["rep_category_id"])
-                            )
-                            for member in new_reacted:
-                                await rep_channel.set_permissions(member, read_messages=True)
-
-                            await db.execute("""
-                                UPDATE reactionmenu_options
-                                SET rep_channel_id = %s
-                                WHERE message_id = %s AND emoji = %s AND deleted_at is NULL
-                                """, (rep_channel.id, row2["message_id"], str(reaction)))
-
-        self.log.info("caught up reactionmenu")
-
+        self.log.info("Finished reordering channels")
         self.bot.readyCogs[self.__class__.__name__] = True
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.channel.id in self.in_channels and message.author != self.bot.user:
+            await message.delete()
 
 
 def setup(bot):
