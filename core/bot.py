@@ -20,6 +20,7 @@ class LoggingHandler(logging.StreamHandler):
         super().__init__(self)
 
         self.temp = ""
+        self.is_ready = False
 
     def emit(self, record):
         msg = self.format(record)
@@ -166,6 +167,7 @@ class MasarykBot(Bot):
             if all(self.readyCogs.values()) or len(self.readyCogs.values()) == 0:
                 break
 
+        self.is_ready = True
         self.intorduce()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
