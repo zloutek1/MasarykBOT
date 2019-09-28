@@ -1,6 +1,7 @@
 from discord.ext import commands
 
 import core.utils.get
+import re
 
 
 class Context(commands.Context):
@@ -22,3 +23,10 @@ class Context(commands.Context):
     def get_emoji(self, name=None, **kwargs):
         kwargs.update({"name": name}) if name is not None else None
         return core.utils.get(self.bot.emojis, **kwargs)
+
+    def get_user(self, name=None, **kwargs):
+        kwargs.update({"name": name}) if name is not None else None
+        return core.utils.get(self.guild.members, **kwargs)
+
+    def channel_name(self, text):
+        return re.sub("[^a-zA-Z0-9\-]", "", "-".join(text.lower().split()))
