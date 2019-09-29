@@ -38,11 +38,11 @@ class Reactionmenu(commands.Cog):
         guild = ctx.guild
         channel = ctx.channel
         self.in_channels.add(channel.id)
-        self.updating_channels[channel_id] = True
+        self.updating_channels[channel.id] = True
 
         self.log.info(f"creating reactionmenu {name}")
         # set permissions to current channel
-        self.log.debug("setting permission to current channel")
+        self.log.info("setting permission to current channel")
         perms = {
             ctx.get_role("Student"): PermissionOverwrite(
                 add_reactions=False, send_messages=True),
@@ -54,7 +54,7 @@ class Reactionmenu(commands.Cog):
         await channel.edit(slowmode_delay=5)
 
         # create category and set permissions
-        self.log.debug("createing category with permissions")
+        self.log.info("createing category with permissions")
         perms = {
             ctx.get_role("Student"): PermissionOverwrite(
                 read_messages=False),
@@ -65,7 +65,7 @@ class Reactionmenu(commands.Cog):
         await self.bot.trigger_event("on_guild_channel_create", category)
 
         # send image
-        self.log.debug("sending image to channel")
+        self.log.info("sending image to channel")
         filename = f"assets/{channel.id}-{name}.png"
         image = self.generate_section_image(name)
         image.save(filename)
@@ -73,14 +73,14 @@ class Reactionmenu(commands.Cog):
         os.remove(filename)
 
         # send 5 messages
-        self.log.debug("sending 5 empty messages")
+        self.log.info("sending 5 empty messages")
         opt_messages = []
         for i in range(5):
             msg = await ctx.send("_ _")
             opt_messages.append((message.id, msg.id))
 
         # insert into database
-        self.log.debug("inserting reactionmenu into database")
+        self.log.info("inserting reactionmenu into database")
         await db.execute("""
             INSERT INTO reactionmenu (
                 channel_id, message_id, rep_category_id, name)
@@ -88,7 +88,7 @@ class Reactionmenu(commands.Cog):
         """, (channel.id, message.id, category.id, name))
         await db.commit()
 
-        self.log.debug("inserting five empty messages into database")
+        self.log.info("inserting five empty messages into database")
         await db.executemany("""
             INSERT INTO reactionmenu_messages (
                 reactionmenu_message_id, message_id)
@@ -101,7 +101,7 @@ class Reactionmenu(commands.Cog):
         await db.commit()
         await safe(ctx.message.delete)()
 
-        self.updating_channels[channel_id] = False
+        self.updating_channels[channel.id] = False
         return message.id
 
     @reactionmenu_group.group(name="option", aliases=("opt",))
@@ -112,13 +112,13 @@ class Reactionmenu(commands.Cog):
     @needs_database
     async def option_create(self, ctx, to_menu: int=None, *, text: str, db: Database = None):
         channel = ctx.channel
-        self.updating_channels[channel_id] = True
+        self.updating_channels[channel.id] = True
 
         await db.commit()
         self.log.info(f"creating option {text}")
 
         async def select_reactionmenu_from_db(to_menu):
-            self.log.debug("selecting reactionmenu from database")
+            self.log.info("selecting reactionmenu from database")
             await db.execute("""
                 SELECT * FROM reactionmenu
                 WHERE message_id = %s
@@ -133,7 +133,7 @@ class Reactionmenu(commands.Cog):
             return reactionmenu
 
         async def select_message_from_db(reactionmenu):
-            self.log.debug("selecting messages from database")
+            self.log.info("selecting messages from database")
             await db.execute("""
                 SELECT * FROM reactionmenu_messages
                 WHERE reactionmenu_message_id = %s AND NOT is_full
@@ -148,7 +148,7 @@ class Reactionmenu(commands.Cog):
             return reactionmenu_message
 
         async def get_option_count(reactionmenu):
-            self.log.debug("getting No. of options in reactionmenu")
+            self.log.info("getting No. of options in reactionmenu")
             await db.execute("""
                 SELECT COUNT(*) AS `count` FROM reactionmenu_options
                 INNER JOIN reactionmenu_messages USING (message_id)
@@ -159,7 +159,7 @@ class Reactionmenu(commands.Cog):
             return options
 
         async def get_DC_message(reactionmenu_message):
-            self.log.debug("getting Discord's message object")
+            self.log.info("getting Discord's message object")
             option_message = await channel.fetch_message(reactionmenu_message["message_id"])
 
             if not option_message:
@@ -169,7 +169,7 @@ class Reactionmenu(commands.Cog):
             return option_message
 
         async def insert_option_into_db(option_message, emoji):
-            self.log.debug("inserting option into databse")
+            self.log.info("inserting option into databse")
             await db.execute("""
                 INSERT INTO reactionmenu_options
                     (message_id, rep_channel_id, emoji, `text`)
@@ -178,20 +178,20 @@ class Reactionmenu(commands.Cog):
             await db.commit()
 
         async def modify_content(option_message, options):
-            self.log.debug("preparing the new content of the message")
+            self.log.info("preparing the new content of the message")
             content = option_message.content
             emoji = ctx.get_emoji(name=f"num{options+1}")
             option_text = f"{emoji}   {text}"
 
             if len(content) + len(option_text) < 2000 and content.count("\n") < 10:
-                self.log.debug("editing to new content")
+                self.log.info("editing to new content")
                 await option_message.edit(content=content + f"\n{option_text}")
                 # await option_message.add_reaction(emoji)
 
                 await insert_option_into_db(option_message, emoji)
                 return True
 
-            self.log.debug("marking the message as full, retrying...")
+            self.log.info("marking the message as full, retrying...")
             await db.execute("""
                 UPDATE reactionmenu_messages
                 SET is_full = true
@@ -209,7 +209,7 @@ class Reactionmenu(commands.Cog):
 
             option_message = await get_DC_message(reactionmenu_message)
             if not option_message:
-                self.updating_channels[channel_id] = False
+                self.updating_channels[channel.id] = False
                 return False
 
             if await modify_content(option_message, options):
@@ -220,7 +220,7 @@ class Reactionmenu(commands.Cog):
         await db.commit()
         await safe(ctx.message.delete)()
 
-        self.updating_channels[channel_id] = False
+        self.updating_channels[channel.id] = False
         return option_message.id
 
     @staticmethod
@@ -377,11 +377,11 @@ class Reactionmenu(commands.Cog):
             return rep_channel
 
         count = await get_count()
-        self.log.debug(f"users count {count}")
+        self.log.info(f"users count {count}")
 
         if event_type == "REACTION_ADD":
             if count < self.NEED_REACTIONS:
-                self.log.debug(f"need more reactions")
+                self.log.info(f"need more reactions")
                 # needs more users
                 need_more = (self.NEED_REACTIONS) - count
                 embed = Embed(
@@ -389,14 +389,14 @@ class Reactionmenu(commands.Cog):
                 await ctx.channel.send(embed=embed, delete_after=5)
 
             else:
-                self.log.debug(f"got enough reactions")
+                self.log.info(f"got enough reactions")
                 # adding user
                 embed = Embed(
                     description=f"Předmět {subject_code} úspěšně zapsán studentem {ctx.author.mention}.", color=Color.green())
                 await ctx.channel.send(embed=embed, delete_after=5)
 
                 rep_channel = await get_rep_channel(row, also_create=True)
-                self.log.debug(f"got rep_channel {rep_channel}")
+                self.log.info(f"got rep_channel {rep_channel}")
 
                 await db.execute("""
                     SELECT * FROM reactionmenu_users
@@ -404,7 +404,7 @@ class Reactionmenu(commands.Cog):
                 """, (row["channel_id"], text))
                 rows = await db.fetchall()
                 users = [ctx.get_user(id=row["user_id"]) for row in rows]
-                self.log.debug(f"found users {list(map(str, users))}")
+                self.log.info(f"found users {list(map(str, users))}")
 
                 for user in users + [ctx.author]:
                     await rep_channel.set_permissions(user, read_messages=True)
@@ -416,28 +416,28 @@ class Reactionmenu(commands.Cog):
                 ON DUPLICATE KEY UPDATE user_id=user_id
             """, (ctx.channel.id, text, ctx.author.id))
             await db.commit()
-            self.log.debug(f"inserted user {ctx.author} into database")
+            self.log.info(f"inserted user {ctx.author} into database")
 
         elif event_type == "REACTION_REMOVE":
             if count < self.NEED_REACTIONS:
-                self.log.debug(f"not enough reactions on subject to remove")
+                self.log.info(f"not enough reactions on subject to remove")
                 embed = Embed(
                     description=f"Uživatel {ctx.author.mention} uspěšně odstráněn z čekací listiny na předmět {subject_code}.", color=Color.green())
                 await ctx.channel.send(embed=embed, delete_after=5)
 
             else:
-                self.log.debug(f"enough reactions on subject to remove")
+                self.log.info(f"enough reactions on subject to remove")
                 embed = Embed(
                     description=f"Předmět {subject_code} úspěšně odepsán studentem {ctx.author.mention}.", color=Color.green())
                 await ctx.channel.send(embed=embed, delete_after=5)
 
                 rep_channel = await get_rep_channel(row, also_create=False)
-                self.log.debug(
+                self.log.info(
                     f"rep_channel to remove user from {rep_channel}")
 
                 if rep_channel is not None:
                     await rep_channel.set_permissions(ctx.author, read_messages=False)
-                    self.log.debug(
+                    self.log.info(
                         f"disabling permission from {str(ctx.author)}")
 
             await db.execute("""
@@ -445,7 +445,7 @@ class Reactionmenu(commands.Cog):
                 WHERE channel_id = %s AND `text` LIKE %s AND user_id = %s
             """, (ctx.channel.id, text, ctx.author.id))
             await db.commit()
-            self.log.debug(f"deleting {str(ctx.author)} from database")
+            self.log.info(f"deleting {str(ctx.author)} from database")
 
         await safe(ctx.message.delete)()
         self.updating_channels[ctx.channel.id] = False

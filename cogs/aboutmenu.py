@@ -107,6 +107,7 @@ class Aboutmenu(commands.Cog):
     @needs_database
     async def on_raw_reaction_update(self, payload, event_type: str, db: Database = None):
         # reacted in aboutmenu channel?
+        guild = self.bot.get_guild(payload.guild_id)
         author = guild.get_member(payload.user_id)
         self.log.info(f"{event_type}: {str(payload.emoji)} for {author}")
 
@@ -117,7 +118,7 @@ class Aboutmenu(commands.Cog):
         """, (payload.channel_id,))
         if not await db.fetchone():
             return
-        self.log.debug("got aboutmenu from database")
+        self.log.info("got aboutmenu from database")
 
         # does the option exist? get it
         await db.execute("""
@@ -131,14 +132,13 @@ class Aboutmenu(commands.Cog):
         row = await db.fetchone()
         if not row:
             return
-        self.log.debug("found the clicked option in database")
+        self.log.info("found the clicked option in database")
 
         # get role
-        guild = self.bot.get_guild(payload.guild_id)
         role = core.utils.get(guild.roles, id=row["role_id"])
         if not role:
             return
-        self.log.debug("got the role object from discord")
+        self.log.info("got the role object from discord")
 
         if event_type == "REACTION_ADD":
             await author.add_roles(role)
