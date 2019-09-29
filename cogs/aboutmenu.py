@@ -107,10 +107,6 @@ class Aboutmenu(commands.Cog):
     @needs_database
     async def on_raw_reaction_update(self, payload, event_type: str, db: Database = None):
         # reacted in aboutmenu channel?
-        guild = self.bot.get_guild(payload.guild_id)
-        author = guild.get_member(payload.user_id)
-        self.log.info(f"{event_type}: {str(payload.emoji)} for {author}")
-
         await db.execute("""
             SELECT * FROM aboutmenu
             WHERE channel_id = %s AND deleted_at IS NULL
@@ -118,7 +114,9 @@ class Aboutmenu(commands.Cog):
         """, (payload.channel_id,))
         if not await db.fetchone():
             return
-        self.log.info("got aboutmenu from database")
+        guild = self.bot.get_guild(payload.guild_id)
+        author = guild.get_member(payload.user_id)
+        self.log.info(f"{event_type}: {str(payload.emoji)} for {author}")
 
         # does the option exist? get it
         await db.execute("""
