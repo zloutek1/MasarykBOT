@@ -21,9 +21,11 @@ class Logger(commands.Cog):
 
     def add_catchup_task(self, name, task_get, task_insert, task_data=[]):
         """
-        name: usually a cog name,
-        task_get: a function to format the data for database input
-        task_insert: a function that inserts data into database
+        add catchup_task to self.catchup_tasks
+
+        @param name: usually a cog name,
+        @param task_get: a function to format the data for database input
+        @param task_insert: a function that inserts data into database
         """
         self.catchup_tasks[name] = {
             "get": task_get,
@@ -43,6 +45,12 @@ class Logger(commands.Cog):
 
     @needs_database
     async def backup_guilds(self, guilds, db: Database = None):
+        """
+        save guilds in format
+            (id, name, icon_url)
+        into database in chunks
+        """
+
         guilds_data = [(g.id, g.name, str(g.icon_url))
                        for g in guilds]
 
@@ -58,6 +66,12 @@ class Logger(commands.Cog):
 
     @needs_database
     async def backup_categories(self, categories, db: Database = None):
+        """
+        save categories in format
+            (guild_id, id, name, position)
+        into database in chunks
+        """
+
         category_data = [(c.guild.id, c.id, c.name, c.position)
                          for c in categories]
 
@@ -73,6 +87,12 @@ class Logger(commands.Cog):
 
     @needs_database
     async def backup_text_channels(self, text_channels, db: Database = None):
+        """
+        save text_channels in format
+            (guild_id, category_id, id, name, position)
+        into database in chunks
+        """
+
         channels_data = [(c.guild.id, c.category_id, c.id, c.name, c.position)
                          for c in text_channels]
 
@@ -88,6 +108,12 @@ class Logger(commands.Cog):
 
     @needs_database
     async def backup_users(self, users, db: Database = None):
+        """
+        save users in format
+            (id, name, avarar_url)
+        into database in chunks
+        """
+
         users_data = [(u.id, u.name, str(u.avatar_url))
                       for u in users]
 
@@ -103,6 +129,20 @@ class Logger(commands.Cog):
 
     @needs_database
     async def backup_messages(self, in_channels, db: Database = None):
+        """
+        start backing up messages in_channel
+        get from_date, to_date ranges from
+        table logger from database
+
+        for each channel
+            skip the channel if it has no messages
+            get the message objects using get_messages method
+            backup the messages using backup_messages
+            backup also catchup_tasks
+
+        if everything went smoothly set logger status as 'success'
+        """
+
         ignore_channels = []
         with open("assets/local_db.json", "r", encoding="utf-8") as file:
             local_db = json.load(file)
@@ -167,6 +207,17 @@ class Logger(commands.Cog):
 
     @needs_database
     async def get_messages(self, channel, authors_data, messages_data, attachments_data, after=None, before=None, db: Database = None):
+        """
+        log the last 1 milion messages
+        save message in format
+            (channel_id, author_id, id, content, created_at)
+
+        save all attachemnts in format
+            (message_id, id, filename, url)
+
+        call catchup_task.get for each catchup_task
+        """
+
         try:
             counter = 0
             async for message in channel.history(
@@ -202,6 +253,12 @@ class Logger(commands.Cog):
 
     @needs_database
     async def backup_messages_in(self, channel, messages_data, db: Database = None):
+        """
+        save messages in format
+            (channel_id, author_id, id, content, created_at)
+        into database in chunks
+        """
+
         chunks = self.chunks(messages_data, 550)
         for i, chunk in enumerate(chunks):
             await db.executemany("""
@@ -217,6 +274,12 @@ class Logger(commands.Cog):
 
     @needs_database
     async def backup_attachments_in(self, channel, attachments_data, db: Database = None):
+        """
+        save attachments in format
+            (message_id, id, filename, url)
+        into database in chunks
+        """
+
         chunks = self.chunks(attachments_data, 550)
         for chunk in chunks:
             await db.executemany("""
@@ -231,6 +294,15 @@ class Logger(commands.Cog):
     @commands.Cog.listener()
     @needs_database
     async def on_ready(self, db: Database = None):
+        """
+        start backing up everything necessary
+        - guilds
+        - categories
+        - text channels
+        - users
+        - messages
+        """
+
         self.bot.readyCogs[self.__class__.__name__] = False
 
         guilds = self.bot.guilds
@@ -285,35 +357,15 @@ class Logger(commands.Cog):
     @commands.Cog.listener()
     @needs_database
     async def on_guild_channel_create(self, channel, db: Database = None):
+        """
+        determine if channel is text_channel or a category
+        """
+
         if isinstance(channel, discord.CategoryChannel):
-            await self.on_category_create(channel)
+            await self.backup_categories([channel])
 
         elif isinstance(channel, discord.TextChannel):
-            await self.on_text_channel_create(channel)
-
-    @needs_database
-    async def on_category_create(self, category, db: Database = None):
-        category_data = (category.guild.id, category.id,
-                         category.name, category.position)
-
-        await db.execute("""
-            INSERT INTO category (guild_id, id, name, position)
-            VALUES (%s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE id=id
-        """, category_data)
-        await db.commit()
-
-    @needs_database
-    async def on_text_channel_create(self, text_channel, db: Database = None):
-        channel_data = (text_channel.guild.id, text_channel.category_id,
-                        text_channel.id, text_channel.name, text_channel.position)
-
-        await db.execute("""
-            INSERT INTO channel (guild_id, category_id, id, name, position)
-            VALUES (%s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE id=id
-        """, channel_data)
-        await db.commit()
+            await self.backup_text_channels([channel])
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 

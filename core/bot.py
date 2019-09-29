@@ -15,6 +15,12 @@ from core.utils.db import Database
 
 
 class LoggingHandler(logging.StreamHandler):
+    """
+    A custom logging class
+    emit(record) method processes a log event
+    handles what to do with the event
+    """
+
     def __init__(self, bot):
         self.bot = bot
         super().__init__(self)
@@ -23,6 +29,11 @@ class LoggingHandler(logging.StreamHandler):
         self.is_ready = False
 
     def emit(self, record):
+        """
+        get formatted record
+        group the messages until they fit the discord message limit
+        otherwise send the grouped message into log_channels
+        """
         msg = self.format(record)
 
         if len(self.temp) + len(msg) < 1900:
@@ -52,6 +63,14 @@ class MasarykBot(Bot):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     def setup_logging(self):
+        """
+        sets up custom logging into self.log variable
+
+        set format to
+        [2019-09-29 18:51:04] [INFO   ] core.logger: Begining backup
+
+        save the logs into assets/masaryk.log file
+        """
         log = logging.getLogger()
         log.setLevel(logging.INFO)
 
@@ -73,6 +92,16 @@ class MasarykBot(Bot):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     async def handle_database(self):
+        """
+        create a database connection
+        on database connection
+            trigger on_ready event for
+            events with @needs_database decorator
+        when connection cannot be established
+            set presence as dnd
+            and retry every 2 seconds
+        """
+
         await self.wait_until_ready()
         await self.change_presence(
             status=discord.Status.offline)
@@ -103,7 +132,10 @@ class MasarykBot(Bot):
                 attempts += 1
 
     async def process_commands(self, message):
-        # send custom Context instead of the discord API's Context
+        """
+        send custom Context instead of the discord API's Context
+        """
+
         ctx = await self.get_context(message, cls=context.Context)
 
         if ctx.command is None:
@@ -114,7 +146,9 @@ class MasarykBot(Bot):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     def handle_exit(self):
-        # finish runnings tasks and logout bot
+        """
+        finish runnings tasks and logout bot
+        """
 
         self.loop.run_until_complete(self.logout())
         for task in asyncio.Task.all_tasks(loop=self.loop):
@@ -160,6 +194,22 @@ class MasarykBot(Bot):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     async def bot_ready(self):
+        """
+        wait until all values in self.readyCogs
+        are set to True, which means all cogs
+        with on_ready event are ready and
+        therefore the bot is ready
+
+        example:
+            @commands.Cog.listener()
+            async def on_ready(self):
+                self.bot.readyCogs[self.__class__.__name__] = False
+
+                # ... code here ...
+
+                self.bot.readyCogs[self.__class__.__name__] = True
+
+        """
         await self.wait_until_ready()
 
         while True:
@@ -207,6 +257,20 @@ class MasarykBot(Bot):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     async def trigger_event(self, event_name, *args, **kwargs):
+        """
+        trigger on_{event} function in each
+        cog. wait until each function finished running
+
+        example:
+            # in cog call
+            self.bot.trigger_event("message", ctx.message)
+
+            @commands.Cog.listener()
+            async def on_message(self, message):
+                # gets called
+                pass
+        """
+
         events = []
         for cog_name, cog in self.cogs.items():
             event = list(
@@ -230,6 +294,11 @@ class MasarykBot(Bot):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     async def on_error(self, event, *args, **kwargs):
+        """
+        format python traceback into a more descriptive
+        format, put it into an embed and send it
+        to error_channels
+        """
         exc_type, exc_value, exc_traceback = sys.exc_info()
 
         exc = traceback.format_exception(

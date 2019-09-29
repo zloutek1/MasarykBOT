@@ -17,6 +17,17 @@ class Rules(commands.Cog):
 
     @rules.command(name="setup")
     async def setup_rules(self, ctx):
+        """
+        create a #pravidla channel if it does not exist
+        disable user to send messages or add reactions
+
+        get mentions that will be used in the text below
+        create embeds with the rules text
+
+        edit the messages if they exist already and
+        were not changes or send new ones
+        """
+
         rules_channel = core.utils.get(ctx.guild.channels, name="pravidla")
         if not rules_channel:
             rules_channel = await ctx.guild.create_text_channel("pravidla")
