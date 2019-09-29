@@ -1,5 +1,5 @@
 import discord
-from discord import Embed, TextChannel, VoiceChannel
+from discord import Embed, TextChannel, VoiceChannel, CategoryChannel
 from discord.ext import commands
 from discord.ext.commands import Bot, has_permissions
 
@@ -7,6 +7,8 @@ import os
 import json
 import logging
 import asyncio
+
+from core.utils.checks import safe
 
 
 class Admin(commands.Cog):
@@ -114,8 +116,17 @@ class Admin(commands.Cog):
         with open("assets/local_db.json", "w", encoding="utf-8") as file:
             json.dump(local_db, file)
 
-        await ctx.delete()
+        await ctx.message.delete()
         await ctx.send("Log Channel set successfully", delete_after=5)
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @commands.command()
+    @has_permissions(manage_channels=True)
+    async def sync_category(self, ctx, category: CategoryChannel):
+        for channel in category.channels:
+            await channel.edit(sync_permissions=True)
+        await safe(ctx.message.delete)()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
