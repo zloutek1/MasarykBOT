@@ -18,7 +18,6 @@ class Reactionmenu(commands.Cog):
         self.bot = bot
         self.log = logging.getLogger(__name__)
 
-        self.users_on_cooldown = {}
         self.channel_cache = {}
         self.in_channels = {}
         self.updating_channels = {}
@@ -35,6 +34,21 @@ class Reactionmenu(commands.Cog):
     @reactionmenu_group.command(name="create", aliases=("add",))
     @needs_database
     async def reactionmenu_create(self, ctx, *, name: str, db: Database = None):
+        """
+        generate image in format
+            -----------
+              N A M E
+            -----------
+        send the image to channel
+
+        disable permissions for Student to send messages
+        add cooldown of 5 seconds
+
+        send additional 5 empty (_ _) messages
+
+        save all the data into the database
+        """
+
         guild = ctx.guild
         channel = ctx.channel
         self.in_channels.add(channel.id)
@@ -111,6 +125,13 @@ class Reactionmenu(commands.Cog):
     @option_group.command(name="create", aliases=("add",))
     @needs_database
     async def option_create(self, ctx, to_menu: int=None, *, text: str, db: Database = None):
+        """
+        fetch the message in the correct section
+        append the {text} in the message if it fists
+        set the {text} in the next message otherwise
+
+        update all the values in the database
+        """
         channel = ctx.channel
         self.updating_channels[channel.id] = True
 
@@ -199,6 +220,11 @@ class Reactionmenu(commands.Cog):
             """, (option_message.id))
             await db.commit()
 
+        """
+        call all functions
+        defined above
+        """
+
         reactionmenu = await select_reactionmenu_from_db(to_menu)
         if not reactionmenu:
             return False
@@ -259,6 +285,14 @@ class Reactionmenu(commands.Cog):
     @needs_database
     @has_permissions(administrator=True)
     async def recover_database(self, ctx, channel: TextChannel, *, db: Database = None):
+        """
+        recover the database from a channel
+        if the message has attachemtns - it is a section
+            determine the section name based on filename
+            save the message into the database
+        if the message is plain - it is an option
+            add the option into the database
+        """
         await ctx.message.delete()
         menu_id = None
 
@@ -310,6 +344,20 @@ class Reactionmenu(commands.Cog):
 
     @needs_database
     async def subject_update(self, ctx, text, event_type, *, db: Database = None):
+        """
+        find queries {text} in database
+        if the subject is not found - print error
+        get the number of people signed to the subject
+
+        if the count is enough
+            dont do anything, inform author that he is in queue
+
+        if the count is enough
+            add subject to queued members
+            or remove subject from the author
+
+        update all the values in the database as well
+        """
         if ctx.channel.id not in self.in_channels:
             return
 
@@ -346,6 +394,14 @@ class Reactionmenu(commands.Cog):
             return count
 
         async def get_rep_channel(row, also_create=True):
+            """
+            get the rep_channel
+            get the channel by id
+            or get the channel by name
+            or create the channel if also_create is turned on
+
+            insert the channel into the database
+            """
             rep_channel = self.channel_cache.get(row["rep_channel_id"])
             if rep_channel is None:
                 rep_channel = ctx.get_channel(
@@ -469,6 +525,13 @@ class Reactionmenu(commands.Cog):
     @commands.Cog.listener()
     @needs_database
     async def on_ready(self, *, db: Database = None):
+        """
+        save reactionmenu channels into variable
+        for quicker access
+
+        parse each category and channels
+        sort them alphabetically
+        """
         self.bot.readyCogs[self.__class__.__name__] = False
 
         await db.execute("""
@@ -513,6 +576,10 @@ class Reactionmenu(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        """
+        delete each message in the channel if
+        channel is not updating
+        """
         if message.channel.id not in self.in_channels:
             return
         if self.updating_channels.get(message.channel.id, False):

@@ -25,6 +25,12 @@ class Verification(commands.Cog):
 
     @needs_database
     async def on_raw_reaction_update(self, payload, event_type: str, *, db: Database = None):
+        """
+        user reacted in the verification channel
+        check if user is not on cooldown
+        add or remove the user the @Student role
+        """
+
         if (payload.user_id == self.bot.user.id or
                 payload.channel_id not in self.in_channels):
             return
@@ -76,6 +82,13 @@ class Verification(commands.Cog):
     @commands.Cog.listener()
     @needs_database
     async def on_ready(self, *, db: Database = None):
+        """
+        for each verification channel
+        get the @Student role
+        update the @Student role to all the people
+        that clicked on the verified emoji
+        """
+
         self.bot.readyCogs[self.__class__.__name__] = False
 
         # load channels into memory for faster checks

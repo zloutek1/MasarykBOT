@@ -525,6 +525,14 @@ class ProcessIterator:
 
 
 async def eval_coro(body):
+    """
+    place the body into eval_template.py file
+    save the file into a TemporaryFile
+    execute the file in Process() class
+        quit the file execution after 5 seconds
+        if the QueueFull error occures, there probably was an infinite loop
+        return the output lines if everything went smoothly
+    """
     with open("assets/eval_template.py", "r") as file:
         to_compile = file.read().replace("{{{body}}}", body.strip())
 
@@ -560,7 +568,21 @@ class Eval(commands.Cog):
 
     @commands.command(name='eval')
     async def _eval(self, ctx, *, body):
-        """Evaluates python code"""
+        """
+        check if the body is executable
+        check for blocked_words which could be potentionally harmful
+
+        call eval_coro method
+
+        format embed in format
+            ``` code ```
+            Finished in: 00:00:00
+
+        set color and reaction depending on success / error
+
+        remove play reaction so the code can't be executed
+        again
+        """
         if not self.is_evaluatable_message(body):
             return
 
@@ -668,6 +690,10 @@ class Eval(commands.Cog):
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
+        """
+        check if users clicked the play button on executable code
+        the bot has to be a reactor on the executable message
+        """
         message = reaction.message
         if not self.is_evaluatable_message(message.content):
             return

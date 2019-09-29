@@ -31,6 +31,12 @@ class Leaderboard(commands.Cog):
 
     @needs_database
     async def catchup_leaderboard_get(self, message, leaderboard_data: dict, *, db: Database = None):
+        """
+        format message in format
+            (guild_id, channel_id, author_id, count, created_at)
+        append the data into leaderboard_data
+        if the message is not a bot command
+        """
         c = message.content.lower()
         if c.startswith("!") or c.startswith("pls"):
             return
@@ -41,6 +47,10 @@ class Leaderboard(commands.Cog):
 
     @needs_database
     async def catchup_leaderboard_insert(self, leaderboard_data: dict, *, db: Database = None):
+        """
+        insert the leaderboard_data into the
+        database in chunks
+        """
         leaderboard_data = [key + val for key, val in leaderboard_data.items()]
         chunks = self.chunks(leaderboard_data, 550)
         for i, chunk in enumerate(chunks):
@@ -59,6 +69,11 @@ class Leaderboard(commands.Cog):
 
     @needs_database
     async def catchup_leaderboard_emoji_get(self, message, leaderboard_emoji_data: dict, *, db: Database = None):
+        """
+        format each emoji in message in format
+            (guild_id, channel_id, emoji, count, created_at)
+        append the data into leaderboard_emoji_data
+        """
         c = message.content.lower()
 
         emojis = (re.findall(r"\<\:\w+\:(\d+)\>", c) +
@@ -79,6 +94,10 @@ class Leaderboard(commands.Cog):
 
     @needs_database
     async def catchup_leaderboard_emoji_insert(self, leaderboard_emoji_data, *, db: Database = None):
+        """
+        insert the leaderboard_emoji_data into the
+        database in chunks
+        """
         leaderboard_emoji_data = [key + val for key,
                                   val in leaderboard_emoji_data.items()]
         chunks = self.chunks(leaderboard_emoji_data, 550)
@@ -97,6 +116,11 @@ class Leaderboard(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        """
+        check if core.logger Cog is loaded (has add_catchup_task variable)
+        add catchup_methods to the bot
+        """
+
         self.bot.readyCogs[self.__class__.__name__] = False
 
         if hasattr(self.bot, "add_catchup_task"):
@@ -120,6 +144,21 @@ class Leaderboard(commands.Cog):
                            member if isinstance(member, Member) else
                            channel if isinstance(channel, Member) else
                            None)
+        """
+        get message leaderboard from the database
+        the output format is
+            FI MUNI Leaderboard!
+            {n}.   {count} {name}
+            ... top10 ...
+
+            Your position
+            {n}.   {count} {name}
+            ... +-2 around you
+
+        optional arguments
+        #channel - get messages only in one channel
+        @member - get only the Your position section
+        """
 
         guild = ctx.guild
         author = ctx.message.author
@@ -243,7 +282,20 @@ class Leaderboard(commands.Cog):
 
     @commands.command(name="emojiboard", aliases=("emoji_leaderboard", "leadermoji"))
     @needs_database
-    async def emojiboard(self, ctx, channel: Union[TextChannel, Member] = None, *, db: Database = None):
+    async def emojiboard(self, ctx, channel: TextChannel = None, *, db: Database = None):
+        """
+        get message leaderboard from the database
+        the output format is
+            FI MUNI emoji Leaderboard!
+            {n}.   {emoji} ......... {count}
+            ... top10 ...
+
+            Nitro {count}
+
+        optional arguments
+        #channel - get emojis only in one channel
+        """
+
         channel = channel if isinstance(channel, TextChannel) else None
 
         guild = ctx.guild
@@ -288,7 +340,7 @@ class Leaderboard(commands.Cog):
         def right_justify(text, by=0, pad=" "):
             return pad * (by - len(str(text))) + str(text)
 
-        template = "`{index:0>2}.` {emoji} `{count:.>30}`"
+        template = "`{index:0>2}.` {emoji} `{count:.>20}`"
 
         embed = Embed(color=0x53acf2)
         embed.add_field(
