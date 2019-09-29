@@ -21,6 +21,7 @@ class Reactionmenu(commands.Cog):
         self.users_on_cooldown = {}
         self.channel_cache = {}
         self.in_channels = {}
+        self.updating_channels = {}
 
         self.NEED_REACTIONS = 0
 
@@ -37,6 +38,7 @@ class Reactionmenu(commands.Cog):
         guild = ctx.guild
         channel = ctx.channel
         self.in_channels.add(channel.id)
+        self.updating_channels[channel_id] = True
 
         self.log.info(f"creating reactionmenu {name}")
         # set permissions to current channel
@@ -99,6 +101,7 @@ class Reactionmenu(commands.Cog):
         await db.commit()
         await safe(ctx.message.delete)()
 
+        self.updating_channels[channel_id] = False
         return message.id
 
     @reactionmenu_group.group(name="option", aliases=("opt",))
@@ -109,6 +112,7 @@ class Reactionmenu(commands.Cog):
     @needs_database
     async def option_create(self, ctx, to_menu: int=None, *, text: str, db: Database = None):
         channel = ctx.channel
+        self.updating_channels[channel_id] = True
 
         await db.commit()
         self.log.info(f"creating option {text}")
@@ -205,6 +209,7 @@ class Reactionmenu(commands.Cog):
 
             option_message = await get_DC_message(reactionmenu_message)
             if not option_message:
+                self.updating_channels[channel_id] = False
                 return False
 
             if await modify_content(option_message, options):
@@ -215,6 +220,7 @@ class Reactionmenu(commands.Cog):
         await db.commit()
         await safe(ctx.message.delete)()
 
+        self.updating_channels[channel_id] = False
         return option_message.id
 
     @staticmethod
@@ -307,6 +313,7 @@ class Reactionmenu(commands.Cog):
         if ctx.channel.id not in self.in_channels:
             return
 
+        self.updating_channels[ctx.channel.id] = True
         self.log.info(f"{event_type}: {text} for {ctx.author}")
 
         # get reactionmenu database data
@@ -441,6 +448,7 @@ class Reactionmenu(commands.Cog):
             self.log.debug(f"deleting {str(ctx.author)} from database")
 
         await safe(ctx.message.delete)()
+        self.updating_channels[ctx.channel.id] = False
 
     """---------------------------------------------------------------------------------------------------------------------------"""
 
@@ -505,8 +513,11 @@ class Reactionmenu(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.channel.id in self.in_channels and message.author != self.bot.user:
-            await message.delete()
+        if message.channel.id not in self.in_channels:
+            return
+        if self.updating_channels.get(message.channel.id, False):
+            return
+        await safe(message.delete)(delay=0.2)
 
 
 def setup(bot):
