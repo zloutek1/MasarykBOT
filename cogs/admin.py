@@ -48,6 +48,10 @@ class Admin(commands.Cog):
     @commands.command()
     @has_permissions(administrator=True)
     async def purge_category(self, ctx, category_id: int):
+        """
+        delete a category with all channels withing the category
+        and the category with id of category_id as well
+        """
         await ctx.message.delete()
 
         category = ctx.guild.get_channel(category_id)
@@ -70,6 +74,10 @@ class Admin(commands.Cog):
     @commands.group(name="getlogs", aliases=("logs", "getlog"))
     @has_permissions(administrator=True)
     async def getlogs(self, ctx):
+        """
+        read the file masaryk.log and send
+        the last 10 lines to the channel
+        """
         with open("assets/masaryk.log", "r") as file:
             lines = file.read().splitlines()
             self.last_log_lines = lines[-10:]
@@ -79,6 +87,12 @@ class Admin(commands.Cog):
 
     @getlogs.command(name="-f", aliases=("--follow",))
     async def follow(self, ctx):
+        """
+        read the file masaryk.log and send
+        the last 10 lines to the channel
+        update the message every 2 seconds unless
+        a change does not happen for 200 seconds
+        """
         attempts = 0
         while True:
             with open("assets/masaryk.log", "r") as file:
@@ -133,6 +147,10 @@ class Admin(commands.Cog):
     @commands.command()
     @has_permissions(administrator=True)
     async def load(self, ctx, extension):
+        """
+        load the extension to the bot
+        save it into the loaded_cogs.json file
+        """
         self.bot.load_extension(extension)
 
         with open("assets/loaded_cogs.json", "r") as fileR:
@@ -147,6 +165,10 @@ class Admin(commands.Cog):
     @commands.command()
     @has_permissions(administrator=True)
     async def unload(self, ctx, extension):
+        """
+        unload the extension to the bot
+        remove it from the loaded_cogs.json file
+        """
         self.bot.unload_extension(extension)
 
         with open("assets/loaded_cogs.json", "r") as fileR:
@@ -161,6 +183,10 @@ class Admin(commands.Cog):
     @commands.command()
     @has_permissions(administrator=True)
     async def reload(self, ctx, extension=None):
+        """
+        reload single extension if provided
+        otherwise reload all extensions
+        """
         if extension is not None:
             self.bot.unload_extension(extension)
             self.bot.load_extension(extension)

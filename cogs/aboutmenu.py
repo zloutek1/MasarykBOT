@@ -13,6 +13,11 @@ from emoji import UNICODE_EMOJI
 
 
 class UnicodeEmoji(Converter):
+    """
+    discord.py's way of handling emojis is [Emoji, PartialEmoji, str]
+    UnicodeEmoji accepts str only if it is present
+    in UNICODE_EMOJI list
+    """
     async def convert(self, ctx, argument):
         if isinstance(argument, list):
             for arg in argument:
@@ -37,12 +42,22 @@ class Aboutmenu(commands.Cog):
     @aboutmenu.command()
     @needs_database
     async def remove_user(self, ctx, member: Member, *, db: Database):
+        """
+        remove every reaction from user
+        in #about-menu channels
+        """
+
         await db.execute("SELECT * FROM aboutmenu")
         menus = await db.fetchall()
 
         for menu in menus:
             channel = self.bot.get_channel(menu["channel_id"])
+            if not channel:
+                continue
+
             message = await channel.fetch_message(menu["message_id"])
+            if not message:
+                continue
 
             for reaction in message.reactions:
                 await message.remove_reaction(reaction, member)
@@ -53,6 +68,18 @@ class Aboutmenu(commands.Cog):
                                roles: Greedy[Role],
                                emojis: Greedy[Union[Emoji, PartialEmoji, UnicodeEmoji]],
                                *, text: str, db: Database = None):
+        """
+        create about-menu in current channel
+        @param image_path - path to github/develop/assets/image.ext
+        @param roles - list of discord roles
+        @param emojis - list of discord emojis
+        @param text - text to display in embed
+
+        ensure the len(roles) == len(emojis)
+        disable users to send messages in this channel
+        send an embed with the image
+        add aboutmenu into database
+        """
 
         if not os.path.isfile("assets/" + image_path):
             await safe(ctx.message.delete)(delay=5)
@@ -106,6 +133,11 @@ class Aboutmenu(commands.Cog):
 
     @needs_database
     async def on_raw_reaction_update(self, payload, event_type: str, db: Database = None):
+        """
+        check if user clicked on emoji in aboutmenu channel
+        find option in the database, fetch the discord objects
+        add/remove user the corresponding role
+        """
         # reacted in aboutmenu channel?
         await db.execute("""
             SELECT * FROM aboutmenu
@@ -159,6 +191,14 @@ class Aboutmenu(commands.Cog):
     @commands.Cog.listener()
     @needs_database
     async def on_ready(self, *, db: Database = None):
+        """
+        for each aboutmenu
+        if the channel does not exist, mark the aboutmenu as deleted
+        for each option in aboutmenu
+            get the difference of reactors vs users with the role
+            add/remove users to balance the differences
+        """
+
         self.bot.readyCogs[self.__class__.__name__] = False
 
         await db.execute("""

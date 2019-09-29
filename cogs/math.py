@@ -12,6 +12,10 @@ class Math(commands.Cog):
     """---------------------------------------------------------------------------------------------------------------------------"""
 
     async def get_math_equation(self, equation):
+        """
+        send the text equasion to the API
+        send the result image to channel
+        """
         tex2imgURL = "http://www.sciweavers.org/tex2img.php?eq={}&bc=White&fc=Black&im=png&fs=12&ff=arev&edit=0"
 
         embed = discord.Embed()
@@ -27,9 +31,14 @@ class Math(commands.Cog):
     """---------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.command(name="digraph", aliases=("graphviz",))
-    async def digraph(self, ctx, *, equation):
+    async def digraph(self, ctx, *, equasion):
+        """
+        input equasion in dishraph format into graphviz
+        save the file into assets/graphviz.png
+        send the file to channel
+        """
         src = gz.Source(
-            equation,
+            equasion,
             format="png")
         src.render('assets/graphviz', view=False)
 
@@ -42,6 +51,10 @@ class Math(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        """
+        if message is disgraph compatible
+        add the execution (play) button
+        """
         if not self.is_graphviz_message(message.content):
             return
 
@@ -52,6 +65,11 @@ class Math(commands.Cog):
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
+        """
+        check if users clicked the play button on executable code
+        the bot has to be a reactor on the executable message
+        """
+
         message = reaction.message
         if not self.is_graphviz_message(message.content):
             return
