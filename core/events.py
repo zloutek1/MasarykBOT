@@ -49,6 +49,19 @@ class Events(commands.Cog):
 
     @commands.command()
     async def info(self, ctx):
+        """
+        send an embed containing info in format
+        Server_id           Owner
+
+        Channels
+        text | voice
+        Total:
+
+        Members
+        online | idle | dnd | streaming | offline
+        Total:
+        """
+
         status = {}
         for member in ctx.guild.members:
             status[member.status.name] = status.get(member.status.name, 0) + 1
@@ -84,7 +97,7 @@ class Events(commands.Cog):
             inline=False
         )
         embed.add_field(
-            name="members",
+            name="Members",
             value=("{online} {online_count} " +
                    "{idle} {idle_count} " +
                    "{dnd} {dnd_count} " +
@@ -114,6 +127,12 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
+        """
+        format python traceback into a more descriptive
+        format, put it into an embed and send it
+        to error_channels
+        """
+
         ignored = (
             commands.NoPrivateMessage, commands.DisabledCommand, commands.CheckFailure,
             commands.CommandNotFound, commands.UserInputError
@@ -164,6 +183,12 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
+        """
+        Send a welcome message to DM of the new member
+        with the information what to do when they join
+        the server
+        """
+
         await member.send("""
 **Vítej na discordu Fakulty Informatiky Masarykovy Univerzity v Brně**
 
