@@ -12,6 +12,9 @@ import core.utils.get
 from core.utils.db import Database
 from core.utils.checks import needs_database, safe
 
+from dotenv import load_dotenv
+load_dotenv()
+
 
 class Reactionmenu(commands.Cog):
     def __init__(self, bot):
@@ -22,7 +25,7 @@ class Reactionmenu(commands.Cog):
         self.in_channels = set()
         self.updating_channels = {}
 
-        self.NEED_REACTIONS = 0
+        self.NEED_REACTIONS = int(os.getenv("NEED_REACTIONS"))
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -358,6 +361,10 @@ class Reactionmenu(commands.Cog):
         """
         self.updating_channels[ctx.channel.id] = True
         self.log.info(f"{event_type}: {text} for {ctx.author}")
+        await safe(ctx.message.delete)()
+
+        if ctx.channel.id not in self.in_channels:
+            return
 
         # get reactionmenu database data
         await db.execute("""
@@ -385,7 +392,7 @@ class Reactionmenu(commands.Cog):
             await db.execute("""
                 SELECT COUNT(*) AS `count` FROM reactionmenu_users
                 WHERE channel_id = %s AND `text` LIKE %s
-            """, (row["channel_id"], text))
+            """, (ctx.channel.id, text))
             count = (await db.fetchone())["count"]
             return count
 
@@ -499,7 +506,6 @@ class Reactionmenu(commands.Cog):
             await db.commit()
             self.log.info(f"deleting {str(ctx.author)} from database")
 
-        await safe(ctx.message.delete)()
         self.updating_channels[ctx.channel.id] = False
 
     """---------------------------------------------------------------------------------------------------------------------------"""
