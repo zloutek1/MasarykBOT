@@ -1,4 +1,5 @@
 from discord.ext import commands
+from discord.ext.commands import has_permissions
 
 from datetime import datetime, timedelta
 
@@ -18,6 +19,7 @@ class Verification(commands.Cog):
     """---------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.command()
+    @has_permissions(administrator=True)
     async def add_verification_message(self, ctx, message_id: int):
         self.in_channels.add(message_id)
 
