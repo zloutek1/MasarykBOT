@@ -2,6 +2,24 @@ import sys
 
 
 class GetModule(sys.modules[__name__].__class__):
+    """
+    core.utils.get method
+
+    retrieves objects from iterable that match a condition
+    provided.
+
+    examples:
+    ```
+        users = [User(name="Bob"), ...]
+        get(users, name="Bob")
+
+        users = [{"name": "Bob"}, ...]
+        get(users, name="Bob")
+
+        users = [User(name="Bob"), ...]
+        get(users, key=lambda user: user.name == "Bob")
+    ```
+    """
     def __call__(self, iterable, **attrs):
         result = []
         for item in iterable:

@@ -5,6 +5,11 @@ import re
 
 
 class Context(commands.Context):
+    """
+    custom Context object passed in every ctx variable
+    in your commands. provides some useful getter shortcuts
+    """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

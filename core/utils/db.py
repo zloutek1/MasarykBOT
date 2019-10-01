@@ -11,6 +11,11 @@ class DatabaseConnectionError(OperationalError):
 
 
 def _handle_errors(func):
+    """
+    when database raises an error with a certain error number
+    reraise a custom error with a more readable name
+    for better code readability
+    """
     async def wrapper(*args, **kwargs):
         try:
             return await func(*args, **kwargs)
@@ -35,6 +40,11 @@ class Database:
     @classmethod
     @_handle_errors
     async def connect(cls, loop=None):
+        """
+        establish a database connection based on
+        the data set in the .env file
+        """
+
         db = Database()
 
         if not loop:
@@ -55,6 +65,19 @@ class Database:
         return db
 
     def __getattr__(self, attr):
+        """
+        union of unique conn and cursor attributes for
+        easier access.
+
+        for example:
+            await db.execute calls db.cursor.execute
+            await db.commit  calls db.conn.commit
+
+        if the attribute is both in conn and cursor and error
+        will be raised to specify which (conn or cursor) was meant
+        to be used.
+        """
+
         calling_conn = hasattr(self.conn, attr)
         calling_cursor = hasattr(self.cursor, attr)
 

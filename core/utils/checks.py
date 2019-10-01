@@ -6,6 +6,24 @@ from core.utils.db import Database
 
 
 def needs_database(func):
+    """
+    this function is a wrapper to a command or an event function
+    this tells the bot that the function will access the
+    database in its body.
+    @needs_database established a database connection and passes
+    the Databse object into a db variable in your function.
+
+    example:
+    ```
+        @commands.command()
+        @needs_database
+        async def my_command(self, ctx, *args, *, db: Database=None)
+
+        @commands.Cog.listener()
+        @needs_database
+        async def my_event(self, *args, *, db: Database=None)
+    ```
+    """
     @wraps(func)
     async def wrapper(self, *args, **kwargs):
         if not hasattr(self.bot, "db"):
@@ -29,6 +47,11 @@ def needs_database(func):
 
 
 def safe(func):
+    """
+    a shortcut for try: except Notfound:
+    used mostly to delete a message without an error
+    used as `safe(ctx.message.delete)()`
+    """
     @wraps(func)
     async def wrapper(*args, **kwargs):
         try:
