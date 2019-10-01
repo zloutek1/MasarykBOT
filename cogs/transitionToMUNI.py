@@ -220,7 +220,8 @@ class TransitionToMUNI(commands.Cog):
 
             embed = Embed(
                 description="""
-                :warning: předmět si múžeš zapsat každých 5 sekund
+                :warning: předmět si múžeš zapsat/zrušit každých 5 sekund
+                příkazem `!subject add/remove <subject_code>`
 
                 :point_down: Zapiš si své předměty zde :point_down:""".strip(),
                 color=Color(0xFFD800))
