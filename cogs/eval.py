@@ -586,7 +586,7 @@ class Eval(commands.Cog):
         if not self.is_evaluatable_message(body):
             return
 
-        blocked_words = ['.delete()', 'os', 'subprocess', 'open',
+        blocked_words = ['delete', 'os', 'subprocess', 'open',
                          'history()', '("token")', "('token')"]
 
         if ctx.author.id != self.bot.owner_id:
