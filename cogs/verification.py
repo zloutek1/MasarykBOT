@@ -117,7 +117,12 @@ class Verification(commands.Cog):
                         async for user in reaction.users():
                             member = core.utils.get(
                                 channel.guild.members, id=user.id)
-                            if member:
+                            if not member:
+                                continue
+
+                            has_role = core.utils.get(
+                                member.roles, name="Student")
+                            if not has_role:
                                 await member.add_roles(student_role)
 
         self.log.info(f"Caught up verification")
