@@ -19,7 +19,7 @@ class Reactionmenu(commands.Cog):
         self.log = logging.getLogger(__name__)
 
         self.channel_cache = {}
-        self.in_channels = {}
+        self.in_channels = set()
         self.updating_channels = {}
 
         self.NEED_REACTIONS = 0
@@ -51,7 +51,6 @@ class Reactionmenu(commands.Cog):
 
         guild = ctx.guild
         channel = ctx.channel
-        self.in_channels.add(channel.id)
         self.updating_channels[channel.id] = True
 
         self.log.info(f"creating reactionmenu {name}")
@@ -59,13 +58,12 @@ class Reactionmenu(commands.Cog):
         self.log.info("setting permission to current channel")
         perms = {
             ctx.get_role("Student"): PermissionOverwrite(
-                add_reactions=False, send_messages=True),
+                add_reactions=False, send_messages=False),
             self.bot.user: PermissionOverwrite(
                 add_reactions=True, send_messages=True)
         }
         for target, overwrite in perms.items():
             await channel.set_permissions(target, overwrite=overwrite)
-        await channel.edit(slowmode_delay=5)
 
         # create category and set permissions
         self.log.info("createing category with permissions")
@@ -96,7 +94,7 @@ class Reactionmenu(commands.Cog):
         # insert into database
         self.log.info("inserting reactionmenu into database")
         await db.execute("""
-            INSERT INTO reactionmenu (
+            INSERT INTO reactionmenu_sections (
                 channel_id, message_id, rep_category_id, name)
             VALUES (%s, %s, %s, %s)
         """, (channel.id, message.id, category.id, name))
@@ -141,7 +139,7 @@ class Reactionmenu(commands.Cog):
         async def select_reactionmenu_from_db(to_menu):
             self.log.info("selecting reactionmenu from database")
             await db.execute("""
-                SELECT * FROM reactionmenu
+                SELECT * FROM reactionmenu_sections
                 WHERE message_id = %s
             """, (to_menu,))
             reactionmenu = await db.fetchone()
@@ -308,7 +306,7 @@ class Reactionmenu(commands.Cog):
                     rep_category = ctx.get_category(text + "+")
 
                 await db.execute("""
-                    INSERT INTO reactionmenu
+                    INSERT INTO reactionmenu_sections
                         (channel_id, message_id, rep_category_id, name)
                     VALUES (%s, %s, %s, %s)
                 """, (channel.id, message.id, rep_category.id, text))
@@ -358,9 +356,6 @@ class Reactionmenu(commands.Cog):
 
         update all the values in the database as well
         """
-        if ctx.channel.id not in self.in_channels:
-            return
-
         self.updating_channels[ctx.channel.id] = True
         self.log.info(f"{event_type}: {text} for {ctx.author}")
 
@@ -371,8 +366,9 @@ class Reactionmenu(commands.Cog):
                 WHERE `text` LIKE %s AND deleted_at IS NULL
                 LIMIT 1) AS opts
             INNER JOIN reactionmenu_messages AS msgs USING (message_id)
-            INNER JOIN reactionmenu AS menu ON (menu.message_id = msgs.reactionmenu_message_id)
-            WHERE channel_id = %s
+            INNER JOIN reactionmenu_sections AS secs ON (secs.message_id = msgs.reactionmenu_message_id)
+            INNER JOIN reactionmenu AS menu ON (menu.section_channel_id = secs.channel_id)
+            WHERE menu.message_channel_id = %s
         """, (text + "%", ctx.channel.id))
         row = await db.fetchone()
         if not row:
@@ -492,7 +488,7 @@ class Reactionmenu(commands.Cog):
                     f"rep_channel to remove user from {rep_channel}")
 
                 if rep_channel is not None:
-                    await rep_channel.set_permissions(ctx.author, read_messages=False)
+                    await rep_channel.set_permissions(ctx.author, read_messages=None)
                     self.log.info(
                         f"disabling permission from {str(ctx.author)}")
 
@@ -534,17 +530,23 @@ class Reactionmenu(commands.Cog):
         """
         self.bot.readyCogs[self.__class__.__name__] = False
 
+        await db.execute("SELECT * FROM reactionmenu WHERE deleted_at IS NULL")
+        rows = await db.fetchall()
+        for row in rows:
+            section_channel = self.bot.get_channel(row["section_channel_id"])
+            message_channel = self.bot.get_channel(row["message_channel_id"])
+
+            self.in_channels.add(message_channel.id)
+
         await db.execute("""
             SELECT channel_id, rep_category_id, opts.* FROM (
                 SELECT * FROM reactionmenu_options
                 WHERE deleted_at IS NULL) AS opts
             INNER JOIN reactionmenu_messages AS msgs USING (message_id)
-            INNER JOIN reactionmenu AS menu ON (menu.message_id = msgs.reactionmenu_message_id)
+            INNER JOIN reactionmenu_sections AS secs ON (secs.message_id = msgs.reactionmenu_message_id)
             ORDER BY `text` DESC
         """)
         rows = await db.fetchall()
-
-        self.in_channels = set(row["channel_id"] for row in rows)
 
         self.log.info("Starting reordering channels")
         categories = {}

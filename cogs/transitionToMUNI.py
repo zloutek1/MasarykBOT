@@ -20,6 +20,7 @@ class TransitionToMUNI(commands.Cog):
         await self.init_aboutmenu(ctx)
         await self.init_reactionmenu(ctx)
 
+        await self.bot.trigger_event("on_ready")
         await safe(ctx.message.delete)()
 
     async def init_aboutmenu(self, ctx):
@@ -131,101 +132,111 @@ class TransitionToMUNI(commands.Cog):
         guild = ctx.guild
         channel = ctx.channel
 
-        menu_channel = ctx.get_channel("vyber-predmetov")
+        menu_channel = ctx.get_channel("předměty")
         if not menu_channel:
-            menu_channel = await ctx.guild.create_text_channel("vyber-predmetov")
+            menu_channel = await ctx.guild.create_text_channel("předměty")
+            await self.bot.trigger_event("on_guild_channel_create", menu_channel)
 
-        elif menu_channel.last_message_id:
-            await ctx.send(f"[Reactionmenu] {menu_channel.mention} not empty. Skipping", delete_after=5)
-            return False
+        """
+        create channel for commands
+        """
 
-        perms = {
-            guild.default_role: discord.PermissionOverwrite(
-                read_messages=False),
-            self.bot.user: discord.PermissionOverwrite(
-                read_messages=True)
-        }
-        for target, overwrite in perms.items():
-            await menu_channel.set_permissions(target, overwrite=overwrite)
+        menu_text_channel = ctx.get_channel("výběr-předmětů")
+        if not menu_text_channel:
+            menu_text_channel = await ctx.guild.create_text_channel("výběr-předmětů")
+            await self.bot.trigger_event("on_guild_channel_create", menu_text_channel)
 
-        cog = self.bot.get_cog("Reactionmenu")
-        reactionmenu_create = self.bot.get_command("reactionmenu create")
-        option_add = self.bot.get_command("reactionmenu option add")
-        ctx.channel = menu_channel
+        await db.execute("INSERT INTO reactionmenu VALUES (%s, %s, NULL)", (menu_channel.id, menu_text_channel.id))
+        await db.commit()
 
-        # load data
-        with open("assets/vyber-predmetov.json") as fileR:
-            data = json.load(fileR)
+        """
+        setup
+        """
 
-        for section, options in data["sections"].items():
-            # create menu
-            menu_id = await reactionmenu_create.callback(cog, ctx, name=section)
-            if not menu_id:
-                await ctx.send("[Reactionmenu] Error while creating section")
-                continue
+        async def setup_menu():
+            """
+            get reactionmenu cog
+            """
 
-            perms = {
-                guild.default_role: discord.PermissionOverwrite(
-                    read_messages=False),
-                self.bot.user: discord.PermissionOverwrite(
-                    read_messages=True)
-            }
-            for target, overwrite in perms.items():
-                await menu_channel.set_permissions(target, overwrite=overwrite)
+            cog = self.bot.get_cog("Reactionmenu")
+            reactionmenu_create = self.bot.get_command("reactionmenu create")
+            option_add = self.bot.get_command("reactionmenu option add")
+            ctx.channel = menu_channel
 
-            # get reactionmenu
-            await db.commit()
-            await db.execute("""
-                SELECT * FROM reactionmenu
-                WHERE message_id = %s
-                LIMIT 1
-            """, (menu_id,))
-            reactionmenu_db = await db.fetchone()
+            # load data
+            with open("assets/vyber-predmetov.json") as fileR:
+                data = json.load(fileR)
 
-            # parse options
-            for i, option in enumerate(options):
-                option_id = await option_add.callback(cog, ctx, menu_id, text=option)
-
-                # channel already exists? get it
-                code = option.split(" ", 1)[0].lower()
-                chnls = list(filter(lambda ch: ch.name.startswith(
-                    code), guild.text_channels))
-                if not chnls:
+            for section, options in data["sections"].items():
+                # create menu
+                menu_id = await reactionmenu_create.callback(cog, ctx, name=section)
+                if not menu_id:
+                    await ctx.send("[Reactionmenu] Error while creating section")
                     continue
-                ch = chnls[0]
 
-                category = guild.get_channel(
-                    reactionmenu_db["rep_category_id"])
-
-                old_category = ch.category
-                await ch.edit(
-                    category=category,
-                    sync_permissions=True
-                )
-                if len(old_category.channels) == 0:
-                    await old_category.delete()
-
-                await db.execute("""
-                    UPDATE reactionmenu_options
-                    SET rep_channel_id = %s
-                    WHERE message_id = %s AND `text` LIKE %s
-                """, (ch.id, option_id, option))
+                # get reactionmenu
                 await db.commit()
+                await db.execute("""
+                    SELECT * FROM reactionmenu_sections
+                    WHERE message_id = %s
+                    LIMIT 1
+                """, (menu_id,))
+                reactionmenu_db = await db.fetchone()
 
-            perms = {
-                guild.default_role: discord.PermissionOverwrite(
-                    read_messages=None),
-                self.bot.user: discord.PermissionOverwrite(
-                    read_messages=True)
-            }
-            for target, overwrite in perms.items():
-                await menu_channel.set_permissions(target, overwrite=overwrite)
+                # parse options
+                for i, option in enumerate(options):
+                    option_id = await option_add.callback(cog, ctx, menu_id, text=option)
 
-        embed = Embed(
-            title="Pro Zobrazení/Schování předmětu použij `!subject show/hide <code>`",
-            description="Upozorňujeme, že cooldown na správu je **5 sekund**",
-            color=Color.blurple())
-        await menu_channel.send(embed=embed)
+                    # channel already exists? get it
+                    code = option.split(" ", 1)[0].lower()
+                    chnls = list(filter(lambda ch: ch.name.startswith(
+                        code), guild.text_channels))
+                    if not chnls:
+                        continue
+                    ch = chnls[0]
+
+                    category = guild.get_channel(
+                        reactionmenu_db["rep_category_id"])
+
+                    old_category = ch.category
+                    await ch.edit(
+                        category=category,
+                        sync_permissions=True
+                    )
+                    if len(old_category.channels) == 0:
+                        await old_category.delete()
+
+                    await db.execute("""
+                        UPDATE reactionmenu_options
+                        SET rep_channel_id = %s
+                        WHERE message_id = %s AND `text` LIKE %s
+                    """, (ch.id, option_id, option))
+                    await db.commit()
+
+        async def setup_messages():
+            """
+            send first message
+            """
+
+            embed = Embed(
+                description="""
+                :warning: předmět si múžeš zapsat každých 5 sekund
+
+                :point_down: Zapiš si své předměty zde :point_down:""".strip(),
+                color=Color(0xFFD800))
+            await menu_text_channel.send(embed=embed)
+
+            await menu_text_channel.edit(slowmode_delay=5)
+
+        if menu_channel.last_message_id:
+            await ctx.send(f"[Reactionmenu] {menu_channel.mention} not empty. Skipping", delete_after=5)
+        else:
+            await setup_menu()
+
+        if menu_text_channel.last_message_id:
+            await ctx.send(f"[Reactionmenu] {menu_text_channel.mention} not empty. Skipping", delete_after=5)
+        else:
+            await setup_messages()
 
         ctx.channel = channel
         return True
