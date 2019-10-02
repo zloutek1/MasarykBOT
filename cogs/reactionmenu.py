@@ -2,9 +2,9 @@ import os
 import logging
 from PIL import Image, ImageFont, ImageDraw
 from datetime import datetime, timedelta
+from typing import Union
 
-
-from discord import File, PermissionOverwrite, Embed, Color, TextChannel
+from discord import File, PermissionOverwrite, Embed, Color, TextChannel, User
 from discord.ext import commands
 from discord.ext.commands import has_permissions
 
@@ -521,6 +521,51 @@ class Reactionmenu(commands.Cog):
     @subject.command(name="hide", aliases=("del", "remove"))
     async def subject_remove(self, ctx, *, text):
         await self.subject_update(ctx, text, event_type="REACTION_REMOVE")
+
+    """---------------------------------------------------------------------------------------------------------------------------"""
+
+    @subject.command(name="status", aliases=("stats", ))
+    @needs_database
+    async def subject_status(self, ctx, *, query_by: Union[User, str]=10, db: Database):
+        top10 = True if query_by == 10 else False
+        user = True if isinstance(query_by, User) else False
+        subject = True if isinstance(query_by, str) else False
+
+        if top10:
+            query = """
+                SELECT COUNT(*) AS `count`, users.* FROM reactionmenu_users AS users
+                GROUP BY `text`
+                ORDER BY `count` DESC
+                LIMIT %s
+            """
+            query_by = 10
+        elif user:
+            query = """
+                SELECT "-" AS `count`, users.* FROM reactionmenu_users AS users
+                WHERE user_id = %s
+            """
+            query_by = query_by.id
+        elif subject:
+            query = """
+                SELECT COUNT(*) AS `count`, users.* FROM reactionmenu_users AS users
+                WHERE `text` LIKE %s
+                GROUP BY `text`
+                ORDER BY `count` DESC
+            """
+            query_by = query_by + "%"
+
+        await db.execute(query, (query_by,))
+        rows = await db.fetchall()
+
+        txt = ""
+        for row in rows:
+            txt += "`{count}` {subject}\n".format(
+                count=row["count"], subject=row["text"])
+
+        if txt != "":
+            await ctx.send(txt)
+        else:
+            await ctx.send("got empty output.")
 
     """---------------------------------------------------------------------------------------------------------------------------"""
 
