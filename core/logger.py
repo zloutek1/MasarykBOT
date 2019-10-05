@@ -1,7 +1,8 @@
+import asyncio
 import logging
 
 import discord
-from discord.ext import commands
+from discord.ext import tasks, commands
 
 import json
 
@@ -16,6 +17,8 @@ class Logger(commands.Cog):
 
         self.bot.add_catchup_task = self.add_catchup_task
         self.catchup_tasks = {}
+
+        self.printer.start()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -324,33 +327,12 @@ class Logger(commands.Cog):
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
-    """
-    @commands.Cog.listener()
-    @needs_database
-    async def on_message(self, message, db: Database = None):
-        message_data = (message.channel.id, message.author.id,
-                        message.id, message.content, message.created_at)
+    @tasks.loop(hours=2.0)
+    async def printer(self):
+        await self.bot.wait_until_ready()
 
-        await db.execute(\"""
-            INSERT INTO message
-                (channel_id, author_id, id, content, created_at)
-            VALUES (%s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE id=id
-        \""", message_data)
-
-        for task_name in self.catchup_tasks:
-            catchup_task = self.catchup_tasks[task_name]
-
-            catchup_task_get = catchup_task["get"]
-            catchup_task_insert = catchup_task["insert"]
-
-            await catchup_task_get(message, catchup_task["data"])
-            await catchup_task_insert(catchup_task["data"])
-
-            catchup_task["data"].clear()
-
-        await db.commit()
-    """
+        if all(self.bot.readyCogs.values()) or len(self.bot.readyCogs.values()) == 0:
+            await self.bot.trigger_event("on_ready")
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
