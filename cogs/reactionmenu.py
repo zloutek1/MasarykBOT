@@ -516,10 +516,12 @@ class Reactionmenu(commands.Cog):
 
     @subject.command(name="show", aliases=("create", "add"))
     async def subject_add(self, ctx, *, text):
+        text = text.strip("<").strip(">")
         await self.subject_update(ctx, text, event_type="REACTION_ADD")
 
     @subject.command(name="hide", aliases=("del", "remove"))
     async def subject_remove(self, ctx, *, text):
+        text = text.strip("<").strip(">")
         await self.subject_update(ctx, text, event_type="REACTION_REMOVE")
 
     """---------------------------------------------------------------------------------------------------------------------------"""
