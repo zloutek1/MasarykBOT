@@ -641,6 +641,23 @@ class Reactionmenu(commands.Cog):
             return
         await safe(message.delete)(delay=0.2)
 
+    @commands.command()
+    async def resend_subject_message(self, ctx):
+        menu_text_channel = ctx.get_channel("výběr-předmětů")
+        if not menu_text_channel:
+            return
+
+        self.updating_channels[menu_text_channel.id] = True
+        embed = Embed(
+            description="""
+                :warning: předmět si múžeš zapsat/zrušit každých 5 sekund
+                příkazem `!subject add/remove <subject_code>`
+
+                :point_down: Zapiš si své předměty zde :point_down:""".strip(),
+            color=Color(0xFFD800))
+        await menu_text_channel.send(embed=embed)
+        self.updating_channels[menu_text_channel.id] = False
+
 
 def setup(bot):
     bot.add_cog(Reactionmenu(bot))
