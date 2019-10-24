@@ -17,6 +17,7 @@ class Events(commands.Cog):
     def __init__(self, bot: Bot):
         self.bot = bot
         self.log = logging.getLogger(__name__)
+        self.running_since = datetime.datetime.now()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -31,7 +32,8 @@ class Events(commands.Cog):
             print("\n    [Events] username and avatar changed successfully\n")
 
         except OSError as e:
-            print("\nERR [Events] Failed to set new name and avatar to the botn")
+            print(
+                "\nERR [Events] Failed to set new name and avatar to the botn")
 
         except discord.errors.HTTPException as e:
             pass
@@ -44,6 +46,18 @@ class Events(commands.Cog):
     @commands.command()
     async def ping(self, ctx):
         await ctx.send('Pong! {0} ms'.format(round(self.bot.latency * 1000, 1)))
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @commands.command()
+    async def pong(self, ctx):
+        await ctx.send('Ping! {0} ms'.format(round(self.bot.latency * 1000, 1)))
+
+    """--------------------------------------------------------------------------------------------------------------------------"""
+
+    @commands.command()
+    async def uptime(self, ctx):
+        await ctx.send('I have been running for {0}'.format(str(datetime.datetime.now() - self.uptime)))
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -192,7 +206,8 @@ class Events(commands.Cog):
         await member.send("""
 **Vítej na discordu Fakulty Informatiky Masarykovy Univerzity v Brně**
 
-❯ Pro vstup je potřeba přečíst #pravidla a **KLIKNOUT NA {Verification} REAKCI!!!**
+#pravidla a **KLIKNOUT NA {Verification} REAKCI!!!**
+❯ Pro vstup je potřeba přečíst
 ❯ Když jsem {offline_tag} offline, tak ne všechno proběhne hned.
 ❯ Pokud nedostanete hned roli @Student, tak zkuste odkliknout, chvíli počkat a znova zakliknout.
 """.format(
