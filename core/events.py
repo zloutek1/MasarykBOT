@@ -57,7 +57,7 @@ class Events(commands.Cog):
 
     @commands.command()
     async def uptime(self, ctx):
-        await ctx.send('I have been running for {0}'.format(str(datetime.datetime.now() - self.uptime)))
+        await ctx.send('I have been running for {0}'.format(str(datetime.datetime.now() - self.running_since)))
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
