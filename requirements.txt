@@ -5,3 +5,4 @@ emoji
 Pillow
 python-dotenv
 graphviz
+sympy
