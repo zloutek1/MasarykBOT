@@ -1,8 +1,13 @@
+import os
 import discord
 from discord.ext import commands
 
 import urllib
 import graphviz as gz
+
+from typing import Optional
+from sympy import symbols, simplify
+from sympy.plotting import plot
 
 
 class Math(commands.Cog):
@@ -16,17 +21,40 @@ class Math(commands.Cog):
         send the text equasion to the API
         send the result image to channel
         """
-        tex2imgURL = "http://www.sciweavers.org/tex2img.php?eq={}&bc=White&fc=Black&im=png&fs=12&ff=arev&edit=0"
+        tex2imgURL = "http://www.sciweavers.org/tex2img.php?eq={}&bc=Black&fc=White&im=png&fs=18&ff=arev&edit=0"
+        urllib.request.urlretrieve(tex2imgURL.format(urllib.parse.quote(equation)),
+                                   "assets/latex.png")
 
-        embed = discord.Embed()
-        embed.set_image(url=tex2imgURL.format(urllib.parse.quote(equation)))
-
-        return embed
+        return discord.File("assets/latex.png")
 
     @commands.command()
     async def latex(self, ctx, *, equation):
         embed = await self.get_math_equation(equation)
-        await ctx.send(embed=embed)
+        await ctx.send(file=embed)
+        os.remove("assets/latex.png")
+
+    """---------------------------------------------------------------------------------------------------------------------------"""
+
+    @commands.command()
+    async def plot(self, ctx, from_: Optional[float]=-10, to_: Optional[float]=10, *, inp: str):
+        """
+            !plot from_range to_range equation1; equation2; equation3; ...
+
+            example:
+                !plot -10 10 x^2; x^3; x^4
+        """
+        try:
+            x, y = symbols('x y')
+            equations = inp.split(";")
+            fx = plot(*[simplify(eq)
+                        for eq in equations], (x, from_, to_), show=False)
+
+            fx.save("assets/plot.png")
+            await ctx.send(file=discord.File("assets/plot.png"))
+            os.remove("assets/plot.png")
+
+        except Exception as e:
+            await ctx.send(f"{e}")
 
     """---------------------------------------------------------------------------------------------------------------------------"""
 
