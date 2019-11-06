@@ -194,9 +194,10 @@ class Leaderboard(commands.Cog):
             DROP TEMPORARY TABLE IF EXISTS last_table;
 
             SET @desired_id = %(author_id)s;
+            SET @row_number = 0;
             CREATE TEMPORARY TABLE lookup SELECT `row_number`, author_id, author, `count` FROM (
                 SELECT
-                    (ROW_NUMBER() OVER (ORDER BY `count` DESC)) AS `row_number`,
+                    (@row_number:=@row_number + 1) AS `row_number`,
                     author_id,
                     author,
                     `count`
