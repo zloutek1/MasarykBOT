@@ -589,7 +589,8 @@ class Reactionmenu(commands.Cog):
             section_channel = self.bot.get_channel(row["section_channel_id"])
             message_channel = self.bot.get_channel(row["message_channel_id"])
 
-            self.in_channels.add(message_channel.id)
+            if message_channel is not None:
+                self.in_channels.add(message_channel.id)
 
         await db.execute("""
             SELECT channel_id, rep_category_id, opts.* FROM (
