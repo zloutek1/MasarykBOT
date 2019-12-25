@@ -30,44 +30,6 @@ class Leaderboard(commands.Cog):
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @needs_database
-    async def catchup_leaderboard_get(self, message, leaderboard_data: dict, *, db: Database = None):
-        """
-        format message in format
-            (guild_id, channel_id, author_id, count, created_at)
-        append the data into leaderboard_data
-        if the message is not a bot command
-        """
-        c = message.content.lower()
-        if c.startswith("!") or c.startswith("pls"):
-            return
-
-        key = (message.guild.id, message.channel.id, message.author.id)
-        entry = leaderboard_data.get(key, (0, None))
-        leaderboard_data[key] = (entry[0] + 1, message.created_at)
-
-    @needs_database
-    async def catchup_leaderboard_insert(self, leaderboard_data: dict, *, db: Database = None):
-        """
-        insert the leaderboard_data into the
-        database in chunks
-        """
-        leaderboard_data = [key + val for key, val in leaderboard_data.items()]
-        chunks = self.chunks(leaderboard_data, 550)
-        for i, chunk in enumerate(chunks):
-            await db.executemany("""
-                INSERT IGNORE INTO leaderboard
-                    (guild_id, channel_id, author_id, messages_sent, `timestamp`)
-                VALUES (%s, %s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE messages_sent = messages_sent+1
-            """, chunk)
-
-            await db.commit()
-            self.log.info(
-                f"Saved {(i + 1) * 550} rows for leaderboard to database")
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @needs_database
     async def catchup_leaderboard_emoji_get(self, message, leaderboard_emoji_data: dict, *, db: Database = None):
         """
         format each emoji in message in format
@@ -125,9 +87,6 @@ class Leaderboard(commands.Cog):
 
         if hasattr(self.bot, "add_catchup_task"):
             self.bot.add_catchup_task(
-                "leaderboard", self.catchup_leaderboard_get, self.catchup_leaderboard_insert, task_data=dict())
-
-            self.bot.add_catchup_task(
                 "leaderboard_emoji", self.catchup_leaderboard_emoji_get, self.catchup_leaderboard_emoji_insert, task_data=dict())
 
         self.bot.readyCogs[self.__class__.__name__] = True
@@ -160,10 +119,9 @@ class Leaderboard(commands.Cog):
         @member - get only the Your position section
         """
 
-        guild = ctx.guild
         author = ctx.message.author
 
-        params = {"guild_id": guild.id}
+        params = {}
 
         if channel:
             params["channel_id"] = channel.id
@@ -181,7 +139,7 @@ class Leaderboard(commands.Cog):
             FROM leaderboard AS ldb
             INNER JOIN `member` AS mem
             ON mem.id = ldb.author_id
-            WHERE guild_id = %(guild_id)s {'AND channel_id = %(channel_id)s' if channel is not None else ''}
+            WHERE {'channel_id = %(channel_id)s' if channel is not None else ''}
             GROUP BY author_id
             ORDER BY `count` DESC
             LIMIT 10
@@ -209,7 +167,7 @@ class Leaderboard(commands.Cog):
                     FROM leaderboard AS ldb
                     INNER JOIN `member` AS mem
                     ON mem.id = ldb.author_id
-                    WHERE guild_id = %(guild_id)s {'AND channel_id = %(channel_id)s' if channel is not None else ''}
+                    WHERE {'channel_id = %(channel_id)s' if channel is not None else ''}
                     GROUP BY author_id
                     ORDER BY `count` DESC) AS sel
                 ) AS sel;
