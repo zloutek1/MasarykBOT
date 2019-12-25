@@ -77,10 +77,14 @@ class MasarykBot(Bot):
         fmt = logging.Formatter(
             '[{asctime}] [{levelname:<7}] {name}: {message}', dt_fmt, style='{')
 
-        handler = logging.FileHandler(
-            filename='assets/masaryk.log', encoding='utf-8', mode='w')
+        handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(fmt)
         log.addHandler(handler)
+
+        # handler = logging.FileHandler(
+        #     filename='assets/masaryk.log', encoding='utf-8', mode='w')
+        # handler.setFormatter(fmt)
+        # log.addHandler(handler)
 
         # handler = LoggingHandler(bot=self)
         # handler.setFormatter(fmt)
