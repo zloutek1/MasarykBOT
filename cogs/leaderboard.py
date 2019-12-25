@@ -139,7 +139,7 @@ class Leaderboard(commands.Cog):
             FROM leaderboard AS ldb
             INNER JOIN `member` AS mem
             ON mem.id = ldb.author_id
-            WHERE {'channel_id = %(channel_id)s' if channel is not None else ''}
+            WHERE {'channel_id = %(channel_id)s' if channel is not None else '1'}
             GROUP BY author_id
             ORDER BY `count` DESC
             LIMIT 10
@@ -167,7 +167,7 @@ class Leaderboard(commands.Cog):
                     FROM leaderboard AS ldb
                     INNER JOIN `member` AS mem
                     ON mem.id = ldb.author_id
-                    WHERE {'channel_id = %(channel_id)s' if channel is not None else ''}
+                    WHERE {'channel_id = %(channel_id)s' if channel is not None else '1'}
                     GROUP BY author_id
                     ORDER BY `count` DESC) AS sel
                 ) AS sel;
