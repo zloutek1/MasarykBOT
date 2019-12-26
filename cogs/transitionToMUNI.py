@@ -243,6 +243,7 @@ class TransitionToMUNI(commands.Cog):
         return True
 
     @commands.command()
+    @has_permissions(administrator=True)
     async def resend_join_message(self, ctx):
         members = ctx.guild.members
         role = ctx.get_role("Student")
