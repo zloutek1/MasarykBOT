@@ -27,6 +27,7 @@ class Admin(commands.Cog):
 
     @commands.command(aliases=['clearconsole', 'cc', 'clear'])
     @has_permissions(administrator=True)
+    @commands.is_owner()
     async def cleartrace(self, ctx):
         """Clear the console."""
         if os.name == 'nt':
@@ -73,6 +74,7 @@ class Admin(commands.Cog):
 
     @commands.group(name="getlogs", aliases=("logs", "getlog"))
     @has_permissions(administrator=True)
+    @commands.is_owner()
     async def getlogs(self, ctx):
         """
         read the file masaryk.log and send
@@ -109,6 +111,7 @@ class Admin(commands.Cog):
                 break
 
     @getlogs.command(name="ready")
+    @commands.is_owner()
     async def ready(self, ctx):
         await ctx.send("```" + str(self.bot.readyCogs) + "```")
 
@@ -116,6 +119,7 @@ class Admin(commands.Cog):
 
     @commands.group(name="error_channel")
     @has_permissions(manage_channels=True)
+    @commands.is_owner()
     async def error_channel(self, ctx):
         pass
 
@@ -137,6 +141,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @has_permissions(manage_channels=True)
+    @commands.is_owner()
     async def sync_category(self, ctx, category: CategoryChannel):
         for channel in category.channels:
             await channel.edit(sync_permissions=True)
@@ -146,6 +151,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @has_permissions(administrator=True)
+    @commands.is_owner()
     async def load(self, ctx, extension):
         """
         load the extension to the bot
@@ -164,6 +170,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @has_permissions(administrator=True)
+    @commands.is_owner()
     async def unload(self, ctx, extension):
         """
         unload the extension to the bot
@@ -182,6 +189,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @has_permissions(administrator=True)
+    @commands.is_owner()
     async def reload(self, ctx, extension=None):
         """
         reload single extension if provided
@@ -206,6 +214,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @has_permissions(administrator=True)
+    @commands.is_owner()
     async def shutdown(self, ctx):
         self.log.info("Shutting down...")
         await ctx.message.delete()
