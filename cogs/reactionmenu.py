@@ -643,6 +643,7 @@ class Reactionmenu(commands.Cog):
         await safe(message.delete)(delay=0.2)
 
     @commands.command()
+    @has_permissions(administrator=True)
     async def resend_subject_message(self, ctx):
         menu_text_channel = ctx.get_channel("výběr-předmětů")
         if not menu_text_channel:
