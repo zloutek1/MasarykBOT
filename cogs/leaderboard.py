@@ -166,7 +166,7 @@ class Leaderboard(commands.Cog):
                 FROM (
                     SELECT
                         author_id,
-                        name AS author,
+                        mem.name AS author,
                         SUM(messages_sent) AS `count`
                     FROM leaderboard AS ldb
                     INNER JOIN `member` AS mem
