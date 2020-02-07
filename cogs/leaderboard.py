@@ -123,6 +123,8 @@ class Leaderboard(commands.Cog):
 
         params = {}
 
+        params["guild_id"] = ctx.guild.id
+
         if channel:
             params["channel_id"] = channel.id
 
@@ -134,12 +136,14 @@ class Leaderboard(commands.Cog):
         top10_SQL = f"""
             SELECT
                 author_id,
-                name AS author,
+                mem.name AS author,
                 SUM(messages_sent) AS `count`
             FROM leaderboard AS ldb
             INNER JOIN `member` AS mem
             ON mem.id = ldb.author_id
-            WHERE {'channel_id = %(channel_id)s' if channel is not None else '1'}
+            INNER JOIN `channel` AS chnl
+            ON chnl.id = channel_id
+            WHERE {'channel_id = %(channel_id)s' if channel is not None else '1'} AND guild_id = %(guild_id)s
             GROUP BY author_id
             ORDER BY `count` DESC
             LIMIT 10
@@ -162,12 +166,14 @@ class Leaderboard(commands.Cog):
                 FROM (
                     SELECT
                         author_id,
-                        name AS author,
+                        mem.name AS author,
                         SUM(messages_sent) AS `count`
                     FROM leaderboard AS ldb
                     INNER JOIN `member` AS mem
                     ON mem.id = ldb.author_id
-                    WHERE {'channel_id = %(channel_id)s' if channel is not None else '1'}
+                    INNER JOIN `channel` AS chnl
+                    ON chnl.id = channel_id
+                    WHERE {'channel_id = %(channel_id)s' if channel is not None else '1'} AND guild_id = %(guild_id)s
                     GROUP BY author_id
                     ORDER BY `count` DESC) AS sel
                 ) AS sel;
