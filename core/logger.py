@@ -5,6 +5,7 @@ import discord
 from discord.ext import tasks, commands
 
 import json
+from datetime import datetime, timedelta
 
 from core.utils.db import Database
 from core.utils.checks import needs_database, safe
@@ -130,6 +131,16 @@ class Logger(commands.Cog):
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
+    @staticmethod
+    def last_day_of_month(any_day):
+        next_month = any_day.replace(day=28) + timedelta(days=4)
+        return next_month - timedelta(days=next_month.day)
+
+    @staticmethod
+    def prev_month(any_day):
+        first_day = any_day.replace(day=1)
+        return first_day - timedelta(days=1)
+
     @needs_database
     async def backup_messages(self, in_channels, db: Database = None):
         """
@@ -189,7 +200,12 @@ class Logger(commands.Cog):
             messages_data = []
             attachments_data = []
 
-            await safe(self.get_messages)(channel, authors_data, messages_data, attachments_data, after=row["from_date"], before=row["to_date"])
+            after = (row["from_date"].replace(day=1)
+                     if row["from_date"].day > 1 else
+                     self.last_month(row["from_date"]).replace(day=1))
+            before = self.last_day_of_month(row["to_date"])
+
+            await safe(self.get_messages)(channel, authors_data, messages_data, attachments_data, after=after, before=before)
 
             await self.backup_users(list(authors_data))
             await self.backup_messages_in(channel, messages_data)
