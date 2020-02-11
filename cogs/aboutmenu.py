@@ -142,7 +142,7 @@ class Aboutmenu(commands.Cog):
         await db.execute("""
             SELECT * FROM aboutmenu
             INNER JOIN channel ON channel.id = channel_id
-            WHERE guild_id = %s AND channel_id = %s AND deleted_at IS NULL
+            WHERE guild_id = %s AND channel_id = %s AND aboutmenu.deleted_at IS NULL
             LIMIT 1
         """, (payload.guild_id, payload.channel_id))
         if not await db.fetchone():
