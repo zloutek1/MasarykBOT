@@ -141,9 +141,10 @@ class Aboutmenu(commands.Cog):
         # reacted in aboutmenu channel?
         await db.execute("""
             SELECT * FROM aboutmenu
-            WHERE channel_id = %s AND deleted_at IS NULL
+            INNER JOIN channel ON channel.id = channel_id
+            WHERE guild_id = %s AND channel_id = %s AND deleted_at IS NULL
             LIMIT 1
-        """, (payload.channel_id,))
+        """, (payload.guild_id, payload.channel_id))
         if not await db.fetchone():
             return
         guild = self.bot.get_guild(payload.guild_id)
@@ -217,13 +218,7 @@ class Aboutmenu(commands.Cog):
                 channels[channel_id] = self.bot.get_channel(channel_id)
             channel = channels.get(channel_id)
             if channel is None:
-                # Channel not existant, remove from db
-                await db.execute("""
-                    UPDATE aboutmenu
-                    SET deleted_at=NOW()
-                    WHERE channel_id = %s
-                """, (channel_id,))
-                await db.commit()
+                # channel does not exist, skip
                 continue
             self.log.info(f"Catching up channel {channel}")
 
