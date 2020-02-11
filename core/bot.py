@@ -82,6 +82,12 @@ class MasarykBot(Bot):
         log.addHandler(handler)
 
         handler = logging.FileHandler(
+            filename='assets/masaryk_error.log', encoding='utf-8', mode='w')
+        handler.setFormatter(fmt)
+        handler.setLevel(logging.ERROR)
+        log.addHandler(handler)
+
+        handler = logging.FileHandler(
             filename='assets/masaryk.log', encoding='utf-8', mode='w')
         handler.setFormatter(fmt)
         log.addHandler(handler)
