@@ -379,7 +379,7 @@ class Reactionmenu(commands.Cog):
         """, (text + "%", ctx.channel.id))
         row = await db.fetchone()
         if not row:
-            await ctx.send(f"subject {text} not found", delete_after=5)
+            await ctx.send(f"subject `{text}` not found", delete_after=5)
             return
 
         text = row["text"]
