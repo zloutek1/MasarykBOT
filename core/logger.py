@@ -202,7 +202,7 @@ class Logger(commands.Cog):
 
             after = (row["from_date"].replace(day=1)
                      if row["from_date"].day > 1 else
-                     self.last_month(row["from_date"]).replace(day=1))
+                     self.prev_month(row["from_date"]).replace(day=1))
             before = self.last_day_of_month(row["to_date"])
 
             await safe(self.get_messages)(channel, authors_data, messages_data, attachments_data, after=after, before=before)
