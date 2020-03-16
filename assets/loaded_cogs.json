@@ -9,6 +9,7 @@
         "cogs.verification",
         "cogs.leaderboard",
         "cogs.aboutmenu",
+        "cogs.corona",
         "cogs.admin",
         "cogs.math",
         "cogs.eval",

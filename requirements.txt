@@ -6,3 +6,5 @@ Pillow
 python-dotenv
 graphviz
 sympy
+beautifulsoup4
+pandas
