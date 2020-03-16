@@ -17,8 +17,8 @@ class Corona(commands.Cog):
         try:
             cz_headers, cz_data, cz_date = await self.parse_cz()
             global_headers, global_data, global_date = await self.parse_global()
-        except:
-            ctx.send("Error while loading the data.")
+        except Exception as err:
+            await ctx.send(f"Error while loading the data. Got `{err}`")
             return
 
         embed = discord.Embed(
