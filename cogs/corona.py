@@ -11,6 +11,7 @@ class Corona(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    @commands.cooldown(1, 30, commands.BucketType.user)
     @commands.command(aliases=("covid", "covid19", "covid-19", "korona"))
     async def corona(self, ctx):
         try:
