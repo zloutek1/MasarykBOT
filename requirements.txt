@@ -8,3 +8,4 @@ graphviz
 sympy
 beautifulsoup4
 pandas
+lxml
