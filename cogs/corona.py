@@ -14,31 +14,35 @@ class Corona(commands.Cog):
     @commands.cooldown(1, 30, commands.BucketType.user)
     @commands.command(aliases=("covid", "covid19", "covid-19", "korona"))
     async def corona(self, ctx):
-        try:
-            cz_headers, cz_data, cz_date = await self.parse_cz()
-            global_headers, global_data, global_date = await self.parse_global()
-        except Exception as err:
-            await ctx.send(f"Error while loading the data. Got `{err}`")
-            return
-
         embed = discord.Embed(
             title=f"COVID-19",
             description="⁣ ",
             color=0x000000)
 
-        embed.add_field(
-            name="Česko",
-            value="\n".join([
-                f"**{header}**: {int(value)}"
-                for header, value in zip(cz_headers, cz_data)]),
-            inline=False)
+         try:
+            cz_headers, cz_data, cz_date = await self.parse_cz()
+            embed.add_field(
+                name="Česko",
+                value="\n".join([
+                    f"**{header}**: {int(value)}"
+                    for header, value in zip(cz_headers, cz_data)]),
+                inline=False)
+       
+        except Exception as err:
+            await ctx.send(f"Error while loading the czech data. Got `{err}`")
 
-        embed.add_field(
-            name="Worldwide",
-            value="\n".join([
-                f"**{header}**: {int(value)}"
-                for header, value in zip(global_headers, global_data)]),
-            inline=False)
+        try:
+            global_headers, global_data, global_date = await self.parse_global()
+
+            embed.add_field(
+                name="Worldwide",
+                value="\n".join([
+                    f"**{header}**: {int(value)}"
+                    for header, value in zip(global_headers, global_data)]),
+                inline=False)
+        
+        except Exception as err:
+            await ctx.send(f"Error while loading the global data. Got `{err}`")
 
         embed.set_footer(text=f"Czech data updated at {cz_date}\nGloal data updated at {global_date}")
 
