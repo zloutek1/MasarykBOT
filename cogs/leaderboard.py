@@ -85,6 +85,10 @@ class Leaderboard(commands.Cog):
 
         self.bot.readyCogs[self.__class__.__name__] = False
 
+        #
+        # leaderboard is updated via database trigger command
+        #
+
         if hasattr(self.bot, "add_catchup_task"):
             self.bot.add_catchup_task(
                 "leaderboard_emoji", self.catchup_leaderboard_emoji_get, self.catchup_leaderboard_emoji_insert, task_data=dict())
@@ -121,8 +125,22 @@ class Leaderboard(commands.Cog):
 
         author = ctx.message.author
 
-        params = {}
+        bots = core.utils.get(ctx.guild.members, key=lambda user: user.bot)
+        bots_ids = list(map(lambda bot: bot.id, bots))
 
+        # webhooks = await ctx.guild.webhooks()
+        # webhooks_ids = list(map(lambda webhook: webhook.user.id, webhooks))
+
+        params = {
+            "guild_id": ctx.guild.id,
+            "channel_id": channel.id if channel else None,
+            "author_id": member.id if member else author.id,
+            "ignored_ids": tuple(bots_ids)
+        }
+
+        print(params["ignored_ids"])
+
+        """
         params["guild_id"] = ctx.guild.id
 
         if channel:
@@ -132,6 +150,8 @@ class Leaderboard(commands.Cog):
             params["author_id"] = member.id
         else:
             params["author_id"] = author.id
+        """
+
 
         top10_SQL = f"""
             SELECT
@@ -143,7 +163,7 @@ class Leaderboard(commands.Cog):
             ON mem.id = ldb.author_id
             INNER JOIN `channel` AS chnl
             ON chnl.id = channel_id
-            WHERE {'channel_id = %(channel_id)s' if channel is not None else '1'} AND guild_id = %(guild_id)s
+            WHERE {'channel_id = %(channel_id)s' if channel is not None else '1'} AND guild_id = %(guild_id)s AND author_id NOT IN %(ignored_ids)s
             GROUP BY author_id
             ORDER BY `count` DESC
             LIMIT 10
@@ -173,7 +193,7 @@ class Leaderboard(commands.Cog):
                     ON mem.id = ldb.author_id
                     INNER JOIN `channel` AS chnl
                     ON chnl.id = channel_id
-                    WHERE {'channel_id = %(channel_id)s' if channel is not None else '1'} AND guild_id = %(guild_id)s
+                    WHERE {'channel_id = %(channel_id)s' if channel is not None else '1'} AND guild_id = %(guild_id)s AND author_id NOT IN %(ignored_ids)s
                     GROUP BY author_id
                     ORDER BY `count` DESC) AS sel
                 ) AS sel;
@@ -189,6 +209,9 @@ class Leaderboard(commands.Cog):
         await db.execute(member_SQL, params)
         await db.execute("SELECT * from (SELECT * FROM first_table UNION ALL SELECT * FROM middle_table UNION ALL SELECT * FROM last_table) result ORDER BY `count` DESC;")
         rows2 = await db.fetchall()
+
+        print(rows1)
+        print(rows2)
 
         """
         print the leaderboard
