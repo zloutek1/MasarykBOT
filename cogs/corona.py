@@ -19,7 +19,7 @@ class Corona(commands.Cog):
             description="⁣ ",
             color=0x000000)
 
-         try:
+        try:
             cz_headers, cz_data, cz_date = await self.parse_cz()
             embed.add_field(
                 name="Česko",
