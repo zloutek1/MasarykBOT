@@ -27,7 +27,7 @@ class Corona(commands.Cog):
                     f"**{header}**: {int(value)}"
                     for header, value in zip(cz_headers, cz_data)]),
                 inline=False)
-       
+
         except Exception as err:
             await ctx.send(f"Error while loading the czech data. Got `{err}`")
 
@@ -40,7 +40,7 @@ class Corona(commands.Cog):
                     f"**{header}**: {int(value)}"
                     for header, value in zip(global_headers, global_data)]),
                 inline=False)
-        
+
         except Exception as err:
             await ctx.send(f"Error while loading the global data. Got `{err}`")
 
@@ -64,7 +64,7 @@ class Corona(commands.Cog):
         counters = soup.find_all("div", {"class": "w-counter"})
         for counter in counters:
             title = counter.find("h3", {"class": "w-counter-title"}).text
-            value = int(counter.find("span", {"class": "type_number"}).text)
+            value = int(counter.find("span", {"class": "type_number"}).text.replace(' ', ''))
 
             headers.append(title)
             values.append(value)
