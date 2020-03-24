@@ -69,7 +69,9 @@ class Corona(commands.Cog):
             headers.append(title)
             values.append(value)
 
-        date = soup.find(text="Poslední aktualizace dat:").next
+        date = soup.find(text="Poslední aktualizace dat:")
+        if date is not None:
+            data = date.next
 
         return tuple(headers), tuple(values), date
 
