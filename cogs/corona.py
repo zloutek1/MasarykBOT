@@ -91,8 +91,9 @@ class Corona(commands.Cog):
         df = pd.read_csv(content)
         dk = df.groupby(df.columns[1]).sum()
 
-        total = dk.sum()[:3].to_dict()
-        return tuple(total.keys()), tuple(total.values()), date
+        total = dk.sum().to_dict()
+        result = {key: val for key, val in total.items() if key in ('Confirmed', 'Deaths', 'Recovered')}
+        return tuple(result.keys()), tuple(result.values()), date
 
 
 def setup(bot):
