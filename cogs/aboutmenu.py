@@ -65,6 +65,7 @@ class Aboutmenu(commands.Cog):
 
     @aboutmenu.command(name="create", aliases=("add",))
     @needs_database
+    @has_permissions(administrator=True)
     async def aboutmenu_create(self, ctx, image_path: str,
                                roles: Greedy[Role],
                                emojis: Greedy[Union[Emoji, PartialEmoji, UnicodeEmoji]],
