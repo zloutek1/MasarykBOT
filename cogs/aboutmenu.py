@@ -1,5 +1,5 @@
 from discord.ext import commands
-from discord.ext.commands import Greedy, Converter, BadArgument
+from discord.ext.commands import Greedy, Converter, BadArgument, has_permissions
 from discord import Embed, Role, Emoji, PartialEmoji, Member
 
 import core.utils.get
