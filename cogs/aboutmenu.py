@@ -36,6 +36,7 @@ class Aboutmenu(commands.Cog):
         self.imagePath = "https://gitlab.com/zloutek1/MasarykBOT/raw/develop/bot/assets/"
 
     @commands.group(name="aboutmenu")
+    @has_permissions(administrator=True)
     async def aboutmenu(self, ctx):
         pass
 
