@@ -9,5 +9,6 @@ sympy
 beautifulsoup4
 pandas
 numpy
+scipy
 matplotlib
 lxml
