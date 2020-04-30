@@ -359,6 +359,7 @@ class Leaderboard(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command("graph")
+    @commands.cooldown(1, 120, commands.BucketType.channel)
     @needs_database
     async def graph(self, ctx, *, db: Database = None):
         await db.execute("select extract( hour from created_at ) as hr, extract( minute from created_at ) as min, count( id ) from message group by hr, min order by hr, min")
