@@ -1,11 +1,15 @@
 from discord.ext import commands
-from discord import Embed, Member
+from discord import Embed, Member, File
 from discord.channel import TextChannel
 
 import re
 import logging
 from emoji import UNICODE_EMOJI
 from typing import Union
+
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy import interpolate
 
 import core.utils.get
 import core.utils.index
@@ -354,6 +358,25 @@ class Leaderboard(commands.Cog):
         )
         await ctx.send(embed=embed)
 
+    @commands.command("graph")
+    @needs_database
+    async def graph(self, ctx, *, db: Database = None):
+        await db.execute("select extract( hour from created_at ) as hr, extract( minute from created_at ) as min, count( id ) from message group by hr, min order by hr, min")
+        rows = await db.fetchall()
+
+        values = list(map(lambda x: tuple(x.values()), rows))
+        xs = [t[0]*60*60+t[1]*60 for t in values]
+        ys = [t[2] for t in values]
+
+        x_new = np.linspace(0, 86340, 86340)
+        a_BSpline = interpolate.make_interp_spline(xs, ys)
+        y_new = a_BSpline(x_new)
+
+        plt.plot(x_new, y_new)
+        plt.ylabel('msg/day')
+        plt.savefig('assets/graph.png')
+
+        await ctx.send(file=File('assets/graph.png'))
 
 def setup(bot):
     bot.add_cog(Leaderboard(bot))
