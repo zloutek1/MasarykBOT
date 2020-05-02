@@ -142,8 +142,6 @@ class Leaderboard(commands.Cog):
             "ignored_ids": tuple(bots_ids)
         }
 
-        print(params["ignored_ids"])
-
         """
         params["guild_id"] = ctx.guild.id
 
@@ -213,9 +211,6 @@ class Leaderboard(commands.Cog):
         await db.execute(member_SQL, params)
         await db.execute("SELECT * from (SELECT * FROM first_table UNION ALL SELECT * FROM middle_table UNION ALL SELECT * FROM last_table) result ORDER BY `count` DESC;")
         rows2 = await db.fetchall()
-
-        print(rows1)
-        print(rows2)
 
         """
         print the leaderboard
