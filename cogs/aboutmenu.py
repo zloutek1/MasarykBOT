@@ -240,6 +240,9 @@ class Aboutmenu(commands.Cog):
 
                 # get the role
                 role = channel.guild.get_role(react_db["role_id"])
+                if role is None:
+                    print("role", react_db["role_id"], "for", row["id"], "not found")
+                    continue
 
                 new_reacted = set(await reaction.users().flatten())
                 old_reacted = set(role.members)
