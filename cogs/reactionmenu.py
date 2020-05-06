@@ -379,7 +379,8 @@ class Reactionmenu(commands.Cog):
         """, (text + "%", ctx.channel.id))
         row = await db.fetchone()
         if not row:
-            await ctx.send(f"subject `{text}` not found", delete_after=5)
+            text_replaced = text.replace("@", "")
+            await ctx.send(f"subject `{text_replaced}` not found", delete_after=5)
             return
 
         text = row["text"]
