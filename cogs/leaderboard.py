@@ -17,6 +17,8 @@ import core.utils.index
 from core.utils.db import Database
 from core.utils.checks import needs_database
 
+from datetime import datetime
+
 
 class Leaderboard(commands.Cog):
     def __init__(self, bot):
@@ -256,6 +258,8 @@ class Leaderboard(commands.Cog):
                 )
                 for j, row in enumerate(rows2)
             ]))
+        time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        embed.set_footer(text=f"{str(author)} at {time_now}", icon_url=author.avatar_url)
         await ctx.send(embed=embed)
 
     def get_medal(self, i):
