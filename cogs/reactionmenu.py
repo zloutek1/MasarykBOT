@@ -380,7 +380,7 @@ class Reactionmenu(commands.Cog):
         row = await db.fetchone()
         if not row:
             text_replaced = text.replace("@", "")
-            await ctx.send(f"subject `{text_replaced}` not found", delete_after=5)
+            await ctx.send(f"subject {text_replaced} not found", delete_after=5)
             return
 
         text = row["text"]
