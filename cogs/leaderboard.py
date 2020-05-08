@@ -10,6 +10,7 @@ from typing import Union
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import interpolate
+from collections import Counter
 
 import core.utils.get
 import core.utils.index
@@ -377,6 +378,44 @@ class Leaderboard(commands.Cog):
         plt.savefig('assets/graph.png')
 
         await ctx.send(file=File('assets/graph.png'))
+
+    @commands.command("words")
+    @commands.cooldown(1, 120, commands.BucketType.guild)
+    @needs_database
+    async def words(self, ctx, *, db: Database = None):
+        await db.execute("SELECT `content` FROM `message`")
+        rows = await db.fetchall()
+
+        counter = Counter([word
+                           for row in rows
+                           for word in row["content"].split()
+                           if len(word) > 3 and len(list(filter(str.isalpha, word))) >= len(word) // 2])
+
+
+        embed = Embed(color=0x53acf2)
+        embed.add_field(
+            name="Most common words used",
+            inline=False,
+            value="\n".join([
+                "`{index:0>2}. {count}` {word}".format(index=i+1, count=row[1], word=row[0].replace("`", "\\`").replace("*", "\\*"))
+                for i, row in enumerate(counter.most_common(10))
+            ])
+        )
+        embed.add_field(
+            name="Here is some more",
+            inline=False,
+            value=",  ".join([
+                "{word} ({count})".format(word=row[0], count=row[1])
+                for i, row in enumerate(counter.most_common(100))
+                if i >= 10
+            ])[:800]+"..."
+        )
+
+        author = ctx.message.author
+        time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        embed.set_footer(text=f"{str(author)} at {time_now}", icon_url=author.avatar_url)
+
+        await ctx.send(embed=embed)
 
 def setup(bot):
     bot.add_cog(Leaderboard(bot))
