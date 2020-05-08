@@ -397,7 +397,7 @@ class Leaderboard(commands.Cog):
             name="Most common words used",
             inline=False,
             value="\n".join([
-                "`{index:0>2}. {count}` {word}".format(index=i+1, count=row[1], word=row[0].replace("`", "\\`"))
+                "`{index:0>2}. {count}` {word}".format(index=i+1, count=row[1], word=row[0].replace("`", "\\`").replace("*", "\\*"))
                 for i, row in enumerate(counter.most_common(10))
             ])
         )
