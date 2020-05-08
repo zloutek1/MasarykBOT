@@ -405,7 +405,7 @@ class Leaderboard(commands.Cog):
             name="Here is some more",
             inline=False,
             value=",  ".join([
-                "{word} ({count})".format(word=row[0], count=row[1])
+                "{word} ({count})".format(word=row[0].replace("`", "\\`").replace("*", "\\*")), count=row[1])
                 for i, row in enumerate(counter.most_common(100))
                 if i >= 10
             ])[:800]+"..."
