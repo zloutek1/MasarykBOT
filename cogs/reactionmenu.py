@@ -594,14 +594,14 @@ class Reactionmenu(commands.Cog):
                 self.in_channels.add(message_channel.id)
 
         """
-        await db.execute("""
+        await db.execute(\"""
             SELECT channel_id, rep_category_id, opts.* FROM (
                 SELECT * FROM reactionmenu_options
                 WHERE deleted_at IS NULL) AS opts
             INNER JOIN reactionmenu_messages AS msgs USING (message_id)
             INNER JOIN reactionmenu_sections AS secs ON (secs.message_id = msgs.reactionmenu_message_id)
             ORDER BY `text` DESC
-        """)
+        \""")
         rows = await db.fetchall()
 
         self.log.info("Starting reordering channels")
