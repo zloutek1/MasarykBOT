@@ -593,6 +593,7 @@ class Reactionmenu(commands.Cog):
             if message_channel is not None:
                 self.in_channels.add(message_channel.id)
 
+        """
         await db.execute("""
             SELECT channel_id, rep_category_id, opts.* FROM (
                 SELECT * FROM reactionmenu_options
@@ -629,6 +630,7 @@ class Reactionmenu(commands.Cog):
                 self.log.info(f"reordered channel {channel}")
 
         self.log.info("Finished reordering channels")
+        """
         self.bot.readyCogs[self.__class__.__name__] = True
 
     @commands.Cog.listener()
