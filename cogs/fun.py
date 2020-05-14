@@ -6,6 +6,8 @@ import os
 import requests
 from random import shuffle, choice
 
+from datetime import datetime
+
 
 class Fun(commands.Cog):
     def __init__(self, bot):
@@ -54,6 +56,9 @@ class Fun(commands.Cog):
         chosen = choice(extended_choices)
 
         e.add_field(name="I choose " + chosen, value=" / ".join(choices))
+        author = ctx.message.author
+        time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        e.set_footer(text=f"{str(author)} at {time_now}", icon_url=author.avatar_url)
         await ctx.send(embed=e)
 
     """--------------------------------------------------------------------------------------------------------------------------"""
@@ -95,6 +100,9 @@ class Fun(commands.Cog):
     async def answer(self, ctx, *, question):
         e = discord.Embed()
         e.add_field(name=choice(("Yes", "No")), value=question)
+        author = ctx.message.author
+        time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        e.set_footer(text=f"{str(author)} at {time_now}", icon_url=author.avatar_url)
         await ctx.send(embed=e)
 
     """--------------------------------------------------------------------------------------------------------------------------"""

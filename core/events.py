@@ -127,6 +127,9 @@ class Events(commands.Cog):
             inline=False
         )
 
+        author = ctx.message.author
+        time_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        embed.set_footer(text=f"{str(author)} at {time_now}", icon_url=author.avatar_url)
         await ctx.send(embed=embed)
 
     """--------------------------------------------------------------------------------------------------------------------------"""
