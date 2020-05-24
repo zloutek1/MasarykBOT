@@ -48,7 +48,7 @@ class LoggingHandler(logging.StreamHandler):
 
 
 class MasarykBot(Bot):
-    def __init__(self, *args, activity=Game(name="Commands: !help"), **kwargs):
+    def __init__(self, *args, activity=Game(name=f"Commands: {os.getenv('PREFIX')}help"), **kwargs):
         super().__init__(*args, **kwargs)
 
         self.ininial_params = args, kwargs
