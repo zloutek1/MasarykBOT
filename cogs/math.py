@@ -15,7 +15,7 @@ from discord.utils import escape_markdown, escape_mentions
 
 
 class Math(commands.Cog):
-    """LaTeX and Graph drawing commands"""										  
+    """LaTeX and Graph drawing commands"""
 
     def __init__(self, bot):
         self.bot = bot
@@ -61,7 +61,7 @@ class Math(commands.Cog):
         for old, new in self.rep_op.items():
             string = string.replace(old, new)
         string = " ".join(string.split()) # replaces duplicate spaces
-		
+
         # find all words and check if all are allowed:
         for word in re.findall("[a-zA-Z_]+", string):
             if word not in self.rep_exp.keys():
@@ -124,7 +124,7 @@ class Math(commands.Cog):
 
         successful_eq = 0
         msg = "Couldn't plot these functions:"
-		numpy.seterr(divide="ignore", invalid="ignore")
+        numpy.seterr(divide="ignore", invalid="ignore")
         for eq in equations:
             try:
                 func = self.string2func(eq)
