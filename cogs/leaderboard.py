@@ -1,6 +1,7 @@
 from discord.ext import commands
 from discord import Embed, Member, File
 from discord.channel import TextChannel
+from discord.utils import escape_markdown
 
 import re
 import logging
@@ -234,11 +235,11 @@ class Leaderboard(commands.Cog):
                         medal=self.get_medal(i + 1),
                         count=right_justify(row["count"], len(
                             str(rows1[0]["count"])), "\u2063 "),
-                        author=f'**{row["author"]}**'
+                        author=f'**{escape_markdown(row["author"])}**'
                         if row["author_id"] == (
                             author.id if not member else member.id)
                         else
-                        row["author"]
+                        escape_markdown(row["author"])
                     )
                     for i, row in enumerate(rows1)
                 ]))
@@ -251,11 +252,11 @@ class Leaderboard(commands.Cog):
                     medal=self.get_medal(row["row_number"]),
                     count=right_justify(row["count"], len(
                         str(rows1[0]["count"])), "\u2063 "),
-                    author=(f'**{row["author"]}**'
+                    author=(f'**{escape_markdown(row["author"])}**'
                             if row["author_id"] == (
                                 author.id if not member else member.id)
                             else
-                            row["author"])
+                            escape_markdown(row["author"]))
                 )
                 for j, row in enumerate(rows2)
             ]))
