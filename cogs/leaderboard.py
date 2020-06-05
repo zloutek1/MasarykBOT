@@ -242,14 +242,14 @@ class Leaderboard(commands.Cog):
                         escape_markdown(row["author"])
                     )
                     for i, row in enumerate(rows1)
-                ])[:600])
+                ])[:500])
         embed.add_field(
             name="Your position",
             inline=True,
             value="\n".join([
                 template.format(
                     index=row["row_number"],
-                    medal="    ",
+                    medal=self.get_medal(row["row_number"]),
                     count=right_justify(row["count"], len(
                         str(rows1[0]["count"])), "\u2063 "),
                     author=(f'**{escape_markdown(row["author"])}**'
@@ -259,7 +259,7 @@ class Leaderboard(commands.Cog):
                             escape_markdown(row["author"]))
                 )
                 for j, row in enumerate(rows2)
-            ])[:400])
+            ])[:500])
         time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         embed.set_footer(text=f"{str(author)} at {time_now}", icon_url=author.avatar_url)
         await ctx.send(embed=embed)
