@@ -204,13 +204,14 @@ class Aboutmenu(commands.Cog):
 
         self.bot.readyCogs[self.__class__.__name__] = False
 
+        self.log.info("Catching up aboutmenu")
+
         await db.execute("""
             SELECT * FROM aboutmenu
             WHERE deleted_at IS NULL
         """)
         rows = await db.fetchall()
 
-        self.log.info("Catching up aboutmenu")
         # check each message
         channels = {}
         for row in rows:
