@@ -2,6 +2,7 @@ from discord import Color, Embed, File
 from discord.ext import commands
 import time
 import os
+import logging
 
 """
 All Process classes where taken from
@@ -565,6 +566,7 @@ async def eval_coro(body):
 class Eval(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.log = logging.getLogger(__name__)
 
     @commands.command(name='eval')
     async def _eval(self, ctx, *, body):
@@ -706,6 +708,8 @@ class Eval(commands.Cog):
 
         if self.bot.user not in await reaction.users().flatten():
             return
+
+        self.log.info(f"{user} has reacted on message code message")
 
         ctx = commands.Context(prefix=self.bot.command_prefix, guild=message.guild,
                                channel=message.channel, message=message, author=user)
