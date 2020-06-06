@@ -72,28 +72,6 @@ class Admin(commands.Cog):
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
-    @commands.group(name="error_channel")
-    @has_permissions(manage_channels=True)
-    @commands.is_owner()
-    async def error_channel(self, ctx):
-        pass
-
-    @error_channel.command(name="set")
-    async def error_channel_set(self, ctx):
-        with open("assets/local_db.json", "r", encoding="utf-8") as file:
-            local_db = json.load(file)
-            local_db.setdefault("error_channels", [])
-            if ctx.channel.id not in local_db["error_channels"]:
-                local_db["error_channels"].append(ctx.channel.id)
-
-        with open("assets/local_db.json", "w", encoding="utf-8") as file:
-            json.dump(local_db, file)
-
-        await ctx.message.delete()
-        await ctx.send("Log Channel set successfully", delete_after=5)
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
     @commands.command()
     @has_permissions(manage_channels=True)
     @commands.is_owner()
