@@ -1,14 +1,12 @@
 import os
 import logging
 from PIL import Image, ImageFont, ImageDraw
-from datetime import datetime, timedelta
 from typing import Union
 
 from discord import File, PermissionOverwrite, Embed, Color, TextChannel, User
 from discord.ext import commands
 from discord.ext.commands import has_permissions
 
-import core.utils.get
 from core.utils.db import Database
 from core.utils.checks import needs_database, safe
 
@@ -68,7 +66,7 @@ class Reactionmenu(commands.Cog):
         for target, overwrite in perms.items():
             await channel.set_permissions(target, overwrite=overwrite)
 
-        # create category and set permissions
+        # create category and set permissions
         self.log.info("createing category with permissions")
         perms = {
             ctx.get_role("Student"): PermissionOverwrite(
@@ -125,7 +123,7 @@ class Reactionmenu(commands.Cog):
 
     @option_group.command(name="create", aliases=("add",))
     @needs_database
-    async def option_create(self, ctx, to_menu: int=None, *, text: str, db: Database = None):
+    async def option_create(self, ctx, to_menu: int = None, *, text: str, db: Database = None):
         """
         fetch the message in the correct section
         append the {text} in the message if it fists
@@ -529,7 +527,7 @@ class Reactionmenu(commands.Cog):
 
     @subject.command(name="status", aliases=("stats", ))
     @needs_database
-    async def subject_status(self, ctx, *, query_by: Union[User, str]=10, db: Database):
+    async def subject_status(self, ctx, *, query_by: Union[User, str] = 10, db: Database):
         top10 = True if query_by == 10 else False
         user = True if isinstance(query_by, User) else False
         subject = True if isinstance(query_by, str) else False
@@ -587,50 +585,12 @@ class Reactionmenu(commands.Cog):
         await db.execute("SELECT * FROM reactionmenu WHERE deleted_at IS NULL")
         rows = await db.fetchall()
         for row in rows:
-            section_channel = self.bot.get_channel(row["section_channel_id"])
+            # section_channel = self.bot.get_channel(row["section_channel_id"])
             message_channel = self.bot.get_channel(row["message_channel_id"])
 
             if message_channel is not None:
                 self.in_channels.add(message_channel.id)
 
-        """
-        await db.execute(\"""
-            SELECT channel_id, rep_category_id, opts.* FROM (
-                SELECT * FROM reactionmenu_options
-                WHERE deleted_at IS NULL) AS opts
-            INNER JOIN reactionmenu_messages AS msgs USING (message_id)
-            INNER JOIN reactionmenu_sections AS secs ON (secs.message_id = msgs.reactionmenu_message_id)
-            ORDER BY `text` DESC
-        \""")
-        rows = await db.fetchall()
-
-        self.log.info("Starting reordering channels")
-        categories = {}
-        for row in rows:
-            category_id = row["rep_category_id"]
-            if categories.get(category_id) is None:
-                categories[category_id] = self.bot.get_channel(category_id)
-            category = categories.get(category_id)
-
-            # skip if already sorted
-            if not category:
-                continue
-
-            channels = list(map(str, category.channels))
-            if channels == sorted(channels):
-                continue
-
-            channel = self.bot.get_channel(row["rep_channel_id"])
-            if channel:
-                await channel.edit(
-                    name=row["text"],
-                    position=0,
-                    category=category
-                )
-                self.log.info(f"reordered channel {channel}")
-
-        self.log.info("Finished reordering channels")
-        """
         self.bot.readyCogs[self.__class__.__name__] = True
 
     @commands.Cog.listener()
