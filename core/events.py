@@ -142,6 +142,7 @@ class Events(commands.Cog):
 
         exc = traceback.format_exception(
             type(error), error, error.__traceback__, chain=False)
+
         description = '```py\n%s\n```' % ''.join(exc)
         time = datetime.datetime.utcnow()
 
@@ -149,28 +150,7 @@ class Events(commands.Cog):
         author = '{0} (ID: {0.id})'.format(ctx.message.author)
         location = fmt.format(ctx.message.channel, ctx.message.guild)
 
-        message = '{0} at {1}: Called by: {2} in {3}. More info: {4}'.format(
-            name, time, author, location, description)
-
-        if len(message) > 2000:
-            print(message)
-            return
-
-        embed = Embed(
-            title='{0} at {1}: Called by: {2} in {3}. More info:'.format(
-                name, time, author, location),
-            description=description,
-            color=Color.red()
-        )
-
-        with open("assets/local_db.json", "r", encoding="utf-8") as file:
-            local_db = json.load(file)
-            for channel_id in local_db["error_channels"]:
-                channel = self.bot.get_channel(channel_id)
-                if channel:
-                    await channel.send(embed=embed)
-
-        print(message)
+        self.error.log(f'{name} at {time}: Called by: {author} in {location}. More info: {description}')
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
