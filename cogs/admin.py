@@ -1,12 +1,11 @@
 import discord
-from discord import Embed, TextChannel, VoiceChannel, CategoryChannel
+from discord import TextChannel, VoiceChannel, CategoryChannel
 from discord.ext import commands
 from discord.ext.commands import Bot, has_permissions
 
 import os
 import json
 import logging
-import asyncio
 
 from core.utils.checks import safe
 
