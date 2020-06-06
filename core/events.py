@@ -21,28 +21,6 @@ class Events(commands.Cog):
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        self.bot.readyCogs[self.__class__.__name__] = False
-
-        """
-        try:
-            with open(BotConfig.icon, "rb") as f:
-                await self.bot.user.edit(username=BotConfig.name, avatar=f.read())
-            print("\n    [Events] username and avatar changed successfully\n")
-
-        except OSError as e:
-            print(
-                "\nERR [Events] Failed to set new name and avatar to the botn")
-
-        except discord.errors.HTTPException as e:
-            pass
-        """
-
-        self.bot.readyCogs[self.__class__.__name__] = True
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
     @commands.command()
     async def ping(self, ctx):
         await ctx.send('Pong! {0} ms'.format(round(self.bot.latency * 1000, 1)))
