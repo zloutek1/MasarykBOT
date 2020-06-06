@@ -34,4 +34,4 @@ class Context(commands.Context):
         return core.utils.get(self.guild.members, **kwargs)
 
     def channel_name(self, text):
-        return re.sub("[^a-zA-Z0-9\-]", "", "-".join(text.lower().split()))
+        return re.sub("[^a-zA-Z0-9-]", "", "-".join(text.lower().split()))

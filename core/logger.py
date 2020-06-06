@@ -1,11 +1,10 @@
-import asyncio
 import logging
 
 import discord
 from discord.ext import tasks, commands
 
 import json
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from core.utils.db import Database
 from core.utils.checks import needs_database, safe
