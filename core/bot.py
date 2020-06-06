@@ -173,6 +173,7 @@ class MasarykBot(Bot):
             await asyncio.sleep(1)
             if all(self.readyCogs.values()) or len(self.readyCogs.values()) == 0:
                 break
+
         self.intorduce()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
@@ -262,19 +263,4 @@ class MasarykBot(Bot):
         description = '```py\n%s\n```' % ''.join(exc)
         time = datetime.datetime.utcnow()
 
-        message = 'Event {0} at {1}: More info: {2}'.format(
-            event, time, description)
-        embed = Embed(
-            title='Event {0} at {1}:'.format(event, time),
-            description=description[-1500:],
-            color=Color.red()
-        )
-
-        with open("assets/local_db.json", "r", encoding="utf-8") as file:
-            local_db = json.load(file)
-            for channel_id in local_db["error_channels"]:
-                channel = self.get_channel(channel_id)
-                if channel:
-                    await channel.send(embed=embed)
-
-        print(message)
+        self.log.error(f'Event {event} at {time}: More info: {description}')
