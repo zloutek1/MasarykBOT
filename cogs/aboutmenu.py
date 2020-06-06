@@ -251,7 +251,7 @@ class Aboutmenu(commands.Cog):
                 to_add = new_reacted - old_reacted
                 to_remove = old_reacted - new_reacted
 
-                # balance the difference
+                # balance the difference
                 for user in to_add:
                     member = core.utils.get(channel.guild.members, id=user.id)
                     if member:
