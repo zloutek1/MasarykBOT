@@ -57,6 +57,8 @@ class Verification(commands.Cog):
         author = guild.get_member(payload.user_id)
         if event_type == "REACTION_ADD":
             await author.add_roles(role)
+            self.log.info(f"adding @Student role to {author}")
+
         else:
             cog = self.bot.get_cog("Aboutmenu")
             aboutmenu_remove_user = self.bot.get_command(
@@ -65,7 +67,9 @@ class Verification(commands.Cog):
 
             ignore_roles = ("@everyone", "muted")
             await author.remove_roles(*list(filter(lambda role: role.name.lower() not in ignore_roles, author.roles)))
+            self.log.info(f"removing @Student role to {author}")
         # --[]
+
 
         self.users_on_cooldown[payload.user_id] = datetime.now()
 
