@@ -89,7 +89,7 @@ class MasarykBot(Bot):
 
                 await self.change_presence(status=discord.Status.dnd, activity=Game(name="Database offline"))
 
-                await asyncio.sleep(2)
+                await asyncio.sleep(15)
                 attempts += 1
 
     async def process_commands(self, message):
