@@ -15,39 +15,6 @@ from core.utils import context, db
 from core.utils.db import Database
 
 
-class LoggingHandler(logging.StreamHandler):
-    """
-    A custom logging class
-    emit(record) method processes a log event
-    handles what to do with the event
-    """
-
-    def __init__(self, bot):
-        self.bot = bot
-        super().__init__(self)
-
-        self.temp = ""
-
-    def emit(self, record):
-        """
-        get formatted record
-        group the messages until they fit the discord message limit
-        otherwise send the grouped message into log_channels
-        """
-        msg = self.format(record)
-
-        if len(self.temp) + len(msg) < 1900:
-            self.temp += f"{msg}\n"
-            return
-
-        with open("assets/local_db.json", "r", encoding="utf-8") as file:
-            local_db = json.load(file)
-            for channel_id in local_db["log_channels"]:
-                channel = self.bot.get_channel(channel_id)
-                if channel:
-                    self.bot.loop.create_task(channel.send(f"`{self.temp}`"))
-
-
 class MasarykBot(Bot):
     def __init__(self, *args, activity=Game(name=f"Commands: {os.getenv('PREFIX')}help"), **kwargs):
         super().__init__(*args, **kwargs)
@@ -68,9 +35,8 @@ class MasarykBot(Bot):
 
         set format to
         [2019-09-29 18:51:04] [INFO   ] core.logger: Begining backup
-
-        save the logs into assets/masaryk.log file
         """
+
         log = logging.getLogger()
         log.setLevel(logging.INFO)
 
@@ -81,21 +47,6 @@ class MasarykBot(Bot):
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(fmt)
         log.addHandler(handler)
-
-        handler = logging.FileHandler(
-            filename='assets/masaryk_error.log', encoding='utf-8', mode='w')
-        handler.setFormatter(fmt)
-        handler.setLevel(logging.ERROR)
-        log.addHandler(handler)
-
-        handler = logging.FileHandler(
-            filename='assets/masaryk.log', encoding='utf-8', mode='w')
-        handler.setFormatter(fmt)
-        log.addHandler(handler)
-
-        # handler = LoggingHandler(bot=self)
-        # handler.setFormatter(fmt)
-        # log.addHandler(handler)
 
         self.log = log
 
