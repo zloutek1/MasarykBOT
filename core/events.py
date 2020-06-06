@@ -116,8 +116,6 @@ class Events(commands.Cog):
     async def invite(self, ctx):
         await ctx.send(f"https://discordapp.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions=0")
 
-    # https://github.com/python-discord/bot/blob/master/bot/cogs/events.py
-
     """--------------------------------------------------------------------------------------------------------------------------"""
 
     @commands.Cog.listener()
