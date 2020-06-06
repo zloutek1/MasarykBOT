@@ -42,7 +42,7 @@ class Admin(commands.Cog):
         self.bot.intorduce()
         await ctx.send('Console cleared successfully.', delete_after=5)
 
-        await ctx.message.delete()
+        await safe(ctx.message.delete)()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -69,51 +69,6 @@ class Admin(commands.Cog):
                 del_cat = False
         if del_cat:
             await category.delete()
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.group(name="getlogs", aliases=("logs", "getlog"))
-    @has_permissions(administrator=True)
-    @commands.is_owner()
-    async def getlogs(self, ctx):
-        """
-        read the file masaryk.log and send
-        the last 10 lines to the channel
-        """
-        with open("assets/masaryk.log", "r") as file:
-            lines = file.read().splitlines()
-            self.last_log_lines = lines[-10:]
-            embed = Embed(title="Log", description="\n".join(
-                self.last_log_lines))
-            self.logmsg = await ctx.send(embed=embed)
-
-    @getlogs.command(name="-f", aliases=("--follow",))
-    async def follow(self, ctx):
-        """
-        read the file masaryk.log and send
-        the last 10 lines to the channel
-        update the message every 2 seconds unless
-        a change does not happen for 200 seconds
-        """
-        attempts = 0
-        while True:
-            with open("assets/masaryk.log", "r") as file:
-                lines = file.read().splitlines()
-                new_last_lines = lines[-10:]
-                if new_last_lines != self.last_log_lines:
-                    embed = Embed(
-                        title="Log", description="\n".join(new_last_lines))
-                    await self.logmsg.edit(embed=embed)
-                await asyncio.sleep(2)
-            attempts += 1
-
-            if attempts > 100:
-                break
-
-    @getlogs.command(name="ready")
-    @commands.is_owner()
-    async def ready(self, ctx):
-        await ctx.send("```" + str(self.bot.readyCogs) + "```")
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
