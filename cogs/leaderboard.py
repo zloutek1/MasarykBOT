@@ -3,15 +3,12 @@ from discord import Embed, Member, File
 from discord.channel import TextChannel
 from discord.utils import escape_markdown
 
-import re
 import logging
-from emoji import UNICODE_EMOJI
 from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import interpolate
-from collections import Counter
 
 import core.utils.get
 import core.utils.index
@@ -218,6 +215,7 @@ class Leaderboard(commands.Cog):
         plt.savefig('assets/graph.png')
 
         await ctx.send(file=File('assets/graph.png'))
+
 
 def setup(bot):
     bot.add_cog(Leaderboard(bot))
