@@ -245,7 +245,8 @@ class MasarykBot(Bot):
             task = self.loop.create_task(event(*args, **kwargs))
             tasks.append(task)
 
-        await asyncio.wait(tasks)
+        if len(tasks) != 0:
+            await asyncio.wait(tasks)
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
