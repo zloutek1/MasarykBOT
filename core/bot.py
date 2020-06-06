@@ -97,6 +97,7 @@ class MasarykBot(Bot):
         if ctx.command is None:
             return
 
+        self.log.info("user {} used command: {}".format(message.author, message.content))
         await self.invoke(ctx)
 
     """--------------------------------------------------------------------------------------------------------------------------"""
