@@ -4,19 +4,21 @@ import logging
 import os
 
 import discord
-from discord import Color, Embed, Game
+from discord import Game
 from discord.ext.commands import Bot
 
 import traceback
 import datetime
-import json
 
 from core.utils import context, db
 from core.utils.db import Database
 
 
 class MasarykBot(Bot):
-    def __init__(self, *args, activity=Game(name=f"Commands: {os.getenv('PREFIX')}help"), **kwargs):
+    def __init__(self, *args, activity=None, **kwargs):
+        if activity is None:
+            activity = Game(name=f"Commands: {os.getenv('PREFIX')}help")
+
         super().__init__(*args, **kwargs)
 
         self.ininial_params = args, kwargs
@@ -27,7 +29,7 @@ class MasarykBot(Bot):
 
         self.readyCogs = {}
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     def setup_logging(self):
         """
@@ -41,8 +43,8 @@ class MasarykBot(Bot):
         log.setLevel(logging.INFO)
 
         dt_fmt = '%Y-%m-%d %H:%M:%S'
-        fmt = logging.Formatter(
-            '[{asctime}] [{levelname:<7}] {name}: {message}', dt_fmt, style='{')
+        msg_fmt = '[{asctime}] [{levelname:<7}] {name}: {message}'
+        fmt = logging.Formatter(msg_fmt, dt_fmt, style='{')
 
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(fmt)
@@ -50,7 +52,7 @@ class MasarykBot(Bot):
 
         self.log = log
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     async def handle_database(self):
         """
@@ -83,7 +85,10 @@ class MasarykBot(Bot):
 
                 self.log.error(e)
 
-                await self.change_presence(status=discord.Status.dnd, activity=Game(name="Database offline"))
+                await self.change_presence(
+                    status=discord.Status.dnd,
+                    activity=Game(name="Database offline")
+                )
 
                 await asyncio.sleep(15)
 
@@ -97,10 +102,11 @@ class MasarykBot(Bot):
         if ctx.command is None:
             return
 
-        self.log.info("user {} used command: {}".format(message.author, message.content))
+        self.log.info("user {} used command: {}".format(
+            message.author, message.content))
         await self.invoke(ctx)
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     def handle_exit(self):
         """
@@ -130,7 +136,7 @@ class MasarykBot(Bot):
             self.db.pool.close()
             self.loop.run_until_complete(self.db.pool.wait_closed())
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     def start(self, *args, **kwargs):
         while True:
@@ -148,7 +154,7 @@ class MasarykBot(Bot):
             print("Bot restarting")
             super().__init__(*self.ininial_params[0], **self.ininial_params[1])
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     async def bot_ready(self):
         """
@@ -176,7 +182,7 @@ class MasarykBot(Bot):
 
         self.intorduce()
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     def intorduce(self):
         bot_name = self.user.name.encode(errors='replace').decode()
@@ -210,7 +216,7 @@ class MasarykBot(Bot):
         self.loop.create_task(self.change_presence(
             activity=self.default_activity))
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     async def trigger_event(self, event_name, *args, **kwargs):
         """
@@ -248,7 +254,7 @@ class MasarykBot(Bot):
         if len(tasks) != 0:
             await asyncio.wait(tasks)
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     async def on_error(self, event, *args, **kwargs):
         """
