@@ -66,13 +66,12 @@ class MasarykBot(Bot):
         await self.wait_until_ready()
         await self.change_presence(
             status=discord.Status.offline)
-        attempts = 0
 
         while True:
             try:
                 self.db = await Database.connect()
 
-                print("\n    [BOT] Database online: connected.\n")
+                self.log.info("[BOT] Database online: connected.")
 
                 await self.trigger_event("on_ready")
                 await self.bot_ready()
@@ -82,15 +81,11 @@ class MasarykBot(Bot):
             except db.DatabaseConnectionError as e:
                 self.db = Database()
 
-                dots = ("." * (attempts % 3 + 1) + "   ")[:3]
                 self.log.error(e)
-                print(
-                    "\r    [BOT] Database offline: reconnecting" + dots, end="")
 
                 await self.change_presence(status=discord.Status.dnd, activity=Game(name="Database offline"))
 
                 await asyncio.sleep(15)
-                attempts += 1
 
     async def process_commands(self, message):
         """
