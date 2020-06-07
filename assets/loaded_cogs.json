@@ -12,6 +12,5 @@
         "cogs.corona",
         "cogs.admin",
         "cogs.math",
-        "cogs.eval",
         "cogs.fun"
 ]
