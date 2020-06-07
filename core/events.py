@@ -6,7 +6,6 @@ from discord.ext.commands import Bot
 
 import traceback
 import datetime
-import json
 
 import core.utils.get
 
@@ -19,47 +18,25 @@ class Events(commands.Cog):
         self.log = logging.getLogger(__name__)
         self.running_since = datetime.datetime.now()
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        self.bot.readyCogs[self.__class__.__name__] = False
-
-        """
-        try:
-            with open(BotConfig.icon, "rb") as f:
-                await self.bot.user.edit(username=BotConfig.name, avatar=f.read())
-            print("\n    [Events] username and avatar changed successfully\n")
-
-        except OSError as e:
-            print(
-                "\nERR [Events] Failed to set new name and avatar to the botn")
-
-        except discord.errors.HTTPException as e:
-            pass
-        """
-
-        self.bot.readyCogs[self.__class__.__name__] = True
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     @commands.command()
     async def ping(self, ctx):
         await ctx.send('Pong! {0} ms'.format(round(self.bot.latency * 1000, 1)))
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     @commands.command()
     async def pong(self, ctx):
         await ctx.send('Ping! {0} ms'.format(round(self.bot.latency * 1000, 1)))
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     @commands.command()
     async def uptime(self, ctx):
         await ctx.send('I have been running for {0}'.format(str(datetime.datetime.now() - self.running_since)))
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     @commands.command()
     async def info(self, ctx):
@@ -103,11 +80,10 @@ class Events(commands.Cog):
         )
         embed.add_field(
             name="Channels",
-            value=("{text} {text_count} " +
-                   "{voice} {voice_count}").format(
+            value=("{text} {text_count} {voice} {voice_count}").format(
                  text=text, text_count=len(ctx.guild.text_channels),
-                 voice=voice, voice_count=len(ctx.guild.voice_channels)) +
-            f"\n**Total:** {len(ctx.guild.channels)}",
+                 voice=voice, voice_count=len(ctx.guild.voice_channels)
+            ) + f"\n**Total:** {len(ctx.guild.channels)}",
             inline=False
         )
         embed.add_field(
@@ -132,15 +108,13 @@ class Events(commands.Cog):
         embed.set_footer(text=f"{str(author)} at {time_now}", icon_url=author.avatar_url)
         await ctx.send(embed=embed)
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     @commands.command()
     async def invite(self, ctx):
         await ctx.send(f"https://discordapp.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions=0")
 
-    # https://github.com/python-discord/bot/blob/master/bot/cogs/events.py
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
@@ -151,8 +125,9 @@ class Events(commands.Cog):
         """
 
         ignored = (
-            commands.NoPrivateMessage, commands.DisabledCommand, commands.CheckFailure,
-            commands.CommandNotFound, commands.UserInputError
+            commands.NoPrivateMessage, commands.DisabledCommand,
+            commands.CheckFailure, commands.CommandNotFound,
+            commands.UserInputError
         )
         error = getattr(error, 'original', error)
 
@@ -166,6 +141,7 @@ class Events(commands.Cog):
 
         exc = traceback.format_exception(
             type(error), error, error.__traceback__, chain=False)
+
         description = '```py\n%s\n```' % ''.join(exc)
         time = datetime.datetime.utcnow()
 
@@ -173,30 +149,9 @@ class Events(commands.Cog):
         author = '{0} (ID: {0.id})'.format(ctx.message.author)
         location = fmt.format(ctx.message.channel, ctx.message.guild)
 
-        message = '{0} at {1}: Called by: {2} in {3}. More info: {4}'.format(
-            name, time, author, location, description)
+        self.error.log(f'{name} at {time}: Called by: {author} in {location}. More info: {description}')
 
-        if len(message) > 2000:
-            print(message)
-            return
-
-        embed = Embed(
-            title='{0} at {1}: Called by: {2} in {3}. More info:'.format(
-                name, time, author, location),
-            description=description,
-            color=Color.red()
-        )
-
-        with open("assets/local_db.json", "r", encoding="utf-8") as file:
-            local_db = json.load(file)
-            for channel_id in local_db["error_channels"]:
-                channel = self.bot.get_channel(channel_id)
-                if channel:
-                    await channel.send(embed=embed)
-
-        print(message)
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     @commands.Cog.listener()
     async def on_member_join(self, member):

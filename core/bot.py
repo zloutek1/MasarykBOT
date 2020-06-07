@@ -4,52 +4,21 @@ import logging
 import os
 
 import discord
-from discord import Color, Embed, Game
+from discord import Game
 from discord.ext.commands import Bot
 
 import traceback
 import datetime
-import json
 
 from core.utils import context, db
 from core.utils.db import Database
 
 
-class LoggingHandler(logging.StreamHandler):
-    """
-    A custom logging class
-    emit(record) method processes a log event
-    handles what to do with the event
-    """
-
-    def __init__(self, bot):
-        self.bot = bot
-        super().__init__(self)
-
-        self.temp = ""
-
-    def emit(self, record):
-        """
-        get formatted record
-        group the messages until they fit the discord message limit
-        otherwise send the grouped message into log_channels
-        """
-        msg = self.format(record)
-
-        if len(self.temp) + len(msg) < 1900:
-            self.temp += f"{msg}\n"
-            return
-
-        with open("assets/local_db.json", "r", encoding="utf-8") as file:
-            local_db = json.load(file)
-            for channel_id in local_db["log_channels"]:
-                channel = self.bot.get_channel(channel_id)
-                if channel:
-                    self.bot.loop.create_task(channel.send(f"`{self.temp}`"))
-
-
 class MasarykBot(Bot):
-    def __init__(self, *args, activity=Game(name=f"Commands: {os.getenv('PREFIX')}help"), **kwargs):
+    def __init__(self, *args, activity=None, **kwargs):
+        if activity is None:
+            activity = Game(name=f"Commands: {os.getenv('PREFIX')}help")
+
         super().__init__(*args, **kwargs)
 
         self.ininial_params = args, kwargs
@@ -60,7 +29,7 @@ class MasarykBot(Bot):
 
         self.readyCogs = {}
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     def setup_logging(self):
         """
@@ -68,38 +37,22 @@ class MasarykBot(Bot):
 
         set format to
         [2019-09-29 18:51:04] [INFO   ] core.logger: Begining backup
-
-        save the logs into assets/masaryk.log file
         """
+
         log = logging.getLogger()
         log.setLevel(logging.INFO)
 
         dt_fmt = '%Y-%m-%d %H:%M:%S'
-        fmt = logging.Formatter(
-            '[{asctime}] [{levelname:<7}] {name}: {message}', dt_fmt, style='{')
+        msg_fmt = '[{asctime}] [{levelname:<7}] {name}: {message}'
+        fmt = logging.Formatter(msg_fmt, dt_fmt, style='{')
 
         handler = logging.StreamHandler(sys.stdout)
         handler.setFormatter(fmt)
         log.addHandler(handler)
 
-        handler = logging.FileHandler(
-            filename='assets/masaryk_error.log', encoding='utf-8', mode='w')
-        handler.setFormatter(fmt)
-        handler.setLevel(logging.ERROR)
-        log.addHandler(handler)
-
-        handler = logging.FileHandler(
-            filename='assets/masaryk.log', encoding='utf-8', mode='w')
-        handler.setFormatter(fmt)
-        log.addHandler(handler)
-
-        # handler = LoggingHandler(bot=self)
-        # handler.setFormatter(fmt)
-        # log.addHandler(handler)
-
         self.log = log
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     async def handle_database(self):
         """
@@ -115,13 +68,12 @@ class MasarykBot(Bot):
         await self.wait_until_ready()
         await self.change_presence(
             status=discord.Status.offline)
-        attempts = 0
 
         while True:
             try:
                 self.db = await Database.connect()
 
-                print("\n    [BOT] Database online: connected.\n")
+                self.log.info("[BOT] Database online: connected.")
 
                 await self.trigger_event("on_ready")
                 await self.bot_ready()
@@ -131,15 +83,14 @@ class MasarykBot(Bot):
             except db.DatabaseConnectionError as e:
                 self.db = Database()
 
-                dots = ("." * (attempts % 3 + 1) + "   ")[:3]
                 self.log.error(e)
-                print(
-                    "\r    [BOT] Database offline: reconnecting" + dots, end="")
 
-                await self.change_presence(status=discord.Status.dnd, activity=Game(name="Database offline"))
+                await self.change_presence(
+                    status=discord.Status.dnd,
+                    activity=Game(name="Database offline")
+                )
 
-                await asyncio.sleep(2)
-                attempts += 1
+                await asyncio.sleep(15)
 
     async def process_commands(self, message):
         """
@@ -151,9 +102,11 @@ class MasarykBot(Bot):
         if ctx.command is None:
             return
 
+        self.log.info("user {} used command: {}".format(
+            message.author, message.content))
         await self.invoke(ctx)
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     def handle_exit(self):
         """
@@ -183,7 +136,7 @@ class MasarykBot(Bot):
             self.db.pool.close()
             self.loop.run_until_complete(self.db.pool.wait_closed())
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     def start(self, *args, **kwargs):
         while True:
@@ -201,7 +154,7 @@ class MasarykBot(Bot):
             print("Bot restarting")
             super().__init__(*self.ininial_params[0], **self.ininial_params[1])
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     async def bot_ready(self):
         """
@@ -226,9 +179,10 @@ class MasarykBot(Bot):
             await asyncio.sleep(1)
             if all(self.readyCogs.values()) or len(self.readyCogs.values()) == 0:
                 break
+
         self.intorduce()
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     def intorduce(self):
         bot_name = self.user.name.encode(errors='replace').decode()
@@ -262,7 +216,7 @@ class MasarykBot(Bot):
         self.loop.create_task(self.change_presence(
             activity=self.default_activity))
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     async def trigger_event(self, event_name, *args, **kwargs):
         """
@@ -297,9 +251,10 @@ class MasarykBot(Bot):
             task = self.loop.create_task(event(*args, **kwargs))
             tasks.append(task)
 
-        await asyncio.wait(tasks)
+        if len(tasks) != 0:
+            await asyncio.wait(tasks)
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
+    """---------------------------------------------------------------------"""
 
     async def on_error(self, event, *args, **kwargs):
         """
@@ -315,19 +270,4 @@ class MasarykBot(Bot):
         description = '```py\n%s\n```' % ''.join(exc)
         time = datetime.datetime.utcnow()
 
-        message = 'Event {0} at {1}: More info: {2}'.format(
-            event, time, description)
-        embed = Embed(
-            title='Event {0} at {1}:'.format(event, time),
-            description=description[-1500:],
-            color=Color.red()
-        )
-
-        with open("assets/local_db.json", "r", encoding="utf-8") as file:
-            local_db = json.load(file)
-            for channel_id in local_db["error_channels"]:
-                channel = self.get_channel(channel_id)
-                if channel:
-                    await channel.send(embed=embed)
-
-        print(message)
+        self.log.error(f'Event {event} at {time}: More info: {description}')

@@ -89,6 +89,7 @@ class Database:
 
         elif calling_conn and calling_cursor:
             raise ValueError(
-                f"In {self.__class__} both self.conn and self.cursor have attibute {attr}, please be more specific")
+                f"In {self.__class__} both self.conn and self.cursor have" +
+                f" attibute {attr}, please be more specific")
 
         raise ValueError(f"{self.__class__} has no attribute {attr}")

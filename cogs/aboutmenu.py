@@ -204,13 +204,14 @@ class Aboutmenu(commands.Cog):
 
         self.bot.readyCogs[self.__class__.__name__] = False
 
+        self.log.info("Catching up aboutmenu")
+
         await db.execute("""
             SELECT * FROM aboutmenu
             WHERE deleted_at IS NULL
         """)
         rows = await db.fetchall()
 
-        self.log.info("Catching up aboutmenu")
         # check each message
         channels = {}
         for row in rows:
@@ -251,7 +252,7 @@ class Aboutmenu(commands.Cog):
                 to_add = new_reacted - old_reacted
                 to_remove = old_reacted - new_reacted
 
-                # balance the difference
+                # balance the difference
                 for user in to_add:
                     member = core.utils.get(channel.guild.members, id=user.id)
                     if member:

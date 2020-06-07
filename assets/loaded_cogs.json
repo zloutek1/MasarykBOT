@@ -4,13 +4,12 @@
         "core.rules",
         "core.help",
 
-        "cogs.transitionToMUNI",
-        "cogs.reactionmenu",
-        "cogs.verification",
-        "cogs.leaderboard",
         "cogs.aboutmenu",
-        "cogs.corona",
         "cogs.admin",
+        "cogs.eval",
+        "cogs.fun",
+        "cogs.leaderboard",
         "cogs.math",
-        "cogs.fun"
+        "cogs.reactionmenu",
+        "cogs.verification"
 ]

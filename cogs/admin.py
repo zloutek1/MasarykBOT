@@ -1,12 +1,11 @@
 import discord
-from discord import Embed, TextChannel, VoiceChannel, CategoryChannel
+from discord import TextChannel, VoiceChannel, CategoryChannel
 from discord.ext import commands
 from discord.ext.commands import Bot, has_permissions
 
 import os
 import json
 import logging
-import asyncio
 
 from core.utils.checks import safe
 
@@ -42,7 +41,7 @@ class Admin(commands.Cog):
         self.bot.intorduce()
         await ctx.send('Console cleared successfully.', delete_after=5)
 
-        await ctx.message.delete()
+        await safe(ctx.message.delete)()
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
@@ -69,73 +68,6 @@ class Admin(commands.Cog):
                 del_cat = False
         if del_cat:
             await category.delete()
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.group(name="getlogs", aliases=("logs", "getlog"))
-    @has_permissions(administrator=True)
-    @commands.is_owner()
-    async def getlogs(self, ctx):
-        """
-        read the file masaryk.log and send
-        the last 10 lines to the channel
-        """
-        with open("assets/masaryk.log", "r") as file:
-            lines = file.read().splitlines()
-            self.last_log_lines = lines[-10:]
-            embed = Embed(title="Log", description="\n".join(
-                self.last_log_lines))
-            self.logmsg = await ctx.send(embed=embed)
-
-    @getlogs.command(name="-f", aliases=("--follow",))
-    async def follow(self, ctx):
-        """
-        read the file masaryk.log and send
-        the last 10 lines to the channel
-        update the message every 2 seconds unless
-        a change does not happen for 200 seconds
-        """
-        attempts = 0
-        while True:
-            with open("assets/masaryk.log", "r") as file:
-                lines = file.read().splitlines()
-                new_last_lines = lines[-10:]
-                if new_last_lines != self.last_log_lines:
-                    embed = Embed(
-                        title="Log", description="\n".join(new_last_lines))
-                    await self.logmsg.edit(embed=embed)
-                await asyncio.sleep(2)
-            attempts += 1
-
-            if attempts > 100:
-                break
-
-    @getlogs.command(name="ready")
-    @commands.is_owner()
-    async def ready(self, ctx):
-        await ctx.send("```" + str(self.bot.readyCogs) + "```")
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.group(name="error_channel")
-    @has_permissions(manage_channels=True)
-    @commands.is_owner()
-    async def error_channel(self, ctx):
-        pass
-
-    @error_channel.command(name="set")
-    async def error_channel_set(self, ctx):
-        with open("assets/local_db.json", "r", encoding="utf-8") as file:
-            local_db = json.load(file)
-            local_db.setdefault("error_channels", [])
-            if ctx.channel.id not in local_db["error_channels"]:
-                local_db["error_channels"].append(ctx.channel.id)
-
-        with open("assets/local_db.json", "w", encoding="utf-8") as file:
-            json.dump(local_db, file)
-
-        await ctx.message.delete()
-        await ctx.send("Log Channel set successfully", delete_after=5)
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 

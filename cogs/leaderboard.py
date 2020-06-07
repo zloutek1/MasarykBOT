@@ -3,15 +3,12 @@ from discord import Embed, Member, File
 from discord.channel import TextChannel
 from discord.utils import escape_markdown
 
-import re
 import logging
-from emoji import UNICODE_EMOJI
 from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import interpolate
-from collections import Counter
 
 import core.utils.get
 import core.utils.index
@@ -37,69 +34,13 @@ class Leaderboard(commands.Cog):
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
-    @needs_database
-    async def catchup_leaderboard_emoji_get(self, message, leaderboard_emoji_data: dict, *, db: Database = None):
-        """
-        format each emoji in message in format
-            (guild_id, channel_id, emoji, count, created_at)
-        append the data into leaderboard_emoji_data
-        """
-        c = message.content.lower()
-
-        emojis = (re.findall(r"\<\:\w+\:(\d+)\>", c) +
-                  [em for em in c if em in UNICODE_EMOJI] +
-                  re.findall(r"(?:\s|^)(:\)|<3|:\(|;\(|:P|:\*|:o|:'\))(?:\s|$)", c))
-
-        for emoji in emojis:
-            if emoji.isdigit():
-                emoji = self.bot.get_emoji(int(emoji))
-                if emoji is None:
-                    emoji = core.utils.get(self.bot.emojis, name="nitroEmotes")
-
-                emoji = emoji.id
-
-            key = (message.guild.id, message.channel.id, emoji)
-            entry = leaderboard_emoji_data.get(key, (0, None))
-            leaderboard_emoji_data[key] = (entry[0] + 1, message.created_at)
-
-    @needs_database
-    async def catchup_leaderboard_emoji_insert(self, leaderboard_emoji_data, *, db: Database = None):
-        """
-        insert the leaderboard_emoji_data into the
-        database in chunks
-        """
-        leaderboard_emoji_data = [key + val for key,
-                                  val in leaderboard_emoji_data.items()]
-        chunks = self.chunks(leaderboard_emoji_data, 550)
-        for i, chunk in enumerate(chunks):
-            await db.executemany("""
-                INSERT INTO leaderboard_emoji
-                    (guild_id, channel_id, emoji, sent_times, `timestamp`)
-                VALUES (%s, %s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE sent_times=sent_times+1
-            """, chunk)
-            await db.commit()
-            self.log.info(
-                f"Saved {(i + 1) * 550} rows for leaderboard_emoji to database")
-
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
     @commands.Cog.listener()
     async def on_ready(self):
-        """
-        check if core.logger Cog is loaded (has add_catchup_task variable)
-        add catchup_methods to the bot
-        """
-
         self.bot.readyCogs[self.__class__.__name__] = False
 
         #
         # leaderboard is updated via database trigger command
         #
-
-        if hasattr(self.bot, "add_catchup_task"):
-            self.bot.add_catchup_task(
-                "leaderboard_emoji", self.catchup_leaderboard_emoji_get, self.catchup_leaderboard_emoji_insert, task_data=dict())
 
         self.bot.readyCogs[self.__class__.__name__] = True
 
@@ -132,12 +73,11 @@ class Leaderboard(commands.Cog):
         """
 
         author = ctx.message.author
+        if ctx.guild is None:
+            return await ctx.send("Not allowed in private channels")
 
         bots = core.utils.get(ctx.guild.members, key=lambda user: user.bot)
         bots_ids = list(map(lambda bot: bot.id, bots))
-
-        # webhooks = await ctx.guild.webhooks()
-        # webhooks_ids = list(map(lambda webhook: webhook.user.id, webhooks))
 
         params = {
             "guild_id": ctx.guild.id,
@@ -145,19 +85,6 @@ class Leaderboard(commands.Cog):
             "author_id": member.id if member else author.id,
             "ignored_ids": tuple(bots_ids)
         }
-
-        """
-        params["guild_id"] = ctx.guild.id
-
-        if channel:
-            params["channel_id"] = channel.id
-
-        if member:
-            params["author_id"] = member.id
-        else:
-            params["author_id"] = author.id
-        """
-
 
         top10_SQL = f"""
             SELECT
@@ -222,6 +149,13 @@ class Leaderboard(commands.Cog):
         def right_justify(text, by=0, pad=" "):
             return pad * (by - len(str(text))) + str(text)
 
+        def get_author(row):
+            _id = author.id if not member else member.id
+            if row["author_id"] == _id:
+                return f'**{escape_markdown(row["author"])}**'
+            else:
+                return escape_markdown(row["author"])
+
         template = "`{index:0>2}.` {medal} `{count}` {author}"
 
         embed = Embed(color=0x53acf2)
@@ -233,16 +167,12 @@ class Leaderboard(commands.Cog):
                     template.format(
                         index=i + 1,
                         medal=self.get_medal(i + 1),
-                        count=right_justify(row["count"], len(
-                            str(rows1[0]["count"])), "\u2063 "),
-                        author=f'**{escape_markdown(row["author"])}**'
-                        if row["author_id"] == (
-                            author.id if not member else member.id)
-                        else
-                        escape_markdown(row["author"])
+                        count=right_justify(row["count"], len(str(rows1[0]["count"])), "\u2063 "),
+                        author=get_author(row)
                     )
                     for i, row in enumerate(rows1)
                 ]))
+
         embed.add_field(
             name="Your position",
             inline=True,
@@ -250,16 +180,12 @@ class Leaderboard(commands.Cog):
                 template.format(
                     index=row["row_number"],
                     medal=self.get_medal(row["row_number"]),
-                    count=right_justify(row["count"], len(
-                        str(rows1[0]["count"])), "\u2063 "),
-                    author=(f'**{escape_markdown(row["author"])}**'
-                            if row["author_id"] == (
-                                author.id if not member else member.id)
-                            else
-                            escape_markdown(row["author"]))
+                    count=right_justify(row["count"], len(str(rows1[0]["count"])), "\u2063 "),
+                    author=get_author(row)
                 )
                 for j, row in enumerate(rows2)
             ]))
+
         time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         embed.set_footer(text=f"{str(author)} at {time_now}", icon_url=author.avatar_url)
         await ctx.send(embed=embed)
@@ -271,94 +197,6 @@ class Leaderboard(commands.Cog):
             3: core.utils.get(self.bot.emojis, name="bronze_medal")
         }.get(i, core.utils.get(self.bot.emojis, name="BLANK"))
 
-    """--------------------------------------------------------------------------------------------------------------------------"""
-
-    @commands.command(name="emojiboard", aliases=("emoji_leaderboard", "leadermoji"))
-    @needs_database
-    async def emojiboard(self, ctx, channel: TextChannel = None, *, db: Database = None):
-        """
-        get message leaderboard from the database
-        the output format is
-            FI MUNI emoji Leaderboard!
-            {n}.   {emoji} ......... {count}
-            ... top10 ...
-
-            Nitro {count}
-
-        optional arguments
-        #channel - get emojis only in one channel
-        """
-
-        channel = channel if isinstance(channel, TextChannel) else None
-
-        guild = ctx.guild
-
-        params = {"guild_id": guild.id}
-
-        if channel:
-            params["channel_id"] = channel.id
-
-        top10_SQL = f"""
-            SELECT
-                emoji,
-                SUM(sent_times) AS `count`
-            FROM leaderboard_emoji AS ldb
-            WHERE emoji != "617744996497621025" AND
-            guild_id = %(guild_id)s {'AND channel_id = %(channel_id)s' if channel is not None else ''}
-            GROUP BY emoji
-            ORDER BY `count` DESC
-            LIMIT 10
-        """
-
-        await db.execute(top10_SQL, params)
-        rows = await db.fetchall()
-
-        nitro_SQL = f"""
-        SELECT
-            emoji,
-            SUM(sent_times) AS `count`
-        FROM leaderboard_emoji AS ldb
-        WHERE emoji = "617744996497621025" AND
-        guild_id = %(guild_id)s {'AND channel_id = %(channel_id)s' if channel is not None else ''}
-        GROUP BY emoji
-        ORDER BY `count` DESC
-        LIMIT 1;
-        """
-        await db.execute(nitro_SQL, params)
-        nitro_row = await db.fetchone()
-
-        """
-        print the emoji leaderboard
-        """
-        def right_justify(text, by=0, pad=" "):
-            return pad * (by - len(str(text))) + str(text)
-
-        template = "`{index:0>2}.` {emoji} `{count:.>20}`"
-
-        embed = Embed(color=0x53acf2)
-        embed.add_field(
-            name=f"FI MUNI emoji Leaderboard! ({len(rows)})",
-            inline=False,
-            value="\n".join([
-                template.format(
-                    index=i + 1,
-                    count=row["count"],
-                    emoji=self.bot.get_emoji(
-                        int(row["emoji"])) if row["emoji"].isdigit() else row["emoji"]
-                )
-                for i, row in enumerate(rows)
-            ]))
-        embed.add_field(
-            name="Nitro emojis",
-            inline=False,
-            value="{emoji} `{count}`".format(
-                count=right_justify(nitro_row["count"], len(
-                    str(nitro_row["count"])), "\u2063 "),
-                emoji=self.bot.get_emoji(int(nitro_row["emoji"])),
-            )
-        )
-        await ctx.send(embed=embed)
-
     @commands.command("graph")
     @commands.cooldown(1, 120, commands.BucketType.channel)
     @needs_database
@@ -367,7 +205,7 @@ class Leaderboard(commands.Cog):
         rows = await db.fetchall()
 
         values = list(map(lambda x: tuple(x.values()), rows))
-        xs = [t[0]*60*60+t[1]*60 for t in values]
+        xs = [t[0] * 60 * 60 + t[1] * 60 for t in values]
         ys = [t[2] for t in values]
 
         x_new = np.linspace(0, 86340, 86340)
@@ -380,43 +218,6 @@ class Leaderboard(commands.Cog):
 
         await ctx.send(file=File('assets/graph.png'))
 
-    @commands.command("words")
-    @commands.cooldown(1, 120, commands.BucketType.guild)
-    @needs_database
-    async def words(self, ctx, *, db: Database = None):
-        await db.execute("SELECT `content` FROM `message`")
-        rows = await db.fetchall()
-
-        counter = Counter([word
-                           for row in rows
-                           for word in row["content"].split()
-                           if len(word) > 3 and len(list(filter(str.isalpha, word))) >= len(word) // 2])
-
-
-        embed = Embed(color=0x53acf2)
-        embed.add_field(
-            name="Most common words used",
-            inline=False,
-            value="\n".join([
-                "`{index:0>2}. {count}` {word}".format(index=i+1, count=row[1], word=row[0].replace("`", "\\`").replace("*", "\\*"))
-                for i, row in enumerate(counter.most_common(10))
-            ])
-        )
-        embed.add_field(
-            name="Here is some more",
-            inline=False,
-            value=",  ".join([
-                "{word} ({count})".format(word=row[0].replace("`", "\\`").replace("*", "\\*"), count=row[1])
-                for i, row in enumerate(counter.most_common(100))
-                if i >= 10
-            ])[:800]+"..."
-        )
-
-        author = ctx.message.author
-        time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        embed.set_footer(text=f"{str(author)} at {time_now}", icon_url=author.avatar_url)
-
-        await ctx.send(embed=embed)
 
 def setup(bot):
     bot.add_cog(Leaderboard(bot))

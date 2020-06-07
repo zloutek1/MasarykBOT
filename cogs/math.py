@@ -1,6 +1,7 @@
 import os
 import re
 import urllib
+import logging
 from typing import Optional
 
 import numpy
@@ -13,12 +14,13 @@ from discord.ext import commands
 from discord.utils import escape_markdown, escape_mentions
 
 
-
 class Math(commands.Cog):
     """LaTeX and Graph drawing commands"""
 
     def __init__(self, bot):
         self.bot = bot
+        self.log = logging.getLogger(__name__)
+
         self.rep_exp = {
             "x": "x",
             "sin": "numpy.sin",
@@ -60,7 +62,7 @@ class Math(commands.Cog):
         # surround operators with spaces and replace ^ with **
         for old, new in self.rep_op.items():
             string = string.replace(old, new)
-        string = " ".join(string.split()) # replaces duplicate spaces
+        string = " ".join(string.split())  # replaces duplicate spaces
 
         # find all words and check if all are allowed:
         for word in re.findall("[a-zA-Z_]+", string):
@@ -134,14 +136,15 @@ class Math(commands.Cog):
                 successful_eq += 1
             except Exception as e:
                 msg += "\n" + eq + " - " + str(e)
+
         if msg != "Couldn't plot these functions:":
             await ctx.send(msg)
+
         if successful_eq > 0:
             plt.savefig("assets/plot.png", bbox_inches="tight", dpi=100)
             plt.clf()
             await ctx.send(file=discord.File("assets/plot.png"))
             os.remove("assets/plot.png")
-        return
 
     """---------------------------------------------------------------------------------------------------------------------------"""
 
@@ -152,6 +155,8 @@ class Math(commands.Cog):
         save the file into assets/graphviz.png
         send the file to channel
         """
+        self.log.info("rendering digraph plot")
+
         src = gz.Source(equasion, format="png")
         src.render("assets/graphviz", view=False)
 
@@ -193,6 +198,8 @@ class Math(commands.Cog):
 
         if self.bot.user not in await reaction.users().flatten():
             return
+
+        self.log.info(f"{user} has reacted on graphviz message")
 
         ctx = commands.Context(
             prefix=self.bot.command_prefix,
