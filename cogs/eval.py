@@ -36,15 +36,14 @@ class Evaluator:
     def __init__(self):
         self.allowed_builtins["print"] = self.print
 
-        from io import StringIO
-        self.out = StringIO()
+        import tempfile
+        self.filename = tempfile.NamedTemporaryFile().name
+        print("start", self.filename)
 
-    def print(self, *args, **kwargs):
-        import sys
-
-        sys.stdout = self.out
-        print(*args, **kwargs)
-        sys.stdout = sys.__stdout__
+    def print(self, *args, sep=" ", end="\n", file=None, flush=None):
+        with open(self.filename, "a") as f:
+            f.write(sep.join(args) + end)
+            f.flush()
 
     class Transformer(ast.NodeTransformer):
         def visit_Import(self, node):
@@ -92,7 +91,8 @@ class Evaluator:
         co = compile(tree, filename="<ast>", mode="exec")
         exec(co, {'__builtins__': self.allowed_builtins}, {})
 
-        return "--"
+        with open(self.filename, "r") as f:
+            return f.read()
 
 
 class Eval(commands.Cog):
@@ -150,10 +150,9 @@ class Eval(commands.Cog):
         embed = Embed(color=Color(0xffffcc))
 
         time_start = time.time()
-
         ret_code, value = await self.eval_coro(body)
-
         time_end = time.time()
+
         elapsed_time = time.strftime(
             "%H:%M:%S", time.gmtime(time_end - time_start))
 
@@ -161,18 +160,22 @@ class Eval(commands.Cog):
         if ret_code == 0:
             dots = "..." if len(value) > 1000 else ""
             embed.add_field(
-                name="Output", value=f'```py\n{value[:1000]}{dots}\n```')
+                name="Output",
+                value=f'```py\n{value[:1000]}{dots}\n```')
             embed.set_footer(
-                text=f"Finished in: {elapsed_time}", icon_url=ctx.author.avatar_url)
+                text=f"Finished in: {elapsed_time}",
+                icon_url=ctx.author.avatar_url)
 
             out = await ctx.send(embed=embed)
 
         else:
             embed.color = Color.red()
             embed.add_field(
-                name="Error", value=f'```\n{value}\n```')
+                name="Error",
+                value=f'```\n{value}\n```')
             embed.set_footer(
-                text=f"Finished in: {elapsed_time}", icon_url=ctx.author.avatar_url)
+                text=f"Finished in: {elapsed_time}",
+                icon_url=ctx.author.avatar_url)
 
             err = await ctx.send(embed=embed)
 
