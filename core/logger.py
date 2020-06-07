@@ -156,12 +156,6 @@ class Logger(commands.Cog):
         if everything went smoothly set logger status as 'success'
         """
 
-        ignore_channels = []
-        with open("assets/local_db.json", "r", encoding="utf-8") as file:
-            local_db = json.load(file)
-            ignore_channels += local_db["log_channels"]
-            ignore_channels += local_db["error_channels"]
-
         # assert row exists
         await db.execute("""
             INSERT INTO logger (state)
@@ -187,22 +181,24 @@ class Logger(commands.Cog):
         # backup messages for each channel
         ##
         for i, channel in enumerate(in_channels):
-            if not channel.last_message_id or channel.id in ignore_channels:
-                self.log.info(
-                    f"Skipping channel {channel} ({i} / {len(in_channels)})")
+            if not channel.last_message_id:
+                self.log.info(f"Skipping channel {channel} ({i} / {len(in_channels)})")
                 continue
 
-            self.log.info(
-                f"Backing up messages in {channel} ({i} / {len(in_channels)})")
+            self.log.info(f"Backing up messages in {channel} ({i} / {len(in_channels)})")
 
             authors_data = set()
             messages_data = []
             attachments_data = []
 
-            after = (row["from_date"].replace(day=1)
+            after = (None
+                     if row["from_date"] is None else
+                     row["from_date"].replace(day=1)
                      if row["from_date"].day > 1 else
                      self.prev_month(row["from_date"]).replace(day=1))
-            before = self.last_day_of_month(row["to_date"])
+            before = (None
+                      if row["to_date"] else
+                      self.last_day_of_month(row["to_date"]))
 
             await safe(self.get_messages)(channel, authors_data, messages_data, attachments_data, after=after, before=before)
 
