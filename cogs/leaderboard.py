@@ -73,6 +73,8 @@ class Leaderboard(commands.Cog):
         """
 
         author = ctx.message.author
+        if ctx.guild is None:
+            return await ctx.send("Not allowed in private channels")
 
         bots = core.utils.get(ctx.guild.members, key=lambda user: user.bot)
         bots_ids = list(map(lambda bot: bot.id, bots))
