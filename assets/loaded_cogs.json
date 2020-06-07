@@ -6,7 +6,6 @@
 
         "cogs.aboutmenu",
         "cogs.admin",
-        "cogs.eval",
         "cogs.fun",
         "cogs.leaderboard",
         "cogs.math",
