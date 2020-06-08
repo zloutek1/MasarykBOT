@@ -4,15 +4,15 @@ Create a bot account fllowing [this guide](https://discordpy.readthedocs.io/en/l
 
 Clone the repo:
 ```
-git clone https://gitlab.com/zloutek1/MasarykBOT.git
-cd MasarykBOT/bot/
+git clone https://github.com/zloutek1/MasarykBOT.git
+cd MasarykBOT
 ```
 
 ## Setup database
 
-Install a MySQL server:
+Install a MariaDB server:
 - for example download [WAMP](http://www.wampserver.com/en/), LAMP or XAMPP Apache servers
-- then upgrade the default MySQL 5 to MySQL 8.0+ from [mysql.com/downloads](https://dev.mysql.com/downloads/mysql/)
+- use MariaDB 10.1 so upgrade to this version if needed
 - to have the same database structure as the bot uses import `assets/database_setup.sql` into your database
 
 MasarykBOT will run also without the database, but ceratin commands will be unavailable
@@ -20,17 +20,20 @@ MasarykBOT will run also without the database, but ceratin commands will be unav
 ## Setup enviroment variables
 
 you need to setup your enviroment variables
-either create a `*.env*` file.
+either create a `.env` file.
 
 .env file content:
 ```
-DB_DATABASE = "discord"
-DB_HOST = "localhost"
-DB_PASS = "<your_password>"
-DB_PORT = 3306
-DB_USER = "root"
 PREFIX = "!"
-TOKEN = "<your_bot_token>"
+TOKEN = "<your-token>"
+
+DB_HOST = "<your-ip>"
+DB_PORT = 3306
+DB_USER = "devMasaryk"
+DB_PASS = "devBotOnMUNI"
+DB_DATABASE = "discord"
+
+NEED_REACTIONS = 4
 ```
 
 ## Python settings
