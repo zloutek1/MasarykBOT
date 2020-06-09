@@ -3,6 +3,7 @@ from discord import Embed, Member, File
 from discord.channel import TextChannel
 from discord.utils import escape_markdown
 
+import os
 import logging
 from typing import Union
 
@@ -71,6 +72,11 @@ class Leaderboard(commands.Cog):
         #channel - get messages only in one channel
         @member - get only the Your position section
         """
+
+        bot_channel_id = os.getenv("BOT_CHANNEL")
+        if bot_channel_id is not None and ctx.channel.id != int(bot_channel_id):
+            bot_channel = self.bot.get_channel(int(bot_channel_id))
+            return await ctx.send(f":point_right: {bot_channel.mention}")
 
         author = ctx.message.author
         if ctx.guild is None:
