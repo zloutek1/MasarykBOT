@@ -149,7 +149,7 @@ class Events(commands.Cog):
         author = '{0} (ID: {0.id})'.format(ctx.message.author)
         location = fmt.format(ctx.message.channel, ctx.message.guild)
 
-        self.error.log(f'{name} at {time}: Called by: {author} in {location}. More info: {description}')
+        self.log.error(f'{name} at {time}: Called by: {author} in {location}. More info: {description}')
 
     """---------------------------------------------------------------------"""
 
