@@ -23,7 +23,7 @@ class Reactionmenu(commands.Cog):
         self.in_channels = set()
         self.updating_channels = {}
 
-        self.NEED_REACTIONS = int(os.getenv("NEED_REACTIONS"))
+        self.NEED_REACTIONS = int(os.getenv("NEED_REACTIONS", 0))
 
     """--------------------------------------------------------------------------------------------------------------------------"""
 
