@@ -8,7 +8,6 @@
         "cogs.admin",
         "cogs.fun",
         "cogs.leaderboard",
-        "cogs.math",
         "cogs.reactionmenu",
         "cogs.verification"
 ]
