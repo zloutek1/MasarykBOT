@@ -64,6 +64,8 @@ class Math(commands.Cog):
             string = string.replace(old, new)
         string = " ".join(string.split())  # replaces duplicate spaces
 
+        if not string.isascii():
+            raise ValueError("Non ASCII characters are forbidden to use in math expression")                                     
         # find all words and check if all are allowed:
         for word in re.findall("[a-zA-Z_]+", string):
             if word not in self.rep_exp.keys():
