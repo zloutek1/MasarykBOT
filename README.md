@@ -24,16 +24,16 @@ either create a `.env` file.
 
 .env file content:
 ```
-PREFIX = "!"
-TOKEN = "<your-token>"
+PREFIX=!
+TOKEN=<your-token>
 
-DB_HOST = "<your-ip>"
-DB_PORT = 3306
-DB_USER = "devMasaryk"
-DB_PASS = "devBotOnMUNI"
-DB_DATABASE = "discord"
+DB_HOST=<your-ip>
+DB_PORT=3306
+DB_USER=devMasaryk
+DB_PASS=devBotOnMUNI
+DB_DATABASE=discord
 
-NEED_REACTIONS = 4
+NEED_REACTIONS=4
 ```
 
 ## Python settings
