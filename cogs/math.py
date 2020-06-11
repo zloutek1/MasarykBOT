@@ -1,6 +1,8 @@
 import os
 import re
+import io
 import urllib
+import aiohttp
 import logging
 from typing import Optional
 
@@ -45,7 +47,7 @@ class Math(commands.Cog):
             "sqrt": "numpy.sqrt",
             "cbrt": "numpy.cbrt",
             "abs": "numpy.absolute",
-            "fact": "gamma",
+            "gamma": "gamma",
         }
         self.rep_op = {
             "+": " + ",
@@ -79,23 +81,19 @@ class Math(commands.Cog):
 
         return func
 
-    async def get_math_equation(self, equation):
-        """
-        send the text equasion to the API
-        send the result image to channel
-        """
-        tex2imgURL = "http://www.sciweavers.org/tex2img.php?eq={}&bc=Black&fc=White&im=png&fs=18&ff=arev&edit=0"
-        urllib.request.urlretrieve(
-            tex2imgURL.format(urllib.parse.quote(equation)), "assets/latex.png"
-        )
-
-        return discord.File("assets/latex.png")
-
     @commands.command()
     async def latex(self, ctx, *, equation):
-        embed = await self.get_math_equation(equation)
-        await ctx.send(file=embed)
-        os.remove("assets/latex.png")
+        channel = ctx.channel
+        async with ctx.typing():
+            imgURL = (
+                "http://www.sciweavers.org/tex2img.php?eq={}&bc=Black&fc=White&im=png&fs=18&ff=arev&edit=0"
+            ).format(urllib.parse.quote(equation))
+            async with aiohttp.ClientSession() as session:
+                async with session.get(imgURL) as resp:
+                    if resp.status != 200:
+                        return await ctx.send("Could not get image.")
+                    data = io.BytesIO(await resp.read())
+                    await channel.send(file=discord.File(data, "latex.png"))
 
     """---------------------------------------------------------------------------------------------------------------------------"""
 
