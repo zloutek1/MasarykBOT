@@ -17,6 +17,8 @@ $ Hello
 """
 
 initail_cogs = [
+    "cogs.cog_manager",
+    "cogs.info"
 ]
 
 log = logging.getLogger(__name__)
@@ -38,11 +40,13 @@ class MasarykBOT(commands.Bot):
                 traceback.print_exc()
 
     async def on_command_error(self, ctx, error):
+        red = discord.Color.red()
+
         if isinstance(error, commands.NoPrivateMessage):
-            await ctx.author.send('This command cannot be used in private messages.')
+            await ctx.author.send_embed('This command cannot be used in private messages.', color=red)
 
         elif isinstance(error, commands.DisabledCommand):
-            await ctx.author.send('Sorry. This command is disabled and cannot be used.')
+            await ctx.author.send_embed('Sorry. This command is disabled and cannot be used.', color=red)
 
         elif isinstance(error, commands.CommandInvokeError):
             original = error.original
@@ -52,7 +56,10 @@ class MasarykBOT(commands.Bot):
                 log.error(f'{original.__class__.__name__}: {original}')
 
         elif isinstance(error, commands.ArgumentParsingError):
-            await ctx.send(error)
+            await ctx.send_embed(error, color=red)
+
+        elif isinstance(error, commands.MissingPermissions):
+            await ctx.send_embed("Sorry. You don't have permissions to use this command", color=red)
 
     async def on_ready(self):
         if not hasattr(self, 'uptime'):
