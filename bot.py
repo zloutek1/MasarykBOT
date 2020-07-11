@@ -39,6 +39,12 @@ class MasarykBOT(commands.Bot):
                 log.error(f'Failed to load extension {extension}.')
                 traceback.print_exc()
 
+    async def on_ready(self):
+        if not hasattr(self, 'uptime'):
+            self.uptime = datetime.utcnow()
+
+        self.intorduce()
+
     async def on_command_error(self, ctx, error):
         red = discord.Color.red()
 
@@ -60,12 +66,6 @@ class MasarykBOT(commands.Bot):
 
         elif isinstance(error, commands.MissingPermissions):
             await ctx.send_embed("Sorry. You don't have permissions to use this command", color=red)
-
-    async def on_ready(self):
-        if not hasattr(self, 'uptime'):
-            self.uptime = datetime.utcnow()
-
-        self.intorduce()
 
     async def process_commands(self, message):
         ctx = await self.get_context(message, cls=context.Context)
