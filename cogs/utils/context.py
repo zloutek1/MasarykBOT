@@ -1,5 +1,6 @@
 import io
 import discord
+from discord.utils import get
 from discord.ext import commands
 
 import re
@@ -68,6 +69,26 @@ class Context(commands.Context):
         if self._db is not None:
             await self.bot.pool.release(self._db)
             self._db = None
+
+    def get_category(self, name=None, **kwargs):
+        kwargs.update({"name": name}) if name is not None else None
+        return get(self.guild.categories, **kwargs)
+
+    def get_channel(self, name=None, **kwargs):
+        kwargs.update({"name": name}) if name is not None else None
+        return get(self.guild.channels, **kwargs)
+
+    def get_role(self, name=None, **kwargs):
+        kwargs.update({"name": name}) if name is not None else None
+        return get(self.guild.roles, **kwargs)
+
+    def get_emoji(self, name=None, **kwargs):
+        kwargs.update({"name": name}) if name is not None else None
+        return get(self.bot.emojis, **kwargs)
+
+    def get_user(self, name=None, **kwargs):
+        kwargs.update({"name": name}) if name is not None else None
+        return get(self.guild.members, **kwargs)
 
     def channel_name(self, text):
         return re.sub("[^a-zA-Z0-9-]", "", "-".join(text.lower().split()))
