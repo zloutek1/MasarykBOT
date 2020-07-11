@@ -11,6 +11,11 @@ class Info(commands.Cog):
         self.bot = bot
 
     @commands.command()
+    async def uptime(self, ctx):
+        running_for = datetime.now() - self.bot.uptime
+        await ctx.send_embed(f"I have been running for {running_for}")
+
+    @commands.command()
     async def ping(self, ctx):
         """Feeling lonely?"""
         before_typing = time.monotonic()
