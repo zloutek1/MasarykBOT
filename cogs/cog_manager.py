@@ -7,7 +7,8 @@ class CogManager(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(hidden=True)
+    @commands.command()
+    @commands.has_permissions(administrator=True)
     async def load(self, ctx, *, module):
         """Loads a module."""
         try:
@@ -17,7 +18,8 @@ class CogManager(commands.Cog):
         else:
             await ctx.send_embed(f'{module} loaded successfully', color=Color.green())
 
-    @commands.command(hidden=True)
+    @commands.command()
+    @commands.has_permissions(administrator=True)
     async def unload(self, ctx, *, module):
         """Unloads a module."""
         try:
@@ -27,7 +29,8 @@ class CogManager(commands.Cog):
         else:
             await ctx.send_embed(f'{module} unloaded successfully', color=Color.green())
 
-    @commands.group(name='reload', hidden=True, invoke_without_command=True)
+    @commands.group(name='reload', invoke_without_command=True)
+    @commands.has_permissions(administrator=True)
     async def _reload(self, ctx, *, module):
         """Reloads a module."""
         try:
@@ -52,11 +55,12 @@ class CogManager(commands.Cog):
 
         await ctx.send_embed(output)
 
-    @commands.command(hidden=True)
+    @commands.command()
+    @commands.has_permissions(administrator=True)
     async def cogs(self, ctx):
         await ctx.send_embed(" **»** " + "\n **»** ".join(self.bot.cogs))
 
-    @commands.command(hidden=True, aliases=["extentions"])
+    @commands.command(aliases=["extentions"])
     async def extensions(self, ctx):
         await ctx.send_embed(" **»** " + "\n **»** ".join(self.bot.extensions))
 
