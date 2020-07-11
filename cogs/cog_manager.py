@@ -1,6 +1,8 @@
 from discord import Color
 from discord.ext import commands
 
+from .utils import checks
+
 
 class CogManager(commands.Cog):
 
@@ -8,7 +10,7 @@ class CogManager(commands.Cog):
         self.bot = bot
 
     @commands.command()
-    @commands.has_permissions(administrator=True)
+    @checks.has_permissions(administrator=True)
     async def load(self, ctx, *, module):
         """Loads a module."""
         try:
@@ -19,7 +21,7 @@ class CogManager(commands.Cog):
             await ctx.send_embed(f'{module} loaded successfully', color=Color.green())
 
     @commands.command()
-    @commands.has_permissions(administrator=True)
+    @checks.has_permissions(administrator=True)
     async def unload(self, ctx, *, module):
         """Unloads a module."""
         try:
@@ -30,7 +32,7 @@ class CogManager(commands.Cog):
             await ctx.send_embed(f'{module} unloaded successfully', color=Color.green())
 
     @commands.group(name='reload', invoke_without_command=True)
-    @commands.has_permissions(administrator=True)
+    @checks.has_permissions(administrator=True)
     async def _reload(self, ctx, *, module):
         """Reloads a module."""
         try:
@@ -41,6 +43,7 @@ class CogManager(commands.Cog):
             await ctx.send_embed(f'{module} reloaded successfully', color=Color.green())
 
     @_reload.command(name='all', hidden=True)
+    @checks.has_permissions(administrator=True)
     async def _reload_all(self, ctx):
         """Reloads all modules"""
         output = ""
@@ -56,11 +59,12 @@ class CogManager(commands.Cog):
         await ctx.send_embed(output)
 
     @commands.command()
-    @commands.has_permissions(administrator=True)
+    @checks.has_permissions(administrator=True)
     async def cogs(self, ctx):
         await ctx.send_embed(" **»** " + "\n **»** ".join(self.bot.cogs))
 
     @commands.command(aliases=["extentions"])
+    @checks.has_permissions(administrator=True)
     async def extensions(self, ctx):
         await ctx.send_embed(" **»** " + "\n **»** ".join(self.bot.extensions))
 
