@@ -82,3 +82,8 @@ class Context(commands.Context):
             return await self.send(file=discord.File(fp, filename='message_too_long.txt'), **kwargs)
         else:
             return await self.send(content)
+
+    async def send_embed(self, content, name="Message", **kwargs):
+        embed = discord.Embed(**kwargs)
+        embed.add_field(name=name, value=content)
+        await self.send(embed=embed)
