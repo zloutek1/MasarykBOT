@@ -17,7 +17,6 @@ $ Hello
 """
 
 initail_cogs = [
-    "cogs.test"
 ]
 
 log = logging.getLogger(__name__)
@@ -84,6 +83,7 @@ class MasarykBOT(commands.Bot):
         else:
             self._auto_spam_count.pop(author_id, None)
 
+        log.info(f"user {message.author} used command: {message.content}")
         await self.invoke(ctx)
 
     async def on_message(self, message):
@@ -94,6 +94,10 @@ class MasarykBOT(commands.Bot):
     def add_cog(self, cog: commands.Cog) -> None:
         super().add_cog(cog)
         log.info(f"Cog loaded: {cog.qualified_name}")
+
+    def remove_cog(self, name: str) -> None:
+        super().remove_cog(name)
+        log.info(f"Cog unloaded: {name}")
 
     def run(self, token):
         try:
