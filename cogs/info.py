@@ -14,9 +14,11 @@ class Info(commands.Cog):
         """
         send an embed containing info in format
         Server_id           Owner
+
         Channels
-        text | voice
+        text | category | voice
         Total:
+
         Members
         online | idle | dnd | streaming | offline
         Total:
