@@ -1,8 +1,8 @@
+from discord import Color
 from discord.ext import commands
 
 
-class Admin(commands.Cog):
-    """Admin-only commands that make the bot dynamic."""
+class CogManager(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
@@ -13,9 +13,9 @@ class Admin(commands.Cog):
         try:
             self.bot.load_extension(module)
         except commands.ExtensionError as e:
-            await ctx.send_embed(f'{e.__class__.__name__}: {e}')
+            await ctx.send_embed(f'{e.__class__.__name__}: {e}', color=Color.red())
         else:
-            await ctx.send_embed(f'{module} loaded successfully')
+            await ctx.send_embed(f'{module} loaded successfully', color=Color.green())
 
     @commands.command(hidden=True)
     async def unload(self, ctx, *, module):
@@ -23,9 +23,9 @@ class Admin(commands.Cog):
         try:
             self.bot.unload_extension(module)
         except commands.ExtensionError as e:
-            await ctx.send_embed(f'{e.__class__.__name__}: {e}')
+            await ctx.send_embed(f'{e.__class__.__name__}: {e}', color=Color.red())
         else:
-            await ctx.send_embed(f'{module} unloaded successfully')
+            await ctx.send_embed(f'{module} unloaded successfully', color=Color.green())
 
     @commands.group(name='reload', hidden=True, invoke_without_command=True)
     async def _reload(self, ctx, *, module):
@@ -33,9 +33,9 @@ class Admin(commands.Cog):
         try:
             self.bot.reload_extension(module)
         except commands.ExtensionError as e:
-            await ctx.send_embed(f'{e.__class__.__name__}: {e}')
+            await ctx.send_embed(f'{e.__class__.__name__}: {e}', color=Color.red())
         else:
-            await ctx.send_embed(f'{module} reloaded successfully')
+            await ctx.send_embed(f'{module} reloaded successfully', color=Color.green())
 
     @_reload.command(name='all', hidden=True)
     async def _reload_all(self, ctx):
@@ -52,6 +52,14 @@ class Admin(commands.Cog):
 
         await ctx.send_embed(output)
 
+    @commands.command(hidden=True)
+    async def cogs(self, ctx):
+        await ctx.send_embed(" **»** " + "\n **»** ".join(self.bot.cogs))
+
+    @commands.command(hidden=True, aliases=["extentions"])
+    async def extensions(self, ctx):
+        await ctx.send_embed(" **»** " + "\n **»** ".join(self.bot.extensions))
+
 
 def setup(bot):
-    bot.add_cog(Admin(bot))
+    bot.add_cog(CogManager(bot))
