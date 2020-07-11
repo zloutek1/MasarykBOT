@@ -1,25 +1,26 @@
-from discord.ext.commands import when_mentioned_or
-
-from core.bot import MasarykBot
-
 import os
-import json
+import asyncio
+import asyncpg
+import logging
+
+from bot import MasarykBOT
+from cogs.utils.logging import setup_logging
+
 from dotenv import load_dotenv
+load_dotenv()
 
 if __name__ == "__main__":
-    load_dotenv()
+    setup_logging()
 
-    bot = MasarykBot(
-        command_prefix=when_mentioned_or(os.getenv("PREFIX")),
-        case_insensitive=True
-    )
+    loop = asyncio.get_event_loop()
+    log = logging.getLogger()
 
-    # load cogs
-    with open("assets/loaded_cogs.json", "r") as fileR:
-        modules = json.load(fileR)
+    try:
+        pool = loop.run_until_complete(asyncpg.create_pool(os.getenv("POSTGRES"), command_timeout=60))
+    except Exception:
+        log.exception('Could not set up PostgreSQL. Exiting.')
+        exit()
 
-        for module in modules:
-            bot.load_extension(module)
-
-    # start bot
-    bot.start(os.getenv("TOKEN"))
+    bot = MasarykBOT(command_prefix="!")
+    bot.pool = pool
+    bot.run(os.getenv("TOKEN"))
