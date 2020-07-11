@@ -1,13 +1,3 @@
 discord.py
-aiomysql
-requests
-emoji
-Pillow
+asyncpg
 python-dotenv
-graphviz
-beautifulsoup4
-pandas
-numpy
-scipy
-matplotlib
-lxml
