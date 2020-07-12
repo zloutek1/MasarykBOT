@@ -1,6 +1,6 @@
 # MasarykBOT
 
-Create a bot account fllowing [this guide](https://discordpy.readthedocs.io/en/latest/discord.html).
+Create a bot account following [this guide](https://discordpy.readthedocs.io/en/latest/discord.html).
 
 Clone the repo:
 ```
@@ -8,50 +8,50 @@ git clone https://github.com/zloutek1/MasarykBOT.git
 cd MasarykBOT
 ```
 
-## Setup database
 
-Install a MariaDB server:
-- for example download [WAMP](http://www.wampserver.com/en/), LAMP or XAMPP Apache servers
-- use MariaDB 10.1 so upgrade to this version if needed
-- to have the same database structure as the bot uses import `assets/database_setup.sql` into your database
 
-MasarykBOT will run also without the database, but ceratin commands will be unavailable
+## Running
 
-## Setup enviroment variables
+Step 1
 
-you need to setup your enviroment variables
-either create a `.env` file.
+Make sure you have [python 3.8](https://www.python.org/downloads/)
 
-.env file content:
+
+
+Step 2
+
+Install python dependencies:
+
 ```
-PREFIX=!
-TOKEN=<your-token>
-
-DB_HOST=<your-ip>
-DB_PORT=3306
-DB_USER=devMasaryk
-DB_PASS=devBotOnMUNI
-DB_DATABASE=discord
-
-NEED_REACTIONS=4
+pip install -U -r requirements.txt
 ```
 
-## Python settings
 
-Prerequirements:
-- [python 3.7](https://www.python.org/downloads/)
-- [discord.py](https://discordpy.readthedocs.io/en/latest/intro.html#installing)
-- [aiomysql](https://github.com/aio-libs/aiomysql)
 
-Install python packages:
+Step 3
+
+Download and install [postgresql](https://www.postgresql.org/download/), then create the tables by importing the schemes from the [./sql/](sql/) directory.
+
+
+
+Step 4
+
+Setup your environment variables by creating a `.env` file.
+
 ```
-python3 -m pip install -U -r requirements.txt
+POSTGRES = 'postgresql://<user>:<pass>@<server>/<database>'
+TOKEN = "<your-token>"
 ```
 
-Run the bot:
-```
-python3 __main__.py
-```
+
+
+## Requirements
+
+- Python 3.8+
+- v1.0.0 of discord.py
+- asyncpg
+
+
 
 ## (Optional) Deployment to Heroku
 
