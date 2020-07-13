@@ -41,12 +41,16 @@ class TestDatabase(unittest.IsolatedAsyncioTestCase):
 
             self.assertIn("guilds.active", names)
             self.assertIn("guilds.deleted", names)
+
             self.assertIn("categories.active", names)
             self.assertIn("categories.deleted", names)
+
             self.assertIn("channels.active", names)
             self.assertIn("channels.deleted", names)
+
             self.assertIn("messages.active", names)
             self.assertIn("messages.deleted", names)
+
             self.assertNotIn("attachments.active", names)
             self.assertNotIn("attachments.deleted", names)
 

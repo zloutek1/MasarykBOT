@@ -6,11 +6,11 @@ CREATE TABLE server.attachments
 (
     message_id bigint NOT NULL,
     id bigint NOT NULL,
-    filename character varying(127) COLLATE pg_catalog."default",
-    url character varying(127) COLLATE pg_catalog."default",
-    CONSTRAINT attachments_primary PRIMARY KEY (id),
-    CONSTRAINT attachments_messages FOREIGN KEY (message_id)
-        REFERENCES server."messages.active" (id) MATCH SIMPLE
+    filename text COLLATE pg_catalog."default",
+    url character varying(100) COLLATE pg_catalog."default",
+    CONSTRAINT attachments_pkey PRIMARY KEY (id),
+    CONSTRAINT attachments_fkey_message FOREIGN KEY (message_id)
+        REFERENCES server.messages (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
         NOT VALID
@@ -20,11 +20,11 @@ TABLESPACE pg_default;
 
 ALTER TABLE server.attachments
     OWNER to masaryk;
--- Index: fki_attachments_messages
+-- Index: fki_attachments_fkey_message
 
--- DROP INDEX server.fki_attachments_messages;
+-- DROP INDEX server.fki_attachments_fkey_message;
 
-CREATE INDEX fki_attachments_messages
+CREATE INDEX fki_attachments_fkey_message
     ON server.attachments USING btree
     (message_id ASC NULLS LAST)
     TABLESPACE pg_default;

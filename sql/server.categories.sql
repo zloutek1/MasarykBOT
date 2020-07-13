@@ -6,18 +6,37 @@ CREATE TABLE server.categories
 (
     guild_id bigint NOT NULL,
     id bigint NOT NULL,
-    name character varying(127) COLLATE pg_catalog."default",
+    name character varying(100) COLLATE pg_catalog."default" NOT NULL,
     "position" integer,
-    deleted_at timestamp with time zone NOT NULL DEFAULT to_timestamp((0)::double precision)
-) PARTITION BY RANGE (deleted_at) ;
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    edited_at timestamp with time zone,
+    deleted_at timestamp with time zone,
+    CONSTRAINT categories_pkey PRIMARY KEY (id),
+    CONSTRAINT categories_fkey_guild FOREIGN KEY (guild_id)
+        REFERENCES server.guilds (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
+)
+
+TABLESPACE pg_default;
 
 ALTER TABLE server.categories
     OWNER to masaryk;
+-- Index: categories_idx_position
 
--- Partitions SQL
+-- DROP INDEX server.categories_idx_position;
 
-CREATE TABLE server."categories.active" PARTITION OF server.categories
-    FOR VALUES FROM ('1970-01-01 01:00:00+01') TO ('1970-01-01 01:00:01+01');
+CREATE UNIQUE INDEX categories_idx_position
+    ON server.categories USING btree
+    (guild_id ASC NULLS LAST, id ASC NULLS LAST, "position" ASC NULLS LAST)
+    TABLESPACE pg_default
+    WHERE deleted_at IS NOT NULL;
+-- Index: fki_categories_fkey_guild
 
-CREATE TABLE server."categories.deleted" PARTITION OF server.categories
-    DEFAULT;
+-- DROP INDEX server.fki_categories_fkey_guild;
+
+CREATE INDEX fki_categories_fkey_guild
+    ON server.categories USING btree
+    (guild_id ASC NULLS LAST)
+    TABLESPACE pg_default;

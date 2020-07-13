@@ -5,18 +5,15 @@
 CREATE TABLE server.guilds
 (
     id bigint NOT NULL,
-    name character varying(127) COLLATE pg_catalog."default",
-    icon_url character varying(127) COLLATE pg_catalog."default",
-    deleted_at timestamp with time zone NOT NULL DEFAULT to_timestamp((0)::double precision)
-) PARTITION BY RANGE (deleted_at) ;
+    name character varying(30) COLLATE pg_catalog."default" NOT NULL,
+    icon_url character varying(100) COLLATE pg_catalog."default",
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    modified_at timestamp with time zone,
+    deleted_at timestamp with time zone,
+    CONSTRAINT guilds_pkey PRIMARY KEY (id)
+)
+
+TABLESPACE pg_default;
 
 ALTER TABLE server.guilds
     OWNER to masaryk;
-
--- Partitions SQL
-
-CREATE TABLE server."guilds.active" PARTITION OF server.guilds
-    FOR VALUES FROM ('1970-01-01 01:00:00+01') TO ('1970-01-01 01:00:01+01');
-
-CREATE TABLE server."guilds.deleted" PARTITION OF server.guilds
-    DEFAULT;

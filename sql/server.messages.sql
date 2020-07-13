@@ -5,19 +5,42 @@
 CREATE TABLE server.messages
 (
     channel_id bigint NOT NULL,
+    author_id bigint NOT NULL,
     id bigint NOT NULL,
-    content text COLLATE pg_catalog."default",
-    created_at timestamp with time zone NOT NULL,
-    deleted_at timestamp with time zone NOT NULL DEFAULT to_timestamp((0)::double precision)
-) PARTITION BY RANGE (deleted_at) ;
+    content text COLLATE pg_catalog."default" NOT NULL,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    edited_at timestamp with time zone,
+    deleted_at timestamp with time zone,
+    CONSTRAINT messages_pkey PRIMARY KEY (id),
+    CONSTRAINT messages_fkey_channel FOREIGN KEY (channel_id)
+        REFERENCES server.channels (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID,
+    CONSTRAINT messages_fkey_user FOREIGN KEY (author_id)
+        REFERENCES server.users (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+        NOT VALID
+)
+
+TABLESPACE pg_default;
 
 ALTER TABLE server.messages
     OWNER to masaryk;
+-- Index: fki_messages_fkey_channel
 
--- Partitions SQL
+-- DROP INDEX server.fki_messages_fkey_channel;
 
-CREATE TABLE server."messages.active" PARTITION OF server.messages
-    FOR VALUES FROM ('1970-01-01 01:00:00+01') TO ('1970-01-01 01:00:01+01');
+CREATE INDEX fki_messages_fkey_channel
+    ON server.messages USING btree
+    (channel_id ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: fki_messages_fkey_user
 
-CREATE TABLE server."messages.deleted" PARTITION OF server.messages
-    DEFAULT;
+-- DROP INDEX server.fki_messages_fkey_user;
+
+CREATE INDEX fki_messages_fkey_user
+    ON server.messages USING btree
+    (author_id ASC NULLS LAST)
+    TABLESPACE pg_default;
