@@ -12,17 +12,19 @@ log = logging.getLogger(__name__)
 class Verification(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.verification_channels = []
 
-    @commands.Cog.listener()
-    @checks.has_permissions(manage_roles=True)
-    async def on_ready(self):
-        self.verification_channels = [
+    @property
+    def verification_channels(self):
+        return [
             channel
             for guild in self.bot.guilds
             for channel_id in constants.verification_channels
             if (channel := get(guild.channels, id=channel_id)) is not None
         ]
+
+    @commands.Cog.listener()
+    @checks.has_permissions(manage_roles=True)
+    async def on_ready(self):
         log.info(f"found {len(self.verification_channels)} verification channels")
 
         await self._synchronize()
