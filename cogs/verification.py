@@ -23,8 +23,6 @@ class Verification(commands.Cog):
             await self._synchronize_guild(guild)
 
     async def _synchronize_guild(self, guild):
-        verified_role = find(lambda role: role.id in constants.verified_roles, guild.roles)
-
         for channel_id in constants.verification_channels:
             channel = get(guild.channels, id=channel_id)
             if channel is None:
@@ -35,16 +33,21 @@ class Verification(commands.Cog):
                 if verif_react is None:
                     continue
 
-                with_role = set(filter(lambda member: verified_role in member.roles, guild.members))
-                verified = set(await verif_react.users().flatten())
+                await self._synchronize_react(guild, verif_react)
 
-                log.info(f"found {len(with_role - verified) + len(verified - with_role)} users out of sync with the verification system")
+    async def _synchronize_react(self, guild, verif_react):
+        verified_role = find(lambda role: role.id in constants.verified_roles, guild.roles)
 
-                for member in (with_role - verified):
-                    await self._verify_leave(member)
+        with_role = set(filter(lambda member: verified_role in member.roles, guild.members))
+        verified = set(await verif_react.users().flatten())
 
-                for member in (verified - with_role):
-                    await self._verify_join(member)
+        log.info(f"found {len(with_role - verified) + len(verified - with_role)} users out of sync with the verification system")
+
+        for member in (with_role - verified):
+            await self._verify_leave(member)
+
+        for member in (verified - with_role):
+            await self._verify_join(member)
 
     @commands.Cog.listener()
     @checks.has_permissions(manage_roles=True)
