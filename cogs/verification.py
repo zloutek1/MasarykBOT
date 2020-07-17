@@ -12,28 +12,29 @@ log = logging.getLogger(__name__)
 class Verification(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.verification_channels = []
 
     @commands.Cog.listener()
     @checks.has_permissions(manage_roles=True)
     async def on_ready(self):
+        self.verification_channels = [
+            channel
+            for guild in self.bot.guilds
+            for channel_id in constants.verification_channels
+            if (channel := get(guild.channels, id=channel_id)) is not None
+        ]
+        log.info(f"found {len(self.verification_channels)} verification channels")
+
         await self._synchronize()
 
     async def _synchronize(self):
-        for guild in self.bot.guilds:
-            await self._synchronize_guild(guild)
-
-    async def _synchronize_guild(self, guild):
-        for channel_id in constants.verification_channels:
-            channel = get(guild.channels, id=channel_id)
-            if channel is None:
-                continue
-
+        for channel in self.verification_channels:
             async for message in channel.history():
                 verif_react = find(lambda reaction: reaction.emoji.name.lower() in ("verification", "verify", "accept"), message.reactions)
                 if verif_react is None:
                     continue
 
-                await self._synchronize_react(guild, verif_react)
+                await self._synchronize_react(channel.guild, verif_react)
 
     async def _synchronize_react(self, guild, verif_react):
         verified_role = find(lambda role: role.id in constants.verified_roles, guild.roles)
