@@ -19,6 +19,7 @@ $ Hello
 initail_cogs = [
     "cogs.verification",
     "cogs.cog_manager",
+    "cogs.rules",
     "cogs.info"
 ]
 
