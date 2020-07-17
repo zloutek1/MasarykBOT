@@ -44,7 +44,7 @@ class Verification(commands.Cog):
         with_role = set(filter(lambda member: verified_role in member.roles, guild.members))
         verified = set(await verif_react.users().flatten())
 
-        log.info(f"found {len(with_role - verified) + len(verified - with_role)} users out of sync with the verification system")
+        log.info(f"found {len(with_role - verified) + len(verified - with_role)} users out of sync")
 
         for member in (with_role - verified):
             await self._verify_leave(member)
