@@ -9,9 +9,9 @@ CREATE TABLE server.channels
     id bigint NOT NULL,
     name character varying(100) COLLATE pg_catalog."default" NOT NULL,
     "position" integer,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    edited_at timestamp with time zone,
-    deleted_at timestamp with time zone,
+    created_at timestamp without time zone NOT NULL DEFAULT now(),
+    edited_at timestamp without time zone,
+    deleted_at timestamp without time zone,
     CONSTRAINT channels_pkey PRIMARY KEY (id),
     CONSTRAINT channels_fkey_category FOREIGN KEY (category_id)
         REFERENCES server.categories (id) MATCH SIMPLE

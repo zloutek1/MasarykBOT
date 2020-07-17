@@ -8,9 +8,9 @@ CREATE TABLE server.messages
     author_id bigint NOT NULL,
     id bigint NOT NULL,
     content text COLLATE pg_catalog."default" NOT NULL,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    edited_at timestamp with time zone,
-    deleted_at timestamp with time zone,
+    created_at timestamp without time zone NOT NULL DEFAULT now(),
+    edited_at timestamp without time zone,
+    deleted_at timestamp without time zone,
     CONSTRAINT messages_pkey PRIMARY KEY (id),
     CONSTRAINT messages_fkey_channel FOREIGN KEY (channel_id)
         REFERENCES server.channels (id) MATCH SIMPLE

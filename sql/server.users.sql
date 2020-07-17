@@ -7,9 +7,9 @@ CREATE TABLE server.users
     id bigint NOT NULL,
     names character varying[] COLLATE pg_catalog."default" NOT NULL,
     avarar_url character varying(100) COLLATE pg_catalog."default",
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
-    edited_at timestamp with time zone,
-    deleted_at timestamp with time zone,
+    created_at timestamp without time zone NOT NULL DEFAULT now(),
+    edited_at timestamp without time zone,
+    deleted_at timestamp without time zone,
     CONSTRAINT users_pkey PRIMARY KEY (id)
 )
 
