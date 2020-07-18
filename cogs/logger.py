@@ -46,8 +46,10 @@ class Logger(commands.Cog):
         await self.synchronize_members()
         await self.synchronize_roles()
 
-        #for guild in self.bot.guilds:
-        #    await self.backup_in(guild)
+        for guild in self.bot.guilds:
+            await self.backup_in(guild)
+
+        log.info("backup process finished")
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
@@ -148,11 +150,16 @@ class Logger(commands.Cog):
     async def synchronize_guilds(self, conn):
         data = [(guild.id, guild.name, str(guild.icon_url), guild.created_at) for guild in self.bot.guilds]
         await conn.executemany("""
-            INSERT INTO server.guilds (id, name, icon_url, created_at)
+            INSERT INTO server.guilds AS g (id, name, icon_url, created_at)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (id) DO UPDATE
-                SET name=$2, icon_url=$3, created_at=$4, edited_at=NOW()
-                WHERE excluded.name<>$2 OR excluded.icon_url<>$3 OR excluded.created_at<>$4""", data)
+                SET name=$2,
+                    icon_url=$3,
+                    created_at=$4,
+                    edited_at=NOW()
+                WHERE g.name<>excluded.name OR
+                      g.icon_url<>excluded.icon_url OR
+                      g.created_at<>excluded.created_at""", data)
 
         log.info(f"backed up {len(data)} guilds")
 
@@ -160,11 +167,16 @@ class Logger(commands.Cog):
     async def synchronize_categories(self, conn):
         data = [(guild.id, category.id, category.name, category.position, category.created_at) for guild in self.bot.guilds for category in guild.categories]
         await conn.executemany("""
-            INSERT INTO server.categories (guild_id, id, name, position, created_at)
+            INSERT INTO server.categories AS c (guild_id, id, name, position, created_at)
             VALUES ($1, $2, $3, $4, $5)
             ON CONFLICT (id) DO UPDATE
-                SET name=$3, position=$4, created_at=$5, edited_at=NOW()
-                WHERE excluded.name<>$3 OR excluded.position<>$4 OR excluded.created_at<>$5""", data)
+                SET name=$3,
+                    position=$4,
+                    created_at=$5,
+                    edited_at=NOW()
+                WHERE c.name<>excluded.name OR
+                      c.position<>excluded.position OR
+                      c.created_at<>excluded.created_at""", data)
 
         log.info(f"backed up {len(data)} categories")
 
@@ -172,11 +184,16 @@ class Logger(commands.Cog):
     async def synchronize_channels(self, conn):
         data = [(guild.id, channel.category.id if channel.category is not None else None, channel.id, channel.name, channel.position, channel.created_at) for guild in self.bot.guilds for channel in guild.text_channels]
         await conn.executemany("""
-            INSERT INTO server.channels (guild_id, category_id, id, name, position, created_at)
+            INSERT INTO server.channels AS ch (guild_id, category_id, id, name, position, created_at)
             VALUES ($1, $2, $3, $4, $5, $6)
             ON CONFLICT (id) DO UPDATE
-                SET name=$4, position=$5, created_at=$6, edited_at=NOW()
-                WHERE excluded.name<>$4 OR excluded.position<>$5 OR excluded.created_at<>$6""", data)
+                SET name=$4,
+                    position=$5,
+                    created_at=$6,
+                    edited_at=NOW()
+                WHERE ch.name<>excluded.name OR
+                      ch.position<>excluded.position OR
+                      ch.created_at<>excluded.created_at""", data)
 
         log.info(f"backed up {len(data)} text_channels")
 
@@ -185,11 +202,16 @@ class Logger(commands.Cog):
         data = [(member.id, member.name, str(member.avatar_url), member.created_at) for guild in self.bot.guilds for member in guild.members]
 
         await conn.executemany("""
-            INSERT INTO server.users (id, names, avatar_url, created_at)
+            INSERT INTO server.users AS u (id, names, avatar_url, created_at)
             VALUES ($1, ARRAY[$2], $3, $4)
             ON CONFLICT (id) DO UPDATE
-                SET names=array_prepend($2::varchar, server.users.names), avatar_url=$3, created_at=$4, edited_at=NOW()
-                WHERE $2<>ANY(server.users.names) OR excluded.avatar_url<>$3 OR excluded.created_at<>$4""", data)
+                SET names=array_prepend($2::varchar, u.names),
+                    avatar_url=$3,
+                    created_at=$4,
+                    edited_at=NOW()
+                WHERE $2<>ANY(u.names) OR
+                      u.avatar_url<>excluded.avatar_url OR
+                      u.created_at<>excluded.created_at""", data)
 
         log.info(f"backed up {len(data)} members")
 
@@ -198,11 +220,16 @@ class Logger(commands.Cog):
         data = [(guild.id, role.id, role.name, hex(role.color.value), role.created_at) for guild in self.bot.guilds for role in guild.roles]
 
         await conn.executemany("""
-            INSERT INTO server.roles (guild_id, id, name, color, created_at)
+            INSERT INTO server.roles AS r (guild_id, id, name, color, created_at)
             VALUES ($1, $2, $3, $4, $5)
             ON CONFLICT (id) DO UPDATE
-                SET name=$3, color=$4, created_at=$5, edited_at=NOW()
-                WHERE excluded.name<>$3 OR excluded.color<>$4 OR excluded.created_at<>$5""", data)
+                SET name=$3,
+                    color=$4,
+                    created_at=$5,
+                    edited_at=NOW()
+                WHERE r.name<>excluded.name OR
+                      r.color<>excluded.color OR
+                      r.created_at<>excluded.created_at""", data)
 
         log.info(f"backed up {len(data)} roles")
 
@@ -214,13 +241,17 @@ class Logger(commands.Cog):
                 to_date = from_date + timedelta(weeks=1)
 
                 await self.backup_between(from_date, to_date, guild=guild, conn=conn)
-                return
 
             for row in rows:
                 from_date = row.get("from_date")
                 to_date = row.get("to_date")
 
                 await self.backup_between(from_date, to_date, guild=guild, conn=conn)
+
+            await conn.execute("""INSERT INTO cogs.logger (guild_id, from_date, to_date, finished_at)
+                                  VALUES ($1, $2, $3, now())""", guild.id, from_date, to_date)
+
+            log.info(f"Backed up messages in {guild}")
 
     async def backup_between(self, from_date, to_date, guild, conn):
         for i, channel in enumerate(guild.text_channels):
@@ -232,9 +263,27 @@ class Logger(commands.Cog):
 
                 for attachment in message.attachments:
                     attachments.append((message.id, attachment.id, attachment.filename, attachment.url))
+
             else:
-                await conn.executemany("INSERT INTO server.messages VALUES ($1, $2, $3, $4, $5, $6)", messages)
-                await conn.executemany("INSERT INTO server.attachments VALUES ($1, $2, $3, $4)", attachments)
+                await conn.executemany("""
+                    INSERT INTO server.messages AS m (channel_id, author_id, id, content, created_at, edited_at)
+                    VALUES ($1, $2, $3, $4, $5, $6)
+                    ON CONFLICT (id) DO UPDATE
+                        SET content=$4,
+                            created_at=$5,
+                            edited_at=$6
+                        WHERE m.content<>excluded.content OR
+                              m.created_at<>excluded.created_at OR
+                              m.edited_at<>excluded.edited_at""", messages)
+
+                await conn.executemany("""
+                    INSERT INTO server.attachments AS a (message_id, id, filename, url)
+                    VALUES ($1, $2, $3, $4)
+                    ON CONFLICT (id) DO UPDATE
+                        SET filename=$3,
+                            url=$4
+                        WHERE a.filename<>excluded.filename OR
+                              a.url<>excluded.url""", attachments)
 
                 log.debug(f"Backed up {len(messages)} messages in #{channel}, {guild} ({i} / {len(guild.text_channels)})")
 
