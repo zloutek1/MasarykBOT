@@ -8,6 +8,16 @@ from datetime import timedelta
 log = logging.getLogger(__name__)
 
 
+def acquire_conn(func):
+    async def wrapper(self, *args, **kwargs):
+        conn = await self.pool.acquire()
+        try:
+            return await func(self, *args, **kwargs, conn=conn)
+        finally:
+            await self.pool.release(conn)
+    return wrapper
+
+
 class Logger(commands.Cog):
 
     def __init__(self, bot):
@@ -36,8 +46,8 @@ class Logger(commands.Cog):
         await self.synchronize_members()
         await self.synchronize_roles()
 
-        for guild in self.bot.guilds:
-            await self.backup_in(guild)
+        #for guild in self.bot.guilds:
+        #    await self.backup_in(guild)
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
@@ -134,34 +144,67 @@ class Logger(commands.Cog):
 
         # TODO
 
-    async def synchronize_guilds(self):
-        conn = await self.pool.acquire()
-        try:
+    @acquire_conn
+    async def synchronize_guilds(self, conn):
+        data = [(guild.id, guild.name, str(guild.icon_url), guild.created_at) for guild in self.bot.guilds]
+        await conn.executemany("""
+            INSERT INTO server.guilds (id, name, icon_url, created_at)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (id) DO UPDATE
+                SET name=$2, icon_url=$3, created_at=$4, edited_at=NOW()
+                WHERE excluded.name<>$2 OR excluded.icon_url<>$3 OR excluded.created_at<>$4""", data)
 
-            data = [(guild.id, guild.name, str(guild.icon_url), guild.created_at) for guild in self.bot.guilds]
-            await conn.executemany("""
-                INSERT INTO server.guilds (id, name, icon_url, created_at)
-                VALUES ($1, $2, $3, $4)
-                ON CONFLICT (id) DO UPDATE
-                    SET name=$2, icon_url=$3, created_at=$4, modified_at=NOW()
-                    WHERE excluded.name<>$2 OR excluded.icon_url<>$3 OR excluded.created_at<>$4""", data)
+        log.info(f"backed up {len(data)} guilds")
 
-            log.info(f"backed up {len(data)} guilds")
+    @acquire_conn
+    async def synchronize_categories(self, conn):
+        data = [(guild.id, category.id, category.name, category.position, category.created_at) for guild in self.bot.guilds for category in guild.categories]
+        await conn.executemany("""
+            INSERT INTO server.categories (guild_id, id, name, position, created_at)
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (id) DO UPDATE
+                SET name=$3, position=$4, created_at=$5, edited_at=NOW()
+                WHERE excluded.name<>$3 OR excluded.position<>$4 OR excluded.created_at<>$5""", data)
 
-        finally:
-            await self.pool.release(conn)
+        log.info(f"backed up {len(data)} categories")
 
-    async def synchronize_categories(self):
-        pass
+    @acquire_conn
+    async def synchronize_channels(self, conn):
+        data = [(guild.id, channel.category.id if channel.category is not None else None, channel.id, channel.name, channel.position, channel.created_at) for guild in self.bot.guilds for channel in guild.text_channels]
+        await conn.executemany("""
+            INSERT INTO server.channels (guild_id, category_id, id, name, position, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (id) DO UPDATE
+                SET name=$4, position=$5, created_at=$6, edited_at=NOW()
+                WHERE excluded.name<>$4 OR excluded.position<>$5 OR excluded.created_at<>$6""", data)
 
-    async def synchronize_channels(self):
-        pass
+        log.info(f"backed up {len(data)} text_channels")
 
-    async def synchronize_members(self):
-        pass
+    @acquire_conn
+    async def synchronize_members(self, conn):
+        data = [(member.id, member.name, str(member.avatar_url), member.created_at) for guild in self.bot.guilds for member in guild.members]
 
-    async def synchronize_roles(self):
-        pass
+        await conn.executemany("""
+            INSERT INTO server.users (id, names, avatar_url, created_at)
+            VALUES ($1, ARRAY[$2], $3, $4)
+            ON CONFLICT (id) DO UPDATE
+                SET names=array_prepend($2::varchar, server.users.names), avatar_url=$3, created_at=$4, edited_at=NOW()
+                WHERE $2<>ANY(server.users.names) OR excluded.avatar_url<>$3 OR excluded.created_at<>$4""", data)
+
+        log.info(f"backed up {len(data)} members")
+
+    @acquire_conn
+    async def synchronize_roles(self, conn):
+        data = [(guild.id, role.id, role.name, hex(role.color.value), role.created_at) for guild in self.bot.guilds for role in guild.roles]
+
+        await conn.executemany("""
+            INSERT INTO server.roles (guild_id, id, name, color, created_at)
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (id) DO UPDATE
+                SET name=$3, color=$4, created_at=$5, edited_at=NOW()
+                WHERE excluded.name<>$3 OR excluded.color<>$4 OR excluded.created_at<>$5""", data)
+
+        log.info(f"backed up {len(data)} roles")
 
     async def backup_in(self, guild):
         async with self.pool.acquire() as conn:
