@@ -8,7 +8,7 @@ CREATE TABLE server.guilds
     name character varying(30) COLLATE pg_catalog."default" NOT NULL,
     icon_url character varying(100) COLLATE pg_catalog."default",
     created_at timestamp without time zone NOT NULL DEFAULT now(),
-    modified_at timestamp without time zone,
+    edited_at timestamp without time zone,
     deleted_at timestamp without time zone,
     CONSTRAINT guilds_pkey PRIMARY KEY (id)
 )
