@@ -7,13 +7,12 @@ CREATE TABLE server.attachments
     message_id bigint NOT NULL,
     id bigint NOT NULL,
     filename text COLLATE pg_catalog."default",
-    url character varying(100) COLLATE pg_catalog."default",
+    url text COLLATE pg_catalog."default",
     CONSTRAINT attachments_pkey PRIMARY KEY (id),
     CONSTRAINT attachments_fkey_message FOREIGN KEY (message_id)
         REFERENCES server.messages (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
-        NOT VALID
 )
 
 TABLESPACE pg_default;

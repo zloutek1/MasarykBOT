@@ -6,7 +6,7 @@ CREATE TABLE server.guilds
 (
     id bigint NOT NULL,
     name character varying(30) COLLATE pg_catalog."default" NOT NULL,
-    icon_url character varying(100) COLLATE pg_catalog."default" NOT NULL,
+    icon_url text COLLATE pg_catalog."default" NOT NULL,
     created_at timestamp without time zone NOT NULL DEFAULT now(),
     edited_at timestamp without time zone,
     deleted_at timestamp without time zone,
