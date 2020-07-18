@@ -2,8 +2,9 @@ from discord import Member
 from discord.abc import PrivateChannel
 from discord.ext import tasks, commands
 
+import asyncio
 import logging
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 log = logging.getLogger(__name__)
 
@@ -41,13 +42,14 @@ class Logger(commands.Cog):
 
     async def run_backup(self):
         await self.synchronize_guilds()
-        await self.synchronize_categories()
-        await self.synchronize_channels()
-        await self.synchronize_members()
-        await self.synchronize_roles()
 
         for guild in self.bot.guilds:
-            await self.backup_in(guild)
+            await self.synchronize_categories_in(guild)
+            await self.synchronize_channels_in(guild)
+            await self.synchronize_members_in(guild)
+            await self.synchronize_roles_in(guild)
+
+            await self.backup_messages_in(guild)
 
         log.info("backup process finished")
 
@@ -149,6 +151,7 @@ class Logger(commands.Cog):
     @acquire_conn
     async def synchronize_guilds(self, conn):
         data = [(guild.id, guild.name, str(guild.icon_url), guild.created_at) for guild in self.bot.guilds]
+
         await conn.executemany("""
             INSERT INTO server.guilds AS g (id, name, icon_url, created_at)
             VALUES ($1, $2, $3, $4)
@@ -159,13 +162,14 @@ class Logger(commands.Cog):
                     edited_at=NOW()
                 WHERE g.name<>excluded.name OR
                       g.icon_url<>excluded.icon_url OR
-                      g.created_at<>excluded.created_at""", data)
+                      g.created_at<>excluded.created_at
+        """, data)
 
         log.info(f"backed up {len(data)} guilds")
 
     @acquire_conn
-    async def synchronize_categories(self, conn):
-        data = [(guild.id, category.id, category.name, category.position, category.created_at) for guild in self.bot.guilds for category in guild.categories]
+    async def synchronize_categories_in(self, guild, conn):
+        data = [(guild.id, category.id, category.name, category.position, category.created_at) for category in guild.categories]
         await conn.executemany("""
             INSERT INTO server.categories AS c (guild_id, id, name, position, created_at)
             VALUES ($1, $2, $3, $4, $5)
@@ -176,13 +180,14 @@ class Logger(commands.Cog):
                     edited_at=NOW()
                 WHERE c.name<>excluded.name OR
                       c.position<>excluded.position OR
-                      c.created_at<>excluded.created_at""", data)
+                      c.created_at<>excluded.created_at
+        """, data)
 
         log.info(f"backed up {len(data)} categories")
 
     @acquire_conn
-    async def synchronize_channels(self, conn):
-        data = [(guild.id, channel.category.id if channel.category is not None else None, channel.id, channel.name, channel.position, channel.created_at) for guild in self.bot.guilds for channel in guild.text_channels]
+    async def synchronize_channels_in(self, guild, conn):
+        data = [(guild.id, channel.category.id if channel.category is not None else None, channel.id, channel.name, channel.position, channel.created_at) for channel in guild.text_channels]
         await conn.executemany("""
             INSERT INTO server.channels AS ch (guild_id, category_id, id, name, position, created_at)
             VALUES ($1, $2, $3, $4, $5, $6)
@@ -193,13 +198,14 @@ class Logger(commands.Cog):
                     edited_at=NOW()
                 WHERE ch.name<>excluded.name OR
                       ch.position<>excluded.position OR
-                      ch.created_at<>excluded.created_at""", data)
+                      ch.created_at<>excluded.created_at
+        """, data)
 
         log.info(f"backed up {len(data)} text_channels")
 
     @acquire_conn
-    async def synchronize_members(self, conn):
-        data = [(member.id, member.name, str(member.avatar_url), member.created_at) for guild in self.bot.guilds for member in guild.members]
+    async def synchronize_members_in(self, guild, conn):
+        data = [(member.id, member.name, str(member.avatar_url), member.created_at) for member in guild.members]
 
         await conn.executemany("""
             INSERT INTO server.users AS u (id, names, avatar_url, created_at)
@@ -211,13 +217,14 @@ class Logger(commands.Cog):
                     edited_at=NOW()
                 WHERE $2<>ANY(u.names) OR
                       u.avatar_url<>excluded.avatar_url OR
-                      u.created_at<>excluded.created_at""", data)
+                      u.created_at<>excluded.created_at
+        """, data)
 
         log.info(f"backed up {len(data)} members")
 
     @acquire_conn
-    async def synchronize_roles(self, conn):
-        data = [(guild.id, role.id, role.name, hex(role.color.value), role.created_at) for guild in self.bot.guilds for role in guild.roles]
+    async def synchronize_roles_in(self, guild, conn):
+        data = [(guild.id, role.id, role.name, hex(role.color.value), role.created_at) for role in guild.roles]
 
         await conn.executemany("""
             INSERT INTO server.roles AS r (guild_id, id, name, color, created_at)
@@ -229,42 +236,84 @@ class Logger(commands.Cog):
                     edited_at=NOW()
                 WHERE r.name<>excluded.name OR
                       r.color<>excluded.color OR
-                      r.created_at<>excluded.created_at""", data)
+                      r.created_at<>excluded.created_at
+        """, data)
 
         log.info(f"backed up {len(data)} roles")
 
-    async def backup_in(self, guild):
-        async with self.pool.acquire() as conn:
-            rows = await conn.fetch("SELECT * FROM cogs.logger WHERE guild_id = $1", guild.id)
-            if len(rows) == 0:
-                from_date = guild.created_at
-                to_date = from_date + timedelta(weeks=1)
+    @acquire_conn
+    async def backup_messages_in(self, guild, conn):
+        row = await conn.fetchrow("SELECT * FROM cogs.logger WHERE guild_id = $1 LIMIT 1", guild.id)
 
-                await self.backup_between(from_date, to_date, guild=guild, conn=conn)
+        if row is None:
+            from_date = guild.created_at
+            to_date = from_date + timedelta(weeks=1)
 
-            for row in rows:
-                from_date = row.get("from_date")
-                to_date = row.get("to_date")
+            await self.backup_between(from_date, to_date, guild=guild, conn=conn)
+            log.info(f"backed up first attempt between {from_date} and {to_date} in {guild}")
+            return
 
-                await self.backup_between(from_date, to_date, guild=guild, conn=conn)
+        failed_rows = await conn.fetch("""
+            SELECT *
+            FROM cogs.logger
+            WHERE guild_id = $1 AND finished_at IS NULL
+        """, guild.id)
 
-            await conn.execute("""INSERT INTO cogs.logger (guild_id, from_date, to_date, finished_at)
-                                  VALUES ($1, $2, $3, now())""", guild.id, from_date, to_date)
+        for row in failed_rows:
+            from_date = row.get("from_date")
+            to_date = row.get("to_date")
 
-            log.info(f"Backed up messages in {guild}")
+            await self.backup_between(from_date, to_date, guild=guild, conn=conn)
+
+            await conn.execute("""
+                UPDATE cogs.logger
+                SET finished_at = now()
+                WHERE guild_id=$1 AND from_date=$2 AND to_date=$3
+            """, guild.id, from_date, to_date)
+
+            log.info(f"backed up ex-failed attempt between {from_date} and {to_date} in {guild}")
+
+        latest_row = await conn.fetchrow("SELECT * FROM cogs.logger WHERE guild_id = $1 ORDER BY to_date DESC", guild.id)
+        from_date = latest_row.get("to_date")
+        while from_date < datetime.now():
+            to_date = from_date + timedelta(weeks=1)
+
+            await self.backup_between(from_date, to_date, guild=guild, conn=conn)
+
+            await conn.execute("""
+                INSERT INTO cogs.logger (guild_id, from_date, to_date, finished_at)
+                VALUES ($1, $2, $3, now())
+            """, guild.id, from_date, to_date)
+
+            log.info(f"backed up new section between {from_date} and {to_date} in {guild}")
+
+            await asyncio.sleep(5)
+            from_date = to_date
+
+        log.info(f"Backed up messages in {guild}")
 
     async def backup_between(self, from_date, to_date, guild, conn):
         for i, channel in enumerate(guild.text_channels):
             attachments = []
             messages = []
+            authors = set()
 
             async for message in channel.history(after=from_date, before=to_date, limit=None, oldest_first=True):
+                author = message.author
+                authors.add((author.id, author.name, str(author.avatar_url), author.created_at))
+
                 messages.append((message.channel.id, message.author.id, message.id, message.content, message.created_at, message.edited_at))
 
                 for attachment in message.attachments:
                     attachments.append((message.id, attachment.id, attachment.filename, attachment.url))
 
             else:
+                await conn.executemany("""
+                    INSERT INTO server.users AS u (id, names, avatar_url, created_at)
+                    VALUES ($1, ARRAY[$2], $3, $4)
+                    ON CONFLICT (id) DO NOTHING
+                """, authors)
+
                 await conn.executemany("""
                     INSERT INTO server.messages AS m (channel_id, author_id, id, content, created_at, edited_at)
                     VALUES ($1, $2, $3, $4, $5, $6)
