@@ -18,5 +18,4 @@ jobs:
           heroku_api_key: ${{secrets.HEROKU_API_KEY}}
           heroku_app_name: "masarykbot-v2" #Must be unique in Heroku
           heroku_email: "zloutek1@gmail.com"
-          procfile: "worker: python __main__"
           usedocker: true
