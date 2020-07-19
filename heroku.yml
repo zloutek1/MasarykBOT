@@ -3,4 +3,7 @@ build:
     web: Dockerfile
 run:
   web: python __main__.py
-  worker: python __main__.py
+  worker:
+    command:
+      - python __main__.py
+    image: web
