@@ -70,6 +70,7 @@ class Leaderboard(commands.Cog):
         """
 
         async with ctx.acquire() as conn:
+            await conn.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY cogs.leaderboard")
             top10 = await conn.fetch(top10_SQL, channel.id if channel else None, ctx.guild.id, bots_ids)
 
         template = "`{index:0>2}.` {medal} `{count}` {author}"
