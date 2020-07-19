@@ -17,5 +17,3 @@ RUN pip install -r requirements.txt --user --no-warn-script-location
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 COPY . .
-
-CMD python __main__.py
