@@ -4,7 +4,7 @@
 
 CREATE TABLE cogs.logger
 (
-    guild_id bigint NOT NULL DEFAULT nextval('cogs.logger_id_seq'::regclass),
+    guild_id bigint NOT NULL,
     from_date timestamp without time zone NOT NULL,
     to_date timestamp without time zone NOT NULL,
     finished_at timestamp without time zone
