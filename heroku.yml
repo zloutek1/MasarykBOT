@@ -2,4 +2,7 @@ build:
   docker:
     web: Dockerfile
 run:
-  worker: python __main__.py
+  worker:
+    command:
+      - python __main__.py
+    image: worker
