@@ -15,5 +15,5 @@
         "TOKEN": {
             "description": "discord bot token from https://discord.com/developers/applications"
         }
-      },
+    }
 }
