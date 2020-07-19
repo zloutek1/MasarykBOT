@@ -7,9 +7,9 @@ from bot import MasarykBOT
 from cogs.utils.logging import setup_logging
 
 from dotenv import load_dotenv
-load_dotenv()
 
 if __name__ == "__main__":
+    load_dotenv()
     setup_logging()
 
     loop = asyncio.get_event_loop()
@@ -24,3 +24,4 @@ if __name__ == "__main__":
     bot = MasarykBOT(command_prefix="!")
     bot.pool = pool
     bot.run(os.getenv("TOKEN"))
+
