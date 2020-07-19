@@ -8,6 +8,7 @@ class CogManager(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.last_reloaded = None
 
     @commands.command()
     @checks.has_permissions(administrator=True)
@@ -35,11 +36,18 @@ class CogManager(commands.Cog):
 
     @commands.group(name='reload', invoke_without_command=True)
     @checks.has_permissions(administrator=True)
-    async def _reload(self, ctx, *, module):
+    async def _reload(self, ctx, *, module=None):
         """Reloads a module."""
+
+        if module is None:
+            if self.last_reloaded is not None:
+                await self._reload(ctx, module=self.last_reloaded)
+            return
+
         await ctx.message.delete(delay=5.0)
         try:
             self.bot.reload_extension(module)
+            self.last_reloaded = module
         except commands.ExtensionError as e:
             await ctx.send_embed(f'{e.__class__.__name__}: {e}', color=Color.red(), delete_after=5.0)
         else:
