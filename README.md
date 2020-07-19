@@ -39,7 +39,7 @@ Step 4
 Setup your environment variables by creating a `.env` file.
 
 ```
-POSTGRES = 'postgresql://<user>:<pass>@<server>/<database>'
+POSTGRES = 'postgres://user:pass@host:port/database?option=value'
 TOKEN = "<your-token>"
 ```
 
