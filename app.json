@@ -1,0 +1,7 @@
+{
+  "name": "MasarykBOT",
+  "description": "A discord bot for Faculty of Informatics, Masaryk's university",
+  "repository": "https://github.com/zloutek1/MasarykBOT",
+  "logo": "https://cdn.discordapp.com/avatars/605352263040630795/a2205b2834e12560d416b56ec2aece06.webp?size=128",
+  "keywords": ["python", "discord", "bot"]
+}
