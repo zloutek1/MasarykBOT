@@ -250,28 +250,34 @@ class Logger(commands.Cog):
             to_date = from_date + timedelta(weeks=1)
 
             await self.backup_between(from_date, to_date, guild=guild, conn=conn)
-            log.info(f"backed up first attempt between {from_date} and {to_date} in {guild}")
-            return
-
-        failed_rows = await conn.fetch("""
-            SELECT *
-            FROM cogs.logger
-            WHERE guild_id = $1 AND finished_at IS NULL
-        """, guild.id)
-
-        for row in failed_rows:
-            from_date = row.get("from_date")
-            to_date = row.get("to_date")
-
-            await self.backup_between(from_date, to_date, guild=guild, conn=conn)
 
             await conn.execute("""
-                UPDATE cogs.logger
-                SET finished_at = now()
-                WHERE guild_id=$1 AND from_date=$2 AND to_date=$3
+                INSERT INTO cogs.logger (guild_id, from_date, to_date, finished_at)
+                VALUES ($1, $2, $3, now())
             """, guild.id, from_date, to_date)
 
-            log.info(f"backed up ex-failed attempt between {from_date} and {to_date} in {guild}")
+            log.info(f"backed up first attempt between {from_date} and {to_date} in {guild}")
+
+        else:
+            failed_rows = await conn.fetch("""
+                SELECT *
+                FROM cogs.logger
+                WHERE guild_id = $1 AND finished_at IS NULL
+            """, guild.id)
+
+            for row in failed_rows:
+                from_date = row.get("from_date")
+                to_date = row.get("to_date")
+
+                await self.backup_between(from_date, to_date, guild=guild, conn=conn)
+
+                await conn.execute("""
+                    UPDATE cogs.logger
+                    SET finished_at = now()
+                    WHERE guild_id=$1 AND from_date=$2 AND to_date=$3
+                """, guild.id, from_date, to_date)
+
+                log.info(f"backed up ex-failed attempt between {from_date} and {to_date} in {guild}")
 
         latest_row = await conn.fetchrow("SELECT * FROM cogs.logger WHERE guild_id = $1 ORDER BY to_date DESC", guild.id)
         from_date = latest_row.get("to_date")
