@@ -1,4 +1,4 @@
-<img align="right" src="https://www.fi.muni.cz/images/fi-logo.png" height="200" width="200">
+<img align="right" src="https://cdn.discordapp.com/avatars/605352263040630795/a2205b2834e12560d416b56ec2aece06.webp?size=128" height="128" width="128">
 
 # MasarykBOT
 
