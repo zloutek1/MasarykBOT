@@ -48,47 +48,86 @@ class Leaderboard(commands.Cog):
             else:
                 return escape_markdown(row["author"])
 
+        def template_row(i, row, data):
+            width = len(str(data[0].get("sent_total")))
+            count = right_justify(row.get("sent_total"), width, "\u2063 ")
+
+            template = "`{index:0>2}.` {medal} `{count}` {author}"
+
+            return template.format(
+                index=i + 1,
+                medal=self.get_medal(i + 1),
+                count=count,
+                author=get_author(row)
+            )
+
+        author_id = member.id if member else ctx.author.id
+        channel_id = channel.id if channel else None
         bots = filter(lambda user: user.bot, ctx.guild.members)
         bots_ids = [bot.id for bot in bots]
 
-        top10_SQL = """
-            SELECT
-                author_id,
-                author.names[1] AS author,
-                SUM(messages_sent) AS sent_total
-            FROM cogs.leaderboard
-            INNER JOIN server.users AS author
-                ON author_id = author.id
-            INNER JOIN server.channels AS channel
-                ON channel_id = channel.id
-            WHERE ($1::bigint IS NULL OR channel_id = $1) AND
-                  guild_id = $2::bigint AND
-                  author_id<>ALL($3::bigint[])
-            GROUP BY author_id, author.names
-            ORDER BY sent_total DESC
-            LIMIT 10
+        query = """
+            CREATE TEMPORARY TABLE ldb_lookup AS
+                SELECT
+                    ROW_NUMBER() OVER (ORDER BY sent_total DESC), *
+                FROM (
+                    SELECT
+                        author_id,
+                        author.names[1] AS author,
+                        SUM(messages_sent) AS sent_total
+                    FROM cogs.leaderboard
+                    INNER JOIN server.users AS author
+                        ON author_id = author.id
+                    INNER JOIN server.channels AS channel
+                        ON channel_id = channel.id
+                    WHERE guild_id = $1::bigint AND
+                          author_id<>ALL($2::bigint[]) AND
+                          ($3::bigint IS NULL OR channel_id = $3)
+                    GROUP BY author_id, author.names
+                    ORDER BY sent_total DESC
+                ) AS lookup
+        """
+
+        around_query = """
+            WITH desired_count AS (
+                SELECT sent_total
+                FROM ldb_lookup
+                WHERE author_id = $1)
+
+                (
+                    SELECT *
+                    FROM ldb_lookup
+                    WHERE sent_total >= (SELECT * FROM desired_count) AND author_id <> $1
+                    ORDER BY sent_total LIMIT 2
+                ) UNION (
+                    SELECT *
+                    FROM ldb_lookup
+                    WHERE sent_total = (SELECT * FROM desired_count)
+                ) UNION (
+                    SELECT *
+                    FROM ldb_lookup
+                    WHERE sent_total < (SELECT * FROM desired_count) AND author_id <> $1 LIMIT 2
+                ) ORDER BY sent_total DESC
         """
 
         async with ctx.acquire() as conn:
             await conn.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY cogs.leaderboard")
-            top10 = await conn.fetch(top10_SQL, channel.id if channel else None, ctx.guild.id, bots_ids)
-
-        template = "`{index:0>2}.` {medal} `{count}` {author}"
+            await conn.execute("DROP TABLE IF EXISTS ldb_lookup")
+            await conn.execute(query, ctx.guild.id, bots_ids, channel_id)
+            top10 = await conn.fetch("SELECT * FROM ldb_lookup LIMIT 10")
+            aroundYou = await conn.fetch(around_query, author_id)
 
         embed = Embed(color=0x53acf2)
         if not member:
             embed.add_field(
                 inline=False,
                 name="FI MUNI Leaderboard!",
-                value="\n".join([
-                    template.format(
-                        index=i + 1,
-                        medal=self.get_medal(i + 1),
-                        count=right_justify(row.get("sent_total"), len(str(top10[0].get("sent_total"))), "\u2063 "),
-                        author=get_author(row)
-                    )
-                    for i, row in enumerate(top10)
-                ]))
+                value="\n".join(template_row(i, row, top10) for i, row in enumerate(top10)))
+
+        embed.add_field(
+            inline=False,
+            name="Your position",
+            value="\n".join(template_row(i, row, aroundYou) for i, row in enumerate(aroundYou)))
 
         time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         embed.set_footer(text=f"{str(ctx.author)} at {time_now}", icon_url=ctx.author.avatar_url)
