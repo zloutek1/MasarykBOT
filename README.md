@@ -1,12 +1,11 @@
-<img align="right" src="https://cdn.discordapp.com/avatars/605352263040630795/a2205b2834e12560d416b56ec2aece06.webp?size=128" height="128" width="128">
-
 # MasarykBOT
 
 Discord bot created mainly for the community of Faculty of Informatics, Masaryk's university.
 
 ![Discord](https://discordapp.com/api/guilds/486184376544002073/widget.png?style=shield) ![Deploy](https://github.com/zloutek1/MasarykBOT/workflows/Deploy/badge.svg)
 
-⁣
+⁣<img align="right" src="https://cdn.discordapp.com/avatars/605352263040630795/a2205b2834e12560d416b56ec2aece06.webp?size=128" height="128" width="128">
+
 
 ## Requirements
 
