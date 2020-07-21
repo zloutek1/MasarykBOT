@@ -11,7 +11,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - run: |
-        docker build bot/ -t bot
+        docker build ./bot -t masarykbot
 
     - name: Login to Heroku Container registry
       env:
@@ -21,10 +21,10 @@ jobs:
     - name: Build and push bot
       env:
         HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-      run: heroku container:push bot --app ${{ secrets.HEROKU_APP_NAME }}
+      run: heroku container:push --app ${{ secrets.HEROKU_APP_NAME }} --recursive
 
     - name: Release bot
       env:
         HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
-      run: heroku container:release bot --app ${{ secrets.HEROKU_APP_NAME }}
+      run: heroku container:release --app ${{ secrets.HEROKU_APP_NAME }} --recursive
 
