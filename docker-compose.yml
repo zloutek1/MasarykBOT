@@ -16,7 +16,7 @@ services:
       context: bot/
       dockerfile: Dockerfile.bot
     volumes:
-      - .:/MasarykBOT
+      - ./bot:/MasarykBOT
     env_file: .env
     depends_on:
       - snekbox
