@@ -1,6 +1,6 @@
 # MasarykBOT
 
-Create a bot account fllowing [this guide](https://discordpy.readthedocs.io/en/latest/discord.html).
+Create a bot account following [this guide](https://discordpy.readthedocs.io/en/latest/discord.html).
 
 Clone the repo:
 ```
@@ -15,11 +15,11 @@ Install a MariaDB server:
 - use MariaDB 10.1 so upgrade to this version if needed
 - to have the same database structure as the bot uses import `assets/database_setup.sql` into your database
 
-MasarykBOT will run also without the database, but ceratin commands will be unavailable
+MasarykBOT will run also without the database, but certain commands will be unavailable
 
-## Setup enviroment variables
+## Setup environment variables
 
-you need to setup your enviroment variables
+you need to setup your environment variables
 either create a `.env` file.
 
 .env file content:
