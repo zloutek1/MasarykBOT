@@ -12,9 +12,7 @@ services:
 
   bot:
     container_name: bot
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: bot/
     volumes:
       - .:/MasarykBOT
     env_file: .env
