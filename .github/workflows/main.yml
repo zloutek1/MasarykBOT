@@ -20,12 +20,13 @@ jobs:
         HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
       run: heroku container:login
 
-    - name: Build and push
+    - name: Build and push bot
       env:
         HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
       run: heroku container:push bot --app ${{ secrets.HEROKU_APP_NAME }}
 
-    - name: Release
+    - name: Release bot
       env:
         HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
       run: heroku container:release bot --app ${{ secrets.HEROKU_APP_NAME }}
+
