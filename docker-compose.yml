@@ -18,5 +18,6 @@ services:
     volumes:
       - ./bot:/MasarykBOT
     env_file: .env
+    network_mode: host
     depends_on:
       - snekbox
