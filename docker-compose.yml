@@ -7,7 +7,7 @@ services:
     init: true
     ipc: none
     ports:
-     - "127.0.0.1:8060:8060"
+     - "8060:8060"
     privileged: true
 
   bot:
