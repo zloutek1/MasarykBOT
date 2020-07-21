@@ -1,7 +1,3 @@
 FROM pythondiscord/snekbox:latest
 
-RUN mkdir -p /snekbox
-COPY . /snekbox
-WORKDIR /snekbox
-
-CMD ["pipenv", "run", "snekbox"]
+COPY gunicorn.conf.py config/gunicorn.conf.py
