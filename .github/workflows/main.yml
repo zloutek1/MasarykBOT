@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - v2
-    paths:
-      - '**.py'
 jobs:
   build:
     runs-on: ubuntu-latest
