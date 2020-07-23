@@ -81,7 +81,7 @@ class Logger(commands.Cog):
         first_500 = [self.message_insert_queue.popleft()
                      for _ in range(min(500, len(self.message_insert_queue)))]
         await conn.executemany(schemas.SQL_INSERT_MESSAGE, first_500)
-        log.debug(f"inserted {len(first_100)} messages to database")
+        log.debug(f"inserted {len(first_500)} messages to database")
 
     @tasks.loop(minutes=1)
     @acquire_conn
@@ -92,7 +92,7 @@ class Logger(commands.Cog):
         first_500 = [self.message_delete_queue.popleft()
                      for _ in range(min(500, len(self.message_delete_queue)))]
         await conn.executemany("UPDATE server.messages SET deleted_at = NOW() WHERE id = $1", first_500)
-        log.debug(f"deleted {len(first_100)} messages from database")
+        log.debug(f"deleted {len(first_500)} messages from database")
 
 
     @tasks.loop(minutes=1)
@@ -104,7 +104,7 @@ class Logger(commands.Cog):
         first_500 = [self.member_update_queue.popleft()
                      for _ in range(min(500, len(self.member_update_queue)))]
         await conn.executemany(schemas.SQL_INSERT_USER, first_500)
-        log.debug(f"inserted {len(first_100)} members to database")
+        log.debug(f"inserted {len(first_500)} members to database")
 
     ###
     #
@@ -343,7 +343,14 @@ class Logger(commands.Cog):
     @commands.Cog.listener()
     @acquire_conn
     async def on_member_update(self, before, after, conn):
-        print("MEMBER UPDATED FROM", before, "TO", after)
+        if before.avatar_url != after.avatar_url:
+            log.info(f"member {before} updated his avatar_url")
+        elif before.name != after.name:
+            log.info(f"member {before} ({before.nick}) updated his name to {after}")
+        elif before.nick != after.nick:
+            log.info(f"member {before} ({before.nick}) updated his nickname to {after.nick}")
+        else:
+            return
 
         self.member_update_queue.append(await prepare_member(after))
 
