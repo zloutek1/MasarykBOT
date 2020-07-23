@@ -85,3 +85,15 @@ SQL_INSERT_ATTACHEMNT = """
         WHERE a.filename<>excluded.filename OR
               a.url<>excluded.url
 """
+
+SQL_INSERT_REACTIONS = """
+    INSERT INTO server.reactions AS r (message_id, name, count)
+    VALUES ($1, $2, $3)
+    ON CONFLICT (message_id, name) DO NOTHING
+"""
+
+SQL_INSERT_EMOJIS = """
+    INSERT INTO server.emojis AS r (message_id, name, count)
+    VALUES ($1, $2, $3)
+    ON CONFLICT (message_id, name) DO NOTHING
+"""
