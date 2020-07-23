@@ -85,7 +85,7 @@ class Verification(commands.Cog):
 
     async def _verify_leave(self, member):
         removable_roles = constants.verified_roles + list(constants.about_you_roles)
-        to_remove = list(filter(lambda role: role.id in removable_roles), member.roles)
+        to_remove = list(filter(lambda role: role.id in removable_roles, member.roles))
         await member.remove_roles(*to_remove)
         log.info(f"unverified user {member.name}, removed roles {', '.join(map(lambda r: '@'+r.name, to_remove))}")
 
