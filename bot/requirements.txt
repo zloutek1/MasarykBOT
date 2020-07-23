@@ -2,3 +2,4 @@ discord.py
 asyncpg
 python-dotenv
 aiohttp
+emoji
