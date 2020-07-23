@@ -2,10 +2,12 @@ from discord import Member, TextChannel, CategoryChannel
 from discord.abc import PrivateChannel
 from discord.ext import tasks, commands
 
+import re
+import emoji
 import asyncio
 import logging
 from itertools import islice
-from collections import deque
+from collections import deque, Counter
 from datetime import datetime, timedelta
 
 from .utils.checks import acquire_conn
@@ -33,15 +35,13 @@ async def prepare_channel(channel):
 async def prepare_message(message):
     return (message.channel.id, message.author.id, message.id, message.content, message.created_at, message.edited_at)
 
-async def prepare_attachment(attachment):
+async def prepare_attachment(message, attachment):
     return (message.id, attachment.id, attachment.filename, attachment.url)
 
 async def prepare_reaction(reaction):
-    users = await reaction.users.flatten()
-    return (message.id, reaction.emoji, reaction.count, users)
-
-async def prepare_emoji(emoji):
-    return (message.id, emoji.name, emoji.animated, emoji.url)
+    users = await reaction.users().flatten()
+    emote = reaction.emoji if isinstance(reaction.emoji, str) else reaction.emoji.name
+    return (reaction.message.id, emoji.demojize(emote), reaction.count)
 
 ###
 #
@@ -113,6 +113,7 @@ class Logger(commands.Cog):
     ###
 
     async def backup(self):
+        log.info("Starting backup process")
         await self.backup_guilds()
 
         for guild in self.bot.guilds:
@@ -120,6 +121,8 @@ class Logger(commands.Cog):
             await self.backup_roles(guild)
             await self.backup_members(guild)
             await self.backup_channels(guild)
+
+        log.info("Finished backup process")
 
     @acquire_conn
     async def backup_guilds(self, conn):
@@ -156,7 +159,7 @@ class Logger(commands.Cog):
             log.debug("newer week exists, re-running backup for next week")
             await asyncio.sleep(5)
 
-        log.info(f"finished backing up messages for {guild}")
+        log.debug(f"finished backing up messages for {guild}")
 
     @acquire_conn
     async def backup_failed_week(self, guild, conn):
@@ -212,21 +215,28 @@ class Logger(commands.Cog):
 
         async for message in channel.history(after=from_date, before=to_date, oldest_first=True):
             authors.append( await prepare_member(message.author) )
+
             messages.append( await prepare_message(message) )
 
-            attachments.extend( [await prepare_attachment(attachment) for attachment in message.attachments] )
-            # reactions.extend( await self.prepare_reactions(message) )
-            # emojis.extend( await self.prepare_emojis(message) )
+            attachments.extend( [await prepare_attachment(message, attachment)
+                                 for attachment in message.attachments] )
+
+            reactions.extend( [await prepare_reaction(reaction)
+                               for reaction in message.reactions] )
+
+            emojis.extend( [(message.id, emote, count)
+                            for emote, count in (await self.get_emojis(message)).items()] )
 
         await conn.executemany(schemas.SQL_INSERT_USER, authors)
         await conn.executemany(schemas.SQL_INSERT_MESSAGE, messages)
         await conn.executemany(schemas.SQL_INSERT_ATTACHEMNT, attachments)
+        await conn.executemany(schemas.SQL_INSERT_REACTIONS, reactions)
+        await conn.executemany(schemas.SQL_INSERT_EMOJIS, emojis)
 
-    async def prepare_reactions(self, message):
-        pass
-
-    async def prepare_emojis(self, message):
-        pass
+    async def get_emojis(self, message):
+        REGEX = r"((?::\w+(?:~\d+)?:)|(?:<\d+:\w+:>))"
+        emojis = re.findall(REGEX, emoji.demojize(message.content))
+        return Counter(emojis)
 
     ###
     #
@@ -283,7 +293,7 @@ class Logger(commands.Cog):
     @commands.Cog.listener()
     @acquire_conn
     async def on_guild_channel_update(self, before, after, conn):
-        log.info(f"updated channel {channel}")
+        log.info(f"updated channel {before}")
 
         if isinstance(channel, TextChannel):
             data = await prepare_channel(after)
