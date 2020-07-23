@@ -188,7 +188,6 @@ class Snekbox(commands.Cog):
 
     @commands.command(name="eval", aliases=("e",))
     async def eval_command(self, ctx, *, code) -> None:
-        print(self.jobs)
         if ctx.author.id in self.jobs:
             await ctx.send(
                 f"{ctx.author.mention} You've already got a job running - "
