@@ -11,7 +11,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - run: |
-        docker build ./bot -f ./bot/Dockerfile.bot -t masarykbot
+        docker build . -f ./Dockerfile.bot -t masarykbot
 
     - name: Login to Heroku Container registry
       env:
