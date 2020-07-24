@@ -7,7 +7,7 @@ import traceback
 from datetime import datetime, timezone
 from collections import Counter
 
-from cogs.utils import context
+from bot.cogs.utils import context
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -17,13 +17,13 @@ $ Hello
 """
 
 initail_cogs = [
-    "cogs.verification",
-    "cogs.cog_manager",
-    "cogs.leaderboard",
-    "cogs.logger",
-    "cogs.rules",
-    "cogs.help",
-    "cogs.info"
+    "bot.cogs.verification",
+    "bot.cogs.cog_manager",
+    "bot.cogs.leaderboard",
+    "bot.cogs.logger",
+    "bot.cogs.rules",
+    "bot.cogs.help",
+    "bot.cogs.info"
 ]
 
 log = logging.getLogger(__name__)

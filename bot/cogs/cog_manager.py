@@ -1,7 +1,7 @@
 from discord import Color
 from discord.ext import commands
 
-from .utils import checks
+from bot.cogs.utils import checks
 
 
 class CogManager(commands.Cog):

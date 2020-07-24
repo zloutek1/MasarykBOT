@@ -1,4 +1,4 @@
-version: '3.7'
+version: '3.8'
 
 services:
   snekbox:
@@ -13,10 +13,10 @@ services:
   bot:
     container_name: bot
     build:
-      context: bot/
-      dockerfile: Dockerfile.bot
+      context: .
+      dockerfile: bot/Dockerfile.bot
     volumes:
-      - ./bot:/MasarykBOT
+      - .:/MasarykBOT
     env_file: .env
     network_mode: host
     depends_on:

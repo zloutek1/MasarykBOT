@@ -10,8 +10,8 @@ from itertools import islice
 from collections import deque, Counter
 from datetime import datetime, timedelta
 
-from .utils.checks import acquire_conn
-from .utils import schemas
+from bot.cogs.utils.checks import acquire_conn
+from bot.cogs.utils import schemas
 
 log = logging.getLogger(__name__)
 

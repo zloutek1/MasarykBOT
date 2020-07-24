@@ -3,7 +3,7 @@ from discord.utils import get, find
 
 import logging
 
-from .utils import constants, checks
+from bot.cogs.utils import constants, checks
 
 
 log = logging.getLogger(__name__)

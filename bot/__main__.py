@@ -3,8 +3,8 @@ import asyncio
 import asyncpg
 import logging
 
-from bot import MasarykBOT
-from cogs.utils.logging import setup_logging
+from bot.bot import MasarykBOT
+from bot.cogs.utils.logging import setup_logging
 
 from dotenv import load_dotenv
 
