@@ -16,16 +16,6 @@ description = """
 $ Hello
 """
 
-initail_cogs = [
-    "bot.cogs.verification",
-    "bot.cogs.cog_manager",
-    "bot.cogs.leaderboard",
-    "bot.cogs.logger",
-    "bot.cogs.rules",
-    "bot.cogs.help",
-    "bot.cogs.info"
-]
-
 log = logging.getLogger(__name__)
 
 
@@ -36,13 +26,6 @@ class MasarykBOT(commands.Bot):
         self.pool = None
         self.spam_control = commands.CooldownMapping.from_cooldown(10, 12.0, commands.BucketType.user)
         self._auto_spam_count = Counter()
-
-        for extension in initail_cogs:
-            try:
-                self.load_extension(extension)
-            except Exception:
-                log.error(f'Failed to load extension {extension}.')
-                traceback.print_exc()
 
     async def on_ready(self):
         if not hasattr(self, 'uptime'):

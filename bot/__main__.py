@@ -2,11 +2,22 @@ import os
 import asyncio
 import asyncpg
 import logging
+import traceback
 
 from bot.bot import MasarykBOT
 from bot.cogs.utils.logging import setup_logging
 
 from dotenv import load_dotenv
+
+initail_cogs = [
+    "bot.cogs.verification",
+    "bot.cogs.cog_manager",
+    "bot.cogs.leaderboard",
+    "bot.cogs.logger",
+    "bot.cogs.rules",
+    "bot.cogs.help",
+    "bot.cogs.info"
+]
 
 if __name__ == "__main__":
     load_dotenv()
@@ -31,5 +42,12 @@ if __name__ == "__main__":
 
     bot = MasarykBOT(command_prefix="!")
     bot.pool = pool
-    bot.run(os.getenv("TOKEN"))
 
+    for extension in initail_cogs:
+        try:
+            bot.load_extension(extension)
+        except Exception:
+            log.error(f'Failed to load extension {extension}.')
+            traceback.print_exc()
+
+    bot.run(os.getenv("TOKEN"))
