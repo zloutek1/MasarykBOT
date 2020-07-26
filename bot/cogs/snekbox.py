@@ -45,9 +45,9 @@ class Snekbox(commands.Cog):
         self.bot = bot
         self.jobs = {}
 
-    async def post_eval(self, code: str, port: int) -> dict:
+    async def post_eval(self, code: str) -> dict:
         """Send a POST request to the Snekbox API to evaluate code and return the results."""
-        url = os.getenv("SNEKBOX").format(port=port)
+        url = os.getenv("SNEKBOX")
         data = {"input": code}
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=data, raise_for_status=True) as resp:
@@ -147,13 +147,13 @@ class Snekbox(commands.Cog):
         else:  # Exception
             return ":x:"
 
-    async def send_eval(self, ctx, code, port):
+    async def send_eval(self, ctx, code):
         """
         Evaluate code, format it, and send the output to the corresponding channel.
         Return the bot response.
         """
         async with ctx.typing():
-            results = await self.post_eval(code, port)
+            results = await self.post_eval(code)
             msg, error = self.get_results_message(results)
 
             if error:
@@ -187,7 +187,7 @@ class Snekbox(commands.Cog):
         return code
 
     @commands.command(name="eval", aliases=("e",))
-    async def eval_command(self, ctx, port: int, *, code) -> None:
+    async def eval_command(self, ctx, *, code) -> None:
         if ctx.author.id in self.jobs:
             await ctx.send(
                 f"{ctx.author.mention} You've already got a job running - "
@@ -199,7 +199,7 @@ class Snekbox(commands.Cog):
             self.jobs[ctx.author.id] = datetime.now()
             code = self.prepare_input(code)
             try:
-                response = await self.send_eval(ctx, code, port)
+                response = await self.send_eval(ctx, code)
             finally:
                 del self.jobs[ctx.author.id]
 

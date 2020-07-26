@@ -71,7 +71,7 @@ cd MasarykBOT
 ```
 POSTGRES=postgres://user:pass@host:port/database?option=value
 TOKEN=your-token
-SNEKBOX=http://127.0.0.1:{port}/eval    # on Heroku leave {port} as is
+SNEKBOX=http://127.0.0.1:8060/eval
 ```
 
 3. install python dependencies
