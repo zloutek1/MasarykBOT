@@ -47,7 +47,7 @@ class Snekbox(commands.Cog):
 
     async def post_eval(self, code: str) -> dict:
         """Send a POST request to the Snekbox API to evaluate code and return the results."""
-        url = os.getenv("SNEKBOX") % os.getenv("PORT", 8060)
+        url = os.getenv("SNEKBOX").format(port=os.getenv("PORT", 8060))
         data = {"input": code}
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json=data, raise_for_status=True) as resp:
