@@ -3,12 +3,9 @@ version: '3.8'
 services:
   snekbox:
     container_name: snekbox
-    image: pythondiscord/snekbox:latest
-    init: true
-    ipc: none
-    ports:
-     - "8060:8060"
-    privileged: true
+    build:
+      context: .
+      dockerfile: snekbox/Dockerfile.snekbox
 
   bot:
     container_name: bot
