@@ -19,6 +19,8 @@ class CogManager(commands.Cog):
             self.bot.load_extension(module)
         except commands.ExtensionError as e:
             await ctx.send_embed(f'{e.__class__.__name__}: {e}', color=Color.red(), delete_after=5.0)
+        except ModuleNotFoundError as e:
+            await ctx.send_embed(f'{e.__class__.__name__}: {e}', color=Color.red(), delete_after=5.0)
         else:
             await ctx.send_embed(f'{module} loaded successfully', color=Color.green(), delete_after=5.0)
 
@@ -30,6 +32,8 @@ class CogManager(commands.Cog):
         try:
             self.bot.unload_extension(module)
         except commands.ExtensionError as e:
+            await ctx.send_embed(f'{e.__class__.__name__}: {e}', color=Color.red(), delete_after=5.0)
+        except ModuleNotFoundError as e:
             await ctx.send_embed(f'{e.__class__.__name__}: {e}', color=Color.red(), delete_after=5.0)
         else:
             await ctx.send_embed(f'{module} unloaded successfully', color=Color.green(), delete_after=5.0)
@@ -50,6 +54,8 @@ class CogManager(commands.Cog):
             self.last_reloaded = module
         except commands.ExtensionError as e:
             await ctx.send_embed(f'{e.__class__.__name__}: {e}', color=Color.red(), delete_after=5.0)
+        except ModuleNotFoundError as e:
+            await ctx.send_embed(f'{e.__class__.__name__}: {e}', color=Color.red(), delete_after=5.0)
         else:
             await ctx.send_embed(f'{module} reloaded successfully', color=Color.green(), delete_after=5.0)
 
@@ -64,6 +70,8 @@ class CogManager(commands.Cog):
                 self.bot.reload_extension(module)
             except commands.ExtensionError as e:
                 output += f'{module} - {e.__class__.__name__}: {e}\n'
+            except ModuleNotFoundError as e:
+                await ctx.send_embed(f'{e.__class__.__name__}: {e}', color=Color.red(), delete_after=5.0)
             else:
                 output += f'{module} - reloaded successfully\n'
 
