@@ -1,4 +1,4 @@
 build:
   docker:
     bot: Dockerfile.bot
-    snekbox: snekbox/Dockerfile.snekbox
+    web: snekbox/Dockerfile.web
