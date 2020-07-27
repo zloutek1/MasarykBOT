@@ -1,5 +1,0 @@
-falcon==2.0.0
-gunicorn==19.9
-jsonschema==3.0
-numpy==1.19.1
-requests
