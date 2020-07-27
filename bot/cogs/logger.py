@@ -159,11 +159,11 @@ class Logger(commands.Cog):
 
         while (failed := await self.backup_failed_week(guild)):
             log.debug("finished running failed process, re-checking if everything is fine...")
-            await asyncio.sleep(5)
+            await asyncio.sleep(2)
 
         while (still_begind := await self.backup_new_week(guild)):
             log.debug("newer week exists, re-running backup for next week")
-            await asyncio.sleep(5)
+            await asyncio.sleep(2)
 
         log.debug(f"finished backing up messages for {guild}")
 
