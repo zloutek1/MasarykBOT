@@ -26,6 +26,10 @@ class Info(commands.Cog):
         await ctx.channel.send(msg)
 
     @commands.command()
+    async def invite(self, ctx):
+        await ctx.send(f"https://discordapp.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions=0")
+
+    @commands.command()
     async def info(self, ctx):
         """
         send an embed containing info in format
