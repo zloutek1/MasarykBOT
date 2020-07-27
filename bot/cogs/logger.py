@@ -1,6 +1,7 @@
 from discord import Member, TextChannel, CategoryChannel
 from discord.abc import PrivateChannel
 from discord.ext import tasks, commands
+from discord.errors import Forbidden
 
 import re
 import emoji
@@ -215,28 +216,31 @@ class Logger(commands.Cog):
         if channel.last_message_id is None:
             return
 
-        log.debug(f"backing up messages {from_date.strftime('%d.%m.%Y')} - {to_date.strftime('%d.%m.%Y')} in {channel} ({channel.guild})")
-        authors, messages, attachments, reactions, emojis = [], [], [], [], []
+        try:
+            log.debug(f"backing up messages {from_date.strftime('%d.%m.%Y')} - {to_date.strftime('%d.%m.%Y')} in {channel} ({channel.guild})")
+            authors, messages, attachments, reactions, emojis = [], [], [], [], []
 
-        async for message in channel.history(after=from_date, before=to_date, oldest_first=True):
-            authors.append(await prepare_member(message.author))
+            async for message in channel.history(after=from_date, before=to_date, oldest_first=True):
+                authors.append(await prepare_member(message.author))
 
-            messages.append(await prepare_message(message))
+                messages.append(await prepare_message(message))
 
-            attachments.extend([await prepare_attachment(message, attachment)
-                                for attachment in message.attachments])
+                attachments.extend([await prepare_attachment(message, attachment)
+                                    for attachment in message.attachments])
 
-            reactions.extend([await prepare_reaction(reaction)
-                              for reaction in message.reactions])
+                reactions.extend([await prepare_reaction(reaction)
+                                  for reaction in message.reactions])
 
-            emojis.extend([(message.id, emote, count)
-                           for emote, count in (await self.get_emojis(message)).items()])
+                emojis.extend([(message.id, emote, count)
+                               for emote, count in (await self.get_emojis(message)).items()])
 
-        await conn.executemany(schemas.SQL_INSERT_USER, authors)
-        await conn.executemany(schemas.SQL_INSERT_MESSAGE, messages)
-        await conn.executemany(schemas.SQL_INSERT_ATTACHEMNT, attachments)
-        await conn.executemany(schemas.SQL_INSERT_REACTIONS, reactions)
-        await conn.executemany(schemas.SQL_INSERT_EMOJIS, emojis)
+            await conn.executemany(schemas.SQL_INSERT_USER, authors)
+            await conn.executemany(schemas.SQL_INSERT_MESSAGE, messages)
+            await conn.executemany(schemas.SQL_INSERT_ATTACHEMNT, attachments)
+            await conn.executemany(schemas.SQL_INSERT_REACTIONS, reactions)
+            await conn.executemany(schemas.SQL_INSERT_EMOJIS, emojis)
+        except Forbidden:
+            log.debug(f"missing permissions to backup messages in {channel} ({channel.guild})")
 
     async def get_emojis(self, message):
         REGEX = r"((?::\w+(?:~\d+)?:)|(?:<\d+:\w+:>))"
