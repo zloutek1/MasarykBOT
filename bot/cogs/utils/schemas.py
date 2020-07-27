@@ -87,8 +87,8 @@ SQL_INSERT_ATTACHEMNT = """
 """
 
 SQL_INSERT_REACTIONS = """
-    INSERT INTO server.reactions AS r (message_id, name, count)
-    VALUES ($1, $2, $3)
+    INSERT INTO server.reactions AS r (message_id, name, count, member_ids)
+    VALUES ($1, $2, $3, $4)
     ON CONFLICT (message_id, name) DO NOTHING
 """
 
