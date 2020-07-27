@@ -188,8 +188,9 @@ class Logger(commands.Cog):
         if row is None:
             await conn.execute("UPDATE cogs.logger SET finished_at = NOW() WHERE guild_id = $1 AND finished_at IS NULL", guild.id)
         else:
-            await conn.execute("DELETE FROM cogs.logger WHERE guild_id = $1 AND from_date = $2 AND to_date = $3", guild.id, from_date, to_date)
-            await conn.execute("UPDATE cogs.logger SET to_date = $3, finished_at = NOW() WHERE guild_id = $1 AND to_date = $2 AND finished_at IS NOT NULL", guild.id, from_date, to_date)
+            async with conn.transaction():
+                await conn.execute("DELETE FROM cogs.logger WHERE guild_id = $1 AND from_date = $2 AND to_date = $3", guild.id, from_date, to_date)
+                await conn.execute("UPDATE cogs.logger SET to_date = $3, finished_at = NOW() WHERE guild_id = $1 AND to_date = $2 AND finished_at IS NOT NULL", guild.id, from_date, to_date)
 
     @acquire_conn
     async def backup_new_week(self, guild, conn):
