@@ -19,24 +19,31 @@ log = logging.getLogger(__name__)
 async def prepare_guild(guild):
     return (guild.id, guild.name, str(guild.icon_url), guild.created_at)
 
+
 async def prepare_category(category):
     return (category.guild.id, category.id, category.name, category.position, category.created_at)
+
 
 async def prepare_role(role):
     return (role.guild.id, role.id, role.name, hex(role.color.value), role.created_at)
 
+
 async def prepare_member(member):
     return (member.id, member.name, str(member.avatar_url), member.created_at)
+
 
 async def prepare_channel(channel):
     category_id = channel.category.id if channel.category is not None else None
     return (channel.guild.id, category_id, channel.id, channel.name, channel.position, channel.created_at)
 
+
 async def prepare_message(message):
     return (message.channel.id, message.author.id, message.id, message.content, message.created_at, message.edited_at)
 
+
 async def prepare_attachment(message, attachment):
     return (message.id, attachment.id, attachment.filename, attachment.url)
+
 
 async def prepare_reaction(reaction):
     users = await reaction.users().flatten()
@@ -48,6 +55,7 @@ async def prepare_reaction(reaction):
 ###
 #
 ###
+
 
 class Logger(commands.Cog):
 
@@ -94,7 +102,6 @@ class Logger(commands.Cog):
         await conn.executemany("UPDATE server.messages SET deleted_at = NOW() WHERE id = $1", first_500)
         log.debug(f"deleted {len(first_500)} messages from database")
 
-
     @tasks.loop(minutes=1)
     @acquire_conn
     async def member_update_queued(self, conn):
@@ -139,12 +146,10 @@ class Logger(commands.Cog):
         data = [await prepare_role(role) for role in guild.roles]
         await conn.executemany(schemas.SQL_INSERT_ROLE, data)
 
-
     @acquire_conn
     async def backup_members(self, guild, conn):
         data = [await prepare_member(member) for member in guild.members]
         await conn.executemany(schemas.SQL_INSERT_USER, data)
-
 
     @acquire_conn
     async def backup_channels(self, guild, conn):
@@ -214,18 +219,18 @@ class Logger(commands.Cog):
         authors, messages, attachments, reactions, emojis = [], [], [], [], []
 
         async for message in channel.history(after=from_date, before=to_date, oldest_first=True):
-            authors.append( await prepare_member(message.author) )
+            authors.append(await prepare_member(message.author))
 
-            messages.append( await prepare_message(message) )
+            messages.append(await prepare_message(message))
 
-            attachments.extend( [await prepare_attachment(message, attachment)
-                                 for attachment in message.attachments] )
+            attachments.extend([await prepare_attachment(message, attachment)
+                                for attachment in message.attachments])
 
-            reactions.extend( [await prepare_reaction(reaction)
-                               for reaction in message.reactions] )
+            reactions.extend([await prepare_reaction(reaction)
+                              for reaction in message.reactions])
 
-            emojis.extend( [(message.id, emote, count)
-                            for emote, count in (await self.get_emojis(message)).items()] )
+            emojis.extend([(message.id, emote, count)
+                           for emote, count in (await self.get_emojis(message)).items()])
 
         await conn.executemany(schemas.SQL_INSERT_USER, authors)
         await conn.executemany(schemas.SQL_INSERT_MESSAGE, messages)
@@ -248,14 +253,13 @@ class Logger(commands.Cog):
     async def on_ready(self):
         await self.backup()
 
-    @tasks.loop(hours=168) # 168 hours == 1 week
+    @tasks.loop(hours=168)  # 168 hours == 1 week
     async def _repeat_backup(self):
         await self.backup()
 
     @commands.command(name="backup")
     async def _backup(self, ctx):
         await self.backup()
-
 
     @commands.Cog.listener()
     @acquire_conn
@@ -349,7 +353,6 @@ class Logger(commands.Cog):
         data = await prepare_member(member)
         await conn.execute(schemas.SQL_INSERT_USER, *data)
 
-
     @commands.Cog.listener()
     @acquire_conn
     async def on_member_update(self, before, after, conn):
@@ -378,7 +381,6 @@ class Logger(commands.Cog):
 
         data = await prepare_role(role)
         await conn.execute(schemas.SQL_INSERT_ROLE, *data)
-
 
     @commands.Cog.listener()
     @acquire_conn
