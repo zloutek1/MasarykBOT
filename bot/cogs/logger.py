@@ -49,7 +49,7 @@ async def prepare_attachment(message, attachment):
 async def prepare_reaction(reaction):
     users = await reaction.users().flatten()
     emote = reaction.emoji if isinstance(reaction.emoji, str) else reaction.emoji.name
-    return (reaction.message.id, emoji.demojize(emote), reaction.count)
+    return (reaction.message.id, emoji.demojize(emote), reaction.count, users)
 
 ###
 #
