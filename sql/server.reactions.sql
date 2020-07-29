@@ -6,7 +6,7 @@ CREATE TABLE server.reactions
 (
     message_id bigint NOT NULL,
     name text COLLATE pg_catalog."default",
-    count integer,
+    member_ids bigint[],
     CONSTRAINT reactions_fkey_message FOREIGN KEY (message_id)
         REFERENCES server.messages (id) MATCH SIMPLE
         ON UPDATE NO ACTION

@@ -5,19 +5,17 @@
 CREATE MATERIALIZED VIEW cogs.emojiboard
 TABLESPACE pg_default
 AS
- SELECT emojis.name,
-    sum(emojis.count) AS count
-   FROM ( SELECT emojis_1.message_id,
-            emojis_1.name,
-            emojis_1.count
-           FROM server.emojis emojis_1
-        UNION
-         SELECT reactions.message_id,
-            reactions.name,
-            reactions.count
-           FROM server.reactions) emojis
-  GROUP BY emojis.name
-  ORDER BY (sum(emojis.count)) DESC
+ SELECT m.channel_id,
+    unnest(reactions.member_ids) AS author_id,
+    reactions.name
+   FROM server.reactions
+     JOIN server.messages m ON reactions.message_id = m.id
+UNION
+ SELECT m.channel_id,
+    m.author_id,
+    emojis.name
+   FROM server.emojis
+     JOIN server.messages m ON emojis.message_id = m.id
 WITH DATA;
 
 ALTER TABLE cogs.emojiboard
