@@ -48,8 +48,7 @@ async def prepare_attachment(message, attachment):
 
 async def prepare_reaction(reaction):
     user_ids = await reaction.users().map(lambda member: member.id).flatten()
-    emote = reaction.emoji if isinstance(reaction.emoji, str) else reaction.emoji.name
-    return (reaction.message.id, emoji.demojize(emote), reaction.count, user_ids)
+    return (reaction.message.id, emoji.demojize(str(reaction.emoji)), user_ids)
 
 ###
 #
@@ -159,7 +158,7 @@ class Logger(commands.Cog):
 
         while (failed := await self.backup_failed_week(guild)):
             log.debug("finished running failed process, re-checking if everything is fine...")
-            await asyncio.sleep(2)
+            await asyncio.sleep(3)
 
         while (still_begind := await self.backup_new_week(guild)):
             log.debug("newer week exists, re-running backup for next week")
