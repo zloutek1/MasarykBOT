@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from collections import Counter
 
 from bot.cogs.utils import context
+from bot.cogs.utils.db import Database
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -23,9 +24,10 @@ class MasarykBOT(commands.Bot):
     def __init__(self, *args, description=description, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.pool = None
         self.spam_control = commands.CooldownMapping.from_cooldown(10, 12.0, commands.BucketType.user)
         self._auto_spam_count = Counter()
+
+        self.db = Database.connect(os.getenv("POSTGRES"))
 
     async def on_ready(self):
         if not hasattr(self, 'uptime'):
