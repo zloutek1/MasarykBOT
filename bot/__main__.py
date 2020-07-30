@@ -5,6 +5,7 @@ import traceback
 
 from bot.bot import MasarykBOT
 from bot.cogs.utils.logging import setup_logging
+from bot.cogs.utils.db import Database
 
 from dotenv import load_dotenv
 
@@ -33,6 +34,7 @@ if __name__ == "__main__":
         exit()
 
     bot = MasarykBOT(command_prefix="!")
+    bot.db = Database.connect(os.getenv("POSTGRES"))
 
     for extension in initail_cogs:
         try:
