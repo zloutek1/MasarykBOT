@@ -36,6 +36,9 @@ class Categories(Table):
         async with self.db.acquire() as conn:
             await conn.executemany(schemas.SQL_INSERT_CATEGORY, data)
 
+    async def update(self, data):
+        await self.insert(data)
+
     async def soft_delete(self, ids):
         async with self.db.acquire() as conn:
             await conn.executemany("UPDATE server.categories SET deleted_at=NOW() WHERE id = $1;", ids)
@@ -65,6 +68,9 @@ class Channels(Table):
     async def insert(self, data):
         async with self.db.acquire() as conn:
             await conn.executemany(schemas.SQL_INSERT_CHANNEL, data)
+
+    async def update(self, data):
+        await self.insert(data)
 
     async def soft_delete(self, ids):
         async with self.db.acquire() as conn:
