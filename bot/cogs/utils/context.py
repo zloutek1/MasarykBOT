@@ -14,6 +14,7 @@ class Context(commands.Context):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.db = self.bot.db
 
     def get_category(self, name=None, **kwargs):
         kwargs.update({"name": name}) if name is not None else None
