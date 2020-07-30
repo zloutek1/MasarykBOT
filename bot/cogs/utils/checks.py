@@ -33,14 +33,3 @@ def has_permissions(**perms):
         return True
 
     return commands.check(pred)
-
-
-def acquire_conn(func):
-    @wraps(func)
-    async def wrapper(self, *args, **kwargs):
-        conn = await self.pool.acquire()
-        try:
-            return await func(self, *args, **kwargs, conn=conn)
-        finally:
-            await self.pool.release(conn)
-    return wrapper
