@@ -62,13 +62,8 @@ class Logger(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        self.message_insert_queue = deque()
-        self.message_delete_queue = deque()
-        self.member_update_queue = deque()
-
-        self.message_insert_queued.start()
-        self.message_delete_queued.start()
-        self.member_update_queued.start()
+        self.insert_queues = {}
+        self.delete_queues = {}
 
     @property
     def pool(self):
@@ -80,38 +75,17 @@ class Logger(commands.Cog):
     #
     ###
 
-    @tasks.loop(minutes=1)
-    @acquire_conn
-    async def message_insert_queued(self, conn):
-        if not self.message_insert_queue:
-            return
+    @commands.Cog.listener()
+    async def on_ready(self):
+        await self.backup()
 
-        first_500 = [self.message_insert_queue.popleft()
-                     for _ in range(min(500, len(self.message_insert_queue)))]
-        await conn.executemany(schemas.SQL_INSERT_MESSAGE, first_500)
-        log.debug(f"inserted {len(first_500)} messages to database")
+    @tasks.loop(hours=168)  # 168 hours == 1 week
+    async def _repeat_backup(self):
+        await self.backup()
 
-    @tasks.loop(minutes=1)
-    @acquire_conn
-    async def message_delete_queued(self, conn):
-        if not self.message_delete_queue:
-            return
-
-        first_500 = [self.message_delete_queue.popleft()
-                     for _ in range(min(500, len(self.message_delete_queue)))]
-        await conn.executemany("UPDATE server.messages SET deleted_at = NOW() WHERE id = $1", first_500)
-        log.debug(f"deleted {len(first_500)} messages from database")
-
-    @tasks.loop(minutes=1)
-    @acquire_conn
-    async def member_update_queued(self, conn):
-        if not self.member_update_queue:
-            return
-
-        first_500 = [self.member_update_queue.popleft()
-                     for _ in range(min(500, len(self.member_update_queue)))]
-        await conn.executemany(schemas.SQL_INSERT_USER, first_500)
-        log.debug(f"inserted {len(first_500)} members to database")
+    @commands.command(name="backup")
+    async def _backup(self, ctx):
+        await self.backup()
 
     ###
     #
@@ -128,6 +102,7 @@ class Logger(commands.Cog):
             await self.backup_roles(guild)
             await self.backup_members(guild)
             await self.backup_channels(guild)
+            await self.backup_messages(guild)
 
         log.info("Finished backup process")
 
@@ -156,15 +131,19 @@ class Logger(commands.Cog):
         data = [await prepare_channel(channel) for channel in guild.text_channels]
         await conn.executemany(schemas.SQL_INSERT_CHANNEL, data)
 
+    async def backup_messages(self, guild):
+        await self.backup_failed_weeks(guild)
+        await self.backup_new_weeks(guild)
+
+    async def backup_failed_weeks(self, guild):
         while (failed := await self.backup_failed_week(guild)):
             log.debug("finished running failed process, re-checking if everything is fine...")
             await asyncio.sleep(3)
 
-        while (still_begind := await self.backup_new_week(guild)):
+    async def backup_new_weeks(self, guild):
+        while (still_behind := await self.backup_new_week(guild)):
             log.debug("newer week exists, re-running backup for next week")
             await asyncio.sleep(2)
-
-        log.debug(f"finished backing up messages for {guild}")
 
     @acquire_conn
     async def backup_failed_week(self, guild, conn):
@@ -195,12 +174,7 @@ class Logger(commands.Cog):
     async def backup_new_week(self, guild, conn):
         row = await conn.fetchrow("SELECT * FROM cogs.logger WHERE guild_id = $1", guild.id)
 
-        if row is None:
-            from_date = guild.created_at
-            to_date = from_date + timedelta(weeks=1)
-        else:
-            from_date = row.get("to_date")
-            to_date = row.get("to_date") + timedelta(weeks=1)
+        (from_date, to_date) = self.get_next_week(guild, row)
 
         await conn.execute("INSERT INTO cogs.logger VALUES ($1, $2, $3, NULL)", guild.id, from_date, to_date)
 
@@ -210,6 +184,13 @@ class Logger(commands.Cog):
         await self.backup_mark_finished(guild, row, from_date, to_date)
 
         return to_date + timedelta(weeks=1) < datetime.now()
+
+    @staticmethod
+    async def get_next_week(guild, row):
+        if row is None:
+            return guild.created_at, from_date + timedelta(weeks=1)
+        else:
+            return row.get("to_date"), row.get("to_date") + timedelta(weeks=1)
 
     @acquire_conn
     async def backup_messages(self, channel, from_date, to_date, conn):
@@ -252,18 +233,6 @@ class Logger(commands.Cog):
     ###
     #
     ###
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        await self.backup()
-
-    @tasks.loop(hours=168)  # 168 hours == 1 week
-    async def _repeat_backup(self):
-        await self.backup()
-
-    @commands.command(name="backup")
-    async def _backup(self, ctx):
-        await self.backup()
 
     @commands.Cog.listener()
     @acquire_conn
@@ -400,6 +369,45 @@ class Logger(commands.Cog):
         log.info(f"removed role{role}")
 
         await conn.execute("UPDATE server.roles SET deleted_at=NOW() WHERE id = $1", role.id)
+
+    ###
+    #
+    ###
+    #
+    ###
+
+    @tasks.loop(minutes=1)
+    @acquire_conn
+    async def message_insert_queued(self, conn):
+        if not self.message_insert_queue:
+            return
+
+        first_500 = [self.message_insert_queue.popleft()
+                     for _ in range(min(500, len(self.message_insert_queue)))]
+        await conn.executemany(schemas.SQL_INSERT_MESSAGE, first_500)
+        log.debug(f"inserted {len(first_500)} messages to database")
+
+    @tasks.loop(minutes=1)
+    @acquire_conn
+    async def message_delete_queued(self, conn):
+        if not self.message_delete_queue:
+            return
+
+        first_500 = [self.message_delete_queue.popleft()
+                     for _ in range(min(500, len(self.message_delete_queue)))]
+        await conn.executemany("UPDATE server.messages SET deleted_at = NOW() WHERE id = $1", first_500)
+        log.debug(f"deleted {len(first_500)} messages from database")
+
+    @tasks.loop(minutes=1)
+    @acquire_conn
+    async def member_update_queued(self, conn):
+        if not self.member_update_queue:
+            return
+
+        first_500 = [self.member_update_queue.popleft()
+                     for _ in range(min(500, len(self.member_update_queue)))]
+        await conn.executemany(schemas.SQL_INSERT_USER, first_500)
+        log.debug(f"inserted {len(first_500)} members to database")
 
 
 def setup(bot):
