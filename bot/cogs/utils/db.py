@@ -4,6 +4,73 @@ import asyncpg
 from . import schemas
 
 
+class Table:
+    def __init__(self, db):
+        self.db = db
+
+    async def insert(self, data):
+        raise NotImplementedError("insert not implemented for this table")
+
+    async def update(self, data):
+        raise NotImplementedError("update not implemented for this table")
+
+    async def delete(self, data):
+        raise NotImplementedError("hard delete not implemented for this table, perhaps try soft delete?")
+
+    async def soft_delete(self, data):
+        raise NotImplementedError("soft delete not implemented for this table, perhaps try hard delete?")
+
+
+class Guilds(Table):
+    async def insert(self, data):
+        async with self.db.acquire() as conn:
+            await conn.executemany(schemas.SQL_INSERT_GUILD, data)
+
+    async def soft_delete(self, ids):
+        async with self.db.acquire() as conn:
+            await conn.executemany("UPDATE server.guilds SET deleted_at=NOW() WHERE id = $1;", ids)
+
+
+class Categories(Table):
+    async def insert(self, data):
+        async with self.db.acquire() as conn:
+            await conn.executemany(schemas.SQL_INSERT_CATEGORY, data)
+
+    async def soft_delete(self, ids):
+        async with self.db.acquire() as conn:
+            await conn.executemany("UPDATE server.categories SET deleted_at=NOW() WHERE id = $1;", ids)
+
+
+class Roles(Table):
+    async def insert(self, data):
+        async with self.db.acquire() as conn:
+            await conn.executemany(schemas.SQL_INSERT_ROLE, data)
+
+    async def soft_delete(self, ids):
+        async with self.db.acquire() as conn:
+            await conn.executemany("UPDATE server.roles SET deleted_at=NOW() WHERE id = $1;", ids)
+
+
+class Members(Table):
+    async def insert(self, data):
+        async with self.db.acquire() as conn:
+            await conn.executemany(schemas.SQL_INSERT_MEMBER, data)
+
+    async def soft_delete(self, ids):
+        async with self.db.acquire() as conn:
+            await conn.executemany("UPDATE server.members SET deleted_at=NOW() WHERE id = $1;", ids)
+
+
+class Channels(Table):
+    async def insert(self, data):
+        async with self.db.acquire() as conn:
+            await conn.executemany(schemas.SQL_INSERT_CHANNEL, data)
+
+    async def soft_delete(self, ids):
+        async with self.db.acquire() as conn:
+            await conn.executemany("UPDATE server.channels SET deleted_at=NOW() WHERE id = $1;", ids)
+
+
 class DBAcquire:
     def __init__(self, db, timeout):
         self.db = db
@@ -20,7 +87,7 @@ class DBAcquire:
         await self.db.release()
 
 
-class Database:
+class DBBase:
     def __init__(self, pool):
         self.pool = pool
         self._conn = None
@@ -63,22 +130,13 @@ class Database:
             await self.pool.release(self._conn)
             self._conn = None
 
-    async def insert_guilds(self, data):
-        async with self.acquire():
-            await self.conn.executemany(schemas.SQL_INSERT_GUILD, data)
 
-    async def insert_categories(self, data):
-        async with self.acquire():
-            await self.conn.executemany(schemas.SQL_INSERT_CATEGORY, data)
+class Database(DBBase):
+    def __init__(self, *args):
+        super().__init__(*args)
 
-    async def insert_roles(self, data):
-        async with self.acquire():
-            await self.conn.executemany(schemas.SQL_INSERT_ROLE, data)
-
-    async def insert_members(self, data):
-        async with self.acquire():
-            await self.conn.executemany(schemas.SQL_INSERT_MEMBER, data)
-
-    async def insert_channels(self, data):
-        async with self.acquire():
-            await self.conn.executemany(schemas.SQL_INSERT_CHANNEL, data)
+        self.guilds = Guilds(self)
+        self.categories = Categories(self)
+        self.roles = Roles(self)
+        self.members = Members(self)
+        self.channels = Channels(self)
