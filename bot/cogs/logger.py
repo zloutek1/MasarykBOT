@@ -7,7 +7,6 @@ import re
 import emoji
 import asyncio
 import logging
-from itertools import islice
 from collections import deque, Counter
 from datetime import datetime, timedelta
 
@@ -125,14 +124,7 @@ class BackupUntilPresent:
     async def backup_messages_in_nonempty_channel(self, channel, from_date, to_date):
         log.debug(f"backing up messages {from_date.strftime('%d.%m.%Y')} - {to_date.strftime('%d.%m.%Y')} in {channel} ({channel.guild})")
 
-        collectables = [
-            Collectable(prepare_fn=self.bot.db.members.prepare, insert_fn=self.bot.db.members.insert),
-            Collectable(prepare_fn=self.bot.db.messages.prepare, insert_fn=self.bot.db.messages.insert),
-            Collectable(prepare_fn=self.bot.db.attachments.prepare, insert_fn=self.bot.db.attachments.insert),
-            Collectable(prepare_fn=self.bot.db.reactions.prepare, insert_fn=self.bot.db.reactions.insert),
-            Collectable(prepare_fn=self.bot.db.emojis.prepare, insert_fn=self.bot.db.emojis.insert)
-        ]
-
+        collectables = self.get_collectables()
         async for message in channel.history(after=from_date, before=to_date, oldest_first=True):
             for collectable in collectables:
                 await collectable.add(message)
@@ -140,8 +132,37 @@ class BackupUntilPresent:
         for collectable in collectables:
             await collectable.db_insert()
 
+    def get_collectables(self):
+        return [
+            Collectable(
+                prepare_fn=self.bot.db.members.prepare,
+                insert_fn=self.bot.db.members.insert
+            ),
+            Collectable(
+                prepare_fn=self.bot.db.messages.prepare,
+                insert_fn=self.bot.db.messages.insert
+            ),
+            Collectable(
+                prepare_fn=self.bot.db.attachments.prepare,
+                insert_fn=self.bot.db.attachments.insert
+            ),
+            Collectable(
+                prepare_fn=self.bot.db.reactions.prepare,
+                insert_fn=self.bot.db.reactions.insert
+            ),
+            Collectable(
+                prepare_fn=self.bot.db.emojis.prepare,
+                insert_fn=self.bot.db.emojis.insert
+            )
+        ]
+
 
 class BackupOnEvents:
+    def __init__(self):
+        self.insert_queues = {}
+        self.update_queues = {}
+        self.delete_queues = {}
+
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         log.info(f"joined guild {guild}")
@@ -205,7 +226,6 @@ class BackupOnEvents:
         elif isinstance(channel, CategoryChannel):
             await self.bot.db.categories.soft_delete([channel.id])
 
-    """
     @commands.Cog.listener()
     async def on_message(self, message):
         if isinstance(message.channel, PrivateChannel):
@@ -214,22 +234,26 @@ class BackupOnEvents:
         if not isinstance(message.author, Member):
             return
 
-        self.message_insert_queue.append(await prepare_message(message))
+        data = await self.bot.db.messages.prepare_one(message)
+        self.insert_queues.setdefault(self.bot.db.messages, deque())
+        self.insery_queues[self.bot.db.messages].append(data)
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
         if isinstance(before.channel, PrivateChannel):
             return
 
-        self.message_insert_queue.append(await prepare_message(after))
+        data = await self.bot.db.messages.prepare_one(after)
+        self.update_queues.setdefault(self.bot.db.messages, deque())
+        self.update_queues[self.bot.db.messages].append(data)
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
         if isinstance(message.channel, PrivateChannel):
             return
 
-        self.message_delete_queue.append((message.id,))
-    """
+        self.delete_queues.setdefault("messages", deque())
+        self.delete_queues.append([message.id])
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
@@ -238,7 +262,6 @@ class BackupOnEvents:
         data = await self.bot.db.members.prepare_one(member)
         await self.bot.db.members.insert(data)
 
-    """
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
         if before.avatar_url != after.avatar_url:
@@ -250,8 +273,9 @@ class BackupOnEvents:
         else:
             return
 
-        self.member_update_queue.append(await prepare_member(after))
-    """
+        data = await self.bot.db.members.prepare_one(after)
+        self.update_queues.setdefault(self.bot.db.members, deque())
+        self.update_queues[self.bot.db.members].append(data)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
@@ -279,14 +303,29 @@ class BackupOnEvents:
 
         await self.bot.db.roles.soft_delete([role.id])
 
+    @tasks.loop(minutes=1)
+    async def put_queues_to_database(self):
+        await self.put_queues_to_database(self.insert_queues, LIMIT=1000)
+        await self.put_queues_to_database(self.update_queues, LIMIT=2000)
+        await self.put_queues_to_database(self.delete_queues, LIMIT=1000)
+
+    async def put_queues_to_database(self, queues, *, LIMIT=1000):
+        counter = 0
+
+        for (process_fn, queue) in queues.items():
+            take_elements = min(LIMIT - counter, len(queue))
+            if take_elements == 0:
+                return
+            elements = [queue.popleft() for _ in range(take_elements)]
+            await process_fn(elements)
+            counter += take_elements
+
 
 class Logger(commands.Cog, BackupUntilPresent, BackupOnEvents):
-
     def __init__(self, bot):
         self.bot = bot
 
-        self.insert_queues = {}
-        self.delete_queues = {}
+        super(BackupOnEvents, self).__init__()
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -299,38 +338,6 @@ class Logger(commands.Cog, BackupUntilPresent, BackupOnEvents):
     @commands.command(name="backup")
     async def _backup(self, ctx):
         await self.backup()
-
-    """
-    @tasks.loop(minutes=1)
-    async def message_insert_queued(self):
-        if not self.message_insert_queue:
-            return
-
-        first_500 = [self.message_insert_queue.popleft()
-                     for _ in range(min(500, len(self.message_insert_queue)))]
-        await conn.executemany(schemas.SQL_INSERT_MESSAGE, first_500)
-        log.debug(f"inserted {len(first_500)} messages to database")
-
-    @tasks.loop(minutes=1)
-    async def message_delete_queued(self):
-        if not self.message_delete_queue:
-            return
-
-        first_500 = [self.message_delete_queue.popleft()
-                     for _ in range(min(500, len(self.message_delete_queue)))]
-        await conn.executemany("UPDATE server.messages SET deleted_at = NOW() WHERE id = $1", first_500)
-        log.debug(f"deleted {len(first_500)} messages from database")
-
-    @tasks.loop(minutes=1)
-    async def member_update_queued(self):
-        if not self.member_update_queue:
-            return
-
-        first_500 = [self.member_update_queue.popleft()
-                     for _ in range(min(500, len(self.member_update_queue)))]
-        await conn.executemany(schemas.SQL_INSERT_USER, first_500)
-        log.debug(f"inserted {len(first_500)} members to database")
-    """
 
 
 class Collectable:
