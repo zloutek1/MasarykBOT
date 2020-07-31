@@ -11,88 +11,14 @@ from itertools import islice
 from collections import deque, Counter
 from datetime import datetime, timedelta
 
-from bot.cogs.utils.checks import acquire_conn
-from bot.cogs.utils import schemas
-
 log = logging.getLogger(__name__)
 
 
-async def prepare_guild(guild):
-    return (guild.id, guild.name, str(guild.icon_url), guild.created_at)
+def partition(cond, lst):
+    return [[i for i in lst if cond(i)], [i for i in lst if not cond(i)]]
 
 
-async def prepare_category(category):
-    return (category.guild.id, category.id, category.name, category.position, category.created_at)
-
-
-async def prepare_role(role):
-    return (role.guild.id, role.id, role.name, hex(role.color.value), role.created_at)
-
-
-async def prepare_member(member):
-    return (member.id, member.name, str(member.avatar_url), member.created_at)
-
-
-async def prepare_channel(channel):
-    category_id = channel.category.id if channel.category is not None else None
-    return (channel.guild.id, category_id, channel.id, channel.name, channel.position, channel.created_at)
-
-
-async def prepare_message(message):
-    return (message.channel.id, message.author.id, message.id, message.content, message.created_at, message.edited_at)
-
-
-async def prepare_attachment(message, attachment):
-    return (message.id, attachment.id, attachment.filename, attachment.url)
-
-
-async def prepare_reaction(reaction):
-    user_ids = await reaction.users().map(lambda member: member.id).flatten()
-    return (reaction.message.id, emoji.demojize(str(reaction.emoji)), user_ids)
-
-###
-#
-###
-#
-###
-
-
-class Logger(commands.Cog):
-
-    def __init__(self, bot):
-        self.bot = bot
-
-        self.insert_queues = {}
-        self.delete_queues = {}
-
-    @property
-    def pool(self):
-        return self.bot.pool
-
-    ###
-    #
-    ###
-    #
-    ###
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        await self.backup()
-
-    @tasks.loop(hours=168)  # 168 hours == 1 week
-    async def _repeat_backup(self):
-        await self.backup()
-
-    @commands.command(name="backup")
-    async def _backup(self, ctx):
-        await self.backup()
-
-    ###
-    #
-    ###
-    #
-    ###
-
+class BackupUntilPresent:
     async def backup(self):
         log.info("Starting backup process")
         await self.backup_guilds()
@@ -106,37 +32,32 @@ class Logger(commands.Cog):
 
         log.info("Finished backup process")
 
-    @acquire_conn
-    async def backup_guilds(self, conn):
-        data = [await prepare_guild(guild) for guild in self.bot.guilds]
-        await conn.executemany(schemas.SQL_INSERT_GUILD, data)
+    async def backup_guilds(self):
+        data = await self.bot.db.guilds.prepare(self.bot.guilds)
+        await self.bot.db.guilds.insert(data)
 
-    @acquire_conn
-    async def backup_categories(self, guild, conn):
-        data = [await prepare_category(category) for category in guild.categories]
-        await conn.executemany(schemas.SQL_INSERT_CATEGORY, data)
+    async def backup_categories(self, guild):
+        data = await self.bot.db.categories.prepare(guild.categories)
+        await self.bot.db.categories.insert(data)
 
-    @acquire_conn
-    async def backup_roles(self, guild, conn):
-        data = [await prepare_role(role) for role in guild.roles]
-        await conn.executemany(schemas.SQL_INSERT_ROLE, data)
+    async def backup_roles(self, guild):
+        data = await self.bot.db.roles.prepare(guild.roles)
+        await self.bot.db.roles.insert(data)
 
-    @acquire_conn
-    async def backup_members(self, guild, conn):
-        data = [await prepare_member(member) for member in guild.members]
-        await conn.executemany(schemas.SQL_INSERT_USER, data)
+    async def backup_members(self, guild):
+        data = await self.bot.db.members.prepare(guild.members)
+        await self.bot.db.members.insert(data)
 
-    @acquire_conn
-    async def backup_channels(self, guild, conn):
-        data = [await prepare_channel(channel) for channel in guild.text_channels]
-        await conn.executemany(schemas.SQL_INSERT_CHANNEL, data)
+    async def backup_channels(self, guild):
+        data = await self.bot.db.channels.prepare(guild.text_channels)
+        await self.bot.db.channels.insert(data)
 
     async def backup_messages(self, guild):
         await self.backup_failed_weeks(guild)
         await self.backup_new_weeks(guild)
 
     async def backup_failed_weeks(self, guild):
-        while (failed := await self.backup_failed_week(guild)):
+        while (still_failed := await self.backup_failed_week(guild)):
             log.debug("finished running failed process, re-checking if everything is fine...")
             await asyncio.sleep(3)
 
@@ -145,155 +66,146 @@ class Logger(commands.Cog):
             log.debug("newer week exists, re-running backup for next week")
             await asyncio.sleep(2)
 
-    @acquire_conn
-    async def backup_failed_week(self, guild, conn):
-        failed_row = await conn.fetchrow("SELECT * FROM cogs.logger WHERE guild_id = $1 AND finished_at IS NULL", guild.id)
-        row = await conn.fetchrow("SELECT * FROM cogs.logger WHERE guild_id = $1 AND finished_at IS NOT NULL", guild.id)
+    async def backup_failed_week(self, guild):
+        rows = await self.bot.db.logger.select(guild.id)
+        failed_rows, success_rows = partition(lambda row: row.get("finished_at") is None, rows)
 
-        if failed_row is not None:
-            from_date = failed_row.get("from_date")
-            to_date = failed_row.get("to_date")
+        for failed_row in failed_rows:
+            await self.rebackup_failed_week(guild, failed_row)
 
-            for channel in guild.text_channels:
-                await self.backup_messages(channel, from_date, to_date)
+        return len(failed_rows) != 0
 
-            await self.backup_mark_finished(guild, row, from_date, to_date)
-
-        return failed_row is not None
-
-    @acquire_conn
-    async def backup_mark_finished(self, guild, row, from_date, to_date, conn):
-        if row is None:
-            await conn.execute("UPDATE cogs.logger SET finished_at = NOW() WHERE guild_id = $1 AND finished_at IS NULL", guild.id)
-        else:
-            async with conn.transaction():
-                await conn.execute("DELETE FROM cogs.logger WHERE guild_id = $1 AND from_date = $2 AND to_date = $3", guild.id, from_date, to_date)
-                await conn.execute("UPDATE cogs.logger SET to_date = $3, finished_at = NOW() WHERE guild_id = $1 AND to_date = $2 AND finished_at IS NOT NULL", guild.id, from_date, to_date)
-
-    @acquire_conn
-    async def backup_new_week(self, guild, conn):
-        row = await conn.fetchrow("SELECT * FROM cogs.logger WHERE guild_id = $1", guild.id)
-
-        (from_date, to_date) = self.get_next_week(guild, row)
-
-        await conn.execute("INSERT INTO cogs.logger VALUES ($1, $2, $3, NULL)", guild.id, from_date, to_date)
+    async def rebackup_failed_week(self, guild, failed_row):
+        from_date = failed_row.get("from_date")
+        to_date = failed_row.get("to_date")
 
         for channel in guild.text_channels:
-            await self.backup_messages(channel, from_date, to_date)
+            await self.try_to_backup_messages_in_nonempty_channel(channel, from_date, to_date)
 
-        await self.backup_mark_finished(guild, row, from_date, to_date)
+        await self.bot.db.logger.mark_process_finished(guild.id, from_date, to_date, is_first_week=False)
 
-        return to_date + timedelta(weeks=1) < datetime.now()
+    async def backup_new_week(self, guild):
+        finished_process = await self.get_finished_process(guild)
+        (from_date, to_date) = self.get_next_week(guild, finished_process)
+        await self.bot.db.logger.start_process(guild.id, from_date, to_date)
+
+        for channel in guild.text_channels:
+            await self.try_to_backup_messages_in_nonempty_channel(channel, from_date, to_date)
+
+        is_first_week = finished_process is None
+        await self.bot.db.logger.mark_process_finished(guild.id, from_date, to_date, is_first_week)
+        return self.next_week_still_behind_today(to_date)
+
+    async def get_finished_process(self, guild):
+        finished_processes = await self.bot.db.logger.select(guild.id)
+        if not finished_processes:
+            return None
+        return max(finished_processes, key=lambda proc: proc.get("finished_at"))
 
     @staticmethod
-    async def get_next_week(guild, row):
-        if row is None:
+    def get_next_week(guild, process):
+        if process is None:
             return guild.created_at, from_date + timedelta(weeks=1)
         else:
-            return row.get("to_date"), row.get("to_date") + timedelta(weeks=1)
+            return process.get("to_date"), process.get("to_date") + timedelta(weeks=1)
 
-    @acquire_conn
-    async def backup_messages(self, channel, from_date, to_date, conn):
+    @staticmethod
+    def next_week_still_behind_today(to_date):
+        return to_date + timedelta(weeks=1) < datetime.now()
+
+    async def try_to_backup_messages_in_nonempty_channel(self, channel, from_date, to_date):
         if channel.last_message_id is None:
             return
 
         try:
-            log.debug(f"backing up messages {from_date.strftime('%d.%m.%Y')} - {to_date.strftime('%d.%m.%Y')} in {channel} ({channel.guild})")
-            authors, messages, attachments, reactions, emojis = [], [], [], [], []
-
-            async for message in channel.history(after=from_date, before=to_date, oldest_first=True):
-                authors.append(await prepare_member(message.author))
-
-                messages.append(await prepare_message(message))
-
-                attachments.extend([await prepare_attachment(message, attachment)
-                                    for attachment in message.attachments])
-
-                reactions.extend([await prepare_reaction(reaction)
-                                  for reaction in message.reactions])
-
-                emojis.extend([(message.id, emote, count)
-                               for emote, count in (await self.get_emojis(message)).items()])
-
-            await conn.executemany(schemas.SQL_INSERT_USER, authors)
-            await conn.executemany(schemas.SQL_INSERT_MESSAGE, messages)
-            await conn.executemany(schemas.SQL_INSERT_ATTACHEMNT, attachments)
-            await conn.executemany(schemas.SQL_INSERT_REACTIONS, reactions)
-            await conn.executemany(schemas.SQL_INSERT_EMOJIS, emojis)
+            await self.backup_messages_in_nonempty_channel(channel, from_date, to_date)
         except Forbidden:
             log.debug(f"missing permissions to backup messages in {channel} ({channel.guild})")
 
-    async def get_emojis(self, message):
-        REGEX = r"((?::\w+(?:~\d+)?:)|(?:<\d+:\w+:>))"
-        emojis = re.findall(REGEX, emoji.demojize(message.content))
-        return Counter(emojis)
+    async def backup_messages_in_nonempty_channel(self, channel, from_date, to_date):
+        log.debug(f"backing up messages {from_date.strftime('%d.%m.%Y')} - {to_date.strftime('%d.%m.%Y')} in {channel} ({channel.guild})")
 
-    ###
-    #
-    ###
-    #
-    ###
+        collectables = [
+            Collectable(prepare_fn=self.bot.db.members.prepare, insert_fn=self.bot.db.members.insert),
+            Collectable(prepare_fn=self.bot.db.messages.prepare, insert_fn=self.bot.db.messages.insert),
+            Collectable(prepare_fn=self.bot.db.attachments.prepare, insert_fn=self.bot.db.attachments.insert),
+            Collectable(prepare_fn=self.bot.db.reactions.prepare, insert_fn=self.bot.db.reactions.insert),
+            Collectable(prepare_fn=self.bot.db.emojis.prepare, insert_fn=self.bot.db.emojis.insert)
+        ]
 
+        async for message in channel.history(after=from_date, before=to_date, oldest_first=True):
+            for collectable in collectables:
+                await collectable.add(message)
+
+        for collectable in collectables:
+            await collectable.db_insert()
+
+
+class BackupOnEvents:
     @commands.Cog.listener()
-    @acquire_conn
-    async def on_guild_join(self, guild, conn):
+    async def on_guild_join(self, guild):
         log.info(f"joined guild {guild}")
-        data = await prepare_guild(guild)
-        await conn.execute(schemas.SQL_INSERT_GUILD, *data)
+        data = await self.bot.db.guilds.prepare_one(guild)
+        await self.bot.db.guilds.insert([data])
 
     @commands.Cog.listener()
-    @acquire_conn
-    async def on_guild_update(self, before, after, conn):
+    async def on_guild_update(self, before, after):
         log.info(f"updated guild from {before} to {after}")
-        data = await prepare_guild(after)
-        await conn.execute(schemas.SQL_INSERT_GUILD, *data)
+        data = await self.bot.db.guilds.prepare_one(after)
+        await self.bot.db.guilds.insert([data])
 
     @commands.Cog.listener()
-    @acquire_conn
-    async def on_guild_remove(self, guild, conn):
+    async def on_guild_remove(self, guild):
         log.info(f"left guild {guild}")
-        await conn.execute("UPDATE server.guilds SET deleted_at=NOW() WHERE id = $1;", guild.id)
+        await self.bot.db.guilds.soft_delete([guild.id])
 
     @commands.Cog.listener()
-    @acquire_conn
-    async def on_guild_channel_create(self, channel, conn):
+    async def on_guild_channel_create(self, channel):
         log.info(f"created channel {channel}")
 
         if isinstance(channel, TextChannel):
-            data = await prepare_channel(channel)
-            await conn.execute(schemas.SQL_INSERT_CHANNEL, *data)
+            await self.on_textchannel_create(channel)
 
         elif isinstance(channel, CategoryChannel):
-            data = await prepare_category(channel)
-            await conn.execute(schemas.SQL_INSERT_CATEGORY, *data)
+            await self.on_category_create(channel)
+
+    async def on_textchannel_create(self, channel):
+        data = await self.bot.db.channels.prepare_one(channel)
+        await self.bot.db.channels.insert([data])
+
+    async def on_category_create(self, channel):
+        data = await self.bot.db.categories.prepare_one(channel)
+        await self.bot.db.categories.insert([data])
 
     @commands.Cog.listener()
-    @acquire_conn
-    async def on_guild_channel_update(self, before, after, conn):
+    async def on_guild_channel_update(self, before, after):
         log.info(f"updated channel {before}")
 
-        if isinstance(channel, TextChannel):
-            data = await prepare_channel(after)
-            await conn.execute(schemas.SQL_INSERT_CHANNEL, *data)
+        if isinstance(after, TextChannel):
+            await self.on_textchannel_update(before, after)
 
-        elif isinstance(channel, CategoryChannel):
-            data = await prepare_category(after)
-            await conn.execute(schemas.SQL_INSERT_CATEGORY, *data)
+        elif isinstance(after, CategoryChannel):
+            await self.on_category_update(before, after)
+
+    async def on_textchannel_update(self, before, after):
+        data = await self.bot.db.channels.prepare_one(after)
+        await self.bot.db.channels.update([data])
+
+    async def on_category_update(self, before, after):
+        data = await self.bot.db.categories.prepare_one(after)
+        await self.bot.db.categories.update([data])
 
     @commands.Cog.listener()
-    @acquire_conn
-    async def on_guild_channel_delete(self, channel, conn):
-        if isinstance(channel, PrivateChannel):
-            return
-
+    async def on_guild_channel_delete(self, channel):
         log.info(f"deleted channel {channel}")
 
         if isinstance(channel, TextChannel):
-            await conn.execute("UPDATE server.channels SET deleted_at=NOW() WHERE id = $1;", channel.id)
+            await self.bot.db.channels.soft_delete([channel.id])
 
         elif isinstance(channel, CategoryChannel):
-            await conn.execute("UPDATE server.categories SET deleted_at=NOW() WHERE id = $1;", channel.id)
+            await self.bot.db.categories.soft_delete([channel.id])
 
+    """
     @commands.Cog.listener()
     async def on_message(self, message):
         if isinstance(message.channel, PrivateChannel):
@@ -317,18 +229,18 @@ class Logger(commands.Cog):
             return
 
         self.message_delete_queue.append((message.id,))
+    """
 
     @commands.Cog.listener()
-    @acquire_conn
-    async def on_member_join(self, member, conn):
+    async def on_member_join(self, member):
         log.info(f"member {member} joined")
 
-        data = await prepare_member(member)
-        await conn.execute(schemas.SQL_INSERT_USER, *data)
+        data = await self.bot.db.members.prepare_one(member)
+        await self.bot.db.members.insert(data)
 
+    """
     @commands.Cog.listener()
-    @acquire_conn
-    async def on_member_update(self, before, after, conn):
+    async def on_member_update(self, before, after):
         if before.avatar_url != after.avatar_url:
             log.info(f"member {before} updated his avatar_url")
         elif before.name != after.name:
@@ -339,46 +251,58 @@ class Logger(commands.Cog):
             return
 
         self.member_update_queue.append(await prepare_member(after))
+    """
 
     @commands.Cog.listener()
-    @acquire_conn
-    async def on_member_remove(self, member, conn):
+    async def on_member_remove(self, member):
         log.info(f"member {member} left")
 
-        await conn.execute("UPDATE server.users SET deleted_at=NOW() WHERE id = $1", member.id)
+        await self.bot.db.members.soft_delete([member.id])
 
     @commands.Cog.listener()
-    @acquire_conn
-    async def on_guild_role_create(self, role, conn):
+    async def on_guild_role_create(self, role):
         log.info(f"added role {role}")
 
-        data = await prepare_role(role)
-        await conn.execute(schemas.SQL_INSERT_ROLE, *data)
+        data = await self.bot.db.roles.prepare_one(role)
+        await self.bot.db.roles.insert(data)
 
     @commands.Cog.listener()
-    @acquire_conn
-    async def on_guild_role_update(self, before, after, conn):
+    async def on_guild_role_update(self, before, after):
         log.info(f"updated role from {before} to {after}")
 
-        data = await prepare_role(after)
-        await conn.execute(schemas.SQL_INSERT_ROLE, *data)
+        data = await self.bot.db.roles.prepare_one(after)
+        await self.bot.db.roles.insert(data)
 
     @commands.Cog.listener()
-    @acquire_conn
-    async def on_guild_role_remove(self, role, conn):
+    async def on_guild_role_remove(self, role):
         log.info(f"removed role{role}")
 
-        await conn.execute("UPDATE server.roles SET deleted_at=NOW() WHERE id = $1", role.id)
+        await self.bot.db.roles.soft_delete([role.id])
 
-    ###
-    #
-    ###
-    #
-    ###
 
+class Logger(commands.Cog, BackupUntilPresent, BackupOnEvents):
+
+    def __init__(self, bot):
+        self.bot = bot
+
+        self.insert_queues = {}
+        self.delete_queues = {}
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        await self.backup()
+
+    @tasks.loop(hours=168)  # 168 hours == 1 week
+    async def _repeat_backup(self):
+        await self.backup()
+
+    @commands.command(name="backup")
+    async def _backup(self, ctx):
+        await self.backup()
+
+    """
     @tasks.loop(minutes=1)
-    @acquire_conn
-    async def message_insert_queued(self, conn):
+    async def message_insert_queued(self):
         if not self.message_insert_queue:
             return
 
@@ -388,8 +312,7 @@ class Logger(commands.Cog):
         log.debug(f"inserted {len(first_500)} messages to database")
 
     @tasks.loop(minutes=1)
-    @acquire_conn
-    async def message_delete_queued(self, conn):
+    async def message_delete_queued(self):
         if not self.message_delete_queue:
             return
 
@@ -399,8 +322,7 @@ class Logger(commands.Cog):
         log.debug(f"deleted {len(first_500)} messages from database")
 
     @tasks.loop(minutes=1)
-    @acquire_conn
-    async def member_update_queued(self, conn):
+    async def member_update_queued(self):
         if not self.member_update_queue:
             return
 
@@ -408,6 +330,20 @@ class Logger(commands.Cog):
                      for _ in range(min(500, len(self.member_update_queue)))]
         await conn.executemany(schemas.SQL_INSERT_USER, first_500)
         log.debug(f"inserted {len(first_500)} members to database")
+    """
+
+
+class Collectable:
+    def __init__(self, prepare_fn=None, insert_fn=None):
+        self.content = []
+        self.prepare_fn = prepare_fn
+        self.insert_fn = insert_fn
+
+    async def add(self, item):
+        self.content.extend(await self.prepare_fn(item))
+
+    async def db_insert(self):
+        await self.insert_fn(self.content)
 
 
 def setup(bot):
