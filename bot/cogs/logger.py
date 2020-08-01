@@ -4,7 +4,6 @@ from discord.ext import tasks, commands
 from discord.errors import Forbidden
 
 import re
-import emoji
 import asyncio
 import logging
 from collections import deque, Counter
@@ -236,7 +235,7 @@ class BackupOnEvents:
 
         data = await self.bot.db.messages.prepare_one(message)
         self.insert_queues.setdefault(self.bot.db.messages, deque())
-        self.insery_queues[self.bot.db.messages].append(data)
+        self.insert_queues[self.bot.db.messages].append(data)
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
@@ -252,8 +251,8 @@ class BackupOnEvents:
         if isinstance(message.channel, PrivateChannel):
             return
 
-        self.delete_queues.setdefault("messages", deque())
-        self.delete_queues.append([message.id])
+        self.delete_queues.setdefault(self.bot.db.messages, deque())
+        self.delete_queues[self.bot.db.messages].append([message.id])
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
@@ -325,7 +324,7 @@ class Logger(commands.Cog, BackupUntilPresent, BackupOnEvents):
     def __init__(self, bot):
         self.bot = bot
 
-        super(BackupOnEvents, self).__init__()
+        super().__init__()
 
     @commands.Cog.listener()
     async def on_ready(self):
