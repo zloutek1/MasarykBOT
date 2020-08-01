@@ -39,7 +39,7 @@ class Leaderboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    async def resolve_arguments(self, ctx, *args, types):
+    def resolve_arguments(self, *args, types):
         result = []
         for _type in types:
             for arg in args:
@@ -52,7 +52,7 @@ class Leaderboard(commands.Cog):
 
     @commands.command()
     async def leaderboard(self, ctx, arg1: T = None, arg2: T = None):
-        (channel, member) = await self.resolve_arguments(ctx, arg1, arg2, types=T.__args__)
+        (channel, member) = self.resolve_arguments(arg1, arg2, types=T.__args__)
 
         member = member if member else ctx.author
         channel_id = channel.id if channel else None
@@ -112,7 +112,7 @@ class Leaderboard(commands.Cog):
 
     @commands.command()
     async def emojiboard(self, ctx, arg1: U = None, arg2: U = None, arg3: U = None):
-        (channel, member, emoji) = await self.resolve_arguments(ctx, arg1, arg2, arg3, types=U.__args__)
+        (channel, member, emoji) = self.resolve_arguments(arg1, arg2, arg3, types=U.__args__)
 
         member = member if member else ctx.author
         channel_id = channel.id if channel else None
