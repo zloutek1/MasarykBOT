@@ -11,8 +11,8 @@ from dotenv import load_dotenv
 
 initail_cogs = [
     "bot.cogs.verification",
-    "bot.cogs.cog_manager",
     "bot.cogs.leaderboard",
+    "bot.cogs.cog_manager",
     "bot.cogs.logger",
     "bot.cogs.rules",
     "bot.cogs.help",

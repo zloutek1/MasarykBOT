@@ -134,6 +134,9 @@ class Messages(Table):
         async with self.db.acquire() as conn:
             await conn.executemany(schemas.SQL_INSERT_MESSAGE, messages)
 
+    async def update(self, messages):
+        await self.insert(messages)
+
 
 class Attachments(Table):
     @staticmethod
@@ -194,6 +197,41 @@ class Logger(Table):
                 async with conn.transaction():
                     await conn.execute("DELETE FROM cogs.logger WHERE guild_id = $1 AND from_date = $2 AND to_date = $3", guild_id, from_date, to_date)
                     await conn.execute("UPDATE cogs.logger SET to_date = $3, finished_at = NOW() WHERE guild_id = $1 AND to_date = $2 AND finished_at IS NOT NULL", guild_id, from_date, to_date)
+
+
+class Leaderboard(Table):
+    async def refresh(self):
+        async with self.db.acquire() as conn:
+            try:
+                await conn.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY cogs.leaderboard")
+            except Exception:
+                await conn.execute("REFRESH MATERIALIZED VIEW cogs.leaderboard")
+
+    async def preselect(self, guild_id, ignored_users, channel_id):
+        async with self.db.acquire() as conn:
+            await conn.execute("DROP TABLE IF EXISTS ldb_lookup")
+            await conn.execute(schemas.SQL_SELECT_LEADERBOARD, guild_id, ignored_users, channel_id)
+
+    async def get_top10(self):
+        async with self.db.acquire() as conn:
+            return await conn.fetch("SELECT * FROM ldb_lookup LIMIT 10")
+
+    async def get_around(self, author_id):
+        async with self.db.acquire() as conn:
+            return await conn.fetch(schemas.SQL_AROUND_SELECT_LEADERBOARD, author_id)
+
+
+class Emojiboard(Table):
+    async def refresh(self):
+        async with self.db.acquire() as conn:
+            try:
+                await conn.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY cogs.emojiboard")
+            except Exception:
+                await conn.execute("REFRESH MATERIALIZED VIEW cogs.emojiboard")
+
+    async def select(self, guild_id, ignored_users, channel_id):
+        async with self.db.acquire() as conn:
+            return await conn.fetch(schemas.SQL_SELECT_EMOJIBOARD, guild_id, ignored_users, channel_id)
 
 
 class DBAcquire:
@@ -271,3 +309,5 @@ class Database(DBBase):
         self.emojis = Emojis(self)
 
         self.logger = Logger(self)
+        self.leaderboard = Leaderboard(self)
+        self.emojiboard = Emojiboard(self)

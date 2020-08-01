@@ -1,9 +1,37 @@
-from discord import TextChannel, Member, Embed
+from discord import TextChannel, Member, Embed, Emoji, PartialEmoji
 from discord.ext import commands
 from discord.utils import get, escape_markdown
 
 from typing import Union
 from datetime import datetime
+from emoji import demojize, emojize
+
+
+class Emote(commands.Converter):
+    def __init__(self, name=None):
+        self.name = name
+
+    async def convert(self, ctx, argument):
+        import re
+
+        REGEX = r"((?::\w+(?:~\d+)?:)|(?:<\d+:\w+:>))"
+        emote = re.search(REGEX, demojize(argument))
+
+        if emote is None:
+            raise commands.BadArgument(f"Emote {argument} not found")
+
+        self.name = emote.group().strip(":")
+        return self
+
+    def __repr__(self):
+        return f":{self.name}:"
+
+    def __str__(self):
+        return f":{self.name}:"
+
+
+T = Union[TextChannel, Member]
+U = Union[TextChannel, Member, Emote]
 
 
 class Leaderboard(commands.Cog):
@@ -11,127 +39,69 @@ class Leaderboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    async def resolve_arguments(self, ctx, *args, types):
+        result = []
+        for _type in types:
+            for arg in args:
+                if isinstance(arg, _type):
+                    result.append(arg)
+                    break
+            else:
+                result.append(None)
+        return tuple(result)
+
     @commands.command()
-    async def leaderboard(self,
-                          ctx,
-                          channel_or_member: Union[TextChannel, Member] = None,
-                          member_or_channel: Union[Member, TextChannel] = None):
-        """
-        get message leaderboard from the database
-        the output format is
-            FI MUNI Leaderboard!
-            {n}.   {count} {name}
-            ... top10 ...
-            Your position
-            {n}.   {count} {name}
-            ... +-2 around you
-        optional arguments
-        #channel - get messages only in one channel
-        @member - get only the Your position section
-        """
+    async def leaderboard(self, ctx, arg1: T = None, arg2: T = None):
+        (channel, member) = await self.resolve_arguments(ctx, arg1, arg2, types=T.__args__)
 
-        channel = (channel_or_member if isinstance(channel_or_member, TextChannel) else
-                   member_or_channel if isinstance(member_or_channel, TextChannel) else
-                   None)
+        member = member if member else ctx.author
+        channel_id = channel.id if channel else None
+        bot_ids = [bot.id for bot in filter(lambda user: user.bot, ctx.guild.members)]
 
-        member = (channel_or_member if isinstance(channel_or_member, Member) else
-                  member_or_channel if isinstance(member_or_channel, Member) else
-                  None)
+        await self.bot.db.leaderboard.refresh()
+        await self.bot.db.leaderboard.preselect(ctx.guild.id, bot_ids, channel_id)
+        top10 = await self.bot.db.leaderboard.get_top10()
+        around = await self.bot.db.leaderboard.get_around(member.id)
 
-        def right_justify(text, by=0, pad=" "):
-            return pad * (by - len(str(text))) + str(text)
+        await self.display_leaderboard(ctx, top10, around, member)
 
-        def get_author(row):
-            _id = ctx.author.id if not member else member.id
-            if row["author_id"] == _id:
+    async def display_leaderboard(self, ctx, top10, around, member):
+        def get_value(row):
+            if row["author_id"] == member.id:
                 return f'**{escape_markdown(row["author"])}**'
             else:
                 return escape_markdown(row["author"])
 
-        def template_row(i, row, data):
-            width = len(str(data[0].get("sent_total")))
-            count = right_justify(row.get("sent_total"), width, "\u2063 ")
-
-            template = "`{index:0>2}.` {medal} `{count}` {author}"
-
-            return template.format(
-                index=i + 1,
-                medal=self.get_medal(i + 1),
-                count=count,
-                author=get_author(row)
-            )
-
-        author_id = member.id if member else ctx.author.id
-        channel_id = channel.id if channel else None
-        bots = filter(lambda user: user.bot, ctx.guild.members)
-        bots_ids = [bot.id for bot in bots]
-
-        query = """
-            CREATE TEMPORARY TABLE ldb_lookup AS
-                SELECT
-                    ROW_NUMBER() OVER (ORDER BY sent_total DESC), *
-                FROM (
-                    SELECT
-                        author_id,
-                        author.names[1] AS author,
-                        SUM(messages_sent) AS sent_total
-                    FROM cogs.leaderboard
-                    INNER JOIN server.users AS author
-                        ON author_id = author.id
-                    INNER JOIN server.channels AS channel
-                        ON channel_id = channel.id
-                    WHERE guild_id = $1::bigint AND
-                          author_id<>ALL($2::bigint[]) AND
-                          ($3::bigint IS NULL OR channel_id = $3)
-                    GROUP BY author_id, author.names
-                    ORDER BY sent_total DESC
-                ) AS lookup
-        """
-
-        around_query = """
-            WITH desired_count AS (
-                SELECT sent_total
-                FROM ldb_lookup
-                WHERE author_id = $1)
-
-                (
-                    SELECT *
-                    FROM ldb_lookup
-                    WHERE sent_total >= (SELECT * FROM desired_count) AND author_id <> $1
-                    ORDER BY sent_total LIMIT 2
-                ) UNION (
-                    SELECT *
-                    FROM ldb_lookup
-                    WHERE sent_total = (SELECT * FROM desired_count)
-                ) UNION (
-                    SELECT *
-                    FROM ldb_lookup
-                    WHERE sent_total < (SELECT * FROM desired_count) AND author_id <> $1 LIMIT 2
-                ) ORDER BY sent_total DESC
-        """
-
-        async with ctx.acquire() as conn:
-            await conn.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY cogs.leaderboard")
-            await conn.execute("DROP TABLE IF EXISTS ldb_lookup")
-            await conn.execute(query, ctx.guild.id, bots_ids, channel_id)
-            top10 = await conn.fetch("SELECT * FROM ldb_lookup LIMIT 10")
-            aroundYou = await conn.fetch(around_query, author_id)
-
         embed = Embed(color=0x53acf2)
-        if not member:
-            embed.add_field(
-                inline=False,
-                name="FI MUNI Leaderboard!",
-                value="\n".join(template_row(i, row, top10) for i, row in enumerate(top10)))
-
+        embed.add_field(
+            inline=False,
+            name="FI MUNI Leaderboard!",
+            value="\n".join(self.template_row(i + 1, row, top10, get_value) for i, row in enumerate(top10)))
         embed.add_field(
             inline=False,
             name="Your position",
-            value="\n".join(template_row(i, row, aroundYou) for i, row in enumerate(aroundYou)))
+            value="\n".join(self.template_row(row["row_number"], row, around, get_value) for i, row in enumerate(around)))
 
         time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         embed.set_footer(text=f"{str(ctx.author)} at {time_now}", icon_url=ctx.author.avatar_url)
         await ctx.send(embed=embed)
+
+    def template_row(self, i, row, data, get_value):
+        width = len(str(data[0].get("sent_total")))
+        count = self.right_justify(row.get("sent_total"), width, "\u2063 ")
+
+        template = "`{index:0>2}.` {medal} `{count}` {value}"
+
+        return template.format(
+            index=i,
+            medal=self.get_medal(i),
+            count=count,
+            value=get_value(row)
+        )
+
+    @staticmethod
+    def right_justify(text, by=0, pad=" "):
+        return pad * (by - len(str(text))) + str(text)
 
     def get_medal(self, i):
         return {
@@ -139,6 +109,35 @@ class Leaderboard(commands.Cog):
             2: get(self.bot.emojis, name="silver_medal"),
             3: get(self.bot.emojis, name="bronze_medal")
         }.get(i, get(self.bot.emojis, name="BLANK"))
+
+    @commands.command()
+    async def emojiboard(self, ctx, arg1: U = None, arg2: U = None, arg3: U = None):
+        (channel, member, emoji) = await self.resolve_arguments(ctx, arg1, arg2, arg3, types=U.__args__)
+
+        member = member if member else ctx.author
+        channel_id = channel.id if channel else None
+        bot_ids = [bot.id for bot in filter(lambda user: user.bot, ctx.guild.members)]
+
+        await self.bot.db.emojiboard.refresh()
+        data = await self.bot.db.emojiboard.select(ctx.guild.id, bot_ids, channel_id)
+
+        await self.display_emojiboard(ctx, data, member)
+
+    async def display_emojiboard(self, ctx, data, member):
+        def get_value(row):
+            return (discord_emoji if (discord_emoji := get(self.bot.emojis, name=row["name"].strip(":"))) else
+                    demojized_emoji if (demojized_emoji := emojize(row["name"])) else
+                    None)
+
+        embed = Embed(color=0x53acf2)
+        embed.add_field(
+            inline=False,
+            name="FI MUNI Emojiboard!",
+            value="\n".join(self.template_row(i + 1, row, data, get_value) for i, row in enumerate(data)))
+
+        time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        embed.set_footer(text=f"{str(ctx.author)} at {time_now}", icon_url=ctx.author.avatar_url)
+        await ctx.send(embed=embed)
 
 
 def setup(bot):
