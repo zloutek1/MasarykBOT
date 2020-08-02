@@ -14,7 +14,7 @@ class Emote(commands.Converter):
     async def convert(self, ctx, argument):
         import re
 
-        REGEX = r"((?::\w+(?:~\d+)?:)|(?:<\d+:\w+:>))"
+        REGEX = r"(?::\w+(?:~\d+)?:)"
         emote = re.search(REGEX, demojize(argument))
 
         if emote is None:
