@@ -11,3 +11,10 @@ CREATE SCHEMA cogs
 
 CREATE SCHEMA server
     AUTHORIZATION masaryk;
+
+-- SCHEMA: muni
+
+-- DROP SCHEMA muni ;
+
+CREATE SCHEMA muni
+    AUTHORIZATION masaryk;
