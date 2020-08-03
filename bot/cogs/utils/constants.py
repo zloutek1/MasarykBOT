@@ -27,3 +27,11 @@ muted_roles = []
 verified_roles = [605751951644295198]
 moderator_roles = []
 admin_roles = []
+
+
+# Misc
+needed_reactions = 1
+
+
+# Colors
+muni_yellow = 0xEACD59
