@@ -177,7 +177,7 @@ class BackupOnEvents:
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
         log.info(f"left guild {guild}")
-        await self.bot.db.guilds.soft_delete([guild.id])
+        await self.bot.db.guilds.soft_delete([(guild.id,)])
 
     @commands.Cog.listener()
     async def on_guild_channel_create(self, channel):
@@ -220,10 +220,10 @@ class BackupOnEvents:
         log.info(f"deleted channel {channel}")
 
         if isinstance(channel, TextChannel):
-            await self.bot.db.channels.soft_delete([channel.id])
+            await self.bot.db.channels.soft_delete([(channel.id,)])
 
         elif isinstance(channel, CategoryChannel):
-            await self.bot.db.categories.soft_delete([channel.id])
+            await self.bot.db.categories.soft_delete([(channel.id,)])
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -252,7 +252,7 @@ class BackupOnEvents:
             return
 
         self.delete_queues.setdefault(self.bot.db.messages, deque())
-        self.delete_queues[self.bot.db.messages].append([message.id])
+        self.delete_queues[self.bot.db.messages].append([(message.id,)])
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
@@ -280,7 +280,7 @@ class BackupOnEvents:
     async def on_member_remove(self, member):
         log.info(f"member {member} left")
 
-        await self.bot.db.members.soft_delete([member.id])
+        await self.bot.db.members.soft_delete([(member.id,)])
 
     @commands.Cog.listener()
     async def on_guild_role_create(self, role):
@@ -300,7 +300,7 @@ class BackupOnEvents:
     async def on_guild_role_remove(self, role):
         log.info(f"removed role{role}")
 
-        await self.bot.db.roles.soft_delete([role.id])
+        await self.bot.db.roles.soft_delete([(role.id,)])
 
     @tasks.loop(minutes=1)
     async def put_queues_to_database(self):
