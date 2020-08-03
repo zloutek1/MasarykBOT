@@ -1,5 +1,6 @@
 import asyncio
 import asyncpg
+import aiohttp
 
 
 class Table:
@@ -366,30 +367,46 @@ class Emojiboard(Table):
             """, guild_id, ignored_users, channel_id)
 
 
-class DBAcquire:
-    def __init__(self, db, timeout):
-        self.db = db
-        self.timeout = timeout
+class Subjects(Table):
+    async def find(self, code):
+        async with self.db.acquire() as conn:
+            return await conn.fetch("SELECT * FROM muni.subjects WHERE LOWER(code) LIKE LOWER($1)", code)
 
-    def __await__(self):
-        return self.db._acquire(self.timeout).__await__()
+    async def sign_user(self, member_id, code):
+        async with self.db.acquire() as conn:
+            await conn.execute("""
+                UPDATE muni.subjects
+                    SET member_ids = array_append(member_ids, $1::bigint)
+                    WHERE LOWER(code) = LOWER($2) AND $1 <> ALL(member_ids);
+            """, member_id, code)
 
-    async def __aenter__(self):
-        await self.db._acquire(self.timeout)
-        return self.db._conn
+    async def unsign_user(self, member_id, code):
+        async with self.db.acquire() as conn:
+            await conn.execute("""
+                UPDATE muni.subjects
+                    SET member_ids = array_remove(member_ids, $1::bigint)
+                    WHERE LOWER(code) = LOWER($2) AND $1 <> ALL(member_ids);
+            """, member_id, code)
 
-    async def __aexit__(self, *args):
-        await self.db.release()
+    async def set_channel(self, channel_id, code):
+        async with self.db.acquire() as conn:
+            await conn.execute("""
+                UPDATE muni.subjects
+                    SET channel_id = $1
+                    WHERE LOWER(code) = LOWER($2);
+            """, channel_id, code)
 
+    async def remove_channel(self, channel_id, code):
+        async with self.db.acquire() as conn:
+            await conn.execute("""
+                UPDATE muni.subjects
+                    SET channel_id = NULL
+                    WHERE channel_id = $1 AND LOWER(code) = LOWER($2);
+            """, channel_id, code)
 
 class DBBase:
     def __init__(self, pool):
         self.pool = pool
-        self._conn = None
-
-    @property
-    def conn(self):
-        return self._conn if self._conn else self.pool
 
     @classmethod
     def connect(cls, url):
@@ -397,49 +414,21 @@ class DBBase:
         pool = loop.run_until_complete(asyncpg.create_pool(url, command_timeout=60))
         return Database(pool)
 
-    async def _acquire(self, timeout):
-        if self._conn is None:
-            self._conn = await self.pool.acquire(timeout=timeout)
-        return self._conn
-
-    def acquire(self, *, timeout=None):
-        """Acquires a database connection from the pool. e.g. ::
-            async with self.acquire():
-                await self.conn.execute(...)
-        or: ::
-            await self.acquire()
-            try:
-                await self.conn.execute(...)
-            finally:
-                await self.release()
-        """
-        return DBAcquire(self, timeout)
-
-    async def release(self):
-        """Releases the database connection from the pool.
-        Useful if needed for "long" interactive commands where
-        we want to release the connection and re-acquire later.
-        Otherwise, this is called automatically by the bot.
-        """
-        if self._conn is not None:
-            await self.pool.release(self._conn)
-            self._conn = None
-
-
 class Database(DBBase):
     def __init__(self, *args):
         super().__init__(*args)
 
-        self.guilds = Guilds(self)
-        self.categories = Categories(self)
-        self.roles = Roles(self)
-        self.members = Members(self)
-        self.channels = Channels(self)
-        self.messages = Messages(self)
-        self.attachments = Attachments(self)
-        self.reactions = Reactions(self)
-        self.emojis = Emojis(self)
+        self.guilds = Guilds(self.pool)
+        self.categories = Categories(self.pool)
+        self.roles = Roles(self.pool)
+        self.members = Members(self.pool)
+        self.channels = Channels(self.pool)
+        self.messages = Messages(self.pool)
+        self.attachments = Attachments(self.pool)
+        self.reactions = Reactions(self.pool)
+        self.emojis = Emojis(self.pool)
 
-        self.logger = Logger(self)
-        self.leaderboard = Leaderboard(self)
-        self.emojiboard = Emojiboard(self)
+        self.logger = Logger(self.pool)
+        self.leaderboard = Leaderboard(self.pool)
+        self.emojiboard = Emojiboard(self.pool)
+        self.subjects = Subjects(self.pool)
