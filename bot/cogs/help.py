@@ -4,7 +4,7 @@ from discord.ext import commands
 import asyncio
 import itertools
 
-from bot.cogs.utils.paginator import Pages
+from .utils.paginator import Pages
 
 
 class HelpPaginator(Pages):
