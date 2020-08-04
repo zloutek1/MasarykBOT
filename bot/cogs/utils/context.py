@@ -54,3 +54,6 @@ class Context(commands.Context):
         embed = discord.Embed(**kwargs)
         embed.add_field(name=name, value=content)
         await self.send(embed=embed, delete_after=delete_after)
+
+    async def send_error(self, content, delete_after=None):
+        await self.send_embed(content, name="Error", delete_after=delete_after, color=discord.Color.red())
