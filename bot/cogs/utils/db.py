@@ -372,37 +372,55 @@ class Subjects(Table):
         async with self.db.acquire() as conn:
             return await conn.fetch("SELECT * FROM muni.subjects WHERE LOWER(code) LIKE LOWER($1)", code)
 
-    async def sign_user(self, member_id, code):
+    async def find_registered(self, guild_id, code):
         async with self.db.acquire() as conn:
-            await conn.execute("""
-                UPDATE muni.subjects
-                    SET member_ids = array_append(member_ids, $1::bigint)
-                    WHERE LOWER(code) = LOWER($2) AND $1 <> ALL(member_ids);
-            """, member_id, code)
+            return await conn.fetchrow("""
+                SELECT * FROM muni.registers
+                WHERE guild_id = $1 AND LOWER(code) LIKE LOWER($2)""", guild_id, code)
 
-    async def unsign_user(self, member_id, code):
+    async def sign_user(self, guild_id, code, member_id):
+        print("sign user", member_id, "to", code)
         async with self.db.acquire() as conn:
             await conn.execute("""
-                UPDATE muni.subjects
-                    SET member_ids = array_remove(member_ids, $1::bigint)
-                    WHERE LOWER(code) = LOWER($2) AND $1 <> ALL(member_ids);
-            """, member_id, code)
+                INSERT INTO muni.registers AS r (guild_id, code, member_ids)
+                       VALUES ($1, $2, ARRAY[$3::bigint])
+                ON CONFLICT (guild_id, code) DO UPDATE
+                    SET member_ids = array_append(r.member_ids, $3::bigint)
+                    WHERE $3::bigint <> ALL(r.member_ids);
+            """, guild_id, code, member_id)
 
-    async def set_channel(self, channel_id, code):
+    async def unsign_user(self, guild_id, code, member_id):
+        print("unsign user", member_id, "to", code)
         async with self.db.acquire() as conn:
             await conn.execute("""
-                UPDATE muni.subjects
-                    SET channel_id = $1
-                    WHERE LOWER(code) = LOWER($2);
-            """, channel_id, code)
+                UPDATE muni.registers
+                    SET member_ids = array_remove(member_ids, $3::bigint)
+                    WHERE guild_id = $1 AND
+                          LOWER(code) = LOWER($2) AND
+                          $3 = ANY(member_ids);
+            """, guild_id, code, member_id)
 
-    async def remove_channel(self, channel_id, code):
+    async def set_channel(self, guild_id, code, channel_id):
+        print("set channel", channel_id, "to", code)
         async with self.db.acquire() as conn:
             await conn.execute("""
-                UPDATE muni.subjects
+                INSERT INTO muni.registers AS r (guild_id, code, channel_id)
+                       VALUES ($1, $2, $3)
+                ON CONFLICT (guild_id, code) DO UPDATE
+                    SET channel_id = excluded.channel_id
+                    WHERE r.channel_id IS NULL OR r.channel_id <> excluded.channel_id;
+            """, guild_id, code, channel_id)
+
+    async def remove_channel(self, guild_id, code):
+        print("remove channel from", code)
+        async with self.db.acquire() as conn:
+            await conn.execute("""
+                UPDATE muni.registers
                     SET channel_id = NULL
-                    WHERE channel_id = $1 AND LOWER(code) = LOWER($2);
-            """, channel_id, code)
+                    WHERE guild_id = $1 AND
+                          LOWER(code) = LOWER($2)
+            """, guild_id, code)
+
 
 class DBBase:
     def __init__(self, pool):
