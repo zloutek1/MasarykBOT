@@ -2,20 +2,17 @@ from discord import Embed, Color
 from discord.ext import commands
 from discord.utils import get
 
-from bot.cogs.utils import checks
-
 
 class Rules(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
     @commands.group(name="rules")
-    @checks.has_permissions(administrator=True)
+    @commands.has_permissions(administrator=True)
     async def rules(self, ctx):
         pass
 
     @rules.command(name="setup")
-    @checks.has_permissions(administrator=True)
     async def setup_rules(self, ctx, channel_name="pravidla"):
         rules_channel = await self._get_channel(ctx, channel_name)
         await self._set_permissions(ctx, rules_channel)
