@@ -17,6 +17,7 @@ initail_cogs = [
     "bot.cogs.logger",
     "bot.cogs.rules",
     "bot.cogs.help",
+    "bot.cogs.tags",
     "bot.cogs.info"
 ]
 

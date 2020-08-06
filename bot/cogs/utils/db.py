@@ -418,6 +418,48 @@ class Subjects(Table):
             """, guild_id, code)
 
 
+class Tags(Table):
+    async def select(self, guild_id, user_id):
+        async with self.db.acquire() as conn:
+            return await conn.fetch("SELECT * FROM cogs.tags WHERE guild_id = $1 AND author_id = $2", guild_id, user_id)
+
+    async def get_tag(self, guild_id, name):
+        async with self.db.acquire() as conn:
+            return await conn.fetchrow("SELECT * FROM cogs.tags WHERE guild_id = $1 AND LOWER(name) = $2", guild_id, name)
+
+    async def find_tags(self, guild_id, name):
+        async with self.db.acquire() as conn:
+            return await conn.fetch("""
+                SELECT name, id FROM cogs.tags
+                WHERE guild_id=$1 AND name % $2
+                ORDER BY similarity(name, $2) DESC
+                LIMIT 100;
+            """, guild_id, name)
+
+    async def create_tag(self, guild_id, author_id, name, content):
+        async with self.db.acquire() as conn:
+            try:
+                await conn.execute("""
+                    INSERT INTO cogs.tags (guild_id, author_id, name, content)
+                    VALUES ($1, $2, $3, $4)
+                """, guild_id, author_id, name, content)
+                return True
+            except asyncpg.UniqueViolationError:
+                return False
+
+    async def delete_tag(self, guild_id, author_id, name):
+        async with self.db.acquire() as conn:
+            await conn.execute("DELETE FROM cogs.tags WHERE guild_id=$1 AND author_id=$2 AND LOWER(name)=$3", guild_id, author_id, name)
+
+    async def edit_tag(self, guild_id, author_id, name, new_content):
+        async with self.db.acquire() as conn:
+            return await conn.execute("""
+                UPDATE cogs.tags
+                SET content=$4
+                WHERE guild_id=$1 AND author_id=$2 AND LOWER(name)=$3
+            """, guild_id, author_id, name, new_content)
+
+
 class DBBase:
     def __init__(self, pool):
         self.pool = pool
@@ -427,6 +469,7 @@ class DBBase:
         loop = asyncio.get_event_loop()
         pool = loop.run_until_complete(asyncpg.create_pool(url, command_timeout=60))
         return Database(pool)
+
 
 class Database(DBBase):
     def __init__(self, *args):
@@ -446,3 +489,4 @@ class Database(DBBase):
         self.leaderboard = Leaderboard(self.pool)
         self.emojiboard = Emojiboard(self.pool)
         self.subjects = Subjects(self.pool)
+        self.tags = Tags(self.pool)
