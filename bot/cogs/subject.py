@@ -8,7 +8,6 @@ from collections import defaultdict
 
 
 ERR_EMBED_BODY_TOO_LONG = 50035
-LIMIT_CHANNELS_PER_CATEGORY = 3
 
 
 class Subject(commands.Cog):
@@ -20,6 +19,7 @@ class Subject(commands.Cog):
         await ctx.send_help(ctx.command)
 
     @subject.command()
+    @commands.bot_has_permissions(manage_channels=True)
     async def add(self, ctx, code):
         if (subject := await self.find_subject(code)) is None:
             return await ctx.send_embed(
@@ -31,6 +31,7 @@ class Subject(commands.Cog):
         await self.try_to_sign_user_to_channel(ctx, subject)
 
     @subject.command()
+    @commands.bot_has_permissions(manage_channels=True)
     async def remove(self, ctx, code):
         if not (subject := await self.find_subject(code)):
             return await ctx.send_embed(
