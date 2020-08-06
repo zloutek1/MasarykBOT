@@ -259,7 +259,7 @@ class BackupOnEvents:
         log.info(f"member {member} joined")
 
         data = await self.bot.db.members.prepare_one(member)
-        await self.bot.db.members.insert(data)
+        await self.bot.db.members.insert([data])
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
@@ -287,18 +287,18 @@ class BackupOnEvents:
         log.info(f"added role {role}")
 
         data = await self.bot.db.roles.prepare_one(role)
-        await self.bot.db.roles.insert(data)
+        await self.bot.db.roles.insert([data])
 
     @commands.Cog.listener()
     async def on_guild_role_update(self, before, after):
         log.info(f"updated role from {before} to {after}")
 
         data = await self.bot.db.roles.prepare_one(after)
-        await self.bot.db.roles.insert(data)
+        await self.bot.db.roles.insert([data])
 
     @commands.Cog.listener()
     async def on_guild_role_remove(self, role):
-        log.info(f"removed role{role}")
+        log.info(f"removed role {role}")
 
         await self.bot.db.roles.soft_delete([(role.id,)])
 
