@@ -1,7 +1,3 @@
-# Bot files
-bot/cogs/utils/constants.py
-
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -117,6 +113,7 @@ log.*
 
 # Custom user configuration
 config.yml
+/bot/cogs/utils/constants.py
 
 # xmlrunner unittest XML reports
 TEST-**.xml
