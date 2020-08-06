@@ -53,10 +53,12 @@ class MasarykBOT(commands.Bot):
         elif isinstance(error, commands.MissingPermissions):
             await ctx.send_embed("Sorry. You don't have permissions to use this command", color=red)
 
+        elif isinstance(error, commands.BotMissingPermissions):
+            await ctx.send_embed(error, color=red)
+
         else:
             log.error(f'In {ctx.command.qualified_name}:')
-            traceback.print_tb(original.__traceback__)
-            log.error(f'{original.__class__.__name__}: {original}')
+            traceback.print_tb(error.__traceback__)
 
     async def process_commands(self, message):
         ctx = await self.get_context(message, cls=context.Context)
