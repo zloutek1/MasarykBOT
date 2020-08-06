@@ -1,15 +1,15 @@
 version: '3.8'
 
 services:
-  snekbox:
-    container_name: snekbox
-    privileged: true
-    image: pythondiscord/snekbox:latest
-    ports:
-     - 8060:8060
-    init: true
-    ipc: none
-
+  # snekbox:
+  #  container_name: snekbox
+  #  privileged: true
+  #  image: pythondiscord/snekbox:latest
+  #  ports:
+  #   - 8060:8060
+  #  init: true
+  #  ipc: none
+  #
   bot:
     container_name: bot
     build:
@@ -19,5 +19,5 @@ services:
       - .:/MasarykBOT
     env_file: .env
     network_mode: host
-    depends_on:
-      - snekbox
+    depends_on: []
+    #  - snekbox
