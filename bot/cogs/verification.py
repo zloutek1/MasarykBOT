@@ -88,6 +88,10 @@ class Verification(commands.Cog):
 
     async def _verify_join(self, member):
         verified_role = find(lambda role: role.id in constants.verified_roles, member.guild.roles)
+        if verified_role is None:
+            log.warn(f"No verified role presnt in guild {member.guild}")
+            return
+
         await member.add_roles(verified_role)
         log.info(f"verified user {member.name}, added role @{verified_role}")
 
