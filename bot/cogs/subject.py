@@ -8,6 +8,7 @@ from collections import defaultdict
 
 
 ERR_EMBED_BODY_TOO_LONG = 50035
+LIMIT_CHANNELS_PER_CATEGORY = 3
 
 
 class Subject(commands.Cog):
@@ -73,7 +74,8 @@ class Subject(commands.Cog):
     @staticmethod
     def should_create_channel(registers):
         return (registers.get("channel_id") is None and
-                len(registers.get("member_ids")) >= constants.needed_reactions)
+                (registers.get("member_ids") is None or
+                len(registers.get("member_ids")) >= constants.needed_reactions))
 
     async def lookup_channel(self, ctx, subject, recreate=True):
         channel = get(ctx.guild.text_channels, name=self.subject_to_channel_name(ctx, subject))
@@ -131,6 +133,17 @@ class Subject(commands.Cog):
         except Exception as e:
             if e.code == ERR_EMBED_BODY_TOO_LONG:
                 await ctx.send_error("Found too many results to display, please be more specific")
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        for guild in self.bot.guilds:
+            for category in guild.categories:
+                if ':' not in category.name:
+                    continue
+                if category.channels == (ordered := sorted(category.channels, key=lambda c: c.name)):
+                    continue
+                for i, channel in enumerate(ordered):
+                    await channel.edit(position=i)
 
 
 def setup(bot):
