@@ -1,7 +1,7 @@
 
 # Channel IDs
-verification_channels = [731525269214724116]
-about_you_channels = [619887144579629069]
+verification_channels = []
+about_you_channels = []
 
 
 # Log Channel IDs
@@ -10,21 +10,20 @@ mute_log_channels = []
 other_log_channels = []
 
 
-# <emoji, role>
+# <emoji_id, role_id>
 about_you_roles = {
-    617745093889359872: 614438242955165698,     # bot_development
+
 }
 
 
-# Emoji server
+# <emoji_name, emoji_id>
 emojis = {
-    "Verification": 617745093889359872
 }
 
 
 # Roles
 muted_roles = []
-verified_roles = [605751951644295198]
+verified_roles = []
 moderator_roles = []
 admin_roles = []
 
