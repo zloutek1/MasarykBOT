@@ -379,7 +379,6 @@ class Subjects(Table):
                 WHERE guild_id = $1 AND LOWER(code) LIKE LOWER($2)""", guild_id, code)
 
     async def sign_user(self, guild_id, code, member_id):
-        print("sign user", member_id, "to", code)
         async with self.db.acquire() as conn:
             await conn.execute("""
                 INSERT INTO muni.registers AS r (guild_id, code, member_ids)
@@ -390,7 +389,6 @@ class Subjects(Table):
             """, guild_id, code, member_id)
 
     async def unsign_user(self, guild_id, code, member_id):
-        print("unsign user", member_id, "to", code)
         async with self.db.acquire() as conn:
             await conn.execute("""
                 UPDATE muni.registers
@@ -401,7 +399,6 @@ class Subjects(Table):
             """, guild_id, code, member_id)
 
     async def set_channel(self, guild_id, code, channel_id):
-        print("set channel", channel_id, "to", code)
         async with self.db.acquire() as conn:
             await conn.execute("""
                 INSERT INTO muni.registers AS r (guild_id, code, channel_id)
@@ -412,7 +409,6 @@ class Subjects(Table):
             """, guild_id, code, channel_id)
 
     async def remove_channel(self, guild_id, code):
-        print("remove channel from", code)
         async with self.db.acquire() as conn:
             await conn.execute("""
                 UPDATE muni.registers
