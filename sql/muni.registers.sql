@@ -4,10 +4,10 @@
 
 CREATE TABLE muni.registers
 (
+    guild_id bigint NOT NULL,
     code character varying COLLATE pg_catalog."default" NOT NULL,
     channel_id bigint,
     member_ids bigint[] NOT NULL DEFAULT ARRAY[]::bigint[],
-    guild_id bigint NOT NULL,
     CONSTRAINT registers_fkey_subject FOREIGN KEY (code)
         REFERENCES muni.subjects (code) MATCH SIMPLE
         ON UPDATE NO ACTION
