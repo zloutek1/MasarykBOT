@@ -11,17 +11,14 @@ other_log_channels = []
 
 
 # <emoji_id, role_id>
-about_you_roles = {
-
-}
+about_you_roles = {}
 
 
 # <emoji_name, emoji_id>
-emojis = {
-}
+emojis = {}
 
 
-# Roles
+# Role IDs
 muted_roles = []
 verified_roles = []
 moderator_roles = []
