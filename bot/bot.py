@@ -56,6 +56,9 @@ class MasarykBOT(commands.Bot):
         elif isinstance(error, commands.BotMissingPermissions):
             await ctx.send_embed(error, color=red)
 
+        elif isinstance(error, commands.MissingRequiredArgument):
+            pass
+
         else:
             log.error(f'In {ctx.command.qualified_name}:')
             traceback.print_tb(error.__traceback__)
