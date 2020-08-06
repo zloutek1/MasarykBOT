@@ -37,7 +37,7 @@ class Context(commands.Context):
         return get(self.guild.members, **kwargs)
 
     def channel_name(self, text):
-        return re.sub("[^a-zA-Z0-9-]", "", "-".join(text.lower().split()))
+        return "-".join(text.lower().split()).replace("+", "﹢")
 
     async def safe_send(self, content, *, escape_mentions=True, **kwargs):
         if escape_mentions:
