@@ -9,8 +9,6 @@ CREATE TABLE muni.subjects
     name character varying COLLATE pg_catalog."default" NOT NULL,
     url text COLLATE pg_catalog."default" NOT NULL,
     terms character varying[] COLLATE pg_catalog."default" NOT NULL,
-    channel_id bigint,
-    member_ids bigint[],
     created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     edited_at timestamp without time zone,
     deleted_at timestamp without time zone,
