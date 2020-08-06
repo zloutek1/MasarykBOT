@@ -1,7 +1,7 @@
 from discord import Member, TextChannel, CategoryChannel
 from discord.abc import PrivateChannel
 from discord.ext import tasks, commands
-from discord.errors import Forbidden
+from discord.errors import Forbidden, NotFound
 
 import re
 import asyncio
@@ -119,6 +119,8 @@ class BackupUntilPresent:
             await self.backup_messages_in_nonempty_channel(channel, from_date, to_date)
         except Forbidden:
             log.debug(f"missing permissions to backup messages in {channel} ({channel.guild})")
+        except NotFound:
+            log.debug(f"channel {channel} was not found in ({channel.guild})")
 
     async def backup_messages_in_nonempty_channel(self, channel, from_date, to_date):
         log.debug(f"backing up messages {from_date.strftime('%d.%m.%Y')} - {to_date.strftime('%d.%m.%Y')} in {channel} ({channel.guild})")
