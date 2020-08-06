@@ -3,7 +3,7 @@ from discord.utils import get, find
 
 import logging
 
-from bot.cogs.utils import constants, checks
+from bot.cogs.utils import constants
 
 
 log = logging.getLogger(__name__)
@@ -23,7 +23,6 @@ class Verification(commands.Cog):
         ]
 
     @commands.Cog.listener()
-    @checks.has_permissions(manage_roles=True)
     async def on_ready(self):
         log.info(f"found {len(self.verification_channels)} verification channels")
 
@@ -39,7 +38,14 @@ class Verification(commands.Cog):
                 await self._synchronize_react(channel.guild, verif_react)
 
     async def _synchronize_react(self, guild, verif_react):
+        if not guild.me.guild_permissions.manage_roles:
+            log.warn(f"I don't have manage_roles permissions in {guild}")
+            return
+
         verified_role = find(lambda role: role.id in constants.verified_roles, guild.roles)
+        if verified_role is None:
+            log.warn(f"No verified role presnt in guild {guild}")
+            return
 
         with_role = set(filter(lambda member: verified_role in member.roles, guild.members))
         verified = set(await verif_react.users().flatten())
@@ -53,12 +59,10 @@ class Verification(commands.Cog):
             await self._verify_join(member)
 
     @commands.Cog.listener()
-    @checks.has_permissions(manage_roles=True)
     async def on_raw_reaction_add(self, payload):
         await self.on_raw_reaction_update(payload)
 
     @commands.Cog.listener()
-    @checks.has_permissions(manage_roles=True)
     async def on_raw_reaction_remove(self, payload):
         await self.on_raw_reaction_update(payload)
 
@@ -71,6 +75,10 @@ class Verification(commands.Cog):
 
         guild = get(self.bot.guilds, id=payload.guild_id)
         member = get(guild.members, id=payload.user_id)
+
+        if not guild.me.guild_permissions.manage_roles:
+            log.warn(f"I don't have manage_roles permissions in {guild}")
+            return
 
         if payload.event_type == "REACTION_ADD":
             await self._verify_join(member)
