@@ -68,9 +68,17 @@ class Subject(commands.Cog):
     async def create_or_get_existing_channel(self, ctx, subject):
         registers = await self.bot.db.subjects.find_registered(ctx.guild.id, subject.get("code"))
         if self.should_create_channel(registers):
+            if (channel := await self.try_to_get_existing_channel(ctx, subject)) is not None:
+                return channel
             return await self.create_channel(ctx, subject)
         else:
             return await self.lookup_channel(ctx, subject)
+
+    async def try_to_get_existing_channel(self, ctx, subject):
+        channel = get(ctx.guild.text_channels, name=self.subject_to_channel_name(ctx, subject))
+        if channel is not None:
+            await self.bot.db.subjects.set_channel(ctx.guild.id, subject.get("code"), channel.id)
+        return channel
 
     @staticmethod
     def should_create_channel(registers):
