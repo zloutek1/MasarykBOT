@@ -63,26 +63,22 @@ class Info(commands.Cog):
             description=f"{ctx.guild.description if ctx.guild.description else ''}",
             color=Color.from_rgb(0, 0, 0))
         embed.add_field(
-            name="ID",
-            value=(f"{ctx.guild.id}")
-        )
-        embed.add_field(
             name="Owner",
             value=(f"{ctx.guild.owner}")
         )
         embed.add_field(
-            name="Channels",
-            value=("{text} {text_count} " +
-                   "{category} {category_count} " +
+            name=f"Channels ({len(ctx.guild.channels)})",
+            value=("{text} {text_count} ⁣ " +
+                   "{category} {category_count} ⁣ " +
                    "{voice} {voice_count}").format(
                  text=text, text_count=len(ctx.guild.text_channels),
                  category=category, category_count=len(ctx.guild.categories),
                  voice=voice, voice_count=len(ctx.guild.voice_channels)
-            ) + f"\n**Total:** {len(ctx.guild.channels)}",
+            ),
             inline=False
         )
         embed.add_field(
-            name="Members",
+            name=f"Members ({len(ctx.guild.members)})",
             value=("{online} {online_count} " +
                    "{idle} {idle_count} " +
                    "{dnd} {dnd_count} " +
@@ -93,8 +89,7 @@ class Info(commands.Cog):
                 dnd=dnd, dnd_count=status.get("dnd", 0),
                 streaming=streaming, streaming_count=status.get(
                     "streaming", 0),
-                offline=offline, offline_count=status.get("offline", 0)) +
-            f"\n**Total:** {len(ctx.guild.members)}",
+                offline=offline, offline_count=status.get("offline", 0)),
             inline=False
         )
 
