@@ -6,7 +6,7 @@ from discord.errors import Forbidden, NotFound
 import re
 import asyncio
 import logging
-from collections import deque, Counter
+from collections import deque
 from datetime import datetime, timedelta
 
 log = logging.getLogger(__name__)
@@ -103,7 +103,7 @@ class BackupUntilPresent:
     @staticmethod
     def get_next_week(guild, process):
         if process is None:
-            return guild.created_at, from_date + timedelta(weeks=1)
+            return guild.created_at, guild.created_at + timedelta(weeks=1)
         else:
             return process.get("to_date"), process.get("to_date") + timedelta(weeks=1)
 
@@ -123,7 +123,7 @@ class BackupUntilPresent:
             log.debug(f"channel {channel} was not found in ({channel.guild})")
 
     async def backup_messages_in_nonempty_channel(self, channel, from_date, to_date):
-        log.debug(f"backing up messages {from_date.strftime('%d.%m.%Y')} - {to_date.strftime('%d.%m.%Y')} in {channel} ({channel.guild})")
+        log.info(f"backing up messages {from_date.strftime('%d.%m.%Y')} - {to_date.strftime('%d.%m.%Y')} in {channel} ({channel.guild})")
 
         collectables = self.get_collectables()
         async for message in channel.history(after=from_date, before=to_date, oldest_first=True):
@@ -136,7 +136,7 @@ class BackupUntilPresent:
     def get_collectables(self):
         return [
             Collectable(
-                prepare_fn=self.bot.db.members.prepare,
+                prepare_fn=self.bot.db.members.prepare_from_message,
                 insert_fn=self.bot.db.members.insert
             ),
             Collectable(
@@ -159,7 +159,9 @@ class BackupUntilPresent:
 
 
 class BackupOnEvents:
-    def __init__(self):
+    def __init__(self, bot):
+        self.bot = bot
+
         self.insert_queues = {}
         self.update_queues = {}
         self.delete_queues = {}
@@ -305,7 +307,7 @@ class BackupOnEvents:
         await self.bot.db.roles.soft_delete([(role.id,)])
 
     @tasks.loop(minutes=1)
-    async def put_queues_to_database(self):
+    async def task_put_queues_to_database(self):
         await self.put_queues_to_database(self.insert_queues, LIMIT=1000)
         await self.put_queues_to_database(self.update_queues, LIMIT=2000)
         await self.put_queues_to_database(self.delete_queues, LIMIT=1000)
@@ -326,7 +328,7 @@ class Logger(commands.Cog, BackupUntilPresent, BackupOnEvents):
     def __init__(self, bot):
         self.bot = bot
 
-        super().__init__()
+        super().__init__(bot)
 
     @commands.Cog.listener()
     async def on_ready(self):
