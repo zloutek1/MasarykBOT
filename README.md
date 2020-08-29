@@ -13,7 +13,7 @@ Discord bot created mainly for the community of Faculty of Informatics, Masaryk'
 - [Python 3.8](https://www.python.org/downloads/)
 
 - [Git](https://git-scm.com/downloads)
-- [Postgresql 9.6.17](https://git-scm.com/downloads)
+- [Postgresql 9.12](https://git-scm.com/downloads)
 
 
 
@@ -43,8 +43,20 @@ cd MasarykBOT
 
 2. set the environment variables
 ```
+# .env
+
 POSTGRES=postgres://user:pass@host:port/database?option=value
 TOKEN=your-token
+SNEKBOX=http://127.0.0.1:8060/eval
+```
+
+```
+# ./database/.env
+
+POSTGRES_USER=masaryk
+POSTGRES_PASSWORD=your-pass
+POSTGRES_DB=discord
+PGDATA=/var/lib/postgresql/data/pgdata
 ```
 
 3. build docker
