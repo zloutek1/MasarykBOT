@@ -1,5 +1,6 @@
 from discord import Member, Color
 from discord.ext import commands
+from discord.utils import escape_markdown
 
 from .utils import paginator
 
@@ -97,8 +98,8 @@ class Tags(commands.Cog):
     async def raw(self, ctx, *, name: TagName(lower=True)):
         tag = await self.bot.db.tags.get_tag(ctx.guild.id, name)
 
-        first_step = discord.utils.escape_markdown(tag.get('content'))
-        await ctx.safe_send(first_step.replace('<', '\\<'), escape_mentions=False)
+        first_step = escape_markdown(tag.get('content'))
+        await ctx.safe_send(first_step.replace('<', '\\<'))
 
     @tag.command()
     async def search(self, ctx, *, query: commands.clean_content):
