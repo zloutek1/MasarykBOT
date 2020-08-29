@@ -48,7 +48,7 @@ class Eval(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(aliases=["eval", "e"])
+    @commands.command(name="eval", aliases=["e", "coliru"])
     async def coliru(self, ctx, *, code: CodeBlock):
         """Compiles code via Coliru.
         You have to pass in a code block with the language syntax

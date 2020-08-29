@@ -42,10 +42,9 @@ class MasarykBOT(commands.Bot):
 
         elif isinstance(error, commands.CommandInvokeError):
             original = error.original
-            if not isinstance(original, discord.HTTPException):
-                log.error(f'In {ctx.command.qualified_name}:')
-                traceback.print_tb(original.__traceback__)
-                log.error(f'{original.__class__.__name__}: {original}')
+            log.error(f'In {ctx.command.qualified_name}:')
+            traceback.print_tb(original.__traceback__)
+            log.error(f'{original.__class__.__name__}: {original}')
 
         elif isinstance(error, commands.ArgumentParsingError):
             await ctx.send_embed(error, color=red)
