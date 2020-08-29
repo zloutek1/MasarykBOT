@@ -124,6 +124,9 @@ class Members(Table):
     async def prepare(self, members):
         return [await self.prepare_one(member) for member in members]
 
+    async def prepare_from_message(self, message):
+        return [await self.prepare_one(message.author)]
+
     async def insert(self, data):
         async with self.db.acquire() as conn:
             await conn.executemany("""
@@ -181,8 +184,8 @@ class Messages(Table):
     async def prepare_one(message):
         return (message.channel.id, message.author.id, message.id, message.content, message.created_at, message.edited_at)
 
-    async def prepare(message):
-        return await self.prepare_one(message)
+    async def prepare(self, message):
+        return [await self.prepare_one(message)]
 
     async def insert(self, messages):
         async with self.db.acquire() as conn:
@@ -207,7 +210,7 @@ class Attachments(Table):
     async def prepare_one(message, attachment):
         return (message.id, attachment.id, attachment.filename, attachment.url)
 
-    async def prepare(message):
+    async def prepare(self, message):
         return [await self.prepare_one(message, attachment) for attachment in message.attachments]
 
     async def insert(self, attachments):
@@ -226,11 +229,12 @@ class Attachments(Table):
 class Reactions(Table):
     @staticmethod
     async def prepare_one(reaction):
+        import emoji
         user_ids = await reaction.users().map(lambda member: member.id).flatten()
         return (reaction.message.id, emoji.demojize(str(reaction.emoji)), user_ids)
 
-    async def prepare(message):
-        return [await prepare_reaction(reaction) for reaction in message.reactions]
+    async def prepare(self, message):
+        return [await self.prepare_one(reaction) for reaction in message.reactions]
 
     async def insert(self, reactions):
         async with self.db.acquire() as conn:
@@ -242,9 +246,11 @@ class Reactions(Table):
 
 
 class Emojis(Table):
+    @staticmethod
     async def prepare(message):
         import re
         import emoji
+        from collections import Counter
 
         REGEX = r"((?::\w+(?:~\d+)?:)|(?:<\d+:\w+:>))"
         emojis = re.findall(REGEX, emoji.demojize(message.content))
