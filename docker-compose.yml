@@ -10,6 +10,18 @@ services:
   #  init: true
   #  ipc: none
   #
+  database:
+    container_name: db
+    build:
+      context: database/
+      dockerfile: Dockerfile.db
+    ports:
+      - 5432:5432
+    env_file:
+      - database/.env # configure postgres
+    volumes:
+      - ./database/sql:/docker-entrypoint-initdb.d/
+      - ./database/data:/var/lib/postgresql # persist data even if container shuts down
   bot:
     container_name: bot
     build:
@@ -19,5 +31,6 @@ services:
       - .:/MasarykBOT
     env_file: .env
     network_mode: host
-    depends_on: []
+    depends_on:
+      - database
     #  - snekbox
