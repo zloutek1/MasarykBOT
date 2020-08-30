@@ -18,10 +18,10 @@ services:
     ports:
       - 5432:5432
     env_file:
-      - database/.env # configure postgres
+      - database/.env
     volumes:
       - ./database/sql:/docker-entrypoint-initdb.d/
-      - ./database/data:/var/lib/postgresql # persist data even if container shuts down
+      - postgres:/var/lib/postgresql/data     # persist data even if container shuts down
   bot:
     container_name: bot
     build:
@@ -34,3 +34,6 @@ services:
     depends_on:
       - database
     #  - snekbox
+
+volumes:
+  postgres:
