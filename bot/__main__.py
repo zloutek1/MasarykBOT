@@ -13,6 +13,7 @@ initail_cogs = [
     "bot.cogs.verification",
     "bot.cogs.leaderboard",
     "bot.cogs.cog_manager",
+    "bot.cogs.rolemenu",
     "bot.cogs.subject",
     "bot.cogs.logger",
     "bot.cogs.rules",
