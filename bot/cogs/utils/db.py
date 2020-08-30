@@ -466,6 +466,25 @@ class Tags(Table):
             """, guild_id, author_id, name, new_content)
 
 
+class Rolemenu(Table):
+    @staticmethod
+    async def prepare(message, role, emoji):
+        return [(message.channel.id, message.id, role.id, str(emoji))]
+
+    async def insert(self, data):
+        async with self.db.acquire() as conn:
+            await conn.executemany("""
+                INSERT INTO cogs.rolemenu (channel_id, message_id, role_id, emoji)
+                VALUES ($1, $2, $3, $4)
+            """, data)
+
+    async def select(self, message_id):
+        async with self.db.acquire() as conn:
+            return await conn.fetchrow("""
+                SELECT * FROM cogs.rolemenu
+                WHERE message_id = $1
+            """, message_id)
+
 class DBBase:
     def __init__(self, pool):
         self.pool = pool
@@ -496,3 +515,4 @@ class Database(DBBase):
         self.emojiboard = Emojiboard(self.pool)
         self.subjects = Subjects(self.pool)
         self.tags = Tags(self.pool)
+        self.rolemenu = Rolemenu(self.pool)
