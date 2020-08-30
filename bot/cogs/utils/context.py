@@ -39,6 +39,12 @@ class Context(commands.Context):
     def channel_name(self, text):
         return "-".join(text.lower().split()).replace("+", "﹢")
 
+    async def safe_delete(self, **kwargs):
+        try:
+            await self.message.delete(**kwargs)
+        except discord.errors.NotFound:
+            pass
+
     async def safe_send(self, content, *, escape_mentions=True, **kwargs):
         if escape_mentions:
             content = discord.utils.escape_mentions(content)
