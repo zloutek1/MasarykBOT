@@ -94,10 +94,48 @@ class Rolemenu(commands.Cog):
 
         if payload.event_type == "REACTION_ADD":
             await author.add_roles(role)
+            log.info(f"added role {str(role)} to {author}")
         else:
             await author.remove_roles(role)
+            log.info(f"removed role {str(role)} to {author}")
 
-        log.info(f"{payload.event_type}: {str(payload.emoji)} for {author}")
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        for channel_id in constants.about_you_channels:
+            channel = self.bot.get_channel(channel_id)
+            if channel is None:
+                continue
+
+            async for message in channel.history():
+                if not message.reactions:
+                    continue
+                    
+                row = await self.bot.db.rolemenu.select(message.id)
+                if row is None:
+                    log.warn(f"reactions on message {message.id} in {channel} ({channel.guild}) are not in the database")
+                    continue
+
+                role = get(channel.guild.roles, id=row["role_id"])
+                if role is None:
+                    log.warn(f"role on message {message.id} in {channel} ({channel.guild}) does not exist")
+                    continue
+
+                async for user in message.reactions[0].users():
+                    has_role = get(user.roles, id=role.id)
+                    if not has_role:
+                        log.info(f"added role {str(role)} to {user}")
+                        await user.add_roles(role)
+
+                for user in role.members:
+                    has_reacted = await message.reactions[0].users().get(id=user.id)
+                    if not has_reacted:
+                        log.info(f"removed role {str(role)} to {user}")
+                        await user.remove_roles(role)
+
+                    
+
+
 
 
 def setup(bot):
