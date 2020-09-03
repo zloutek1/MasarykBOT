@@ -18,6 +18,7 @@ initail_cogs = [
     "bot.cogs.subject",
     "bot.cogs.logger",
     "bot.cogs.rules",
+    "bot.cogs.admin",
     "bot.cogs.eval",
     "bot.cogs.help",
     "bot.cogs.tags",
