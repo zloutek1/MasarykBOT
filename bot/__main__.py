@@ -10,6 +10,7 @@ from bot.cogs.utils.db import Database
 from dotenv import load_dotenv
 
 initail_cogs = [
+    "bot.cogs.hall_of_fame",
     "bot.cogs.verification",
     "bot.cogs.leaderboard",
     "bot.cogs.cog_manager",
