@@ -11,7 +11,6 @@ from datetime import datetime, timedelta
 
 log = logging.getLogger(__name__)
 
-
 def partition(cond, lst):
     return [[i for i in lst if cond(i)], [i for i in lst if not cond(i)]]
 
@@ -126,12 +125,13 @@ class BackupUntilPresent:
         log.info(f"backing up messages {from_date.strftime('%d.%m.%Y')} - {to_date.strftime('%d.%m.%Y')} in {channel} ({channel.guild})")
 
         collectables = self.get_collectables()
-        async for message in channel.history(after=from_date, before=to_date, oldest_first=True):
+        async for message in channel.history(after=from_date, before=to_date, limit=1_000_000, oldest_first=True):
             for collectable in collectables:
                 await collectable.add(message)
-
-        for collectable in collectables:
-            await collectable.db_insert()
+        
+        else:
+            for collectable in collectables:
+                await collectable.db_insert()
 
     def get_collectables(self):
         return [
