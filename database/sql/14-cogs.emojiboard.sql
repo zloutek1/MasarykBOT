@@ -10,7 +10,7 @@ AS
     reactions.name
    FROM server.reactions
      JOIN server.messages m ON reactions.message_id = m.id
-UNION
+UNION ALL
  SELECT m.channel_id,
     m.author_id,
     emojis.name
