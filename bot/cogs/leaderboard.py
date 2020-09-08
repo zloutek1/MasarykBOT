@@ -117,9 +117,10 @@ class Leaderboard(commands.Cog):
         member = member if member else ctx.author
         channel_id = channel.id if channel else None
         bot_ids = [bot.id for bot in filter(lambda user: user.bot, ctx.guild.members)]
+        emoji = str(emoji) if emoji else None
 
         await self.bot.db.emojiboard.refresh()
-        data = await self.bot.db.emojiboard.select(ctx.guild.id, bot_ids, channel_id)
+        data = await self.bot.db.emojiboard.select(ctx.guild.id, bot_ids, channel_id, member.id, emoji)
 
         await self.display_emojiboard(ctx, data, member)
 
@@ -133,7 +134,7 @@ class Leaderboard(commands.Cog):
         embed.add_field(
             inline=False,
             name="FI MUNI Emojiboard!",
-            value="\n".join(self.template_row(i + 1, row, data, get_value) for i, row in enumerate(data)))
+            value=value if (value := "\n".join(self.template_row(i + 1, row, data, get_value) for i, row in enumerate(data))) else "Empty result")
 
         time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         embed.set_footer(text=f"{str(ctx.author)} at {time_now}", icon_url=ctx.author.avatar_url)

@@ -350,12 +350,9 @@ class Leaderboard(Table):
 class Emojiboard(Table):
     async def refresh(self):
         async with self.db.acquire() as conn:
-            try:
-                await conn.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY cogs.emojiboard")
-            except Exception:
-                await conn.execute("REFRESH MATERIALIZED VIEW cogs.emojiboard")
+            await conn.execute("REFRESH MATERIALIZED VIEW cogs.emojiboard")
 
-    async def select(self, guild_id, ignored_users, channel_id):
+    async def select(self, guild_id, ignored_users, channel_id, author_id, emoji):
         async with self.db.acquire() as conn:
             return await conn.fetch("""
                 SELECT
@@ -366,11 +363,13 @@ class Emojiboard(Table):
                     ON channel_id = channel.id
                 WHERE guild_id = $1::bigint AND
                       author_id<>ALL($2::bigint[]) AND
-                      ($3::bigint IS NULL OR channel_id = $3)
+                      ($3::bigint IS NULL OR channel_id = $3) AND
+                      ($4::bigint IS NULL OR author_id = $4) AND
+                      ($5::text IS NULL OR emoji.name = $5)
                 GROUP BY emoji.name
                 ORDER BY sent_total DESC
                 LIMIT 10
-            """, guild_id, ignored_users, channel_id)
+            """, guild_id, ignored_users, channel_id, author_id, emoji)
 
 
 class Subjects(Table):
