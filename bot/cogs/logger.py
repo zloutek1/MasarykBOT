@@ -166,6 +166,11 @@ class BackupOnEvents:
         self.update_queues = {}
         self.delete_queues = {}
 
+        self.task_put_queues_to_database.start()
+
+    def cog_unload(self):
+        self.task_put_queues_to_database.cancel()
+
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         log.info(f"joined guild {guild}")
@@ -238,8 +243,8 @@ class BackupOnEvents:
             return
 
         data = await self.bot.db.messages.prepare_one(message)
-        self.insert_queues.setdefault(self.bot.db.messages, deque())
-        self.insert_queues[self.bot.db.messages].append(data)
+        self.insert_queues.setdefault(self.bot.db.messages.insert, deque())
+        self.insert_queues[self.bot.db.messages.insert].append(data)
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
@@ -247,16 +252,16 @@ class BackupOnEvents:
             return
 
         data = await self.bot.db.messages.prepare_one(after)
-        self.update_queues.setdefault(self.bot.db.messages, deque())
-        self.update_queues[self.bot.db.messages].append(data)
+        self.update_queues.setdefault(self.bot.db.messages.insert, deque())
+        self.update_queues[self.bot.db.messages.insert].append(data)
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
         if isinstance(message.channel, PrivateChannel):
             return
 
-        self.delete_queues.setdefault(self.bot.db.messages, deque())
-        self.delete_queues[self.bot.db.messages].append([(message.id,)])
+        self.delete_queues.setdefault(self.bot.db.messages.soft_delete, deque())
+        self.delete_queues[self.bot.db.messages.soft_delete].append([(message.id,)])
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
@@ -277,8 +282,8 @@ class BackupOnEvents:
             return
 
         data = await self.bot.db.members.prepare_one(after)
-        self.update_queues.setdefault(self.bot.db.members, deque())
-        self.update_queues[self.bot.db.members].append(data)
+        self.update_queues.setdefault(self.bot.db.members.insert, deque())
+        self.update_queues[self.bot.db.members.insert].append(data)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
@@ -319,6 +324,7 @@ class BackupOnEvents:
             take_elements = min(LIMIT - counter, len(queue))
             if take_elements == 0:
                 return
+            log.info(f"Putting {take_elements} from queue to database")
             elements = [queue.popleft() for _ in range(take_elements)]
             await process_fn(elements)
             counter += take_elements

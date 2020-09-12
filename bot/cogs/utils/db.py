@@ -204,6 +204,10 @@ class Messages(Table):
     async def update(self, messages):
         await self.insert(messages)
 
+    async def soft_delete(self, ids):
+         async with self.db.acquire() as conn:
+            await conn.executemany("UPDATE server.messages SET deleted_at=NOW() WHERE id = $1;", ids)
+
 
 class Attachments(Table):
     @staticmethod
