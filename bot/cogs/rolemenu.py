@@ -58,6 +58,15 @@ class Rolemenu(commands.Cog):
         await message.add_reaction(emoji)
         await ctx.message.delete()
 
+    @role.command()
+    async def recover(self, ctx, message_id: int, emoji: Emote, role: Role):
+        message = await ctx.channel.fetch_message(message_id)
+
+        menu_data = await self.bot.db.rolemenu.prepare(message, role, emoji)
+        await self.bot.db.rolemenu.insert(menu_data)
+        
+        await ctx.message.delete()
+
     @staticmethod
     async def get_image_from_url(url):
         import io
