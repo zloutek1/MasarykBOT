@@ -412,20 +412,34 @@ class Subjects(Table):
                           $3 = ANY(member_ids);
             """, guild_id, code, member_id)
 
+    async def get_category(self, guild_id, code):
+        async with self.db.acquire() as conn:
+            return await conn.fetchrow(
+                "SELECT * FROM muni.subject_category WHERE LOWER(code) LIKE LOWER($1) AND guild_id = $2",
+                code, guild_id)
+
     async def set_channel(self, guild_id, code, channel_id):
         async with self.db.acquire() as conn:
             await conn.execute("""
-                INSERT INTO muni.registers AS r (guild_id, code, channel_id)
+                INSERT INTO muni.subject_server AS ss (guild_id, code, channel_id)
                        VALUES ($1, $2, $3)
                 ON CONFLICT (guild_id, code) DO UPDATE
                     SET channel_id = excluded.channel_id
-                    WHERE r.channel_id IS NULL OR r.channel_id <> excluded.channel_id;
+                    WHERE ss.channel_id IS NULL OR ss.channel_id <> excluded.channel_id;
             """, guild_id, code, channel_id)
+
+    async def set_category(self, guild_id, code, category_id):
+        async with self.db.acquire() as conn:
+            await conn.execute("""
+                UPDATE muni.subject_server
+                    SET category_id = $3
+                    WHERE guild_id = $1 AND LOWER(code) LIKE LOWER($2);
+            """, guild_id, code, category_id)
 
     async def remove_channel(self, guild_id, code):
         async with self.db.acquire() as conn:
             await conn.execute("""
-                UPDATE muni.registers
+                UPDATE muni.subject_server
                     SET channel_id = NULL
                     WHERE guild_id = $1 AND
                           LOWER(code) = LOWER($2)
