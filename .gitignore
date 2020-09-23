@@ -113,7 +113,6 @@ log.*
 
 # Custom user configuration
 config.yml
-/bot/cogs/utils/constants.py
 
 # xmlrunner unittest XML reports
 TEST-**.xml
