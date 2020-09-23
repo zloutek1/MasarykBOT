@@ -1,7 +1,9 @@
 from collections import defaultdict
 
-from discord import Embed, PermissionOverwrite, HTTPException
+from discord import Color, Embed, PermissionOverwrite, HTTPException
 from discord.ext import commands
+from discord.ext.commands import has_permissions
+from discord.errors import NotFound
 from discord.utils import get
 
 from .utils import constants
@@ -21,6 +23,12 @@ class Subject(commands.Cog):
     @subject.command()
     @commands.bot_has_permissions(manage_channels=True)
     async def add(self, ctx, code):
+        if ctx.channel.id not in constants.subject_registration_channels:
+            await ctx.send_error("You can't add subjects here", delete_after=5)
+            return
+
+        await ctx.safe_delete(delay=5)
+
         if (subject := await self.find_subject(code)) is None:
             return await ctx.send_embed(
                 "Could not find one subject matching the code",
@@ -33,6 +41,12 @@ class Subject(commands.Cog):
     @subject.command()
     @commands.bot_has_permissions(manage_channels=True)
     async def remove(self, ctx, code):
+        if ctx.channel.id not in constants.subject_registration_channels:
+            await ctx.send_error("You can't remove subjects here", delete_after=5)
+            return
+
+        await ctx.safe_delete(delay=5)
+
         if not (subject := await self.find_subject(code)):
             return await ctx.send_embed(
                 "Could not find one subject matching the code",
@@ -52,6 +66,27 @@ class Subject(commands.Cog):
         subjects = await self.bot.db.subjects.find(code)
         grouped_by_term = self.group_by_term(subjects)
         await self.display_list_of_subjects(ctx, grouped_by_term)
+
+    @subject.command()
+    @has_permissions(administrator=True)
+    async def resend_subject_message(self, ctx, channel_id: int):
+        if channel_id not in constants.subject_registration_channels:
+            await ctx.send_error("channel not in constants")
+            return
+
+        menu_text_channel = self.bot.get_channel(channel_id)
+        if not menu_text_channel:
+            await ctx.send_error("channel does not exist")
+            return
+
+        embed = Embed(
+            description="""
+                :warning: předmět si múžeš zapsat/zrušit každých 5 sekund
+                příkazem `!subject add/remove <subject_code>`
+                :point_down: Zapiš si své předměty zde :point_down:""".strip(),
+            color=Color(0xFFD800))
+
+        await menu_text_channel.send(embed=embed)
 
     async def find_subject(self, code):
         subjects = await self.bot.db.subjects.find(code)
@@ -182,6 +217,19 @@ class Subject(commands.Cog):
         except HTTPException as err:
             if err.code == ERR_EMBED_BODY_TOO_LONG:
                 await ctx.send_error("Found too many results to display, please be more specific")
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.channel.id not in constants.subject_registration_channels:
+            return
+
+        if message.author.id == self.bot.user.id:
+            return
+
+        try:
+            await message.delete(delay=0.2)
+        except NotFound:
+            pass
 
     @commands.Cog.listener()
     async def on_ready(self):
