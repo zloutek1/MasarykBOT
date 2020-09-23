@@ -265,7 +265,7 @@ class BackupOnEvents:
             return
 
         self.delete_queues.setdefault(self.bot.db.messages.soft_delete, deque())
-        self.delete_queues[self.bot.db.messages.soft_delete].append([(message.id,)])
+        self.delete_queues[self.bot.db.messages.soft_delete].append((message.id,))
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
