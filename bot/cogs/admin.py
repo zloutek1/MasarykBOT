@@ -8,7 +8,7 @@ class Admin(commands.Cog):
     @commands.has_role("Admin")
     async def say(self, ctx, *, content: str):
         await ctx.send(content)
-        
+
 
 def setup(bot):
     bot.add_cog(Admin(bot))

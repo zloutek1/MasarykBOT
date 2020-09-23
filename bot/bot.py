@@ -1,15 +1,14 @@
-import discord
-from discord.ext import commands
-
 import asyncio
 import logging
 import traceback
 from datetime import datetime, timezone
 from collections import Counter
 
+from discord.ext import commands
+
 from bot.cogs.utils import context
 
-description = """
+DESCRIPTION = """
 $ Hello
 """
 
@@ -17,13 +16,14 @@ log = logging.getLogger(__name__)
 
 
 class MasarykBOT(commands.Bot):
-    def __init__(self, *args, description=description, **kwargs):
+    def __init__(self, *args, description=DESCRIPTION, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.spam_control = commands.CooldownMapping.from_cooldown(10, 12.0, commands.BucketType.user)
         self._auto_spam_count = Counter()
 
         self.db = None
+        self.uptime = None
 
     async def on_ready(self):
         if not hasattr(self, 'uptime'):
@@ -32,34 +32,32 @@ class MasarykBOT(commands.Bot):
         self.intorduce()
 
     async def on_command_error(self, ctx, error):
-        red = discord.Color.red()
-
         if isinstance(error, commands.NoPrivateMessage):
-            await ctx.author.send_embed('This command cannot be used in private messages.', color=red)
+            await ctx.author.send_error('This command cannot be used in private messages.')
 
         elif isinstance(error, commands.DisabledCommand):
-            await ctx.author.send_embed('Sorry. This command is disabled and cannot be used.', color=red)
+            await ctx.author.send_error('Sorry. This command is disabled and cannot be used.')
 
         elif isinstance(error, commands.CommandInvokeError):
             original = error.original
-            log.error(f'In {ctx.command.qualified_name}:')
+            log.error('In %s:', ctx.command.qualified_name)
             traceback.print_tb(original.__traceback__)
-            log.error(f'{original.__class__.__name__}: {original}')
+            log.error('%s: %s', original.__class__.__name__, original)
 
         elif isinstance(error, commands.ArgumentParsingError):
-            await ctx.send_embed(error, color=red)
+            await ctx.send_error(error)
 
         elif isinstance(error, commands.MissingPermissions):
-            await ctx.send_embed("Sorry. You don't have permissions to use this command", color=red)
+            await ctx.send_error("Sorry. You don't have permissions to use this command")
 
         elif isinstance(error, commands.BotMissingPermissions):
-            await ctx.send_embed(error, color=red)
+            await ctx.send_error(error)
 
         elif isinstance(error, commands.MissingRequiredArgument):
             pass
 
         else:
-            log.error(f'In {ctx.command.qualified_name}:')
+            log.error('In %s:', ctx.command.qualified_name)
             traceback.print_tb(error.__traceback__)
 
     async def process_commands(self, message):
@@ -82,10 +80,9 @@ class MasarykBOT(commands.Bot):
 
                 del self._auto_spam_count[author_id]
             return
-        else:
-            self._auto_spam_count.pop(author_id, None)
+        self._auto_spam_count.pop(author_id, None)
 
-        log.info(f"user {message.author} used command: {message.content}")
+        log.info("user %s used command: %s", message.author, message.content)
         await self.invoke(ctx)
 
     async def on_message(self, message):
@@ -95,11 +92,11 @@ class MasarykBOT(commands.Bot):
 
     def add_cog(self, cog: commands.Cog) -> None:
         super().add_cog(cog)
-        log.info(f"Cog loaded: {cog.qualified_name}")
+        log.info("Cog loaded: %s", cog.qualified_name)
 
     def remove_cog(self, name: str) -> None:
         super().remove_cog(name)
-        log.info(f"Cog unloaded: {name}")
+        log.info("Cog unloaded: %s", name)
 
     def run(self, token):
         try:

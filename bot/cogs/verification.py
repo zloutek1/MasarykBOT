@@ -1,7 +1,7 @@
+import logging
+
 from discord.ext import commands
 from discord.utils import get, find
-
-import logging
 
 from bot.cogs.utils import constants
 
@@ -24,14 +24,17 @@ class Verification(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        log.info(f"found {len(self.verification_channels)} verification channels")
+        log.info("found %d verification channels", len(self.verification_channels))
 
         await self._synchronize()
 
     async def _synchronize(self):
+        def confirm_react(reaction):
+            return reaction.emoji.name.lower() in ("verification", "verify", "accept")
+
         for channel in self.verification_channels:
             async for message in channel.history():
-                verif_react = find(lambda reaction: reaction.emoji.name.lower() in ("verification", "verify", "accept"), message.reactions)
+                verif_react = find(confirm_react, message.reactions)
                 if verif_react is None:
                     continue
 
@@ -39,23 +42,24 @@ class Verification(commands.Cog):
 
     async def _synchronize_react(self, guild, verif_react):
         if not guild.me.guild_permissions.manage_roles:
-            log.warn(f"I don't have manage_roles permissions in {guild}")
+            log.warning("I don't have manage_roles permissions in %s", guild)
             return
 
         verified_role = find(lambda role: role.id in constants.verified_roles, guild.roles)
         if verified_role is None:
-            log.warn(f"No verified role presnt in guild {guild}")
+            log.warning("No verified role presnt in guild %s", guild)
             return
 
         with_role = set(filter(lambda member: verified_role in member.roles, guild.members))
         verified = set(await verif_react.users().flatten())
 
-        log.info(f"found {len(with_role - verified) + len(verified - with_role)} users out of sync")
+        out_of_sync = len(with_role - verified) + len(verified - with_role)
+        log.info("found %d users out of sync", out_of_sync)
 
-        for member in (with_role - verified):
+        for member in with_role - verified:
             await self._verify_leave(member)
 
-        for member in (verified - with_role):
+        for member in verified - with_role:
             await self._verify_join(member)
 
     @commands.Cog.listener()
@@ -77,7 +81,7 @@ class Verification(commands.Cog):
         member = get(guild.members, id=payload.user_id)
 
         if not guild.me.guild_permissions.manage_roles:
-            log.warn(f"I don't have manage_roles permissions in {guild}")
+            log.warning("I don't have manage_roles permissions in %s", guild)
             return
 
         if payload.event_type == "REACTION_ADD":
@@ -89,17 +93,18 @@ class Verification(commands.Cog):
     async def _verify_join(self, member):
         verified_role = find(lambda role: role.id in constants.verified_roles, member.guild.roles)
         if verified_role is None:
-            log.warn(f"No verified role presnt in guild {member.guild}")
+            log.warning("No verified role presnt in guild %s", member.guild)
             return
 
         await member.add_roles(verified_role)
-        log.info(f"verified user {member.name}, added role @{verified_role}")
+        log.info("verified user %s, added role %s", member.name, f"@{verified_role}")
 
     async def _verify_leave(self, member):
         removable_roles = constants.verified_roles + list(constants.about_you_roles)
         to_remove = list(filter(lambda role: role.id in removable_roles, member.roles))
         await member.remove_roles(*to_remove)
-        log.info(f"unverified user {member.name}, removed roles {', '.join(map(lambda r: '@'+r.name, to_remove))}")
+        removed_roles = ', '.join(map(lambda r: '@'+r.name, to_remove))
+        log.info("unverified user %s, removed roles %s", member.name, removed_roles)
 
 
 def setup(bot):

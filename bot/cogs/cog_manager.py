@@ -1,4 +1,3 @@
-from discord import Color
 from discord.ext import commands
 
 
@@ -15,12 +14,12 @@ class CogManager(commands.Cog):
         await ctx.message.delete(delay=5.0)
         try:
             self.bot.load_extension(module)
-        except commands.ExtensionError as e:
-            await ctx.send_embed(f'{e.__class__.__name__}: {e}', color=Color.red(), delete_after=5.0)
-        except ModuleNotFoundError as e:
-            await ctx.send_embed(f'{e.__class__.__name__}: {e}', color=Color.red(), delete_after=5.0)
+        except commands.ExtensionError as err:
+            await ctx.send_error(f'{err.__class__.__name__}: {err}', delete_after=5.0)
+        except ModuleNotFoundError as err:
+            await ctx.send_error(f'{err.__class__.__name__}: {err}', delete_after=5.0)
         else:
-            await ctx.send_embed(f'{module} loaded successfully', color=Color.green(), delete_after=5.0)
+            await ctx.send_success(f'{module} loaded successfully', delete_after=5.0)
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -29,12 +28,12 @@ class CogManager(commands.Cog):
         await ctx.message.delete(delay=5.0)
         try:
             self.bot.unload_extension(module)
-        except commands.ExtensionError as e:
-            await ctx.send_embed(f'{e.__class__.__name__}: {e}', color=Color.red(), delete_after=5.0)
-        except ModuleNotFoundError as e:
-            await ctx.send_embed(f'{e.__class__.__name__}: {e}', color=Color.red(), delete_after=5.0)
+        except commands.ExtensionError as err:
+            await ctx.send_error(f'{err.__class__.__name__}: {err}', delete_after=5.0)
+        except ModuleNotFoundError as err:
+            await ctx.send_error(f'{err.__class__.__name__}: {err}', delete_after=5.0)
         else:
-            await ctx.send_embed(f'{module} unloaded successfully', color=Color.green(), delete_after=5.0)
+            await ctx.send_success(f'{module} unloaded successfully', delete_after=5.0)
 
     @commands.group(name='reload', invoke_without_command=True)
     @commands.has_permissions(administrator=True)
@@ -50,12 +49,12 @@ class CogManager(commands.Cog):
         try:
             self.bot.reload_extension(module)
             self.last_reloaded = module
-        except commands.ExtensionError as e:
-            await ctx.send_embed(f'{e.__class__.__name__}: {e}', color=Color.red(), delete_after=5.0)
-        except ModuleNotFoundError as e:
-            await ctx.send_embed(f'{e.__class__.__name__}: {e}', color=Color.red(), delete_after=5.0)
+        except commands.ExtensionError as err:
+            await ctx.send_error(f'{err.__class__.__name__}: {err}', delete_after=5.0)
+        except ModuleNotFoundError as err:
+            await ctx.send_error(f'{err.__class__.__name__}: {err}', delete_after=5.0)
         else:
-            await ctx.send_embed(f'{module} reloaded successfully', color=Color.green(), delete_after=5.0)
+            await ctx.send_success(f'{module} reloaded successfully', delete_after=5.0)
 
     @_reload.command(name='all', hidden=True)
     @commands.has_permissions(administrator=True)
@@ -66,10 +65,10 @@ class CogManager(commands.Cog):
         for module in list(self.bot.extensions.keys()):
             try:
                 self.bot.reload_extension(module)
-            except commands.ExtensionError as e:
-                output += f'{module} - {e.__class__.__name__}: {e}\n'
-            except ModuleNotFoundError as e:
-                await ctx.send_embed(f'{e.__class__.__name__}: {e}', color=Color.red(), delete_after=5.0)
+            except commands.ExtensionError as err:
+                output += f'{module} - {err.__class__.__name__}: {err}\n'
+            except ModuleNotFoundError as err:
+                await ctx.send_error(f'{err.__class__.__name__}: {err}', delete_after=5.0)
             else:
                 output += f'{module} - reloaded successfully\n'
 

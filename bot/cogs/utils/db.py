@@ -1,6 +1,10 @@
+# pylint: disable=abstract-method
+# pylint: disable=arguments-differ
+# pylint: disable=line-too-long
+
+
 import asyncio
 import asyncpg
-import aiohttp
 
 
 class Table:
@@ -205,7 +209,7 @@ class Messages(Table):
         await self.insert(messages)
 
     async def soft_delete(self, ids):
-         async with self.db.acquire() as conn:
+        async with self.db.acquire() as conn:
             await conn.executemany("UPDATE server.messages SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
@@ -250,14 +254,15 @@ class Reactions(Table):
 
 
 class Emojis(Table):
+    REGEX = r"((?::\w+(?:~\d+)?:)|(?:<\d+:\w+:>))"
+
     @staticmethod
     async def prepare(message):
         import re
         import emoji
         from collections import Counter
 
-        REGEX = r"((?::\w+(?:~\d+)?:)|(?:<\d+:\w+:>))"
-        emojis = re.findall(REGEX, emoji.demojize(message.content))
+        emojis = re.findall(Emojis.REGEX, emoji.demojize(message.content))
 
         return [(message.id, emote, count) for (emote, count) in Counter(emojis).items()]
 

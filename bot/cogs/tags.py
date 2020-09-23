@@ -7,9 +7,9 @@ from .utils import paginator
 
 class TagPages(paginator.Pages):
     def prepare_embed(self, entries, page, *, first=False):
-        p = []
-        for index, entry in enumerate(entries, 1 + ((page - 1) * self.per_page)):
-            p.append(f'**•** {entry["name"]}')
+        body = []
+        for entry in entries, 1 + ((page - 1) * self.per_page):
+            body.append(f'**•** {entry["name"]}')
 
         if self.maximum_pages > 1:
             if self.show_entry_count:
@@ -20,10 +20,10 @@ class TagPages(paginator.Pages):
             self.embed.set_footer(text=text)
 
         if self.paginating and first:
-            p.append('')
-            p.append('Confused? React with \N{INFORMATION SOURCE} for more info.')
+            body.append('')
+            body.append('Confused? React with \N{INFORMATION SOURCE} for more info.')
 
-        self.embed.description = '\n'.join(p)
+        self.embed.description = '\n'.join(body)
 
 
 class TagName(commands.clean_content):
@@ -61,15 +61,17 @@ class Tags(commands.Cog):
         if tag is None:
             return await ctx.send_error("Tag not found")
 
-        await ctx.send_embed(tag.get('content'), name=tag.get('name') + "\n​", color=Color.blurple())
+        await ctx.send_embed(tag.get('content'),
+                        name=tag.get('name') + "\n​",
+                        color=Color.blurple())
 
     @tag.command(aliases=["add"])
     async def create(self, ctx, name: TagName(lower=True), *, content: commands.clean_content):
-        created_successfully = await self.bot.db.tags.create_tag(ctx.guild.id, ctx.author.id, name, content)
-        if created_successfully:
+        success = await self.bot.db.tags.create_tag(ctx.guild.id, ctx.author.id, name, content)
+        if success:
             await ctx.send(f'Tag {name} successfully created.')
         else:
-            await ctx.send(f'Could not create tag, probably already exists.')
+            await ctx.send('Could not create tag, probably already exists.')
 
     @tag.command(aliases=["delete"])
     async def remove(self, ctx, *, name: TagName(lower=True)):
@@ -78,7 +80,7 @@ class Tags(commands.Cog):
         if tag is None:
             return await ctx.send_error("Tag not found")
 
-        status = await self.bot.db.tags.delete_tag(ctx.guild.id, ctx.author.id, name)
+        await self.bot.db.tags.delete_tag(ctx.guild.id, ctx.author.id, name)
         await ctx.send('Tag successfully deleted.')
 
     @tag.command()
@@ -109,12 +111,12 @@ class Tags(commands.Cog):
         results = await self.bot.db.tags.find_tags(ctx.guild.id, query)
         if results:
             try:
-                p = TagPages(ctx, entries=results, per_page=20)
-            except Exception as e:
-                await ctx.send(e)
+                pages = TagPages(ctx, entries=results, per_page=20)
+            except Exception as err:
+                await ctx.send(err)
             else:
                 await ctx.release()
-                await p.paginate()
+                await pages.paginate()
         else:
             await ctx.send('No tags found.')
 
@@ -125,10 +127,10 @@ class Tags(commands.Cog):
         rows = await self.bot.db.tags.select(ctx.guild.id, member.id)
         if rows:
             try:
-                p = TagPages(ctx, entries=rows)
-                await p.paginate()
-            except Exception as e:
-                await ctx.send(e)
+                pages = TagPages(ctx, entries=rows)
+                await pages.paginate()
+            except Exception as err:
+                await ctx.send(err)
         else:
             await ctx.send(f'{member} has no tags.')
 

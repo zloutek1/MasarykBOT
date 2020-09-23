@@ -1,13 +1,13 @@
 import os
-import asyncio
 import logging
 import traceback
+
+from dotenv import load_dotenv
 
 from bot.bot import MasarykBOT
 from bot.cogs.utils.logging import setup_logging
 from bot.cogs.utils.db import Database
 
-from dotenv import load_dotenv
 
 initail_cogs = [
     "bot.cogs.hall_of_fame",
@@ -46,7 +46,7 @@ if __name__ == "__main__":
         try:
             bot.load_extension(extension)
         except Exception:
-            log.error(f'Failed to load extension {extension}.')
+            log.error('Failed to load extension %s.', extension)
             traceback.print_exc()
 
     bot.run(os.getenv("TOKEN"))

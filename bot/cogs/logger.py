@@ -1,13 +1,12 @@
-from discord import Member, TextChannel, CategoryChannel
-from discord.abc import PrivateChannel
-from discord.ext import tasks, commands
-from discord.errors import Forbidden, NotFound
-
-import re
 import asyncio
 import logging
 from collections import deque
 from datetime import datetime, timedelta
+
+from discord import Member, TextChannel, CategoryChannel
+from discord.abc import PrivateChannel
+from discord.ext import tasks, commands
+from discord.errors import Forbidden, NotFound
 
 log = logging.getLogger(__name__)
 
@@ -16,6 +15,9 @@ def partition(cond, lst):
 
 
 class BackupUntilPresent:
+    def __init__(self, bot):
+        self.bot = bot
+
     async def backup(self):
         log.info("Starting backup process")
         await self.backup_guilds()
@@ -54,18 +56,18 @@ class BackupUntilPresent:
         await self.backup_new_weeks(guild)
 
     async def backup_failed_weeks(self, guild):
-        while (still_failed := await self.backup_failed_week(guild)):
+        while _still_failed := await self.backup_failed_week(guild):
             log.debug("finished running failed process, re-checking if everything is fine...")
             await asyncio.sleep(3)
 
     async def backup_new_weeks(self, guild):
-        while (still_behind := await self.backup_new_week(guild)):
+        while _still_behind := await self.backup_new_week(guild):
             log.debug("newer week exists, re-running backup for next week")
             await asyncio.sleep(2)
 
     async def backup_failed_week(self, guild):
         rows = await self.bot.db.logger.select(guild.id)
-        failed_rows, success_rows = partition(lambda row: row.get("finished_at") is None, rows)
+        failed_rows, _success_rows = partition(lambda row: row.get("finished_at") is None, rows)
 
         for failed_row in failed_rows:
             await self.rebackup_failed_week(guild, failed_row)
@@ -117,18 +119,20 @@ class BackupUntilPresent:
         try:
             await self.backup_messages_in_nonempty_channel(channel, from_date, to_date)
         except Forbidden:
-            log.debug(f"missing permissions to backup messages in {channel} ({channel.guild})")
+            log.debug("missing permissions to backup messages in %s (%s)", channel, channel.guild)
         except NotFound:
-            log.debug(f"channel {channel} was not found in ({channel.guild})")
+            log.debug("channel %s was not found in (%s)", channel, channel.guild)
 
     async def backup_messages_in_nonempty_channel(self, channel, from_date, to_date):
-        log.info(f"backing up messages {from_date.strftime('%d.%m.%Y')} - {to_date.strftime('%d.%m.%Y')} in {channel} ({channel.guild})")
+        from_date_str = from_date.strftime('%d.%m.%Y')
+        to_date_str = to_date.strftime('%d.%m.%Y')
+        log.info("backing up messages {%s} - {%s} in %s (%s)", from_date_str, to_date_str, channel, channel.guild)
 
         collectables = self.get_collectables()
         async for message in channel.history(after=from_date, before=to_date, limit=1_000_000, oldest_first=True):
             for collectable in collectables:
                 await collectable.add(message)
-        
+
         else:
             for collectable in collectables:
                 await collectable.db_insert()
@@ -173,24 +177,24 @@ class BackupOnEvents:
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
-        log.info(f"joined guild {guild}")
+        log.info("joined guild %s", guild)
         data = await self.bot.db.guilds.prepare_one(guild)
         await self.bot.db.guilds.insert([data])
 
     @commands.Cog.listener()
     async def on_guild_update(self, before, after):
-        log.info(f"updated guild from {before} to {after}")
+        log.info("updated guild from %s to %s", before, after)
         data = await self.bot.db.guilds.prepare_one(after)
         await self.bot.db.guilds.insert([data])
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
-        log.info(f"left guild {guild}")
+        log.info("left guild %s", guild)
         await self.bot.db.guilds.soft_delete([(guild.id,)])
 
     @commands.Cog.listener()
     async def on_guild_channel_create(self, channel):
-        log.info(f"created channel {channel}")
+        log.info("created channel %s", channel)
 
         if isinstance(channel, TextChannel):
             await self.on_textchannel_create(channel)
@@ -208,7 +212,7 @@ class BackupOnEvents:
 
     @commands.Cog.listener()
     async def on_guild_channel_update(self, before, after):
-        log.info(f"updated channel {before}")
+        log.info("updated channel %s", before)
 
         if isinstance(after, TextChannel):
             await self.on_textchannel_update(before, after)
@@ -216,17 +220,17 @@ class BackupOnEvents:
         elif isinstance(after, CategoryChannel):
             await self.on_category_update(before, after)
 
-    async def on_textchannel_update(self, before, after):
+    async def on_textchannel_update(self, _before, after):
         data = await self.bot.db.channels.prepare_one(after)
         await self.bot.db.channels.update([data])
 
-    async def on_category_update(self, before, after):
+    async def on_category_update(self, _before, after):
         data = await self.bot.db.categories.prepare_one(after)
         await self.bot.db.categories.update([data])
 
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel):
-        log.info(f"deleted channel {channel}")
+        log.info("deleted channel %s", channel)
 
         if isinstance(channel, TextChannel):
             await self.bot.db.channels.soft_delete([(channel.id,)])
@@ -265,7 +269,7 @@ class BackupOnEvents:
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        log.info(f"member {member} joined")
+        log.info("member %s joined", member)
 
         data = await self.bot.db.members.prepare_one(member)
         await self.bot.db.members.insert([data])
@@ -273,11 +277,11 @@ class BackupOnEvents:
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
         if before.avatar_url != after.avatar_url:
-            log.info(f"member {before} updated his avatar_url")
+            log.info("member %s updated his avatar_url", before)
         elif before.name != after.name:
-            log.info(f"member {before} ({before.nick}) updated his name to {after}")
+            log.info("member %s (%s) updated his name to %s", before, before.nick, after)
         elif before.nick != after.nick:
-            log.info(f"member {before} ({before.nick}) updated his nickname to {after.nick}")
+            log.info("member %s (%s) updated his nickname to %s", before, before.nick, after.nick)
         else:
             return
 
@@ -287,44 +291,44 @@ class BackupOnEvents:
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        log.info(f"member {member} left")
+        log.info("member %s left", member)
 
         await self.bot.db.members.soft_delete([(member.id,)])
 
     @commands.Cog.listener()
     async def on_guild_role_create(self, role):
-        log.info(f"added role {role}")
+        log.info("added role %s", role)
 
         data = await self.bot.db.roles.prepare_one(role)
         await self.bot.db.roles.insert([data])
 
     @commands.Cog.listener()
     async def on_guild_role_update(self, before, after):
-        log.info(f"updated role from {before} to {after}")
+        log.info("updated role from %s to %s", before, after)
 
         data = await self.bot.db.roles.prepare_one(after)
         await self.bot.db.roles.insert([data])
 
     @commands.Cog.listener()
     async def on_guild_role_remove(self, role):
-        log.info(f"removed role {role}")
+        log.info("removed role %s", role)
 
         await self.bot.db.roles.soft_delete([(role.id,)])
 
     @tasks.loop(minutes=1)
     async def task_put_queues_to_database(self):
-        await self.put_queues_to_database(self.insert_queues, LIMIT=1000)
-        await self.put_queues_to_database(self.update_queues, LIMIT=2000)
-        await self.put_queues_to_database(self.delete_queues, LIMIT=1000)
+        await self.put_queues_to_database(self.insert_queues, limit=1000)
+        await self.put_queues_to_database(self.update_queues, limit=2000)
+        await self.put_queues_to_database(self.delete_queues, limit=1000)
 
-    async def put_queues_to_database(self, queues, *, LIMIT=1000):
+    async def put_queues_to_database(self, queues, *, limit=1000):
         counter = 0
 
         for (process_fn, queue) in queues.items():
-            take_elements = min(LIMIT - counter, len(queue))
+            take_elements = min(limit - counter, len(queue))
             if take_elements == 0:
                 return
-            log.info(f"Putting {take_elements} from queue to database")
+            log.info("Putting %s from queue to database", take_elements)
             elements = [queue.popleft() for _ in range(take_elements)]
             await process_fn(elements)
             counter += take_elements
@@ -334,7 +338,8 @@ class Logger(commands.Cog, BackupUntilPresent, BackupOnEvents):
     def __init__(self, bot):
         self.bot = bot
 
-        super().__init__(bot)
+        BackupUntilPresent.__init__(self, bot)
+        BackupOnEvents.__init__(self, bot)
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -345,7 +350,7 @@ class Logger(commands.Cog, BackupUntilPresent, BackupOnEvents):
         await self.backup()
 
     @commands.command(name="backup")
-    async def _backup(self, ctx):
+    async def _backup(self, _ctx):
         await self.backup()
 
 

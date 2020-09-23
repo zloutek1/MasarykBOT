@@ -3,8 +3,6 @@ import discord
 from discord.utils import get
 from discord.ext import commands
 
-import re
-
 
 class Context(commands.Context):
     """
@@ -17,23 +15,28 @@ class Context(commands.Context):
         self.db = self.bot.db
 
     def get_category(self, name=None, **kwargs):
-        kwargs.update({"name": name}) if name is not None else None
+        if name is not None:
+            kwargs.update({"name": name})
         return get(self.guild.categories, **kwargs)
 
     def get_channel(self, name=None, **kwargs):
-        kwargs.update({"name": name}) if name is not None else None
+        if name is not None:
+            kwargs.update({"name": name})
         return get(self.guild.channels, **kwargs)
 
     def get_role(self, name=None, **kwargs):
-        kwargs.update({"name": name}) if name is not None else None
+        if name is not None:
+            kwargs.update({"name": name})
         return get(self.guild.roles, **kwargs)
 
     def get_emoji(self, name=None, **kwargs):
-        kwargs.update({"name": name}) if name is not None else None
+        if name is not None:
+            kwargs.update({"name": name})
         return get(self.bot.emojis, **kwargs)
 
     def get_user(self, name=None, **kwargs):
-        kwargs.update({"name": name}) if name is not None else None
+        if name is not None:
+            kwargs.update({"name": name})
         return get(self.guild.members, **kwargs)
 
     def channel_name(self, text):
@@ -61,5 +64,14 @@ class Context(commands.Context):
         embed.add_field(name=name, value=content)
         await self.send(embed=embed, delete_after=delete_after)
 
+    async def send_success(self, content, delete_after=None):
+        await self.send_embed(content,
+                              name="Success",
+                              delete_after=delete_after,
+                              color=discord.Color.green())
+
     async def send_error(self, content, delete_after=None):
-        await self.send_embed(content, name="Error", delete_after=delete_after, color=discord.Color.red())
+        await self.send_embed(content,
+                              name="Error",
+                              delete_after=delete_after,
+                              color=discord.Color.red())

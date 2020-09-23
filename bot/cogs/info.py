@@ -1,9 +1,9 @@
+import time
+from datetime import datetime
+
 from discord import Embed, Color
 from discord.ext import commands
 from discord.utils import get
-
-import time
-from datetime import datetime
 
 
 class Info(commands.Cog):
@@ -21,8 +21,8 @@ class Info(commands.Cog):
         before_typing = time.monotonic()
         await ctx.trigger_typing()
         after_typing = time.monotonic()
-        ms = int((after_typing - before_typing) * 1000)
-        msg = ':ping_pong: **PONG!** (~{}ms)'.format(ms)
+        milliseconds = int((after_typing - before_typing) * 1000)
+        msg = ':ping_pong: **PONG!** (~{}ms)'.format(milliseconds)
         await ctx.channel.send(msg)
 
     @commands.command()

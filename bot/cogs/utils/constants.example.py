@@ -26,9 +26,9 @@ admin_roles = []
 
 
 # Misc
-needed_reactions = 10
-fame_react_limit = 10
+NEEDED_REACTIONS = 10
+FAME_REACT_LIMIT = 10
 
 
 # Colors
-muni_yellow = 0xEACD59
+MUNI_YELLOW = 0xEACD59

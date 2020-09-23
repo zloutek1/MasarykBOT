@@ -1,9 +1,9 @@
-from discord import Message, Role, Emoji, PartialEmoji, File
-from discord.ext import commands
-from discord.utils import get
-
 import logging
 from typing import Union
+
+from discord import Role, Emoji, PartialEmoji, File
+from discord.ext import commands
+from discord.utils import get
 
 from .utils import constants
 
@@ -23,11 +23,11 @@ class UnicodeEmoji(commands.Converter):
         if isinstance(argument, list):
             for arg in argument:
                 if arg not in UNICODE_EMOJI:
-                    raise BadArgument('Emoji "{}" not found'.format(arg))
+                    raise commands.BadArgument('Emoji "{}" not found'.format(arg))
         else:
             if argument not in UNICODE_EMOJI:
-                raise BadArgument('Emoji "{}" not found'.format(argument))
-        
+                raise commands.BadArgument('Emoji "{}" not found'.format(argument))
+
         return argument
 
 
@@ -46,7 +46,7 @@ class Rolemenu(commands.Cog):
     async def add(self, ctx, image_url: str, emoji: Emote, role: Role, *, text: str):
         if image := await self.get_image_from_url(image_url):
             await ctx.send(file=image)
-        
+
         message = await ctx.send(f"**{text.strip().strip('*')}**")
 
         msg_data = await self.bot.db.messages.prepare(message)
@@ -54,7 +54,7 @@ class Rolemenu(commands.Cog):
 
         menu_data = await self.bot.db.rolemenu.prepare(message, role, emoji)
         await self.bot.db.rolemenu.insert(menu_data)
-        
+
         await message.add_reaction(emoji)
         await ctx.message.delete()
 
@@ -64,7 +64,7 @@ class Rolemenu(commands.Cog):
 
         menu_data = await self.bot.db.rolemenu.prepare(message, role, emoji)
         await self.bot.db.rolemenu.insert(menu_data)
-        
+
         await ctx.message.delete()
 
     @staticmethod
@@ -91,7 +91,7 @@ class Rolemenu(commands.Cog):
     async def on_raw_reaction_update(self, payload):
         if payload.channel_id not in constants.about_you_channels:
             return
-        
+
         row = await self.bot.db.rolemenu.select(payload.message_id)
 
         guild = self.bot.get_guild(payload.guild_id)
@@ -103,10 +103,10 @@ class Rolemenu(commands.Cog):
 
         if payload.event_type == "REACTION_ADD":
             await author.add_roles(role)
-            log.info(f"added role {str(role)} to {author}")
+            log.info("added role %s to %s", str(role), author)
         else:
             await author.remove_roles(role)
-            log.info(f"removed role {str(role)} to {author}")
+            log.info("removed role %s to %s", str(role), author)
 
 
     @commands.Cog.listener()
@@ -119,32 +119,30 @@ class Rolemenu(commands.Cog):
             async for message in channel.history():
                 if not message.reactions:
                     continue
-                    
+
                 row = await self.bot.db.rolemenu.select(message.id)
                 if row is None:
-                    log.warn(f"reactions on message {message.id} in {channel} ({channel.guild}) are not in the database")
+                    log.warning("reactions on message %d in %s (%s) are not in the database",
+                                message.id, channel, channel.guild)
                     continue
 
                 role = get(channel.guild.roles, id=row["role_id"])
                 if role is None:
-                    log.warn(f"role on message {message.id} in {channel} ({channel.guild}) does not exist")
+                    log.warning("role on message %d in %s (%s) does not exist",
+                                message.id, channel, channel.guild)
                     continue
 
                 async for user in message.reactions[0].users():
                     has_role = get(user.roles, id=role.id)
                     if not has_role:
-                        log.info(f"added role {str(role)} to {user}")
+                        log.info("added role %s to %s", str(role), user)
                         await user.add_roles(role)
 
                 for user in role.members:
                     has_reacted = await message.reactions[0].users().get(id=user.id)
                     if not has_reacted:
-                        log.info(f"removed role {str(role)} to {user}")
+                        log.info("removed role %s to %s", str(role), user)
                         await user.remove_roles(role)
-
-                    
-
-
 
 
 def setup(bot):

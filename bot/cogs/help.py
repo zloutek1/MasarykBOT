@@ -1,8 +1,8 @@
-import discord
-from discord.ext import commands
-
 import asyncio
 import itertools
+
+import discord
+from discord.ext import commands
 
 from .utils.paginator import Pages
 
@@ -18,10 +18,10 @@ class HelpPaginator(Pages):
         self.is_bot = False
 
     def get_bot_page(self, page):
-        cog, description, commands = self.entries[page - 1]
+        cog, description, cmds = self.entries[page - 1]
         self.title = f'{cog} Commands'
         self.description = description
-        return commands
+        return cmds
 
     def prepare_embed(self, entries, page, *, first=False):
         self.embed.clear_fields()
@@ -119,8 +119,8 @@ class PaginatedHelpCommand(commands.HelpCommand):
         return f'{alias} {command.signature}'
 
     async def send_bot_help(self, mapping):
-        def key(c):
-            return c.cog_name or '\u200bNo Category'
+        def key(cmd):
+            return cmd.cog_name or '\u200bNo Category'
 
         bot = self.context.bot
         entries = await self.filter_commands(bot.commands, sort=True, key=key)
@@ -136,10 +136,11 @@ class PaginatedHelpCommand(commands.HelpCommand):
             total += len(_commands)
             actual_cog = bot.get_cog(cog)
             # get the description if it exists (and the cog is valid) or return Empty embed.
-            description = (
-                actual_cog and actual_cog.description) or discord.Embed.Empty
+            description = (actual_cog and actual_cog.description) or discord.Embed.Empty
             nested_pages.extend(
-                (cog, description, _commands[i:i + per_page]) for i in range(0, len(_commands), per_page))
+                (cog, description, _commands[i:i + per_page])
+                for i in range(0, len(_commands), per_page)
+            )
 
         # a value of 1 forces the pagination session
         pages = HelpPaginator(self, self.context, nested_pages, per_page=1)

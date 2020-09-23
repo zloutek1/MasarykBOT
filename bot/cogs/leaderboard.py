@@ -1,21 +1,21 @@
-from discord import TextChannel, Member, Embed, Emoji, PartialEmoji
-from discord.ext import commands
-from discord.utils import get, escape_markdown
-
+import re
 from typing import Union
 from datetime import datetime
 from emoji import demojize, emojize
 
+from discord import TextChannel, Member, Embed
+from discord.ext import commands
+from discord.utils import get, escape_markdown
+
 
 class Emote(commands.Converter):
+    REGEX = r"(?::\w+(?:~\d+)?:)"
+
     def __init__(self, name=None):
         self.name = name
 
     async def convert(self, ctx, argument):
-        import re
-
-        REGEX = r"(?::\w+(?:~\d+)?:)"
-        emote = re.search(REGEX, demojize(argument))
+        emote = re.search(self.REGEX, demojize(argument))
 
         if emote is None:
             raise commands.BadArgument(f"Emote {argument} not found")
@@ -76,11 +76,13 @@ class Leaderboard(commands.Cog):
         embed.add_field(
             inline=False,
             name="FI MUNI Leaderboard!",
-            value="\n".join(self.template_row(i + 1, row, top10, get_value) for i, row in enumerate(top10)))
+            value="\n".join(self.template_row(i + 1, row, top10, get_value)
+                            for i, row in enumerate(top10)))
         embed.add_field(
             inline=False,
             name="Your position",
-            value="\n".join(self.template_row(row["row_number"], row, around, get_value) for i, row in enumerate(around)))
+            value="\n".join(self.template_row(row["row_number"], row, around, get_value)
+                            for i, row in enumerate(around)))
 
         time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         embed.set_footer(text=f"{str(ctx.author)} at {time_now}", icon_url=ctx.author.avatar_url)
@@ -124,17 +126,22 @@ class Leaderboard(commands.Cog):
 
         await self.display_emojiboard(ctx, data, member)
 
-    async def display_emojiboard(self, ctx, data, member):
+    async def display_emojiboard(self, ctx, data, _member):
         def get_value(row):
-            return (discord_emoji if (discord_emoji := get(self.bot.emojis, name=row["name"].strip(":"))) else
-                    demojized_emoji if (demojized_emoji := emojize(row["name"])) else
-                    None)
+            discord_emoji = get(self.bot.emojis, name=row["name"].strip(":"))
+            demojized_emoji = emojize(row["name"])
+
+            return discord_emoji or demojized_emoji or None
 
         embed = Embed(color=0x53acf2)
+
+        value = "\n".join(self.template_row(i + 1, row, data, get_value)
+                          for i, row in enumerate(data))
+
         embed.add_field(
             inline=False,
             name="FI MUNI Emojiboard!",
-            value=value if (value := "\n".join(self.template_row(i + 1, row, data, get_value) for i, row in enumerate(data))) else "Empty result")
+            value=value or "Empty result")
 
         time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         embed.set_footer(text=f"{str(ctx.author)} at {time_now}", icon_url=ctx.author.avatar_url)
