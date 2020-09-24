@@ -68,8 +68,7 @@ class Subject(commands.Cog):
     @subject.command(aliases=["search", "lookup"])
     async def find(self, ctx, pattern):
         faculty, code = pattern.split(":", 1) if ":" in pattern else ["FI", pattern]
-        print("DEBUG", pattern, "->", faculty, "AND", code)
-
+        
         subjects = await self.bot.db.subjects.find(code, faculty)
         grouped_by_term = self.group_by_term(subjects)
         await self.display_list_of_subjects(ctx, grouped_by_term)
