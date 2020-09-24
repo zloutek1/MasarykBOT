@@ -22,14 +22,16 @@ class Subject(commands.Cog):
 
     @subject.command()
     @commands.bot_has_permissions(manage_channels=True)
-    async def add(self, ctx, code):
+    async def add(self, ctx, pattern):
         if ctx.channel.id not in constants.subject_registration_channels:
             await ctx.send_error("You can't add subjects here", delete_after=5)
             return
 
         await ctx.safe_delete(delay=5)
 
-        if (subject := await self.find_subject(code)) is None:
+        faculty, code = pattern.split(":", 1) if ":" in pattern else ["FI", pattern]
+
+        if (subject := await self.find_subject(code, faculty)) is None:
             return await ctx.send_embed(
                 "Could not find one subject matching the code",
                 color=constants.MUNI_YELLOW,
@@ -40,14 +42,16 @@ class Subject(commands.Cog):
 
     @subject.command()
     @commands.bot_has_permissions(manage_channels=True)
-    async def remove(self, ctx, code):
+    async def remove(self, ctx, pattern):
         if ctx.channel.id not in constants.subject_registration_channels:
             await ctx.send_error("You can't remove subjects here", delete_after=5)
             return
 
         await ctx.safe_delete(delay=5)
 
-        if not (subject := await self.find_subject(code)):
+        faculty, code = pattern.split(":", 1) if ":" in pattern else ["FI", pattern]
+
+        if not (subject := await self.find_subject(code, faculty)):
             return await ctx.send_embed(
                 "Could not find one subject matching the code",
                 color=constants.MUNI_YELLOW,
@@ -62,8 +66,11 @@ class Subject(commands.Cog):
             delete_after=10)
 
     @subject.command(aliases=["search", "lookup"])
-    async def find(self, ctx, code):
-        subjects = await self.bot.db.subjects.find(code)
+    async def find(self, ctx, pattern):
+        faculty, code = pattern.split(":", 1) if ":" in pattern else ["FI", pattern]
+        print("DEBUG", pattern, "->", faculty, "AND", code)
+
+        subjects = await self.bot.db.subjects.find(code, faculty)
         grouped_by_term = self.group_by_term(subjects)
         await self.display_list_of_subjects(ctx, grouped_by_term)
 
@@ -88,8 +95,8 @@ class Subject(commands.Cog):
 
         await menu_text_channel.send(embed=embed)
 
-    async def find_subject(self, code):
-        subjects = await self.bot.db.subjects.find(code)
+    async def find_subject(self, code, faculty="FI"):
+        subjects = await self.bot.db.subjects.find(code, faculty)
         if len(subjects) != 1:
             return None
         return subjects[0]
