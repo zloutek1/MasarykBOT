@@ -206,7 +206,7 @@ class Subject(commands.Cog):
             return category
         category = await ctx.guild.create_category(category_name)
 
-        await self.bot.db.categories.insert(self.bot.db.categories.prepare([category]))
+        await self.bot.db.categories.insert(await self.bot.db.categories.prepare([category]))
 
         return category
 
