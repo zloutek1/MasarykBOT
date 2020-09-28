@@ -6,7 +6,7 @@ from discord import Color, Embed, PermissionOverwrite, HTTPException
 from discord.ext import commands
 from discord.ext.commands import has_permissions
 from discord.errors import NotFound
-from discord.utils import get
+from discord.utils import get, find
 
 from .utils import constants
 
@@ -142,7 +142,7 @@ class Subject(commands.Cog):
             return await self.lookup_channel(ctx, subject)
 
     async def try_to_get_existing_channel(self, ctx, subject):
-        channel = get(ctx.guild.text_channels, name=self.subject_to_channel_name(ctx, subject))
+        channel = find(lambda channel: str(channel).startswith(subject.get("code")), ctx.guild.text_channels)
         if channel is not None:
             await self.bot.db.subjects.set_channel(ctx.guild.id, subject.get("code"), channel.id)
         return channel
