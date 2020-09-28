@@ -3,11 +3,7 @@ import aiohttp
 
 from discord.ext import commands
 
-
-class CodeBlock:
-    missing_error = ('Missing code block. Please use the following markdown\n' +
-                     '\\`\\`\\`language\ncode here\n\\`\\`\\`')
-
+def get_cmds():
     cmds = {
         'cpp': 'g++ -std=c++1z -O2 -Wall -Wextra -pedantic -pthread main.cpp -lstdc++fs && ./a.out',
         'c': 'mv main.cpp main.c && gcc -std=c11 -O2 -Wall -Wextra -pedantic main.c && ./a.out',
@@ -15,14 +11,16 @@ class CodeBlock:
         'haskell': 'runhaskell main.cpp'
     }
 
-    def __new__(cls, *args, **kwargs):
-        super().__new__(*args, **kwargs)
+    for alias in ('cc', 'h', 'c++', 'h++', 'hpp'):
+        cmds[alias] = cmds['cpp']
 
-        for alias in ('cc', 'h', 'c++', 'h++', 'hpp'):
-            cls.cmds[alias] = cls.cmds['cpp']
+    cmds['py'] = cmds['python']
+    cmds['hs'] = cmds['haskell']
+    return cmds
 
-        cls.cmds['py'] = cls.cmds['python']
-        cls.cmds['hs'] = cls.cmds['haskell']
+class CodeBlock:
+    missing_error = ('Missing code block. Please use the following markdown\n' +
+                     '\\`\\`\\`language\ncode here\n\\`\\`\\`')
 
     def __init__(self, argument):
         try:
@@ -40,7 +38,7 @@ class CodeBlock:
     @staticmethod
     def get_command_from_language(language):
         try:
-            return CodeBlock.cmds[language]
+            return get_cmds()[language]
         except KeyError as err:
             if language:
                 fmt = f'Unknown language to compile for: {language}'
