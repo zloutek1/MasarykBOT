@@ -24,6 +24,7 @@ muted_roles = []
 verified_roles = []
 moderator_roles = []
 admin_roles = []
+show_all_subjects_roles = []
 
 
 # Misc

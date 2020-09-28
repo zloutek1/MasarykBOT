@@ -28,6 +28,7 @@ muted_roles = []
 verified_roles = [740961005961609328]
 moderator_roles = []
 admin_roles = []
+show_all_subjects_roles = [760093273871613993]
 
 
 # Misc
