@@ -26,7 +26,7 @@ class MasarykBOT(commands.Bot):
         self.uptime = None
 
     async def on_ready(self):
-        if not hasattr(self, 'uptime'):
+        if self.uptime is None:
             self.uptime = datetime.utcnow()
 
         self.intorduce()
