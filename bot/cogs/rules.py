@@ -100,6 +100,12 @@ class Rules(commands.Cog):
 
         embeds[1].add_field(
             inline=False,
+            name="​\n**__Speciální místnosti__**",
+            value=f"""Odemkni si tématické místnosti ve {channel("výběr-rolí")} a
+                      odemkni si předmětové místnosti ve {channel("výběr-předmětů")}.""")
+
+        embeds[1].add_field(
+            inline=False,
             name="​\n**__Užitečné linky__**",
             value="""❯ [IS MUNI](https://is.muni.cz/auth)
                      ❯ [ISKAM koleje]( https://iskam.skm.muni.cz/PrehledUbytovani)
@@ -120,6 +126,26 @@ class Rules(commands.Cog):
             value="• Připravený vstoupit?")
 
         return embeds
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        """
+        Send a welcome message to DM of the new member
+        with the information what to do when they join
+        the server
+        """
+
+        def role(name):
+            obj = get(member.guild.roles, name=name)
+            return "@" + name if obj is None else obj.mention
+
+        await member.send(f"""
+            **Vítej na discordu Fakulty Informatiky Masarykovy Univerzity v Brně**
+            #pravidla a **KLIKNOUT NA {role("Verification")} REAKCI!!!**
+            ❯ Pro vstup je potřeba přečíst
+            ❯ Když jsem {role("offline_tag")} offline, tak ne všechno proběhne hned.
+            ❯ Pokud nedostanete hned roli @Student, tak zkuste odkliknout, chvíli počkat a znova zakliknout.
+            """)
 
 
 def setup(bot):
