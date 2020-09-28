@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict
 from textwrap import dedent
 
@@ -10,8 +11,10 @@ from discord.utils import get
 from .utils import constants
 
 
-ERR_EMBED_BODY_TOO_LONG = 50035
+log = logging.getLogger(__name__)
 
+
+ERR_EMBED_BODY_TOO_LONG = 50035
 SUBJECT_MESSAGE = dedent("""
     :warning: předmět si můžeš zapsat/zrušit každých 5 sekund
     příkazem !subject add/remove <faculty>:<subject_code>
@@ -49,6 +52,7 @@ class Subject(commands.Cog):
         await ctx.safe_delete(delay=5)
 
         faculty, code = pattern.split(":", 1) if ":" in pattern else ["FI", pattern]
+        log.info("User %s adding subject %s:%s", ctx.author, faculty, code)
 
         if (subject := await self.find_subject(code, faculty)) is None:
             return await ctx.send_embed(
@@ -130,8 +134,7 @@ class Subject(commands.Cog):
                                           overwrite=PermissionOverwrite(read_messages=True))
 
     async def create_or_get_existing_channel(self, ctx, subject):
-        registers = await self.bot.db.subjects.find_registered(ctx.guild.id, subject.get("code"))
-        if self.should_create_channel(registers):
+        if await self.should_create_channel(ctx, subject):
             if (channel := await self.try_to_get_existing_channel(ctx, subject)) is not None:
                 return channel
             return await self.create_channel(ctx, subject)
@@ -144,11 +147,12 @@ class Subject(commands.Cog):
             await self.bot.db.subjects.set_channel(ctx.guild.id, subject.get("code"), channel.id)
         return channel
 
-    @staticmethod
-    def should_create_channel(registers):
-        return (registers.get("channel_id") is None and
-                (registers.get("member_ids") is None or
-                len(registers.get("member_ids")) >= constants.NEEDED_REACTIONS))
+    async def should_create_channel(self, ctx, subject):
+        registers = await self.bot.db.subjects.find_registered(ctx.guild.id, subject.get("code"))
+        serverinfo = await self.bot.db.subjects.find_serverinfo(ctx.guild.id, subject.get("code"))
+
+        return (serverinfo is None and
+                len(registers.get("member_ids")) >= constants.NEEDED_REACTIONS)
 
     async def lookup_channel(self, ctx, subject, recreate=True):
         channel = get(ctx.guild.text_channels, name=self.subject_to_channel_name(ctx, subject))
@@ -159,8 +163,8 @@ class Subject(commands.Cog):
     async def remove_channel_from_database_and_retry(self, ctx, subject):
         await self.bot.db.subjects.remove_channel(ctx.guild.id, subject.get("code"))
 
-        subject = await self.find_subject(subject.get("code"))
-        if self.should_create_channel(subject):
+        subject = await self.find_subject(subject.get("code"), subject.get("faculty"))
+        if await self.should_create_channel(ctx, subject):
             return await self.create_channel(ctx, subject)
 
     @staticmethod
