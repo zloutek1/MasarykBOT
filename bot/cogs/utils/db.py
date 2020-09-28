@@ -148,7 +148,7 @@ class Members(Table):
 
     async def soft_delete(self, ids):
         async with self.db.acquire() as conn:
-            await conn.executemany("UPDATE server.members SET deleted_at=NOW() WHERE id = $1;", ids)
+            await conn.executemany("UPDATE server.users SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
 class Channels(Table):
