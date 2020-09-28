@@ -512,6 +512,15 @@ class Rolemenu(Table):
                 WHERE message_id = $1
             """, message_id)
 
+    async def get_roles(self, guild_id):
+        async with self.db.acquire() as conn:
+            return await conn.fetch("""
+                SELECT guild_id, category_id, cogs.rolemenu.*
+                FROM cogs.rolemenu
+                INNER JOIN server.channels AS channel ON channel_id = channel.id
+                WHERE guild_id = $1
+            """, guild_id)
+
 class DBBase:
     def __init__(self, pool):
         self.pool = pool
