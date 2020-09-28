@@ -26,15 +26,16 @@ class HoF(commands.Cog):
         if channel is None:
             channel = await guild.create_text_channel("starboard")
 
-        embed = self.get_embed(message)
+        new_embed = self.get_embed(message)
 
         messages = await channel.history().flatten()
         for message in messages:
             for embed in message.embeds:
-                if embed.description.split('\n')[-1] == embed.description.split('\n')[-1]:
+                if embed.description.split('\n')[-1] == new_embed.description.split('\n')[-1]:
+                    await message.edit(embed=new_embed)
                     return
 
-        await channel.send(embed=embed)
+        await channel.send(embed=new_embed)
 
     def get_embed(self, message):
         def format_reaction(react):
@@ -75,7 +76,8 @@ class HoF(commands.Cog):
 
         return embed
 
-    def is_url_spoiler(self, text, url):
+    @staticmethod
+    def is_url_spoiler(text, url):
         spoiler_regex = re.compile(r'\|\|(.+?)\|\|')
         spoilers = spoiler_regex.findall(text)
         for spoiler in spoilers:
