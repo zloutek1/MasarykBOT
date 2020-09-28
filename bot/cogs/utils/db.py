@@ -392,6 +392,12 @@ class Subjects(Table):
                 SELECT * FROM muni.registers
                 WHERE guild_id = $1 AND LOWER(code) LIKE LOWER($2)""", guild_id, code)
 
+    async def find_serverinfo(self, guild_id, code):
+        async with self.db.acquire() as conn:
+            return await conn.fetchrow("""
+                SELECT * FROM muni.subject_server
+                WHERE guild_id = $1 AND LOWER(code) LIKE LOWER($2)""", guild_id, code)
+
     async def sign_user(self, guild_id, code, member_id):
         async with self.db.acquire() as conn:
             await conn.execute("""
@@ -439,8 +445,7 @@ class Subjects(Table):
     async def remove_channel(self, guild_id, code):
         async with self.db.acquire() as conn:
             await conn.execute("""
-                UPDATE muni.subject_server
-                    SET channel_id = NULL
+                DELETE FROM muni.subject_server
                     WHERE guild_id = $1 AND
                           LOWER(code) = LOWER($2)
             """, guild_id, code)
