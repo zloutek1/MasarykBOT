@@ -505,12 +505,12 @@ class Rolemenu(Table):
                 VALUES ($1, $2, $3, $4)
             """, data)
 
-    async def select(self, message_id):
+    async def select(self, message_id, emoji):
         async with self.db.acquire() as conn:
             return await conn.fetchrow("""
                 SELECT * FROM cogs.rolemenu
-                WHERE message_id = $1
-            """, message_id)
+                WHERE message_id = $1 AND emoji = $2
+            """, message_id, emoji)
 
     async def get_roles(self, guild_id):
         async with self.db.acquire() as conn:
