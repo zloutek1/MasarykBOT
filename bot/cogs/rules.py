@@ -27,10 +27,10 @@ class Rules(commands.Cog):
                 i += 1
 
         if i == 0:
-            for i in embeds.keys()[:-1]:
+            for i in list(embeds.keys())[:-1]:
                 await rules_channel.send(embed=embeds[i])
 
-            msg_to_react_to = await rules_channel.send(embed=embeds.keys()[-1])
+            msg_to_react_to = await rules_channel.send(embed=embeds[list(embeds.keys())[-1]])
 
             verify_emoji = get(self.bot.emojis, name="Verification")
             await msg_to_react_to.add_reaction(verify_emoji)
