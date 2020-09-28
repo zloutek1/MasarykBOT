@@ -2,7 +2,7 @@ import re
 import logging
 from typing import Union
 
-from discord import Emoji, PartialEmoji, PermissionOverwrite
+from discord import Emoji, PartialEmoji, PermissionOverwrite, Member
 from discord.ext import commands
 from discord.utils import get, find
 from discord.errors import HTTPException
@@ -62,7 +62,7 @@ class Rolemenu(commands.Cog):
 
         row = find(lambda row: row.startswith(str(payload.emoji)), message.content.split('\n'))
         try:
-            desc = row.split(" ")[1]
+            desc = row.split(" ", 1)[1]
         except ValueError:
             return
 
@@ -126,6 +126,30 @@ class Rolemenu(commands.Cog):
         emoji_id = re.match(r"<:.*:(\d+)>", string).group(1)
         return get(self.bot.emojis, id=int(emoji_id))
 
+    @commands.Cog.listener()
+    async def on_raw_message_edit(self, payload):
+        if payload.channel_id not in constants.about_you_channels:
+            return
+
+        channel = self.bot.get_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+
+        if "**" in message.content:
+            return
+
+        seen_emojis = set()
+        for row in payload.data['content'].split("\n"):
+            emoji = row.strip().split(" ", 1)[0]
+            seen_emojis.add(emoji)
+            try:
+                await message.add_reaction(emoji)
+            except HTTPException:
+                continue
+
+        for reaction in message.reactions:
+            if str(reaction.emoji) not in seen_emojis:
+                await message.clear_reaction(reaction.emoji)
+
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -137,6 +161,18 @@ class Rolemenu(commands.Cog):
             async for message in channel.history():
                 if not message.reactions:
                     continue
+
+                for row in message.content.split("\n"):
+                    try:
+                        desc = row.split(" ", 1)[1]
+                    except ValueError:
+                        continue
+
+                    if role := self.is_role(message.guild, desc):
+                        await self.balance_role(message, role)
+
+                    if channel := self.is_channel(message.guild, desc):
+                        await self.balance_channel(message, channel)
 
                 """
                 row = await self.bot.db.rolemenu.select(message.id)
@@ -163,6 +199,35 @@ class Rolemenu(commands.Cog):
                         log.info("removed role %s to %s", str(role), user)
                         await user.remove_roles(role)
                 """
+    async def balance_role(self, message, role):
+        async for user in message.reactions[0].users():
+            has_role = get(user.roles, id=role.id)
+            if not has_role:
+                log.info("added role %s to %s", str(role), user)
+                await user.add_roles(role)
+
+        for user in role.members:
+            has_reacted = await message.reactions[0].users().get(id=user.id)
+            if not has_reacted:
+                log.info("removed role %s to %s", str(role), user)
+                await user.remove_roles(role)
+
+    async def balance_channel(self, message, channel):
+        async for user in message.reactions[0].users():
+            if not channel.permissions_for(user).read_messages:
+                log.info("showing channel %s to %s", str(channel), user)
+                await channel.set_permissions(user,
+                                              overwrite=PermissionOverwrite(read_messages=True))
+
+        visible_to = {user: overwrite
+                      for (user, overwrite) in channel.overwrites.items()
+                      if overwrite.read_messages and isinstance(user, Member) and not user.bot}
+        for user in visible_to:
+            has_reacted = await message.reactions[0].users().get(id=user.id)
+            if not has_reacted:
+                log.info("hide channel %s to %s", str(channel), user)
+                await channel.set_permissions(user,
+                                              overwrite=None)
 
 def setup(bot):
     bot.add_cog(Rolemenu(bot))
