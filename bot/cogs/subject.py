@@ -31,6 +31,9 @@ SUBJECT_MESSAGE = dedent("""
     !subject find IB000
     !subject find IB0%
     ```
+    Podporované fakulty:
+      informatika (FI), filozofická (FF), sociálních studií (FSS), Sportovních studií (FSpS), Přírodovědecká (PřF), Právnická (PrF)
+
     :point_down: Zapiš si své předměty zde :point_down:""").strip()
 
 
@@ -142,7 +145,12 @@ class Subject(commands.Cog):
             return await self.lookup_channel(ctx, subject)
 
     async def try_to_get_existing_channel(self, ctx, subject):
-        channel = find(lambda channel: str(channel).startswith(subject.get("code")), ctx.guild.text_channels)
+        def is_subject_channel(channel):
+            faculty, code = subject.get("faculty"), subject.get("code")
+            return (channel.name.startswith(code) or
+                    channel.name.startswith(f"{faculty}꞉{code}"))
+
+        channel = find(is_subject_channel, ctx.guild.text_channels)
         if channel is not None:
             await self.bot.db.subjects.set_channel(ctx.guild.id, subject.get("code"), channel.id)
         return channel
@@ -169,9 +177,12 @@ class Subject(commands.Cog):
 
     @staticmethod
     def subject_to_channel_name(ctx, subject):
+        faculty = subject.get("faculty")
         code = subject.get("code")
         name = subject.get("name")
-        return ctx.channel_name(f'{code} {name}')
+        if faculty == "FI":
+            return ctx.channel_name(f'{code} {name}')
+        return ctx.channel_name(f'{faculty}꞉{code} {name}')
 
     async def create_channel(self, ctx, subject):
         show_all = [role
