@@ -1,9 +1,11 @@
+import re
 import logging
 from typing import Union
 
-from discord import Role, Emoji, PartialEmoji, File
+from discord import Emoji, PartialEmoji, PermissionOverwrite
 from discord.ext import commands
-from discord.utils import get
+from discord.utils import get, find
+from discord.errors import HTTPException
 
 from .utils import constants
 
@@ -31,54 +33,12 @@ class UnicodeEmoji(commands.Converter):
         return argument
 
 
-Emote = Union[Emoji, PartialEmoji]
+Emote = Union[Emoji, PartialEmoji, UnicodeEmoji]
 
 
 class Rolemenu(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
-    @commands.group(invoke_without_command=True)
-    async def role(self, ctx):
-        await ctx.send_help(ctx.command)
-
-    @role.command()
-    async def add(self, ctx, image_url: str, emoji: Emote, role: Role, *, text: str):
-        if image := await self.get_image_from_url(image_url):
-            await ctx.send(file=image)
-
-        message = await ctx.send(f"**{text.strip().strip('*')}**")
-
-        msg_data = await self.bot.db.messages.prepare(message)
-        await self.bot.db.messages.insert(msg_data)
-
-        menu_data = await self.bot.db.rolemenu.prepare(message, role, emoji)
-        await self.bot.db.rolemenu.insert(menu_data)
-
-        await message.add_reaction(emoji)
-        await ctx.message.delete()
-
-    @role.command()
-    async def recover(self, ctx, message_id: int, emoji: Emote, role: Role):
-        message = await ctx.channel.fetch_message(message_id)
-
-        menu_data = await self.bot.db.rolemenu.prepare(message, role, emoji)
-        await self.bot.db.rolemenu.insert(menu_data)
-
-        await ctx.message.delete()
-
-    @staticmethod
-    async def get_image_from_url(url):
-        import io
-        import aiohttp
-
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as resp:
-                if resp.status != 200:
-                    return None
-                data = io.BytesIO(await resp.read())
-                return File(data, 'image.png')
-
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
@@ -92,21 +52,79 @@ class Rolemenu(commands.Cog):
         if payload.channel_id not in constants.about_you_channels:
             return
 
-        row = await self.bot.db.rolemenu.select(payload.message_id)
-
         guild = self.bot.get_guild(payload.guild_id)
-        role = get(guild.roles, id=row["role_id"])
-        if not role:
-            return
-
+        channel = get(guild.text_channels, id=payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
         author = guild.get_member(payload.user_id)
 
+        if author == self.bot.user:
+            return
+
+        row = find(lambda row: row.startswith(str(payload.emoji)), message.content.split('\n'))
+        try:
+            desc = row.split(" ")[1]
+        except ValueError:
+            return
+
         if payload.event_type == "REACTION_ADD":
+            await self.reaction_add(guild, author, desc)
+        else:
+            await self.reaction_remove(guild, author, desc)
+
+    async def reaction_add(self, guild, author, desc):
+        if role := self.is_role(guild, desc):
             await author.add_roles(role)
             log.info("added role %s to %s", str(role), author)
-        else:
+            return
+
+        if channel := self.is_channel(guild, desc):
+            await channel.set_permissions(author,
+                                          overwrite=PermissionOverwrite(read_messages=True))
+            log.info("shown channel %s to %s", str(channel), author)
+            return
+
+    async def reaction_remove(self, guild, author, desc):
+        if role := self.is_role(guild, desc):
             await author.remove_roles(role)
             log.info("removed role %s to %s", str(role), author)
+            return
+
+        if channel := self.is_channel(guild, desc):
+            await channel.set_permissions(author, overwrite=None)
+            log.info("hidden channel %s to %s", str(channel), author)
+            return
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.channel.id not in constants.about_you_channels:
+            return
+        if "**" in message.content:
+            return
+
+        for row in message.content.split("\n"):
+            emoji = row.strip().split(" ", 1)[0]
+            try:
+                await message.add_reaction(emoji)
+            except HTTPException:
+                continue
+
+    @staticmethod
+    def is_role(guild, string):
+        if not (match := re.match(r"<@&(\d+)>", string)):
+            return None
+        role_id = int(match.group(1))
+        return get(guild.roles, id=role_id)
+
+    @staticmethod
+    def is_channel(guild, string):
+        if not (match := re.match(r"<#(\d+)>", string)):
+            return None
+        channel_id = int(match.group(1))
+        return get(guild.channels, id=channel_id)
+
+    def get_emoji(self, string):
+        emoji_id = re.match(r"<:.*:(\d+)>", string).group(1)
+        return get(self.bot.emojis, id=int(emoji_id))
 
 
     @commands.Cog.listener()
@@ -120,6 +138,7 @@ class Rolemenu(commands.Cog):
                 if not message.reactions:
                     continue
 
+                """
                 row = await self.bot.db.rolemenu.select(message.id)
                 if row is None:
                     log.warning("reactions on message %d in %s (%s) are not in the database",
@@ -143,7 +162,7 @@ class Rolemenu(commands.Cog):
                     if not has_reacted:
                         log.info("removed role %s to %s", str(role), user)
                         await user.remove_roles(role)
-
+                """
 
 def setup(bot):
     bot.add_cog(Rolemenu(bot))
