@@ -199,13 +199,16 @@ class Subject(commands.Cog):
 
         return channel
 
-    @staticmethod
-    async def create_or_get_category(ctx, category_name):
+    async def create_or_get_category(self, ctx, category_name):
         if not category_name:
             return None
         if category := get(ctx.guild.categories, name=category_name):
             return category
-        return await ctx.guild.create_category(category_name)
+        category = await ctx.guild.create_category(category_name)
+
+        await self.bot.db.categories.insert(self.bot.db.categories.prepare([category]))
+
+        return category
 
     @staticmethod
     def group_by_term(subjects):
