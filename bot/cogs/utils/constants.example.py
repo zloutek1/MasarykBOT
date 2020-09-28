@@ -11,10 +11,6 @@ mute_log_channels = []
 other_log_channels = []
 
 
-# <emoji_id, role_id>
-about_you_roles = {}
-
-
 # <emoji_name, emoji_id>
 emojis = {}
 

@@ -1,20 +1,25 @@
 
 # Channel IDs
-verification_channels = [731525269214724116]
-about_you_channels = [749759454773379135]
-subject_registration_channels = [758267743119212576]
+verification_channels = [
+    731525269214724116,     # FI TEST
+    760172609928953895      # FI TEMP
+]
+
+about_you_channels = [
+    749759454773379135,     # FI TEST
+    760172609928953893      # FI TEMP
+]
+
+subject_registration_channels = [
+    758267743119212576,     # FI TEMP
+    760172609928953892      # FI TEMP
+]
 
 
 # Log Channel IDs
 error_log_channels = []
 mute_log_channels = []
 other_log_channels = []
-
-
-# <emoji, role>
-about_you_roles = {
-    617745093889359872: 614438242955165698,     # bot_development
-}
 
 
 # Emoji server
@@ -25,10 +30,16 @@ emojis = {
 
 # Roles
 muted_roles = []
-verified_roles = [740961005961609328]
+verified_roles = [
+    740961005961609328,     # FI TEST
+    760172609899200531      # FI TEMP
+]
 moderator_roles = []
 admin_roles = []
-show_all_subjects_roles = [760093273871613993]
+show_all_subjects_roles = [
+    760093273871613993,     # FI TEST
+    760172609899200524      # FI TEMP
+]
 
 
 # Misc
