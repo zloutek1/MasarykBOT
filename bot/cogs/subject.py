@@ -1,4 +1,5 @@
 from collections import defaultdict
+from textwrap import dedent
 
 from discord import Color, Embed, PermissionOverwrite, HTTPException
 from discord.ext import commands
@@ -10,6 +11,24 @@ from .utils import constants
 
 
 ERR_EMBED_BODY_TOO_LONG = 50035
+
+SUBJECT_MESSAGE = dedent("""
+    :warning: předmět si můžeš zapsat/zrušit každých 5 sekund
+    příkazem !subject add/remove <faculty>:<subject_code>
+    např.
+    ```yaml
+    !subject add IB000
+    !subject remove IB000
+    !subject add FF:CJL09
+    !subject remove FF:CJL09
+    ```
+    na předměty které si můžeš pridat použij !subject search <pattern>%
+    např.
+    ```yaml
+    !subject find IB000
+    !subject find IB0%
+    ```
+    :point_down: Zapiš si své předměty zde :point_down:""").strip()
 
 
 class Subject(commands.Cog):
@@ -68,7 +87,7 @@ class Subject(commands.Cog):
     @subject.command(aliases=["search", "lookup"])
     async def find(self, ctx, pattern):
         faculty, code = pattern.split(":", 1) if ":" in pattern else ["FI", pattern]
-        
+
         subjects = await self.bot.db.subjects.find(code, faculty)
         grouped_by_term = self.group_by_term(subjects)
         await self.display_list_of_subjects(ctx, grouped_by_term)
@@ -85,13 +104,7 @@ class Subject(commands.Cog):
             await ctx.send_error("channel does not exist")
             return
 
-        embed = Embed(
-            description="""
-                :warning: předmět si múžeš zapsat/zrušit každých 5 sekund
-                příkazem `!subject add/remove <subject_code>`
-                :point_down: Zapiš si své předměty zde :point_down:""".strip(),
-            color=Color(0xFFD800))
-
+        embed = Embed(description=SUBJECT_MESSAGE, color=Color(0xFFD800))
         await menu_text_channel.send(embed=embed)
 
     async def find_subject(self, code, faculty="FI"):
@@ -157,9 +170,14 @@ class Subject(commands.Cog):
         return ctx.channel_name(f'{code} {name}')
 
     async def create_channel(self, ctx, subject):
+        show_all = [role
+                    for role_id in constants.show_all_subjects_roles
+                    if (role := ctx.guild.get_role(role_id))]
+
         overwrites = {
             ctx.guild.default_role: PermissionOverwrite(read_messages=False),
-            self.bot.user: PermissionOverwrite(read_messages=True)
+            self.bot.user: PermissionOverwrite(read_messages=True),
+            **{role: PermissionOverwrite(read_messages=True) for role in show_all}
         }
 
         row = await self.bot.db.subjects.get_category(ctx.guild.id, subject.get("code"))
@@ -178,7 +196,7 @@ class Subject(commands.Cog):
         await self.bot.db.subjects.set_channel(ctx.guild.id, subject.get("code"), channel.id)
         if category:
             await self.bot.db.subjects.set_category(ctx.guild.id, subject.get("code"), category.id)
-        
+
         return channel
 
     @staticmethod
@@ -229,8 +247,9 @@ class Subject(commands.Cog):
         if message.channel.id not in constants.subject_registration_channels:
             return
 
-        if message.author.id == self.bot.user.id:
-            return
+        if message.author.id == self.bot.user.id and message.embeds:
+            if message.embeds[0].description == SUBJECT_MESSAGE:
+                return
 
         try:
             await message.delete(delay=0.2)
@@ -239,6 +258,17 @@ class Subject(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        for channel_id in constants.subject_registration_channels:
+            if not (channel := self.bot.get_channel(channel_id)):
+                continue
+
+            async for message in channel.history():
+                if message.author.id == self.bot.user.id and message.embeds:
+                    if message.embeds[0].description == SUBJECT_MESSAGE:
+                        continue
+
+                await message.delete()
+
         for guild in self.bot.guilds:
             for category in guild.categories:
                 if ':' not in category.name:
