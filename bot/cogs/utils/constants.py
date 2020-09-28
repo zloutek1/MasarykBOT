@@ -6,7 +6,7 @@ verification_channels = [
 ]
 
 about_you_channels = [
-    749759454773379135,     # FI TEST
+    760211019405590540,     # FI TEST
     760172609928953893      # FI TEMP
 ]
 
