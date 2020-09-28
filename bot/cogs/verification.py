@@ -100,11 +100,15 @@ class Verification(commands.Cog):
         log.info("verified user %s, added role %s", member.name, f"@{verified_role}")
 
     async def _verify_leave(self, member):
-        removable_roles = constants.verified_roles + list(constants.about_you_roles)
+        removable_roles = constants.verified_roles + await self._get_about_you_roles(member.guild)
         to_remove = list(filter(lambda role: role.id in removable_roles, member.roles))
         await member.remove_roles(*to_remove)
         removed_roles = ', '.join(map(lambda r: '@'+r.name, to_remove))
         log.info("unverified user %s, removed roles %s", member.name, removed_roles)
+
+    async def _get_about_you_roles(self, guild):
+        about_you_role_ids = await self.bot.db.rolemenu.get_roles(guild.id)
+        return [get(guild.roles, role_id) for role_id in about_you_role_ids]
 
 
 def setup(bot):
