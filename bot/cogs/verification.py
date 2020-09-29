@@ -1,5 +1,6 @@
 import logging
 
+import discord
 from discord.ext import commands
 from discord.utils import get, find
 
@@ -17,9 +18,8 @@ class Verification(commands.Cog):
     def verification_channels(self):
         return [
             channel
-            for guild in self.bot.guilds
             for channel_id in constants.verification_channels
-            if (channel := get(guild.channels, id=channel_id)) is not None
+            if (channel := self.bot.get_channel(channel_id)) is not None
         ]
 
     @commands.Cog.listener()
