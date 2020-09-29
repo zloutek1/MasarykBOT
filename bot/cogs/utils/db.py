@@ -384,7 +384,7 @@ class Emojiboard(Table):
 class Subjects(Table):
     async def find(self, code, faculty="FI"):
         async with self.db.acquire() as conn:
-            return await conn.fetch("SELECT * FROM muni.subjects WHERE LOWER(code) LIKE LOWER($1) AND faculty = $2", code, faculty)
+            return await conn.fetch("SELECT * FROM muni.subjects WHERE LOWER(code) LIKE LOWER($1) AND LOWER(faculty) = LOWER($2)", code, faculty)
 
     async def find_registered(self, guild_id, code):
         async with self.db.acquire() as conn:
