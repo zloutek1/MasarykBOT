@@ -35,6 +35,8 @@ class UnicodeEmoji(commands.Converter):
 
 Emote = Union[Emoji, PartialEmoji, UnicodeEmoji]
 E_MISSING_ACCESS = 50001
+E_MISSING_PERMISSIONS = 50013
+
 
 class Rolemenu(commands.Cog):
     def __init__(self, bot):
@@ -109,8 +111,9 @@ class Rolemenu(commands.Cog):
             emoji = row.strip().split(" ", 1)[0]
             try:
                 await message.add_reaction(emoji)
-            except Forbidden:
-                log.warning("missing permissions in %s", message.guild)
+            except Forbidden as err:
+                if err.code == E_MISSING_PERMISSIONS:
+                    log.warning("missing permissions in %s", message.guild)
             except HTTPException:
                 continue
 
