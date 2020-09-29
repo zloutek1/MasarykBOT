@@ -60,7 +60,9 @@ class Rolemenu(commands.Cog):
         if author == self.bot.user:
             return
 
-        row = find(lambda row: row.startswith(str(payload.emoji)), message.content.split('\n'))
+        if not (row := find(lambda row: row.startswith(str(payload.emoji)), message.content.split('\n'))):
+            return
+
         try:
             desc = row.split(" ", 1)[1]
         except ValueError:
@@ -161,6 +163,8 @@ class Rolemenu(commands.Cog):
                     try:
                         desc = row.split(" ", 1)[1]
                     except ValueError:
+                        continue
+                    except IndexError:
                         continue
 
                     if role := self.is_role(message.guild, desc):
