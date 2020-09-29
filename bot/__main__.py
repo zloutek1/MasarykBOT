@@ -1,5 +1,6 @@
 import os
 import logging
+import discord
 import traceback
 
 from dotenv import load_dotenv
@@ -40,7 +41,14 @@ if __name__ == "__main__":
         log.exception("discord bot token is required to run the bot, exiting...")
         exit()
 
-    bot = MasarykBOT(command_prefix="!")
+    intents = discord.Intents(
+        guilds=True,
+        guild_messages=True,
+        members=True,
+        emojis=True,
+        guild_reactions=True)
+
+    bot = MasarykBOT(command_prefix="!", intents=intents)
     bot.db = Database.connect(os.getenv("POSTGRES"))
 
     for extension in initail_cogs:
