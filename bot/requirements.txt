@@ -3,3 +3,4 @@ asyncpg
 python-dotenv
 aiohttp
 emoji
+requests

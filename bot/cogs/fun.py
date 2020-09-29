@@ -30,8 +30,8 @@ class Fun(commands.Cog):
 
     @commands.command()
     async def emoji(self, ctx, emoji: PartialEmoji):
-        filename = 'assets/cogs_fun_emoji.{ext}'.format(
-            ext="png" if not emoji.animated else "gif")
+        filename = '{name}.{ext}'.format(name = emoji.name,
+                                         ext="png" if not emoji.animated else "gif")
 
         with open(filename, 'wb') as file:
             file.write(requests.get(emoji.url).content)
