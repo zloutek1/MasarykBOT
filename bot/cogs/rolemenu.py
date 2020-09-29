@@ -19,7 +19,7 @@ class UnicodeEmoji(commands.Converter):
     UnicodeEmoji accepts str only if it is present
     in UNICODE_EMOJI list
     """
-    async def convert(self, ctx, argument):
+    async def convert(self, _ctx, argument):
         from emoji import UNICODE_EMOJI
 
         if isinstance(argument, list):
@@ -98,8 +98,6 @@ class Rolemenu(commands.Cog):
     async def on_message(self, message):
         if message.channel.id not in constants.about_you_channels:
             return
-        if "**" in message.content:
-            return
 
         for row in message.content.split("\n"):
             emoji = row.strip().split(" ", 1)[0]
@@ -133,9 +131,6 @@ class Rolemenu(commands.Cog):
 
         channel = self.bot.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
-
-        if "**" in message.content:
-            return
 
         seen_emojis = set()
         for row in payload.data['content'].split("\n"):
@@ -174,31 +169,6 @@ class Rolemenu(commands.Cog):
                     if channel := self.is_channel(message.guild, desc):
                         await self.balance_channel(message, channel)
 
-                """
-                row = await self.bot.db.rolemenu.select(message.id)
-                if row is None:
-                    log.warning("reactions on message %d in %s (%s) are not in the database",
-                                message.id, channel, channel.guild)
-                    continue
-
-                role = get(channel.guild.roles, id=row["role_id"])
-                if role is None:
-                    log.warning("role on message %d in %s (%s) does not exist",
-                                message.id, channel, channel.guild)
-                    continue
-
-                async for user in message.reactions[0].users():
-                    has_role = get(user.roles, id=role.id)
-                    if not has_role:
-                        log.info("added role %s to %s", str(role), user)
-                        await user.add_roles(role)
-
-                for user in role.members:
-                    has_reacted = await message.reactions[0].users().get(id=user.id)
-                    if not has_reacted:
-                        log.info("removed role %s to %s", str(role), user)
-                        await user.remove_roles(role)
-                """
     async def balance_role(self, message, role):
         async for user in message.reactions[0].users():
             has_role = get(user.roles, id=role.id)
