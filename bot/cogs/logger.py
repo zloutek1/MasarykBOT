@@ -194,7 +194,7 @@ class BackupOnEvents:
 
     @commands.Cog.listener()
     async def on_guild_channel_create(self, channel):
-        log.info("created channel %s", channel)
+        log.info("created channel %s (%s)", channel, channel.guild)
 
         if isinstance(channel, TextChannel):
             await self.on_textchannel_create(channel)
@@ -212,7 +212,7 @@ class BackupOnEvents:
 
     @commands.Cog.listener()
     async def on_guild_channel_update(self, before, after):
-        log.info("updated channel %s", before)
+        log.info("updated channel %s (%s)", before, before.guild)
 
         if isinstance(after, TextChannel):
             await self.on_textchannel_update(before, after)
@@ -230,7 +230,7 @@ class BackupOnEvents:
 
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel):
-        log.info("deleted channel %s", channel)
+        log.info("deleted channel %s (%s)", channel, channel.guild)
 
         if isinstance(channel, TextChannel):
             await self.bot.db.channels.soft_delete([(channel.id,)])
@@ -269,7 +269,7 @@ class BackupOnEvents:
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        log.info("member %s joined", member)
+        log.info("member %s joined (%s)", member, member.guild)
 
         data = await self.bot.db.members.prepare_one(member)
         await self.bot.db.members.insert([data])
@@ -277,11 +277,11 @@ class BackupOnEvents:
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
         if before.avatar_url != after.avatar_url:
-            log.info("member %s updated his avatar_url", before)
+            log.info("member %s updated his avatar_url (%s)", before, before.guild)
         elif before.name != after.name:
-            log.info("member %s (%s) updated his name to %s", before, before.nick, after)
+            log.info("member %s (%s) updated his name to %s (%s)", before, before.nick, after, before.guild)
         elif before.nick != after.nick:
-            log.info("member %s (%s) updated his nickname to %s", before, before.nick, after.nick)
+            log.info("member %s (%s) updated his nickname to %s (%s)", before, before.nick, after.nick, before.guild)
         else:
             return
 
@@ -291,27 +291,27 @@ class BackupOnEvents:
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        log.info("member %s left", member)
+        log.info("member %s left (%s)", member, member.guild)
 
         await self.bot.db.members.soft_delete([(member.id,)])
 
     @commands.Cog.listener()
     async def on_guild_role_create(self, role):
-        log.info("added role %s", role)
+        log.info("added role %s (%s)", role, member.guild)
 
         data = await self.bot.db.roles.prepare_one(role)
         await self.bot.db.roles.insert([data])
 
     @commands.Cog.listener()
     async def on_guild_role_update(self, before, after):
-        log.info("updated role from %s to %s", before, after)
+        log.info("updated role from %s to %s (%s)", before, after, before.guild)
 
         data = await self.bot.db.roles.prepare_one(after)
         await self.bot.db.roles.insert([data])
 
     @commands.Cog.listener()
     async def on_guild_role_remove(self, role):
-        log.info("removed role %s", role)
+        log.info("removed role %s (%s)", role, role.guild)
 
         await self.bot.db.roles.soft_delete([(role.id,)])
 
