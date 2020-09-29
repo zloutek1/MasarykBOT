@@ -3,11 +3,13 @@ import logging
 import discord
 from discord.ext import commands
 from discord.utils import get, find
+from discord.errors import Forbidden
 
 from bot.cogs.utils import constants
 
 
 log = logging.getLogger(__name__)
+E_MISSING_PERMISSIONS = 50013
 
 
 class Verification(commands.Cog):
@@ -56,11 +58,17 @@ class Verification(commands.Cog):
         out_of_sync = len(with_role - verified) + len(verified - with_role)
         log.info("found %d users out of sync", out_of_sync)
 
-        for member in with_role - verified:
-            await self._verify_leave(member)
+        try:
+            for member in with_role - verified:
+                await self._verify_leave(member)
 
-        for member in verified - with_role:
-            await self._verify_join(member)
+            for member in verified - with_role:
+                await self._verify_join(member)
+
+        except Forbidden as err:
+            if err.code == E_MISSING_PERMISSIONS:
+                log.warning("missing permissions in guild %s", guild)
+
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
