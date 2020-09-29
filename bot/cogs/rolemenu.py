@@ -5,7 +5,7 @@ from typing import Union
 from discord import Emoji, PartialEmoji, PermissionOverwrite, Member
 from discord.ext import commands
 from discord.utils import get, find
-from discord.errors import HTTPException
+from discord.errors import HTTPException, Forbidden
 
 from .utils import constants
 
@@ -34,7 +34,7 @@ class UnicodeEmoji(commands.Converter):
 
 
 Emote = Union[Emoji, PartialEmoji, UnicodeEmoji]
-
+E_MISSING_ACCESS = 50001
 
 class Rolemenu(commands.Cog):
     def __init__(self, bot):
@@ -68,10 +68,14 @@ class Rolemenu(commands.Cog):
         except ValueError:
             return
 
-        if payload.event_type == "REACTION_ADD":
-            await self.reaction_add(guild, author, desc)
-        else:
-            await self.reaction_remove(guild, author, desc)
+        try:
+            if payload.event_type == "REACTION_ADD":
+                await self.reaction_add(guild, author, desc)
+            else:
+                await self.reaction_remove(guild, author, desc)
+        except Forbidden as err:
+            if err.code == E_MISSING_ACCESS:
+                log.warning("Missing access for option %s", row)
 
     async def reaction_add(self, guild, author, desc):
         if role := self.is_role(guild, desc):
@@ -105,6 +109,8 @@ class Rolemenu(commands.Cog):
             emoji = row.strip().split(" ", 1)[0]
             try:
                 await message.add_reaction(emoji)
+            except Forbidden:
+                log.warning("missing permissions in %s", message.guild)
             except HTTPException:
                 continue
 
@@ -170,8 +176,12 @@ class Rolemenu(commands.Cog):
                     if role := self.is_role(message.guild, desc):
                         await self.balance_role(message, role)
 
-                    if channel := self.is_channel(message.guild, desc):
-                        await self.balance_channel(message, channel)
+                    try:
+                        if channel := self.is_channel(message.guild, desc):
+                            await self.balance_channel(message, channel)
+                    except Forbidden as err:
+                        if err.code == E_MISSING_ACCESS:
+                            log.warning("Missing access for option %s", row)
 
     async def balance_role(self, message, role):
         async for user in message.reactions[0].users():
