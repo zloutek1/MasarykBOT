@@ -189,10 +189,15 @@ class Subject(commands.Cog):
                     for role_id in constants.show_all_subjects_roles
                     if (role := ctx.guild.get_role(role_id))]
 
+        mute = [role
+                for role_id in constants.mute_roles
+                if (role := ctx.guild.get_role(role_id))]
+
         overwrites = {
             ctx.guild.default_role: PermissionOverwrite(read_messages=False),
             self.bot.user: PermissionOverwrite(read_messages=True),
-            **{role: PermissionOverwrite(read_messages=True) for role in show_all}
+            **{role: PermissionOverwrite(read_messages=True) for role in show_all},
+            **{role: PermissionOverwrite(send_messages=False) for role in mute}
         }
 
         row = await self.bot.db.subjects.get_category(ctx.guild.id, subject.get("code"))
