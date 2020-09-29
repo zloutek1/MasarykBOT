@@ -1,8 +1,8 @@
 import os
 import logging
-import discord
 import traceback
 
+import discord
 from dotenv import load_dotenv
 
 from bot.bot import MasarykBOT
