@@ -303,6 +303,9 @@ class Subject(commands.Cog):
             if message.embeds[0].description == SUBJECT_MESSAGE:
                 return
 
+            if message.embeds[0].color and message.embeds[0].color.value == constants.MUNI_YELLOW:
+                return
+
         try:
             await message.delete(delay=0.2)
         except NotFound:
