@@ -22,7 +22,8 @@ initail_cogs = [
     "bot.cogs.eval",
     "bot.cogs.help",
     "bot.cogs.tags",
-    "bot.cogs.info"
+    "bot.cogs.info",
+    "bot.cogs.fun"
 ]
 
 if __name__ == "__main__":
