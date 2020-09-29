@@ -1,3 +1,5 @@
+from textwrap import dedent
+
 from discord import Embed, Color
 from discord.ext import commands
 from discord.utils import get
@@ -80,14 +82,14 @@ class Rules(commands.Cog):
         embeds[1].add_field(
             inline=False,
             name="​\n**__Pravidla__**",
-            value=f"""**#1** - Neurážejte se, neznevažujte ostatní, nenadávejte
-                      **#2** - Poznejte kdy je něco debata a kdy to je už hádka
-                      **#3** - Držte volnou komunikaci v {channel("shitposting")} roomce
-                      **#4** - Nezatěžujte a neubližujte botům, i oni mají duši
-                      **#5** - Používejte channely na jejich daný účel
+            value=f"""**#1** - Neurážejte se, neznevažujte ostatní, nenadávejte.
+                      **#2** - Poznejte, kdy je něco debata a kdy to je už hádka.
+                      **#3** - Držte volnou komunikaci v {channel("shitposting")} roomce.
+                      **#4** - Nezatěžujte a neubližujte botům, i oni mají duši.
+                      **#5** - Používejte channely pro jejich daný účel.
                       **#6** - Dodržujte [Discord's Terms of Service](https://discordapp.com/terms) a [Discord guidlines](https://discordapp.com/guidelines).
-                      **#7** - Nementionujte zbytečne role. Obzvlášť @everyone a @here. (To platí i pro adminy)
-                      **#8** - Chovejte se stejne jak chcete, aby se ostatní chovali k vám.""")
+                      **#7** - Nementionujte zbytečně role. Obzvlášť @everyone a @here. (To platí i pro adminy)
+                      **#8** - Chovejte se stejně, jak chcete, aby se ostatní chovali k vám.""")
 
         embeds[1].add_field(
             inline=False,
@@ -122,7 +124,7 @@ class Rules(commands.Cog):
         embeds[1].add_field(
             inline=False,
             name="​\n**Ready?**",
-            value="• Připravený vstoupit?")
+            value="• Připraveni vstoupit?")
 
         return embeds
 
@@ -138,13 +140,13 @@ class Rules(commands.Cog):
             obj = get(member.guild.roles, name=name)
             return "@" + name if obj is None else obj.mention
 
-        await member.send(f"""
+        await member.send(dedent(f"""
             **Vítej na discordu Fakulty Informatiky Masarykovy Univerzity v Brně**
             #pravidla a **KLIKNOUT NA {role("Verification")} REAKCI!!!**
             ❯ Pro vstup je potřeba přečíst
             ❯ Když jsem {role("offline_tag")} offline, tak ne všechno proběhne hned.
             ❯ Pokud nedostanete hned roli @Student, tak zkuste odkliknout, chvíli počkat a znova zakliknout.
-            """)
+            """))
 
 
 def setup(bot):
