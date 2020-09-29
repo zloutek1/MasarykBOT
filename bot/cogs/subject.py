@@ -2,7 +2,7 @@ import logging
 from collections import defaultdict
 from textwrap import dedent
 
-from discord import Color, Embed, PermissionOverwrite, HTTPException
+from discord import Color, Embed, PermissionOverwrite, HTTPException, Member
 from discord.ext import commands
 from discord.ext.commands import has_permissions
 from discord.errors import NotFound
@@ -113,6 +113,35 @@ class Subject(commands.Cog):
 
         embed = Embed(description=SUBJECT_MESSAGE, color=Color(0xFFD800))
         await menu_text_channel.send(embed=embed)
+
+    @subject.command()
+    @has_permissions(administrator=True)
+    async def recover_database(self, ctx):
+        for guild in self.bot.guilds:
+            for channel in guild.text_channels:
+                if "-" not in channel.name:
+                    continue
+
+                pattern = channel.name.split("-")[0]
+                faculty, code = pattern.split("꞉") if "꞉" in pattern else ["fi", pattern]
+
+                rows = await self.bot.db.subjects.find(code, faculty)
+                if not rows:
+                    continue
+                code = rows[0].get("code")
+                log.info("database recovery for subject %s started (%s)", channel, guild)
+
+                shown_to = [key.id
+                            for (key, value) in channel.overwrites.items()
+                            if value.read_messages and isinstance(key, Member)]
+
+                await self.bot.db.subjects.set_channel(ctx.guild.id, code, channel.id)
+                if channel.category:
+                    await self.bot.db.subjects.set_category(ctx.guild.id, code, channel.category.id)
+
+                for member_id in shown_to:
+                    await self.bot.db.subjects.sign_user(ctx.guild.id, code, member_id)
+        log.info("database recovery finished")
 
     async def find_subject(self, code, faculty="FI"):
         subjects = await self.bot.db.subjects.find(code, faculty)
