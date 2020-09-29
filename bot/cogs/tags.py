@@ -8,7 +8,7 @@ from .utils import paginator
 class TagPages(paginator.Pages):
     def prepare_embed(self, entries, page, *, first=False):
         body = []
-        for entry in entries, 1 + ((page - 1) * self.per_page):
+        for entry in entries:
             body.append(f'**•** {entry["name"]}')
 
         if self.maximum_pages > 1:
