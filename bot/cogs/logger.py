@@ -297,7 +297,7 @@ class BackupOnEvents:
 
     @commands.Cog.listener()
     async def on_guild_role_create(self, role):
-        log.info("added role %s (%s)", role, member.guild)
+        log.info("added role %s (%s)", role, role.guild)
 
         data = await self.bot.db.roles.prepare_one(role)
         await self.bot.db.roles.insert([data])
