@@ -81,14 +81,13 @@ class Rules(commands.Cog):
             inline=False,
             name="​\n**__Pravidla__**",
             value=f"""**#1** - Neurážejte se, neznevažujte ostatní, nenadávejte
-                     **#2** - Poznejte kdy je něco debata a kdy to je už hádka
-                     **#3** - Držte NSFW content v {role("NSFW")} roomkach
-                     **#4** - Držte spamming v {channel("spam")} a {channel("shitposting")} roomkach
-                     **#5** -  Nezatěžujte a neubližujte botům, i oni mají duši
-                     **#6** - Používejte channely na jejich daný účel
-                     **#7**- Dodržujte [Discord's Terms of Service](https://discordapp.com/terms) a [Discord guidlines](https://discordapp.com/guidelines).
-                     **#8** - Nementionujte zbytečne role. Obzvlášť @everyone a @here. (To platí i pro adminy)
-                     **#9** - Chovejte se stejne jak chcete, aby se ostatní chovali k vám.""")
+                      **#2** - Poznejte kdy je něco debata a kdy to je už hádka
+                      **#3** - Držte volnou komunikaci v {channel("shitposting")} roomce
+                      **#4** - Nezatěžujte a neubližujte botům, i oni mají duši
+                      **#5** - Používejte channely na jejich daný účel
+                      **#6** - Dodržujte [Discord's Terms of Service](https://discordapp.com/terms) a [Discord guidlines](https://discordapp.com/guidelines).
+                      **#7** - Nementionujte zbytečne role. Obzvlášť @everyone a @here. (To platí i pro adminy)
+                      **#8** - Chovejte se stejne jak chcete, aby se ostatní chovali k vám.""")
 
         embeds[1].add_field(
             inline=False,
