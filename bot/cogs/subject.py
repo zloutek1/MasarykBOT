@@ -281,7 +281,7 @@ class Subject(commands.Cog):
             category = await ctx.guild.create_category(category_name)
 
         else:
-            i = 0
+            i = 1
             while True:
                 category_name = "{faculty} {i}".format(faculty=subject.get("faculty"), i = i if i != 0 else '').strip()
                 if category := get(ctx.guild.categories, name=category_name):
