@@ -119,15 +119,9 @@ class Subject(commands.Cog):
     async def recover_database(self, ctx):
         for guild in self.bot.guilds:
             for channel in guild.text_channels:
-                if "-" not in channel.name:
+                if not (rows := await self.is_subject_channel(channel)):
                     continue
 
-                pattern = channel.name.split("-")[0]
-                faculty, code = pattern.split("꞉") if "꞉" in pattern else ["fi", pattern]
-
-                rows = await self.bot.db.subjects.find(code, faculty)
-                if not rows:
-                    continue
                 code = rows[0].get("code")
                 log.info("database recovery for subject %s started (%s)", channel, guild)
 
@@ -142,6 +136,38 @@ class Subject(commands.Cog):
                 for member_id in shown_to:
                     await self.bot.db.subjects.sign_user(ctx.guild.id, code, member_id)
         log.info("database recovery finished")
+
+    @subject.command()
+    @has_permissions(administrator=True)
+    async def reorder(self, ctx):
+        guild = ctx.guild
+        for channel in guild.text_channels:
+            if not (rows := await self.is_subject_channel(channel)):
+                continue
+
+            code = rows[0].get("code")
+            if not (row := await self.bot.db.subjects.get_category(guild.id, code)):
+                continue
+
+            old_category = channel.category
+            new_category_name = row.get("category_name")
+            new_category = get(guild.categories, name=new_category_name)
+            if not new_category:
+                new_category = await guild.create_category(new_category_name)
+
+            await channel.edit(category=new_category)
+
+            if len(old_category.channels) == 0:
+                await old_category.delete()
+
+    async def is_subject_channel(self, channel):
+        if "-" not in channel.name:
+            return
+
+        pattern = channel.name.split("-")[0]
+        faculty, code = pattern.split("꞉") if "꞉" in pattern else ["fi", pattern]
+
+        return await self.bot.db.subjects.find(code, faculty)
 
     async def find_subject(self, code, faculty="FI"):
         subjects = await self.bot.db.subjects.find(code, faculty)
@@ -229,9 +255,7 @@ class Subject(commands.Cog):
             **{role: PermissionOverwrite(send_messages=False) for role in mute}
         }
 
-        row = await self.bot.db.subjects.get_category(ctx.guild.id, subject.get("code"))
-        category_name = row.get("category_name") if row else None
-        category = await self.create_or_get_category(ctx, category_name)
+        category = await self.create_or_get_category(ctx, subject)
 
         channel_name = self.subject_to_channel_name(ctx, subject)
         channel = await ctx.guild.create_text_channel(
@@ -248,15 +272,27 @@ class Subject(commands.Cog):
 
         return channel
 
-    async def create_or_get_category(self, ctx, category_name):
-        if not category_name:
-            return None
-        if category := get(ctx.guild.categories, name=category_name):
-            return category
-        category = await ctx.guild.create_category(category_name)
+    async def create_or_get_category(self, ctx, subject):
+        row = await self.bot.db.subjects.get_category(ctx.guild.id, subject.get("code"))
+        if row:
+            category_name = row.get("category_name")
+            if category := get(ctx.guild.categories, name=category_name):
+                return category
+            category = await ctx.guild.create_category(category_name)
+
+        else:
+            i = 0
+            while True:
+                category_name = "{faculty} {i}".format(faculty=subject.get("faculty"), i = i if i != 0 else '').strip()
+                if category := get(ctx.guild.categories, name=category_name):
+                    if len(category.channels) < 50:
+                        return category
+                    i += 1
+                else:
+                    category = await ctx.guild.create_category(category_name)
+                    break
 
         await self.bot.db.categories.insert(await self.bot.db.categories.prepare([category]))
-
         return category
 
     @staticmethod
@@ -304,6 +340,7 @@ class Subject(commands.Cog):
                 return
 
             if message.embeds[0].color and message.embeds[0].color.value == constants.MUNI_YELLOW:
+                await message.delete(delay=5)
                 return
 
         try:
