@@ -27,6 +27,12 @@ class HoF(commands.Cog):
                 if reaction.count < constants.FAME_REACT_LIMIT + 5:
                     return
 
+        common_rooms = [r'.*memes.*', r'.*cute.*']
+        for common_pattern in common_rooms:
+            if re.match(common_pattern, reaction.message.guild.name.lower()) is not None:
+                if reaction.count < constants.FAME_REACT_LIMIT + 10:
+                    return
+
         message = reaction.message
         guild = message.guild
 
