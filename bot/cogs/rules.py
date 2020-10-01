@@ -82,44 +82,48 @@ class Rules(commands.Cog):
         embeds[1].add_field(
             inline=False,
             name="​\n**__Pravidla__**",
-            value=f"""**#1** - Neurážejte se, neznevažujte ostatní, nenadávejte.
-                      **#2** - Poznejte, kdy je něco debata a kdy to je už hádka.
-                      **#3** - Držte volnou komunikaci v {channel("shitposting")} roomce.
-                      **#4** - Nezatěžujte a neubližujte botům, i oni mají duši.
-                      **#5** - Používejte channely pro jejich daný účel.
-                      **#6** - Dodržujte [Discord's Terms of Service](https://discordapp.com/terms) a [Discord guidlines](https://discordapp.com/guidelines).
-                      **#7** - Nementionujte zbytečně role. Obzvlášť @everyone a @here. (To platí i pro adminy)
-                      **#8** - Chovejte se stejně, jak chcete, aby se ostatní chovali k vám.""")
+            value=dedent(f"""
+                **#1** - Neurážejte se, neznevažujte ostatní, nenadávejte.
+                **#2** - Poznejte, kdy je něco debata a kdy to je už hádka.
+                **#3** - Držte volnou komunikaci v {channel("shitposting")} roomce.
+                **#4** - Nezatěžujte a neubližujte botům, i oni mají duši.
+                **#5** - Používejte channely pro jejich daný účel.
+                **#6** - Dodržujte [Discord's Terms of Service](https://discordapp.com/terms) a [Discord guidlines](https://discordapp.com/guidelines).
+                **#7** - Nementionujte zbytečně role. Obzvlášť @everyone a @here. (To platí i pro adminy)
+                **#8** - Chovejte se stejně, jak chcete, aby se ostatní chovali k vám."""))
 
         embeds[1].add_field(
             inline=False,
             name="​\n**Disclaimer**",
-            value="""Tento server není nijak spřízněn s FI jako takovou, je to čistě studentská iniciativa bez oficiálního dohledu.
-                    To ovšem neznamená, že tu nejsou zaměstnanci FI - právě naopak. Z toho důvodu **důrazně doporučujeme veřejně nesdílet** příspěvky, které
-                    porušují školní řád, např. screeny vyplněných odpovědníků, zadání písemek atd. Pokud už se rozhodnete tak učinit, tak zodpovědnost
-                    nesete **sami**.""")
+            value=dedent("""
+                Tento server není nijak spřízněn s FI jako takovou, je to čistě studentská iniciativa bez oficiálního dohledu.
+                To ovšem neznamená, že tu nejsou zaměstnanci FI - právě naopak. Z toho důvodu **důrazně doporučujeme veřejně nesdílet** příspěvky, které
+                porušují školní řád, např. screeny vyplněných odpovědníků, zadání písemek atd. Pokud už se rozhodnete tak učinit, tak zodpovědnost
+                nesete **sami**."""))
 
         embeds[1].add_field(
             inline=False,
             name="​\n**__Speciální místnosti__**",
-            value=f"""Odemkni si tématické místnosti ve {channel("výběr-rolí")} a
-                      odemkni si předmětové místnosti ve {channel("výběr-předmětů")}.""")
+            value=dedent(f"""
+                Odemkni si tématické místnosti ve {channel("výběr-rolí")} a
+                odemkni si předmětové místnosti ve {channel("výběr-předmětů")}."""))
 
         embeds[1].add_field(
             inline=False,
             name="​\n**__Užitečné linky__**",
-            value="""❯ [IS MUNI](https://is.muni.cz/auth)
-                     ❯ [ISKAM koleje]( https://iskam.skm.muni.cz/PrehledUbytovani)
-                     ❯ [SUPO účet (banka)](https://inet.muni.cz/app/supo/vypis)
-                     ❯ [katalog předmětů od 2018/2019](https://www.fi.muni.cz/catalogue2018/index.html.cs)
-                     ❯ [katalog předmětů od 2019/2020](https://www.fi.muni.cz/catalogue2019/)
-                     ❯ [harmonogram fakult](https://is.muni.cz/predmety/obdobi)
-                     ❯ [fi.muny.cz](http://fi.muny.cz/)
-                     ❯ [kabell drill](https://kabell.sk/fi_muni_drill/)
-                     ❯ [statistika studia](https://is.muni.cz/studium/statistika)
-                     ❯ [statistika kreditů](https://is.muni.cz/auth/ucitel/statistika_kreditu)
-                     ❯ [statistika bodů](https://is.muni.cz/auth/student/poznamkove_bloky_statistika)
-                     ❯ [záznamy přednášek](http://www.video.muni.cz)""")
+            value=dedent("""
+                ❯ [IS MUNI](https://is.muni.cz/auth)
+                ❯ [ISKAM koleje]( https://iskam.skm.muni.cz/PrehledUbytovani)
+                ❯ [SUPO účet (banka)](https://inet.muni.cz/app/supo/vypis)
+                ❯ [katalog předmětů od 2018/2019](https://www.fi.muni.cz/catalogue2018/index.html.cs)
+                ❯ [katalog předmětů od 2019/2020](https://www.fi.muni.cz/catalogue2019/)
+                ❯ [harmonogram fakult](https://is.muni.cz/predmety/obdobi)
+                ❯ [fi.muny.cz](http://fi.muny.cz/)
+                ❯ [kabell drill](https://kabell.sk/fi_muni_drill/)
+                ❯ [statistika studia](https://is.muni.cz/studium/statistika)
+                ❯ [statistika kreditů](https://is.muni.cz/auth/ucitel/statistika_kreditu)
+                ❯ [statistika bodů](https://is.muni.cz/auth/student/poznamkove_bloky_statistika)
+                ❯ [záznamy přednášek](http://www.video.muni.cz)"""))
 
         embeds[1].add_field(
             inline=False,
