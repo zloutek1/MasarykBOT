@@ -89,6 +89,7 @@ class MasarykBOT(commands.Bot):
         if message.author.bot:
             return
         if constants.DEBUG and not message.author.guild_permissions.administrator:
+            return
         await self.process_commands(message)
 
     def add_cog(self, cog: commands.Cog) -> None:
