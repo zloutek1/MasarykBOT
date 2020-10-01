@@ -48,6 +48,7 @@ mute_roles = [
 # Misc
 NEEDED_REACTIONS = 1
 FAME_REACT_LIMIT = 3
+DEBUG = False
 
 
 # Colors

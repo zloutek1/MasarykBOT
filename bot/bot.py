@@ -6,7 +6,7 @@ from collections import Counter
 
 from discord.ext import commands
 
-from bot.cogs.utils import context
+from bot.cogs.utils import context, constants
 
 DESCRIPTION = """
 $ Hello
@@ -88,6 +88,7 @@ class MasarykBOT(commands.Bot):
     async def on_message(self, message):
         if message.author.bot:
             return
+        if constants.DEBUG and not message.author.guild_permissions.administrator:
         await self.process_commands(message)
 
     def add_cog(self, cog: commands.Cog) -> None:
