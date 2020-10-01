@@ -32,34 +32,34 @@ class BackupUntilPresent:
         log.info("Finished backup process")
 
     async def backup_guilds(self):
-        console.log("backing up guilds")
+        log.info("backing up guilds")
         data = await self.bot.db.guilds.prepare(self.bot.guilds)
         await self.bot.db.guilds.insert(data)
 
     async def backup_categories(self, guild):
-        console.log("backing up categories")
+        log.info("backing up categories")
         data = await self.bot.db.categories.prepare(guild.categories)
         await self.bot.db.categories.insert(data)
 
     async def backup_roles(self, guild):
-        console.log("backing up roles")
+        log.info("backing up roles")
         data = await self.bot.db.roles.prepare(guild.roles)
         await self.bot.db.roles.insert(data)
 
     async def backup_members(self, guild):
-        console.log("backing up members")
+        log.info("backing up members")
         for i in range(0, len(guild.members), 550):
             chunk = guild.members[i:i+550]
             data = await self.bot.db.members.prepare(chunk)
             await self.bot.db.members.insert(data)
 
     async def backup_channels(self, guild):
-        console.log("backing up channels")
+        log.info("backing up channels")
         data = await self.bot.db.channels.prepare(guild.text_channels)
         await self.bot.db.channels.insert(data)
 
     async def backup_messages(self, guild):
-        console.log("backing up messages")
+        log.info("backing up messages")
         await self.backup_failed_weeks(guild)
         await self.backup_new_weeks(guild)
 
