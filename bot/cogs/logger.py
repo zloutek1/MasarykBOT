@@ -375,7 +375,9 @@ class Collectable:
         self.content.extend(await self.prepare_fn(item))
 
     async def db_insert(self):
-        await self.insert_fn(self.content)
+        for i in range(0, len(self.content), 550):
+            batch = self.content[i:i+550]
+            await self.insert_fn(batch)
 
 
 def setup(bot):
