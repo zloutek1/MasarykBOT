@@ -6,6 +6,7 @@ verification_channels = [
 
 about_you_channels = [
     621365826372632606,     # FI MUNI
+    760211019405590540,
 ]
 
 subject_registration_channels = [
@@ -42,7 +43,7 @@ mute_roles = [
 
 # Misc
 NEEDED_REACTIONS = 10
-FAME_REACT_LIMIT = 10
+FAME_REACT_LIMIT = 15
 DEBUG = False
 
 

@@ -16,6 +16,17 @@ class HoF(commands.Cog):
         if reaction.count < constants.FAME_REACT_LIMIT:
             return
 
+        blocked_reactions = [r'.*brandejs_wine.*']
+        for blocked_pattern in blocked_reactions:
+            if re.match(blocked_pattern, reaction.name.lower()) is not None:
+                return
+
+        common_reactions = [r'.*kek.*', r'.*pepe.*', r'.*lul.*', r'.*lol.*', r'.*peepo.*']
+        for common_pattern in common_reactions:
+            if re.match(common_pattern, reaction.name.lower()) is not None:
+                if reaction.count < constants.FAME_REACT_LIMIT + 5:
+                    return
+
         message = reaction.message
         guild = message.guild
 
