@@ -323,7 +323,7 @@ class BackupOnEvents:
 
         await self.bot.db.roles.soft_delete([(role.id,)])
 
-    @tasks.loop(minutes=1)
+    @tasks.loop(minutes=5)
     async def task_put_queues_to_database(self):
         try:
             await self.put_queues_to_database(self.insert_queues, limit=1000)
