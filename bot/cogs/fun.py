@@ -28,7 +28,7 @@ class Fun(commands.Cog):
     async def emoji_url(self, ctx, emoji: PartialEmoji):
         await ctx.send(emoji.url)
 
-    @commands.command()
+    @commands.command(aliases=['emote'])
     async def emoji(self, ctx, emoji: PartialEmoji):
         filename = '{name}.{ext}'.format(name = emoji.name,
                                          ext="png" if not emoji.animated else "gif")
