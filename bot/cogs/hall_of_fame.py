@@ -16,22 +16,9 @@ class HoF(commands.Cog):
         if reaction.count < constants.FAME_REACT_LIMIT:
             return
 
-        blocked_reactions = [r'.*brandejs_wine.*']
-        for blocked_pattern in blocked_reactions:
-            if re.match(blocked_pattern, reaction.name.lower()) is not None:
+        if not isinstance(reaction.emoji, str):
+            if self.should_ignore(reaction):
                 return
-
-        common_reactions = [r'.*kek.*', r'.*pepe.*', r'.*lul.*', r'.*lol.*', r'.*peepo.*']
-        for common_pattern in common_reactions:
-            if re.match(common_pattern, reaction.name.lower()) is not None:
-                if reaction.count < constants.FAME_REACT_LIMIT + 5:
-                    return
-
-        common_rooms = [r'.*memes.*', r'.*cute.*']
-        for common_pattern in common_rooms:
-            if re.match(common_pattern, reaction.message.guild.name.lower()) is not None:
-                if reaction.count < constants.FAME_REACT_LIMIT + 10:
-                    return
 
         message = reaction.message
         guild = message.guild
@@ -53,6 +40,29 @@ class HoF(commands.Cog):
                     return
 
         await channel.send(embed=new_embed)
+
+    def should_ignore(self, reaction):
+        guild = reaction.message.guild
+        emoji = reaction.emoji
+
+        blocked_reactions = [r'.*brandejs_wine.*']
+        for blocked_pattern in blocked_reactions:
+            if re.match(blocked_pattern, emoji.name.lower()) is not None:
+                return True
+
+        common_reactions = [r'.*kek.*', r'.*pepe.*', r'.*lul.*', r'.*lol.*', r'.*peepo.*']
+        for common_pattern in common_reactions:
+            if re.match(common_pattern, emoji.name.lower()) is not None:
+                if reaction.count < constants.FAME_REACT_LIMIT + 5:
+                    return True
+
+        common_rooms = [r'.*memes.*', r'.*cute.*', r'.*fame.*']
+        for common_pattern in common_rooms:
+            if re.match(common_pattern, guild.name.lower()) is not None:
+                if reaction.count < constants.FAME_REACT_LIMIT + 10:
+                    return True
+
+        return False
 
     def get_embed(self, message):
         def format_reaction(react):
