@@ -1,5 +1,6 @@
 import logging
 
+import discord
 from discord.ext import commands
 from discord.ext.commands import has_permissions
 
@@ -26,6 +27,20 @@ class Admin(commands.Cog):
         log.info("Shutting down...")
         await ctx.message.delete()
         raise KeyboardInterrupt
+
+    @commands.command()
+    @has_permissions(administrator=True)
+    @commands.is_owner()
+    async def hide(self, ctx):
+        await self.bot.change_presence(status=discord.Status.invisible)
+        await ctx.safe_delete()
+
+    @commands.command()
+    @has_permissions(administrator=True)
+    @commands.is_owner()
+    async def show(self, ctx):
+        await self.bot.change_presence(status=discord.Status.online)
+        await ctx.safe_delete()
 
 def setup(bot):
     bot.add_cog(Admin(bot))
