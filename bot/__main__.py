@@ -13,14 +13,12 @@ from bot.cogs.utils.db import Database
 initail_cogs = [
     "bot.cogs.hall_of_fame",
     "bot.cogs.verification",
-    "bot.cogs.leaderboard",
     "bot.cogs.cog_manager",
     "bot.cogs.rolemenu",
     "bot.cogs.subject",
     "bot.cogs.logger",
     "bot.cogs.rules",
     "bot.cogs.admin",
-    "bot.cogs.eval",
     "bot.cogs.help",
     "bot.cogs.info",
     "bot.cogs.fun"
