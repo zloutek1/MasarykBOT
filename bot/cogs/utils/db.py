@@ -500,7 +500,7 @@ class DBBase:
     @classmethod
     def connect(cls, url):
         loop = asyncio.get_event_loop()
-        pool = loop.run_until_complete(asyncpg.create_pool(url, command_timeout=60))
+        pool = loop.run_until_complete(asyncpg.create_pool(url, command_timeout=1280))
         return Database(pool)
 
 
