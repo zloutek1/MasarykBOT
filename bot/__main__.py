@@ -22,7 +22,6 @@ initail_cogs = [
     "bot.cogs.admin",
     "bot.cogs.eval",
     "bot.cogs.help",
-    "bot.cogs.tags",
     "bot.cogs.info",
     "bot.cogs.fun"
 ]
