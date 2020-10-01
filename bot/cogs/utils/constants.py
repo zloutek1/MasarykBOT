@@ -1,18 +1,15 @@
 
 # Channel IDs
 verification_channels = [
-    731525269214724116,     # FI TEST
-    760611295396364340,     # FI Sandbox
+    621365818034356224,     # FI MUNI
 ]
 
 about_you_channels = [
-    760211019405590540,     # FI TEST
-    760611295396364341,     # FI Sandbox
+    621365826372632606,     # FI MUNI
 ]
 
 subject_registration_channels = [
-    758267743119212576,     # FI TEST
-    760611295396364342,     # FI Sandbox
+    628684083345489950,     # FI MUNI
 ]
 
 
@@ -31,23 +28,21 @@ emojis = {
 # Roles
 muted_roles = []
 verified_roles = [
-    740961005961609328,     # FI TEST
-    760611295376179218,     # FI Sandbox
+    621304939502632960,     # FI MUNI
 ]
 moderator_roles = []
 admin_roles = []
 show_all_subjects_roles = [
-    760093273871613993,     # FI TEST
-    760611295376179212,     # FI Sandbox
+    628684833039712266,     # FI MUNI
 ]
 mute_roles = [
-    760611295384305711,     # FI Sandbox
+    627901278365810698,     # FI MUNI
 ]
 
 
 # Misc
-NEEDED_REACTIONS = 1
-FAME_REACT_LIMIT = 3
+NEEDED_REACTIONS = 10
+FAME_REACT_LIMIT = 10
 DEBUG = False
 
 
