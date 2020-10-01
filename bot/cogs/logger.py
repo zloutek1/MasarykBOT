@@ -32,26 +32,34 @@ class BackupUntilPresent:
         log.info("Finished backup process")
 
     async def backup_guilds(self):
+        console.log("backing up guilds")
         data = await self.bot.db.guilds.prepare(self.bot.guilds)
         await self.bot.db.guilds.insert(data)
 
     async def backup_categories(self, guild):
+        console.log("backing up categories")
         data = await self.bot.db.categories.prepare(guild.categories)
         await self.bot.db.categories.insert(data)
 
     async def backup_roles(self, guild):
+        console.log("backing up roles")
         data = await self.bot.db.roles.prepare(guild.roles)
         await self.bot.db.roles.insert(data)
 
     async def backup_members(self, guild):
-        data = await self.bot.db.members.prepare(guild.members)
-        await self.bot.db.members.insert(data)
+        console.log("backing up members")
+        for i in range(0, len(guild.members), 550):
+            chunk = guild.members[i:i+550]
+            data = await self.bot.db.members.prepare(chunk)
+            await self.bot.db.members.insert(data)
 
     async def backup_channels(self, guild):
+        console.log("backing up channels")
         data = await self.bot.db.channels.prepare(guild.text_channels)
         await self.bot.db.channels.insert(data)
 
     async def backup_messages(self, guild):
+        console.log("backing up messages")
         await self.backup_failed_weeks(guild)
         await self.backup_new_weeks(guild)
 
@@ -317,9 +325,12 @@ class BackupOnEvents:
 
     @tasks.loop(minutes=1)
     async def task_put_queues_to_database(self):
-        await self.put_queues_to_database(self.insert_queues, limit=1000)
-        await self.put_queues_to_database(self.update_queues, limit=2000)
-        await self.put_queues_to_database(self.delete_queues, limit=1000)
+        try:
+            await self.put_queues_to_database(self.insert_queues, limit=1000)
+            await self.put_queues_to_database(self.update_queues, limit=2000)
+            await self.put_queues_to_database(self.delete_queues, limit=1000)
+        except Exception:
+            pass
 
     async def put_queues_to_database(self, queues, *, limit=1000):
         counter = 0
