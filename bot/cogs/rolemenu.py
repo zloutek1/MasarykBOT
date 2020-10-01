@@ -94,12 +94,12 @@ class Rolemenu(commands.Cog):
     async def reaction_remove(self, guild, author, desc):
         if role := self.is_role(guild, desc):
             await author.remove_roles(role)
-            log.info("removed role %s to %s", str(role), author)
+            log.info("removed role %s from %s", str(role), author)
             return
 
         if channel := self.is_channel(guild, desc):
             await channel.set_permissions(author, overwrite=None)
-            log.info("hidden channel %s to %s", str(channel), author)
+            log.info("hidden channel %s from %s", str(channel), author)
             return
 
     @commands.Cog.listener()
