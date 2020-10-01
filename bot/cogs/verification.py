@@ -99,6 +99,10 @@ class Verification(commands.Cog):
             await self._verify_leave(member)
 
     async def _verify_join(self, member):
+        if not isinstance(member, discord.Member):
+            log.warning("user %s is not longer a member of a guild", member)
+            return
+
         verified_role = find(lambda role: role.id in constants.verified_roles, member.guild.roles)
         if verified_role is None:
             log.warning("No verified role presnt in guild %s", member.guild)
@@ -108,6 +112,10 @@ class Verification(commands.Cog):
         log.info("verified user %s, added role %s", member.name, f"@{verified_role}")
 
     async def _verify_leave(self, member):
+        if not isinstance(member, discord.Member):
+            log.warning("user %s is not longer a member of a guild", member)
+            return
+
         removable_roles = constants.verified_roles
         to_remove = list(filter(lambda role: role.id in removable_roles, member.roles))
         await member.remove_roles(*to_remove)
