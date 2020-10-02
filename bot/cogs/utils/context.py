@@ -43,7 +43,8 @@ class Context(commands.Context):
         return ("-".join(text.lower().split())
                    .replace("+", "﹢")
                    .replace(".", "․")
-                   .replace("-", "–"))
+                   .replace("-", "–")
+                   .replace(",", ""))
 
     async def safe_delete(self, **kwargs):
         try:
