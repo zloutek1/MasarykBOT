@@ -43,7 +43,7 @@ mute_roles = [
 
 # Misc
 NEEDED_REACTIONS = 10
-FAME_REACT_LIMIT = 15
+FAME_REACT_LIMIT = 20
 DEBUG = False
 
 
