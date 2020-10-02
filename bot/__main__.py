@@ -42,6 +42,7 @@ if __name__ == "__main__":
         guilds=True,
         guild_messages=True,
         members=True,
+        presences = True,
         emojis=True,
         guild_reactions=True)
 
