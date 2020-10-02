@@ -40,7 +40,10 @@ class Context(commands.Context):
         return get(self.guild.members, **kwargs)
 
     def channel_name(self, text):
-        return "-".join(text.lower().split()).replace("+", "﹢").replace(".", "․")
+        return ("-".join(text.lower().split())
+                   .replace("+", "﹢")
+                   .replace(".", "․")
+                   .replace("-", "–"))
 
     async def safe_delete(self, **kwargs):
         try:
