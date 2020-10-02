@@ -45,22 +45,20 @@ class HoF(commands.Cog):
         guild = reaction.message.guild
         emoji = reaction.emoji
 
-        blocked_reactions = [r'.*brandejs_wine.*']
+        blocked_reactions = ['brandejs_wine']
         for blocked_pattern in blocked_reactions:
-            if re.match(blocked_pattern, emoji.name.lower()) is not None:
+            if blocked_pattern in emoji.name.lower():
                 return True
 
-        common_reactions = [r'.*kek.*', r'.*pepe.*', r'.*lul.*', r'.*lol.*', r'.*peepo.*']
+        common_reactions = ['kek', 'pepe', 'lul', 'lol', 'peepo', 'ano', 'no', 'yes', 'no']
         for common_pattern in common_reactions:
-            if re.match(common_pattern, emoji.name.lower()) is not None:
-                if reaction.count < constants.FAME_REACT_LIMIT + 5:
-                    return True
+            if common_pattern in emoji.name.lower() and reaction.count < constants.FAME_REACT_LIMIT + 5:
+                return True
 
-        common_rooms = [r'.*memes.*', r'.*cute.*', r'.*fame.*']
+        common_rooms = ['memes', 'cute', 'fame', 'star']
         for common_pattern in common_rooms:
-            if re.match(common_pattern, guild.name.lower()) is not None:
-                if reaction.count < constants.FAME_REACT_LIMIT + 10:
-                    return True
+            if common_pattern in guild.name.lower() and reaction.count < constants.FAME_REACT_LIMIT + 10:
+                return True
 
         return False
 
