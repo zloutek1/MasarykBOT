@@ -15,26 +15,28 @@ log = logging.getLogger(__name__)
 
 
 ERR_EMBED_BODY_TOO_LONG = 50035
-SUBJECT_MESSAGE = dedent("""
-    :warning: předmět si můžeš zapsat/zrušit každých 5 sekund
-    příkazem !subject add/remove <faculty>:<subject_code>
-    např.
-    ```yaml
-    !subject add IB000
-    !subject remove IB000
-    !subject add FF:CJL09
-    !subject remove FF:CJL09
-    ```
-    na předměty které si můžeš pridat použij !subject search <pattern>%
-    např.
-    ```yaml
-    !subject find IB000
-    !subject find IB0%
-    ```
-    Podporované fakulty:
-      informatika (FI), filozofická (FF), sociálních studií (FSS), Sportovních studií (FSpS), Přírodovědecká (PřF), Právnická (PrF)
-
-    :point_down: Zapiš si své předměty zde :point_down:""").strip()
+SUBJECT_MESSAGE = {
+    "body": dedent("""
+        :warning: předmět si můžeš zapsat/zrušit každých 5 sekund
+        příkazem !subject add/remove <faculty>:<subject_code>
+        např.
+        ```yaml
+        !subject add IB000
+        !subject remove IB000
+        !subject add FF:CJL09
+        !subject remove FF:CJL09
+        ```
+        na předměty které si můžeš pridat použij !subject search <pattern>%
+        např.
+        ```yaml
+        !subject find IB000
+        !subject find IB0%
+        ```
+        Podporované fakulty:
+        informatika (FI), filozofická (FF), sociálních studií (FSS), Sportovních studií (FSpS), Přírodovědecká (PřF), Právnická (PrF)
+        """).strip(),
+    "footer": ":point_down: Zapiš si své předměty zde :point_down:"""
+}
 
 
 class Subject(commands.Cog):
@@ -125,7 +127,8 @@ class Subject(commands.Cog):
             await ctx.send_error("channel does not exist")
             return
 
-        embed = Embed(description=SUBJECT_MESSAGE, color=Color(0xFFD800))
+        embed = Embed(description=SUBJECT_MESSAGE['body'], color=Color(0xFFD800))
+        embed.set_footer(text=SUBJECT_MESSAGE['footer'])
         await menu_text_channel.send(embed=embed)
 
     @subject.command()
@@ -350,7 +353,7 @@ class Subject(commands.Cog):
             return
 
         if message.author.id == self.bot.user.id and message.embeds:
-            if message.embeds[0].description == SUBJECT_MESSAGE:
+            if message.embeds[0].description == SUBJECT_MESSAGE['body']:
                 return
 
             if message.embeds[0].color and message.embeds[0].color.value == constants.MUNI_YELLOW:
@@ -370,7 +373,7 @@ class Subject(commands.Cog):
 
             async for message in channel.history():
                 if message.author.id == self.bot.user.id and message.embeds:
-                    if message.embeds[0].description == SUBJECT_MESSAGE:
+                    if message.embeds[0].description == SUBJECT_MESSAGE['body']:
                         continue
 
                 await message.delete()
