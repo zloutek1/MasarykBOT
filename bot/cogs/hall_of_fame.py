@@ -50,7 +50,7 @@ class HoF(commands.Cog):
         emoji = reaction.emoji
 
         fame_limit = constants.FAME_REACT_LIMIT
-        if (channel.members) > 100:
+        if len(channel.members) > 100:
             fame_limit += 10
 
         blocked_reactions = ['_wine']
