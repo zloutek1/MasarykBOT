@@ -46,7 +46,12 @@ class HoF(commands.Cog):
 
     def should_ignore(self, reaction):
         guild = reaction.message.guild
+        channel = reaction.message.channel
         emoji = reaction.emoji
+
+        fame_limit = constants.FAME_REACT_LIMIT
+        if (channel.members) > 100:
+            fame_limit += 10
 
         blocked_reactions = ['_wine']
         for blocked_pattern in blocked_reactions:
@@ -55,12 +60,12 @@ class HoF(commands.Cog):
 
         common_reactions = ['kek', 'pepe', 'lul', 'lol', 'pog', 'peepo', 'ano', 'no', 'yes', 'no']
         for common_pattern in common_reactions:
-            if common_pattern in emoji.name.lower() and reaction.count < constants.FAME_REACT_LIMIT + 5:
+            if common_pattern in emoji.name.lower() and reaction.count < fame_limit + 5:
                 return True
 
         common_rooms = ['memes', 'cute', 'fame', 'star']
         for common_pattern in common_rooms:
-            if common_pattern in guild.name.lower() and reaction.count < constants.FAME_REACT_LIMIT + 10:
+            if common_pattern in guild.name.lower() and reaction.count < fame_limit + 10:
                 return True
 
         return False
