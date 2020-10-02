@@ -100,6 +100,20 @@ class Subject(commands.Cog):
         await self.display_list_of_subjects(ctx, grouped_by_term)
 
     @subject.command()
+    async def status(self, ctx, pattern):
+        faculty, code = pattern.split(":", 1) if ":" in pattern else ["FI", pattern]
+
+        if not (subject := await self.find_subject(code, faculty)):
+            return await ctx.send_embed(
+                "Could not find one subject matching the code",
+                color=constants.MUNI_YELLOW,
+                delete_after=5)
+
+        registers = await self.bot.db.subjects.find_registered(ctx.guild.id, code)
+        await ctx.send_embed(f"Subject {subject.get('faculty')}:{subject.get('code')} has {len(registers)} registered")
+
+
+    @subject.command()
     @has_permissions(administrator=True)
     async def resend_subject_message(self, ctx, channel_id: int):
         if channel_id not in constants.subject_registration_channels:
