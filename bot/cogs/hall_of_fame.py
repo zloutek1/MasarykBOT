@@ -45,7 +45,7 @@ class HoF(commands.Cog):
         guild = reaction.message.guild
         emoji = reaction.emoji
 
-        blocked_reactions = ['brandejs_wine']
+        blocked_reactions = ['_wine']
         for blocked_pattern in blocked_reactions:
             if blocked_pattern in emoji.name.lower():
                 return True
