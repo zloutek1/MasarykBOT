@@ -1,6 +1,6 @@
 import re
 
-from discord import Embed
+from discord import Embed, Emoji, PartialEmoji
 from discord.ext import commands
 from discord.utils import get
 
@@ -16,7 +16,10 @@ class HoF(commands.Cog):
         if reaction.count < constants.FAME_REACT_LIMIT:
             return
 
-        if not isinstance(reaction.emoji, str):
+        if isinstance(reaction.emoji, PartialEmoji):
+            return
+
+        if isinstance(reaction.emoji, Emoji):
             if self.should_ignore(reaction):
                 return
 
