@@ -50,7 +50,7 @@ class HoF(commands.Cog):
             if blocked_pattern in emoji.name.lower():
                 return True
 
-        common_reactions = ['kek', 'pepe', 'lul', 'lol', 'peepo', 'ano', 'no', 'yes', 'no']
+        common_reactions = ['kek', 'pepe', 'lul', 'lol', 'pog', 'peepo', 'ano', 'no', 'yes', 'no']
         for common_pattern in common_reactions:
             if common_pattern in emoji.name.lower() and reaction.count < constants.FAME_REACT_LIMIT + 5:
                 return True
