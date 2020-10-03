@@ -16,6 +16,7 @@ initail_cogs = [
     "bot.cogs.cog_manager",
     "bot.cogs.rolemenu",
     "bot.cogs.subject",
+    "bot.cogs.errors",
     "bot.cogs.logger",
     "bot.cogs.rules",
     "bot.cogs.admin",

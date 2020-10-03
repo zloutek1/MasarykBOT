@@ -31,38 +31,6 @@ class MasarykBOT(commands.Bot):
 
         self.intorduce()
 
-    async def on_command_error(self, ctx, error):
-        if isinstance(error, commands.NoPrivateMessage):
-            await ctx.author.send_error('This command cannot be used in private messages.')
-
-        elif isinstance(error, commands.DisabledCommand):
-            await ctx.author.send_error('Sorry. This command is disabled and cannot be used.')
-
-        elif isinstance(error, commands.CommandInvokeError):
-            original = error.original
-            log.error('In %s:', ctx.command.qualified_name)
-            traceback.print_tb(original.__traceback__)
-            log.error('%s: %s', original.__class__.__name__, original)
-
-        elif isinstance(error, commands.ArgumentParsingError):
-            await ctx.send_error(error)
-
-        elif isinstance(error, commands.MissingPermissions):
-            await ctx.send_error("Sorry. You don't have permissions to use this command")
-
-        elif isinstance(error, commands.BotMissingPermissions):
-            await ctx.send_error(error)
-
-        elif isinstance(error, commands.MissingRequiredArgument):
-            pass
-
-        elif isinstance(error, commands.MissingRole):
-            pass
-
-        else:
-            log.error('In %s:', ctx.command.qualified_name)
-            traceback.print_tb(error.__traceback__)
-
     async def process_commands(self, message):
         ctx = await self.get_context(message, cls=context.Context)
 
