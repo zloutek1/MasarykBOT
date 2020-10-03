@@ -1,4 +1,5 @@
 import re
+from emoji import demojize
 
 from discord import Embed, Emoji, PartialEmoji
 from discord.ext import commands
@@ -19,9 +20,8 @@ class HoF(commands.Cog):
         if isinstance(reaction.emoji, PartialEmoji):
             return
 
-        if isinstance(reaction.emoji, Emoji):
-            if self.should_ignore(reaction):
-                return
+        if self.should_ignore(reaction):
+            return
 
         message = reaction.message
         guild = message.guild
@@ -29,7 +29,11 @@ class HoF(commands.Cog):
         if message.channel.id in constants.verification_channels + constants.about_you_channels:
             return
 
-        channel = get(guild.text_channels, name="starboard")
+        for channel_id in constants.starboard_channels:
+            if channel := get(guild.text_channels, id=channel_id):
+                break
+        if channel is None:
+            channel = get(guild.text_channels, name="starboard")
         if channel is None:
             channel = await guild.create_text_channel("starboard")
 
@@ -44,23 +48,29 @@ class HoF(commands.Cog):
 
         await channel.send(embed=new_embed)
 
-    def should_ignore(self, reaction):
+    @staticmethod
+    def should_ignore(reaction):
         guild = reaction.message.guild
         channel = reaction.message.channel
-        emoji = reaction.emoji
+        emoji_name = emoji.name if isinstance(emoji := reaction.emoji, Emoji) else demojize(emoji)
+        msg_content = reaction.message.content
 
         fame_limit = constants.FAME_REACT_LIMIT
+        print("reaction in", channel, "total people that can see", len(channel.members))
         if len(channel.members) > 100:
             fame_limit += 10
 
+        if msg_content.startswith("||") and msg_content.endswith("||"):
+            fame_limit += 5
+
         blocked_reactions = ['_wine']
         for blocked_pattern in blocked_reactions:
-            if blocked_pattern in emoji.name.lower():
+            if blocked_pattern in emoji_name.lower():
                 return True
 
         common_reactions = ['kek', 'pepe', 'lul', 'lol', 'pog', 'peepo', 'ano', 'no', 'yes', 'no']
         for common_pattern in common_reactions:
-            if common_pattern in emoji.name.lower() and reaction.count < fame_limit + 5:
+            if common_pattern in emoji_name.lower() and reaction.count < fame_limit + 5:
                 return True
 
         common_rooms = ['memes', 'cute', 'fame', 'star']
