@@ -159,6 +159,7 @@ class Rolemenu(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        """
         for channel_id in constants.about_you_channels:
             channel = self.bot.get_channel(channel_id)
             if channel is None:
@@ -185,6 +186,7 @@ class Rolemenu(commands.Cog):
                     except Forbidden as err:
                         if err.code == E_MISSING_ACCESS:
                             log.warning("Missing access for option %s", row)
+        """
 
     async def balance_role(self, message, role):
         async for user in message.reactions[0].users():

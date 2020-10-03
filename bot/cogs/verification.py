@@ -28,7 +28,7 @@ class Verification(commands.Cog):
     async def on_ready(self):
         log.info("found %d verification channels", len(self.verification_channels))
 
-        await self._synchronize()
+        # await self._synchronize()
 
     async def _synchronize(self):
         def confirm_react(reaction):
