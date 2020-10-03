@@ -63,6 +63,9 @@ class HoF(commands.Cog):
         if len(channel.members) > 100:
             fame_limit += 10
 
+        if "star" in emoji_name and reaction.count < fame_limit - 5:
+            return False
+
         if msg_content.startswith("||") and msg_content.endswith("||"):
             fame_limit += 5
 
