@@ -56,7 +56,6 @@ class HoF(commands.Cog):
         msg_content = reaction.message.content
 
         fame_limit = constants.FAME_REACT_LIMIT
-        print("reaction in", channel, "total people that can see", len(channel.members))
         if len(channel.members) > 100:
             fame_limit += 10
 
