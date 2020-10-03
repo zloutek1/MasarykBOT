@@ -13,6 +13,9 @@ subject_registration_channels = [
     628684083345489950,     # FI MUNI
 ]
 
+starboard_channels = [
+    761552082159271936,     # FI MUNI
+]
 
 # Log Channel IDs
 error_log_channels = []

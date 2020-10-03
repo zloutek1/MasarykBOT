@@ -3,6 +3,7 @@
 verification_channels = []
 about_you_channels = []
 subject_registration_channels = []
+starboard_channels = []
 
 
 # Log Channel IDs
