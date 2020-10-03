@@ -18,7 +18,9 @@ starboard_channels = [
 ]
 
 # Log Channel IDs
-error_log_channels = []
+error_log_channels = [
+    609413180137144331,     # FI MUNI
+]
 mute_log_channels = []
 other_log_channels = []
 
