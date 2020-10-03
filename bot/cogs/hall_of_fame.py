@@ -17,6 +17,10 @@ class HoF(commands.Cog):
         if reaction.count < constants.FAME_REACT_LIMIT:
             return
 
+        channel = reaction.message.channel
+        if channel.name == "starboard" or channel.id in constants.starboard_channels:
+            return
+
         if isinstance(reaction.emoji, PartialEmoji):
             return
 
@@ -68,14 +72,15 @@ class HoF(commands.Cog):
                 return True
 
         common_reactions = ['kek', 'pepe', 'lul', 'lol', 'pog', 'peepo', 'ano', 'no', 'yes', 'no']
-        for common_pattern in common_reactions:
-            if common_pattern in emoji_name.lower() and reaction.count < fame_limit + 5:
-                return True
+        if any(map(lambda common_pattern: common_pattern in emoji_name.lower(), common_reactions)):
+            fame_limit += 5
 
-        common_rooms = ['memes', 'cute', 'fame', 'star']
-        for common_pattern in common_rooms:
-            if common_pattern in guild.name.lower() and reaction.count < fame_limit + 10:
-                return True
+        common_rooms = ['memes', 'cute', 'fame']
+        if any(map(lambda common_pattern: common_pattern in emoji_name.lower(), common_rooms)):
+            fame_limit += 10
+
+        if reaction.count < fame_limit:
+            return True
 
         return False
 
