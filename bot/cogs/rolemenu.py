@@ -159,7 +159,6 @@ class Rolemenu(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        """
         for channel_id in constants.about_you_channels:
             channel = self.bot.get_channel(channel_id)
             if channel is None:
@@ -169,40 +168,54 @@ class Rolemenu(commands.Cog):
                 if not message.reactions:
                     continue
 
-                for row in message.content.split("\n"):
-                    try:
-                        desc = row.split(" ", 1)[1]
-                    except ValueError:
-                        continue
-                    except IndexError:
-                        continue
+                await self.parse_and_balance(channel, message)
 
-                    if role := self.is_role(message.guild, desc):
-                        await self.balance_role(message, role)
+    async def parse_and_balance(self, channel, message):
+        for row in message.content.split("\n"):
+            emoji, desc = self.parse(row)
 
-                    try:
-                        if channel := self.is_channel(message.guild, desc):
-                            await self.balance_channel(message, channel)
-                    except Forbidden as err:
-                        if err.code == E_MISSING_ACCESS:
-                            log.warning("Missing access for option %s", row)
-        """
+            if desc is None:
+                continue
 
-    async def balance_role(self, message, role):
-        async for user in message.reactions[0].users():
+            if role := self.is_role(message.guild, desc):
+                await self.balance_role(message, emoji, role)
+
+            try:
+                if channel := self.is_channel(message.guild, desc):
+                    await self.balance_channel(message, emoji, channel)
+            except Forbidden as err:
+                if err.code == E_MISSING_ACCESS:
+                    log.warning("Missing access for option %s", row)
+
+    @staticmethod
+    def parse(message):
+        try:
+            emoji, desc = message.split(" ", 1)
+            return emoji, desc
+        except ValueError:
+            return None, None
+        except IndexError:
+            return None, None
+
+    async def balance_role(self, message, emoji, role):
+        reaction = self.get_reaction(message, emoji)
+
+        async for user in reaction.users():
             has_role = get(user.roles, id=role.id)
             if not has_role:
                 log.info("added role %s to %s", str(role), user)
                 await user.add_roles(role)
 
         for user in role.members:
-            has_reacted = await message.reactions[0].users().get(id=user.id)
+            has_reacted = await reaction.users().get(id=user.id)
             if not has_reacted:
                 log.info("removed role %s to %s", str(role), user)
                 await user.remove_roles(role)
 
-    async def balance_channel(self, message, channel):
-        async for user in message.reactions[0].users():
+    async def balance_channel(self, message, emoji, channel):
+        reaction = self.get_reaction(message, emoji)
+
+        async for user in reaction.users():
             if not channel.permissions_for(user).read_messages:
                 log.info("showing channel %s to %s", str(channel), user)
                 await channel.set_permissions(user,
@@ -212,11 +225,18 @@ class Rolemenu(commands.Cog):
                       for (user, overwrite) in channel.overwrites.items()
                       if overwrite.read_messages and isinstance(user, Member) and not user.bot}
         for user in visible_to:
-            has_reacted = await message.reactions[0].users().get(id=user.id)
+            has_reacted = await reaction.users().get(id=user.id)
             if not has_reacted:
                 log.info("hide channel %s to %s", str(channel), user)
                 await channel.set_permissions(user,
                                               overwrite=None)
+
+    @staticmethod
+    def get_reaction(message, emoji):
+        for react in message.reactions:
+            if str(react.emoji) == emoji:
+                return react
+        return None
 
 def setup(bot):
     bot.add_cog(Rolemenu(bot))
