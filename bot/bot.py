@@ -56,6 +56,9 @@ class MasarykBOT(commands.Bot):
         elif isinstance(error, commands.MissingRequiredArgument):
             pass
 
+        elif isinstance(error, commands.MissingRole):
+            pass
+
         else:
             log.error('In %s:', ctx.command.qualified_name)
             traceback.print_tb(error.__traceback__)
