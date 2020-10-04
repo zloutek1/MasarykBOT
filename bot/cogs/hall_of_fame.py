@@ -79,7 +79,7 @@ class HoF(commands.Cog):
             fame_limit += 5
 
         common_rooms = ['memes', 'cute', 'fame']
-        if any(map(lambda common_pattern: common_pattern in emoji_name.lower(), common_rooms)):
+        if any(map(lambda common_pattern: common_pattern in channel.name.lower(), common_rooms)):
             fame_limit += 10
 
         if reaction.count < fame_limit:
