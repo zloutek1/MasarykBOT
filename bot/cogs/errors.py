@@ -13,6 +13,7 @@ class Errors(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         for ignore_error in [commands.BadArgument, commands.MissingRequiredArgument, commands.MissingRole]:
             if isinstance(error, ignore_error):
@@ -35,7 +36,7 @@ class Errors(commands.Cog):
                 return
 
         if isinstance(error, commands.CommandInvokeError):
-            await self.log_error(ctx, ctx.original)
+            await self.log_error(ctx, error.original)
             return
 
         await self.log_error(ctx, error)
