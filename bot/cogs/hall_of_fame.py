@@ -54,7 +54,6 @@ class HoF(commands.Cog):
 
     @staticmethod
     def should_ignore(reaction):
-        guild = reaction.message.guild
         channel = reaction.message.channel
         emoji_name = emoji.name if isinstance(emoji := reaction.emoji, Emoji) else demojize(emoji)
         msg_content = reaction.message.content
