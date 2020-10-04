@@ -366,7 +366,7 @@ class Emojiboard(Table):
             return await conn.fetch("""
                 SELECT
                     emoji.name,
-                    COUNT(*) AS sent_total
+                    SUM(count) AS sent_total
                 FROM cogs.emojiboard AS emoji
                 INNER JOIN server.channels AS channel
                     ON channel_id = channel.id
