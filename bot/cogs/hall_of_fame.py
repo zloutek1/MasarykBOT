@@ -59,6 +59,9 @@ class HoF(commands.Cog):
         emoji_name = emoji.name if isinstance(emoji := reaction.emoji, Emoji) else demojize(emoji)
         msg_content = reaction.message.content
 
+        if len(msg_content.split()) < 4:
+            return True
+
         fame_limit = constants.FAME_REACT_LIMIT
         if len(channel.members) > 100:
             fame_limit += 10
