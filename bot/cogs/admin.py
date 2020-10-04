@@ -45,12 +45,20 @@ class Admin(commands.Cog):
     @commands.command()
     @has_permissions(administrator=True)
     async def audit_to_csv(self, ctx, limit: int = None):
+        log.info("gettings audit logs for guild %s", ctx.guild)
+
+        counter = 0
         content = "created_at, user, action, target, id, reason\n"
         async for entry in ctx.guild.audit_logs(limit=limit):
             action = str(entry.action).replace("AuditLogAction.", "")
             content += f"{entry.created_at}, {entry.user.name}, {action}, {entry.target}, {entry.id}, {entry.reason}\n"
 
+            if counter % 5_000 == 0:
+                log.info("got %s audit logs so far", counter)
+            counter += 1
+
         else:
+            log.info("finished with %s audit logs", counter)
             filename = f"audit_logs_{ctx.guild}.csv"
             with open(filename, 'w') as file:
                 file.write(content)
