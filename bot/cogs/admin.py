@@ -42,5 +42,20 @@ class Admin(commands.Cog):
         await self.bot.change_presence(status=discord.Status.online)
         await ctx.safe_delete()
 
+    @commands.command()
+    @has_permissions(administrator=True)
+    async def audit_to_csv(self, ctx, limit: int = None):
+        content = "created_at, user, action, target, id, reason\n"
+        async for entry in ctx.guild.audit_logs(limit=limit):
+            action = str(entry.action).replace("AuditLogAction.", "")
+            content += f"{entry.created_at}, {entry.user.name}, {action}, {entry.target}, {entry.id}, {entry.reason}\n"
+
+        else:
+            filename = f"audit_logs_{ctx.guild}.csv"
+            with open(filename, 'w') as file:
+                file.write(content)
+            await ctx.send(file=discord.File(filename))
+
+
 def setup(bot):
     bot.add_cog(Admin(bot))
