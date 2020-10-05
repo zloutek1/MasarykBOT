@@ -112,7 +112,8 @@ class Subject(commands.Cog):
                 delete_after=5)
 
         registers = await self.bot.db.subjects.find_registered(ctx.guild.id, code)
-        await ctx.send_embed(f"Subject {subject.get('faculty')}:{subject.get('code')} has {len(registers)} registered")
+        num_registeres = len(registers.get('member_ids')) if registers else 0
+        await ctx.send_embed(f"Subject {subject.get('faculty')}:{subject.get('code')} has {num_registeres} registered")
 
 
     @subject.command()
