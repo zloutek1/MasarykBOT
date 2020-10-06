@@ -47,8 +47,16 @@ class Subject(commands.Cog):
     async def subject(self, ctx):
         await ctx.send_help(ctx.command)
 
-    @subject.command()
+    @subject.command(name="add")
     @commands.bot_has_permissions(manage_channels=True)
+    async def _add(self, ctx, *patterns):
+        if len(patterns) > 10:
+            await ctx.send_error("can add max of 10 channels at once")
+            return
+
+        for pattern in patterns:
+            await self.add(ctx, pattern)
+
     async def add(self, ctx, pattern):
         if ctx.channel.id not in constants.subject_registration_channels:
             await ctx.send_error("You can't add subjects here", delete_after=5)
@@ -68,8 +76,16 @@ class Subject(commands.Cog):
         await self.bot.db.subjects.sign_user(ctx.guild.id, subject.get("code"), ctx.author.id)
         await self.try_to_sign_user_to_channel(ctx, subject)
 
-    @subject.command()
+    @subject.command(name="remove")
     @commands.bot_has_permissions(manage_channels=True)
+    async def _remove(self, ctx, *patterns):
+        if len(patterns) > 10:
+            await ctx.send_error("can add max of 10 channels at once")
+            return
+
+        for pattern in patterns:
+            await self.remove(ctx, pattern)
+
     async def remove(self, ctx, pattern):
         if ctx.channel.id not in constants.subject_registration_channels:
             await ctx.send_error("You can't remove subjects here", delete_after=5)
