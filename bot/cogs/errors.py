@@ -22,6 +22,10 @@ class Errors(commands.Cog):
         if hasattr(ctx.command, "on_error"):
             return
 
+        if isinstance(error, commands.CommandOnCooldown):
+            await ctx.author.send_error('This command is on cooldown.')
+            return
+
         if isinstance(error, commands.NoPrivateMessage):
             await ctx.author.send_error('This command cannot be used in private messages.')
             return
