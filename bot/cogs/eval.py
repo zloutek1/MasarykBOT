@@ -52,16 +52,15 @@ class Eval(commands.Cog):
         self.bot = bot
 
     @commands.command(name="eval", aliases=["e", "coliru"])
-    @commands.cooldown(1, 30, commands.BucketType.user)
+    @commands.cooldown(1, 15, commands.BucketType.user)
     async def coliru(self, ctx, *, code: CodeBlock):
         """Compiles code via Coliru.
         You have to pass in a code block with the language syntax
         either set to one of these:
         - cpp
         - c
-        - python
-        - py
-        - haskell
+        - python / py
+        - haskell / hs
         Anything else isn't supported. The C++ compiler uses g++ -std=c++14.
         The python support is now 3.5.2.
         Please don't spam this for Stacked's sake.
