@@ -104,10 +104,11 @@ class Eval(commands.Cog):
     @coliru.error
     async def coliru_error(self, ctx, error):
         if isinstance(error, commands.BadArgument):
-            await ctx.safe_send(error)
+            await ctx.send_error(error)
         if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.safe_send(CodeBlock.missing_error)
-
+            await ctx.send_error(CodeBlock.missing_error)
+        if isinstance(error, commands.CommandOnCooldown):
+            await ctx.send_error('This command is on cooldown.')
 
 def setup(bot):
     bot.add_cog(Eval(bot))
