@@ -52,6 +52,7 @@ class Eval(commands.Cog):
         self.bot = bot
 
     @commands.command(name="eval", aliases=["e", "coliru"])
+    @commands.cooldown(1, 30, commands.BucketType.user)
     async def coliru(self, ctx, *, code: CodeBlock):
         """Compiles code via Coliru.
         You have to pass in a code block with the language syntax
