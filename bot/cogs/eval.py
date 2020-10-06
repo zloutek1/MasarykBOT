@@ -65,10 +65,6 @@ class Eval(commands.Cog):
         The python support is now 3.5.2.
         Please don't spam this for Stacked's sake.
         """
-        if not self.is_safe(code.source):
-            await ctx.send_error("not allowed")
-            return
-
         payload = {
             'cmd': code.command,
             'src': code.source
@@ -113,15 +109,6 @@ class Eval(commands.Cog):
             await ctx.send_error(CodeBlock.missing_error)
         if isinstance(error, commands.CommandOnCooldown):
             await ctx.send_error('This command is on cooldown.')
-
-    @staticmethod
-    def is_safe(code):
-        return not any([
-            "muni" in code,
-            "kill" in code,
-            "aisa" in code,
-            "curl" in code
-        ])
 
 def setup(bot):
     bot.add_cog(Eval(bot))
