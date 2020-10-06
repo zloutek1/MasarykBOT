@@ -75,7 +75,7 @@ class Eval(commands.Cog):
         async with ctx.typing():
             async with aiohttp.ClientSession() as session:
                 result = await self.coliru_compile(session, data)
-                await ctx.send(result)
+                await ctx.safe_send(result)
 
     async def coliru_compile(self, session, data):
         async with session.post('http://coliru.stacked-crooked.com/compile', data=data) as resp:
@@ -104,9 +104,9 @@ class Eval(commands.Cog):
     @coliru.error
     async def coliru_error(self, ctx, error):
         if isinstance(error, commands.BadArgument):
-            await ctx.send(error)
+            await ctx.safe_send(error)
         if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send(CodeBlock.missing_error)
+            await ctx.safe_send(CodeBlock.missing_error)
 
 
 def setup(bot):
