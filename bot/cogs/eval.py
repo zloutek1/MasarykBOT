@@ -120,8 +120,7 @@ class Eval(commands.Cog):
             "muni" in code,
             "kill" in code,
             "aisa" in code,
-            "curl" in code,
-            "os" in code
+            "curl" in code
         ])
 
 def setup(bot):
