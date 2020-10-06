@@ -65,7 +65,7 @@ class Eval(commands.Cog):
         The python support is now 3.5.2.
         Please don't spam this for Stacked's sake.
         """
-        if not self.is_safe(code):
+        if not self.is_safe(code.source):
             await ctx.send_error("not allowed")
             return
 
@@ -121,7 +121,7 @@ class Eval(commands.Cog):
             "kill" in code,
             "aisa" in code,
             "curl" in code,
-            "os" in code,
+            "os" in code
         ])
 
 def setup(bot):
