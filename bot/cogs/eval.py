@@ -75,7 +75,11 @@ class Eval(commands.Cog):
         async with ctx.typing():
             async with aiohttp.ClientSession() as session:
                 result = await self.coliru_compile(session, data)
-                await ctx.safe_send(result)
+                if result:
+                    await ctx.safe_send(result)
+                else:
+                    await ctx.send("no result")
+
 
     async def coliru_compile(self, session, data):
         async with session.post('http://coliru.stacked-crooked.com/compile', data=data) as resp:
