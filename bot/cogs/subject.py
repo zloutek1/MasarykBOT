@@ -39,6 +39,10 @@ SUBJECT_MESSAGE = {
 }
 
 
+class ChannelNotFound(Exception):
+    pass
+
+
 class Subject(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -210,9 +214,10 @@ class Subject(commands.Cog):
         return subjects[0]
 
     async def try_to_sign_user_to_channel(self, ctx, subject):
-        channel = await self.create_or_get_existing_channel(ctx, subject)
-        channel_name = self.subject_to_channel_name(ctx, subject)
-        if channel is None:
+        try:
+            channel = await self.create_or_get_existing_channel(ctx, subject)
+            channel_name = self.subject_to_channel_name(ctx, subject)
+        except ChannelNotFound:
             await ctx.send_embed(
                 f"Signed to subject {channel_name} successfully, but not enough users to create the subject room",
                 color=constants.MUNI_YELLOW,
@@ -264,7 +269,7 @@ class Subject(commands.Cog):
         code = subject.get('code')
         channel_name = self.subject_to_channel_name(ctx, subject)
         potential = find(lambda channel: channel.name.lower().startswith(code.lower()), ctx.guild.text_channels)
-        raise Exception(f"channel for subject {faculty}:{code} not found. \nlooked for {channel_name}. Did you mean {potential}?")
+        raise ChannelNotFound(f"channel for subject {faculty}:{code} not found. \nlooked for {channel_name}. Did you mean {potential}?")
 
     async def remove_channel_from_database_and_retry(self, ctx, subject):
         await self.bot.db.subjects.remove_channel(ctx.guild.id, subject.get("code"))
