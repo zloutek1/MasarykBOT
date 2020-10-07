@@ -214,21 +214,23 @@ class Subject(commands.Cog):
         return subjects[0]
 
     async def try_to_sign_user_to_channel(self, ctx, subject):
+        channel_name = self.subject_to_channel_name(ctx, subject)
+
         try:
             channel = await self.create_or_get_existing_channel(ctx, subject)
-            channel_name = self.subject_to_channel_name(ctx, subject)
         except ChannelNotFound:
             await ctx.send_embed(
                 f"Signed to subject {channel_name} successfully, but not enough users to create the subject room",
                 color=constants.MUNI_YELLOW,
                 delete_after=10)
-        else:
-            await ctx.send_embed(
-                f"Signed to subject {channel_name} successfully",
-                color=constants.MUNI_YELLOW,
-                delete_after=10)
-            await channel.set_permissions(ctx.author,
-                                          overwrite=PermissionOverwrite(read_messages=True))
+            return
+
+        await ctx.send_embed(
+            f"Signed to subject {channel_name} successfully",
+            color=constants.MUNI_YELLOW,
+            delete_after=10)
+        await channel.set_permissions(ctx.author,
+                                        overwrite=PermissionOverwrite(read_messages=True))
 
     async def create_or_get_existing_channel(self, ctx, subject):
         if await self.should_create_channel(ctx, subject):
