@@ -255,7 +255,16 @@ class Subject(commands.Cog):
         channel = get(ctx.guild.text_channels, name=self.subject_to_channel_name(ctx, subject))
         if channel is None and recreate:
             channel = await self.remove_channel_from_database_and_retry(ctx, subject)
+        if channel is None:
+            self.throw_not_found(ctx, subject)
         return channel
+
+    def throw_not_found(self, ctx, subject):
+        faculty = subject.get('faculty')
+        code = subject.get('code')
+        channel_name = self.subject_to_channel_name(ctx, subject)
+        potential = find(lambda channel: channel.name.lower().startswith(code.lower()), ctx.guild.text_channels)
+        raise Exception(f"channel for subject {faculty}:{code} not found. \nlooked for {channel_name}. Did you mean {potential}?")
 
     async def remove_channel_from_database_and_retry(self, ctx, subject):
         await self.bot.db.subjects.remove_channel(ctx.guild.id, subject.get("code"))
