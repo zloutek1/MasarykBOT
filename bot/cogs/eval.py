@@ -85,7 +85,7 @@ class Eval(commands.Cog):
             output = await resp.text(encoding='utf-8')
 
             if len(output) < 1992:
-                return f'```\n{output}\n```'
+                return output
 
             # output is too big so post it in gist
             return await self.coliru_shorten(session, data)
