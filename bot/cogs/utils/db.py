@@ -371,7 +371,7 @@ class Emojiboard(Table):
                 INNER JOIN server.channels AS channel
                     ON channel_id = channel.id
                 WHERE guild_id = $1::bigint AND
-                      author_id<>ALL($2::bigint[]) AND
+                      ($2::bigint IS NULL OR author_id<>ALL($2::bigint[])) AND
                       ($3::bigint IS NULL OR channel_id = $3) AND
                       ($4::bigint IS NULL OR author_id = $4) AND
                       ($5::text IS NULL OR emoji.name = $5)
