@@ -49,10 +49,7 @@ class Fun(commands.Cog):
             shuffle(extended_choices)
         chosen = choice(extended_choices)
 
-        embed.add_field(name="I choose " + chosen, value=" / ".join(choices))
-        author = ctx.message.author
-        time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        embed.set_footer(text=f"{str(author)} at {time_now}", icon_url=author.avatar_url)
+        ctx.send_embed(" / ".join(choices), name="I choose " + chosen)
         await ctx.send(embed=embed)
 
     @commands.command()
