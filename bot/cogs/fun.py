@@ -49,8 +49,7 @@ class Fun(commands.Cog):
             shuffle(extended_choices)
         chosen = choice(extended_choices)
 
-        ctx.send_embed(" / ".join(choices), name="I choose " + chosen)
-        await ctx.send(embed=embed)
+        await ctx.send_embed(" / ".join(choices), name="I choose " + chosen)
 
     @commands.command()
     async def hug(self, ctx, user: Member, intensity: int = 1):
