@@ -84,12 +84,7 @@ class Fun(commands.Cog):
 
     @commands.command()
     async def answer(self, ctx, *, question):
-        embed = discord.Embed()
-        embed.add_field(name=choice(("Yes", "No")), value=question)
-        author = ctx.message.author
-        time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        embed.set_footer(text=f"{str(author)} at {time_now}", icon_url=author.avatar_url)
-        await ctx.send(embed=embed)
+        await ctx.send_mebed(question, name=choice(("Yes", "No")))
 
     @commands.command()
     @commands.cooldown(rate=1, per=600, type=commands.BucketType.guild)
