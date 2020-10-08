@@ -72,8 +72,8 @@ class Context(commands.Context):
 
     async def send_embed(self, content, name="Message", delete_after=None, **kwargs):
         from datetime import datetime, timezone, timedelta
-        zone = timezone(offset=timedelta(hours=+1))
-        now = datetime.now(zone).strftime("%Y-%m-%d %H:%M:%S")
+        zone = timezone(offset=timedelta(hours=+2))
+        now = datetime.utcnow(zone).strftime("%Y-%m-%d %H:%M:%S")
 
         embed = discord.Embed(**kwargs)
         embed.add_field(name=name, value=content)
