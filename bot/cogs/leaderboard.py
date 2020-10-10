@@ -53,6 +53,15 @@ class Leaderboard(commands.Cog):
     @commands.command()
     @commands.cooldown(1, 900, commands.BucketType.user)
     async def leaderboard(self, ctx, arg1: T = None, arg2: T = None):
+        """
+        Display the top 10 people with the most amount of messages
+        and also your position with people around you
+
+        **arguemnts** (in any order):
+            @member - get a position of a specific member
+            #channel - get messages in a specific channel
+        """
+
         (channel, member) = self.resolve_arguments(arg1, arg2, types=T.__args__)
 
         async with ctx.typing():
@@ -117,6 +126,14 @@ class Leaderboard(commands.Cog):
     @commands.command()
     @commands.cooldown(1, 900, commands.BucketType.user)
     async def emojiboard(self, ctx, arg1: U = None, arg2: U = None, arg3: U = None):
+        """
+        Display the top 10 most sent emojis and reactions
+
+        **arguemnts** (in any order):
+            @member - get emojis/react sent by a specific member
+            #channel - get emojis/reacts in a specific channel
+            :emote: - get stats of a specific emoji
+        """
         (channel, member, emoji) = self.resolve_arguments(arg1, arg2, arg3, types=U.__args__)
 
         async with ctx.typing():
