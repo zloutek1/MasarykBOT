@@ -59,7 +59,7 @@ class Rolemenu(commands.Cog):
         message = await channel.fetch_message(payload.message_id)
         author = guild.get_member(payload.user_id)
 
-        if author == self.bot.user or isinstance(author, User):
+        if author is None or author == self.bot.user:
             return
 
         if not (row := find(lambda row: row.startswith(str(payload.emoji)), message.content.split('\n'))):
