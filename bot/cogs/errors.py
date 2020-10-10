@@ -23,7 +23,7 @@ class Errors(commands.Cog):
             return
 
         if isinstance(error, commands.CommandOnCooldown):
-            await ctx.send_error('This command is on cooldown.')
+            await ctx.send_error(str(error))
             return
 
         if isinstance(error, commands.NoPrivateMessage):
