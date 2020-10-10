@@ -204,6 +204,7 @@ class Rolemenu(commands.Cog):
             if isinstance(user, User):
                 await message.remove_reaction(emoji, user)
                 continue
+
             has_role = get(user.roles, id=role.id)
             if not has_role:
                 log.info("added role %s to %s", str(role), user)
@@ -219,6 +220,10 @@ class Rolemenu(commands.Cog):
         reaction = self.get_reaction(message, emoji)
 
         async for user in reaction.users():
+            if isinstance(user, User):
+                await message.remove_reaction(emoji, user)
+                continue
+
             if not channel.permissions_for(user).read_messages:
                 log.info("showing channel %s to %s", str(channel), user)
                 await channel.set_permissions(user,
