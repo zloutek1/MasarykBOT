@@ -2,7 +2,7 @@ import re
 import logging
 from typing import Union
 
-from discord import Emoji, PartialEmoji, PermissionOverwrite, Member
+from discord import Emoji, PartialEmoji, PermissionOverwrite, Member, User
 from discord.ext import commands
 from discord.utils import get, find
 from discord.errors import HTTPException, Forbidden
@@ -201,6 +201,9 @@ class Rolemenu(commands.Cog):
         reaction = self.get_reaction(message, emoji)
 
         async for user in reaction.users():
+            if isinstance(user, User):
+                await message.remove_reaction(emoji, user)
+                continue
             has_role = get(user.roles, id=role.id)
             if not has_role:
                 log.info("added role %s to %s", str(role), user)
