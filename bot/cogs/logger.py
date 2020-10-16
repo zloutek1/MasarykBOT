@@ -361,6 +361,7 @@ class Logger(commands.Cog, BackupUntilPresent, BackupOnEvents):
         await self.backup()
 
     @commands.command(name="backup")
+    @has_permissions(administrator=True)
     async def _backup(self, _ctx):
         await self.backup()
 
