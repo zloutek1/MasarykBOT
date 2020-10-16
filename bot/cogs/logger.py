@@ -95,6 +95,8 @@ class BackupUntilPresent:
     async def backup_new_week(self, guild):
         finished_process = await self.get_finished_process(guild)
         (from_date, to_date) = self.get_next_week(guild, finished_process)
+        if from_date > datetime.now():
+            from_date, to_date = datetime.now() - timedelta(weeks=1), datetime.now()
         await self.bot.db.logger.start_process(guild.id, from_date, to_date)
 
         for channel in guild.text_channels:
