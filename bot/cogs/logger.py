@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from discord import Member, TextChannel, CategoryChannel
 from discord.abc import PrivateChannel
 from discord.ext import tasks, commands
+from discord.ext.commands import has_permissions
 from discord.errors import Forbidden, NotFound
 
 log = logging.getLogger(__name__)
