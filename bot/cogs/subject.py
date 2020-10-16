@@ -40,7 +40,15 @@ SUBJECT_MESSAGE = {
 
 
 class ChannelNotFound(Exception):
-    pass
+    def __init__(self, subject, searched, potential, *args):
+        super().__init__(self, *args)
+        self.subject = subject
+        self.searched = searched
+        self.potential = potential
+
+    def __str__(self):
+        return (f"channel for subject {self.subject} not found. \n" +
+                f"looked for {self.searched}. Did you mean {self.potential}?")
 
 
 class Subject(commands.Cog):
@@ -106,12 +114,23 @@ class Subject(commands.Cog):
                 delete_after=5)
 
         await self.bot.db.subjects.unsign_user(ctx.guild.id, subject.get("code"), ctx.author.id)
-        channel = await self.lookup_channel(ctx, subject, recreate=False)
-        await channel.set_permissions(ctx.author, overwrite=None)
-        await ctx.send_embed(
-            f"Unsigned from subject {self.subject_to_channel_name(ctx, subject)} successfully",
-            color=constants.MUNI_YELLOW,
-            delete_after=10)
+
+        try:
+            channel = await self.lookup_channel(ctx, subject, recreate=False)
+            await channel.set_permissions(ctx.author, overwrite=None)
+            await ctx.send_embed(
+                f"Unsigned from subject {self.subject_to_channel_name(ctx, subject)} successfully",
+                color=constants.MUNI_YELLOW,
+                delete_after=10)
+
+        except ChannelNotFound as err:
+            if err.potential is not None:
+                raise err from None
+
+            await ctx.send_embed(
+                f"Channel {self.subject_to_channel_name(ctx, subject)} does not exist",
+                color=constants.MUNI_YELLOW,
+                delete_after=10)
 
     @subject.command(aliases=["search", "lookup"])
     async def find(self, ctx, pattern):
@@ -271,7 +290,7 @@ class Subject(commands.Cog):
         code = subject.get('code')
         channel_name = self.subject_to_channel_name(ctx, subject)
         potential = find(lambda channel: channel.name.lower().startswith(code.lower()), ctx.guild.text_channels)
-        raise ChannelNotFound(f"channel for subject {faculty}:{code} not found. \nlooked for {channel_name}. Did you mean {potential}?")
+        raise ChannelNotFound(subject=f"{faculty}:{code}", searched=channel_name, potential=potential)
 
     async def remove_channel_from_database_and_retry(self, ctx, subject):
         await self.bot.db.subjects.remove_channel(ctx.guild.id, subject.get("code"))
