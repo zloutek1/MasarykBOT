@@ -26,7 +26,7 @@ class Fun(commands.Cog):
 
     @commands.command()
     async def emoji_url(self, ctx, emoji: PartialEmoji):
-        await ctx.send(emoji.url)
+        await ctx.send(f"`{emoji.url}`")
 
     @commands.command(aliases=['emote'])
     async def emoji(self, ctx, emoji: PartialEmoji):
@@ -84,7 +84,7 @@ class Fun(commands.Cog):
 
     @commands.command()
     async def answer(self, ctx, *, question):
-        await ctx.send_mebed(question, name=choice(("Yes", "No")))
+        await ctx.send_embed(question, name=choice(("Yes", "No")))
 
     @commands.command()
     @commands.cooldown(rate=1, per=600, type=commands.BucketType.guild)
