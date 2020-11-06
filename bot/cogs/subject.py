@@ -63,7 +63,10 @@ class Subject(commands.Cog):
     @commands.bot_has_permissions(manage_channels=True)
     async def _add(self, ctx, *patterns):
         if len(patterns) > 10:
-            await ctx.send_error("can add max of 10 channels at once")
+            await ctx.send_embed(
+                "can add max of 10 channels at once",
+                color=constants.MUNI_YELLOW,
+                delete_after=10)
             return
 
         for pattern in patterns:
@@ -92,7 +95,10 @@ class Subject(commands.Cog):
     @commands.bot_has_permissions(manage_channels=True)
     async def _remove(self, ctx, *patterns):
         if len(patterns) > 10:
-            await ctx.send_error("can add max of 10 channels at once")
+            await ctx.send_embed(
+                "can remove max of 10 channels at once",
+                color=constants.MUNI_YELLOW,
+                delete_after=10)
             return
 
         for pattern in patterns:
