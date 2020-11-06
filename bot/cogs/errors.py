@@ -15,7 +15,7 @@ class Errors(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        for ignore_error in [commands.BadArgument, commands.MissingRequiredArgument, commands.MissingRole]:
+        for ignore_error in [commands.BadArgument, commands.MissingRequiredArgument, commands.MissingRole, commands.errors.BadUnionArgument]:
             if isinstance(error, ignore_error):
                 return
 
