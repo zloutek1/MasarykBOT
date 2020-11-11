@@ -1,6 +1,6 @@
 from textwrap import dedent
 
-from discord import Embed, Color
+from discord import Embed, Color, Member
 from discord.ext import commands
 from discord.utils import get
 
@@ -133,22 +133,22 @@ class Rules(commands.Cog):
         return embeds
 
     @commands.Cog.listener()
-    async def on_member_join(self, member):
+    async def on_member_join(self, member: Member):
         """
         Send a welcome message to DM of the new member
         with the information what to do when they join
         the server
         """
 
-        def role(name):
-            obj = get(member.guild.roles, name=name)
-            return "@" + name if obj is None else obj.mention
+        def emoji(name):
+            obj = get(self.bot.emojis, name=name)
+            return ":" + name + ":" if obj is None else obj
 
         await member.send(dedent(f"""
             **Vítej na discordu Fakulty Informatiky Masarykovy Univerzity v Brně**
-            #pravidla a **KLIKNOUT NA {role("Verification")} REAKCI!!!**
+            #pravidla a **KLIKNOUT NA {emoji("Verification")} REAKCI!!!**
             ❯ Pro vstup je potřeba přečíst
-            ❯ Když jsem {role("offline_tag")} offline, tak ne všechno proběhne hned.
+            ❯ Když jsem {emoji("status_offline")} offline, tak ne všechno proběhne hned.
             ❯ Pokud nedostanete hned roli @Student, tak zkuste odkliknout, chvíli počkat a znova zakliknout.
             """))
 
