@@ -58,9 +58,6 @@ class HoF(commands.Cog):
         emoji_name = emoji.name if isinstance(emoji := reaction.emoji, Emoji) else demojize(emoji)
         msg_content = reaction.message.content
 
-        if len(msg_content.split()) < 4:
-            return True
-
         fame_limit = constants.FAME_REACT_LIMIT
         if len(channel.members) > 100:
             fame_limit += 10
@@ -76,13 +73,13 @@ class HoF(commands.Cog):
             if blocked_pattern in emoji_name.lower():
                 return True
 
-        common_reactions = ['kek', 'pepe', 'lul', 'lol', 'pog', 'peepo', 'ano', 'no', 'yes', 'no']
+        common_reactions = ['kek', 'pepe', 'lul', 'lol', 'pog', 'peepo', 'ano', 'no', 'yes', 'no', 'cringe']
         if any(map(lambda common_pattern: common_pattern in emoji_name.lower(), common_reactions)):
             fame_limit += 5
 
         common_rooms = ['memes', 'cute', 'fame']
         if any(map(lambda common_pattern: common_pattern in channel.name.lower(), common_rooms)):
-            fame_limit += 10
+            fame_limit += 15
 
         if reaction.count < fame_limit:
             return True
