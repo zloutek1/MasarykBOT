@@ -62,7 +62,11 @@ class HoF(commands.Cog):
         if len(channel.members) > 100:
             fame_limit += 10
 
-        common_rooms = ['memes', 'cute', 'fame']
+        ignored_rooms = ['cute', 'fame']
+        if any(map(lambda ignored_pattern: ignored_pattern in channel.name.lower(), ignored_rooms)):
+            return True
+
+        common_rooms = ['memes']
         if any(map(lambda common_pattern: common_pattern in channel.name.lower(), common_rooms)):
             fame_limit += 15
 
