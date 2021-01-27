@@ -51,7 +51,7 @@ class Leaderboard(commands.Cog):
         return tuple(result)
 
     @commands.command()
-    @commands.cooldown(1, 900, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def leaderboard(self, ctx, arg1: T = None, arg2: T = None):
         """
         Display the top 10 people with the most amount of messages
