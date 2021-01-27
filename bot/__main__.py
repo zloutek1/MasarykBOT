@@ -12,10 +12,10 @@ from bot.cogs.utils.db import Database
 
 
 initail_cogs = [
-    "bot.cogs.hall_of_fame",
     "bot.cogs.verification",
     "bot.cogs.cog_manager",
     "bot.cogs.leaderboard",
+    "bot.cogs.starboard",
     "bot.cogs.rolemenu",
     "bot.cogs.subject",
     "bot.cogs.errors",

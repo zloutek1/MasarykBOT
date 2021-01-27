@@ -8,20 +8,17 @@ from discord.utils import get
 from .utils import constants
 
 
-class HoF(commands.Cog):
+class Starboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, _user):
-        if reaction.count < constants.FAME_REACT_LIMIT:
+        if reaction.count < constants.STARBOARD_REACT_LIMIT:
             return
 
         channel = reaction.message.channel
         if channel.name == "starboard" or channel.id in constants.starboard_channels:
-            return
-
-        if isinstance(reaction.emoji, PartialEmoji):
             return
 
         if self.should_ignore(reaction):
@@ -55,10 +52,10 @@ class HoF(commands.Cog):
     @staticmethod
     def should_ignore(reaction):
         channel = reaction.message.channel
-        emoji_name = emoji.name if isinstance(emoji := reaction.emoji, Emoji) else demojize(emoji)
+        emoji_name = emoji.name if isinstance(emoji := reaction.emoji, Emoji) or isinstance(emoji, PartialEmoji) else demojize(emoji)
         msg_content = reaction.message.content
 
-        fame_limit = constants.FAME_REACT_LIMIT
+        fame_limit = constants.STARBOARD_REACT_LIMIT
         if len(channel.members) > 100:
             fame_limit += 10
 
@@ -139,4 +136,4 @@ class HoF(commands.Cog):
         return False
 
 def setup(bot):
-    bot.add_cog(HoF(bot))
+    bot.add_cog(Starboard(bot))

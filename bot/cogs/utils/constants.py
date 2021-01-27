@@ -48,7 +48,7 @@ mute_roles = [
 
 # Misc
 NEEDED_REACTIONS = 10
-FAME_REACT_LIMIT = 10
+STARBOARD_REACT_LIMIT = 10
 DEBUG = False
 
 
