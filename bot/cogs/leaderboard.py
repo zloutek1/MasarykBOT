@@ -69,7 +69,6 @@ class Leaderboard(commands.Cog):
             channel_id = channel.id if channel else None
             bot_ids = [bot.id for bot in filter(lambda user: user.bot, ctx.guild.members)]
 
-            await self.bot.db.leaderboard.refresh()
             await self.bot.db.leaderboard.preselect(ctx.guild.id, bot_ids, channel_id)
             top10 = await self.bot.db.leaderboard.get_top10()
             around = await self.bot.db.leaderboard.get_around(member.id)

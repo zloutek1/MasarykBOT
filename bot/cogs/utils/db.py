@@ -295,13 +295,6 @@ class Logger(Table):
 
 
 class Leaderboard(Table):
-    async def refresh(self):
-        async with self.db.acquire() as conn:
-            try:
-                await conn.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY cogs.leaderboard")
-            except Exception:
-                await conn.execute("REFRESH MATERIALIZED VIEW cogs.leaderboard")
-
     async def preselect(self, guild_id, ignored_users, channel_id):
         async with self.db.acquire() as conn:
             await conn.execute("DROP TABLE IF EXISTS ldb_lookup")
@@ -314,7 +307,7 @@ class Leaderboard(Table):
                             author_id,
                             author.names[1] AS author,
                             SUM(messages_sent) AS sent_total
-                        FROM cogs.leaderboard
+                        FROM cogs._leaderboard
                         INNER JOIN server.users AS author
                             ON author_id = author.id
                         INNER JOIN server.channels AS channel
