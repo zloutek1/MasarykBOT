@@ -237,9 +237,13 @@ class Attachments(Table):
 class Reactions(Table):
     @staticmethod
     async def prepare_one(reaction):
-        import emoji
+        from emoji import demojize
+        from discord import Emoji, PartialEmoji
+
         user_ids = await reaction.users().map(lambda member: member.id).flatten()
-        return (reaction.message.id, emoji.demojize(str(reaction.emoji)), user_ids)
+        react = f":{emote.name}:" if isinstance(emote := reaction.emoji, Emoji) or isinstance(emote, PartialEmoji) else demojize(emote)
+
+        return (reaction.message.id, react, user_ids)
 
     async def prepare(self, message):
         return [await self.prepare_one(reaction) for reaction in message.reactions]
@@ -259,10 +263,10 @@ class Emojis(Table):
     @staticmethod
     async def prepare(message):
         import re
-        import emoji
+        from emoji import demojize
         from collections import Counter
 
-        emojis = re.findall(Emojis.REGEX, emoji.demojize(message.content))
+        emojis = re.findall(Emojis.REGEX, demojize(message.content))
 
         return [(message.id, emote, count) for (emote, count) in Counter(emojis).items()]
 
