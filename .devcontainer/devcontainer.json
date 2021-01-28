@@ -6,13 +6,20 @@
 
 	// Update the 'dockerComposeFile' list if you have more compose files or use different names.
 	// The .devcontainer/docker-compose.yml file contains any overrides you need/want to make.
-	"dockerComposeFile": [
-		"docker-compose.yml"
-	],
+	//"dockerComposeFile": [
+	//	"docker-compose.yml"
+	//],
+
+	"build": {
+		"dockerfile": "Dockerfile",
+		"context": "..",
+		// Update 'VARIANT' to pick a Python version: 3, 3.6, 3.7, 3.8
+		"args": { "VARIANT": "3.8" }
+	},
 
 	// The 'service' property is the name of the service for the container that VS Code should
 	// use. Update this value and .devcontainer/docker-compose.yml to the real service name.
-	"service": "bot",
+	//"service": "bot",
 
 	// The optional 'workspaceFolder' property is the path VS Code should open by default when
 	// connected. This is typically a file mount in .devcontainer/docker-compose.yml

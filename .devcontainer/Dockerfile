@@ -1,0 +1,12 @@
+FROM python:3.8.2-slim
+
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+WORKDIR /MasarykBOT
+COPY . /MasarykBOT
+
+COPY bot/requirements.txt bot/requirements.txt
+RUN pip install -r bot/requirements.txt
+RUN pip install mypy
+RUN pip install flake8
