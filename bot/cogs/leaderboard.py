@@ -82,18 +82,32 @@ class Leaderboard(commands.Cog):
             else:
                 return escape_markdown(row["author"])
 
+        def restrict_length(string):
+            while len(string) >= 1024:
+                lines = string.split("\n")
+                longest = max(enumerate(map(len, lines)), key=lambda x: x[1])
+                lines[longest[1]] = lines[longest[1]].rstrip("...")[:-1] + "..."
+                string = "\n".join(lines)
+            return string
+
         embed = Embed(color=0x53acf2)
         embed.add_field(
             inline=False,
             name="FI MUNI Leaderboard!",
-            value=("\n".join(self.template_row(i + 1, row, top10, get_value)
-                            for i, row in enumerate(top10))) or "empty result")
+            value=restrict_length(
+                        "\n".join(self.template_row(i + 1, row, top10, get_value)
+                            for i, row in enumerate(top10))
+                  ) or "empty result"
+        )
         if around:
             embed.add_field(
                 inline=False,
                 name="Your position",
-                value="\n".join(self.template_row(row["row_number"], row, around, get_value)
-                                for i, row in enumerate(around)))
+                value=restrict_length(
+                        "\n".join(self.template_row(row["row_number"], row, around, get_value)
+                                for i, row in enumerate(around))
+                )
+            )
 
         time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         embed.set_footer(text=f"{str(ctx.author)} at {time_now}", icon_url=ctx.author.avatar_url)
