@@ -344,7 +344,7 @@ class Leaderboard(Table):
                 ) UNION (
                     SELECT *
                     FROM ldb_lookup
-                    WHERE sent_total = (SELECT * FROM desired_count)
+                    WHERE sent_total = (SELECT * FROM desired_count) AND author_id = $1 LIMIT 1
                 ) UNION (
                     SELECT *
                     FROM ldb_lookup
