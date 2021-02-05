@@ -86,7 +86,7 @@ class Leaderboard(commands.Cog):
             while len(string) >= 1024:
                 lines = string.split("\n")
                 longest = max(enumerate(map(len, lines)), key=lambda x: x[1])
-                lines[longest[1]] = lines[longest[1]].rstrip("...")[:-1] + "..."
+                lines[longest[0]] = lines[longest[0]].rstrip("...")[:-1] + "..."
                 string = "\n".join(lines)
             return string
 
