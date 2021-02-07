@@ -73,7 +73,8 @@ class Leaderboard(commands.Cog):
             top10 = await self.bot.db.leaderboard.get_top10()
             around = await self.bot.db.leaderboard.get_around(member.id)
 
-            await self.display_leaderboard(ctx, top10, around, member)
+            embed = await self.display_leaderboard(ctx, top10, around, member)
+            await ctx.send(embed=embed)
 
     async def display_leaderboard(self, ctx, top10, around, member):
         def get_value(row):
@@ -111,7 +112,7 @@ class Leaderboard(commands.Cog):
 
         time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         embed.set_footer(text=f"{str(ctx.author)} at {time_now}", icon_url=ctx.author.avatar_url)
-        await ctx.send(embed=embed)
+        return embed
 
     def template_row(self, i, row, data, get_value):
         width = len(str(data[0].get("sent_total")))
