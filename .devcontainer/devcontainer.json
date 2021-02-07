@@ -31,7 +31,11 @@
 	},
 
 	// Add the IDs of extensions you want installed when the container is created.
-	"extensions": []
+	"extensions": [],
+
+	"mounts": [
+		"source=${localWorkspaceFolder},target=/MasarykBOT,type=bind,consistency=cached"
+	]
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
