@@ -1,4 +1,7 @@
 import collections
+import unittest.mock
+
+from bot.cogs.utils import db
 from asyncpg.protocol.protocol import _create_record as Record
 
 def record(func):
@@ -36,3 +39,19 @@ def record(func):
 @record
 def MockLeaderboardRecord(*, row_number: int, author_id: int, author: str, sent_total: int):
     pass
+
+class MockPool(unittest.mock.MagicMock):
+    pass
+
+def MockDatabase():
+    database = db.Database(MockPool())
+
+    tables = [table for table in vars(database).values() if isinstance(table, db.Table)]
+    for table in tables:
+        table.select = unittest.mock.AsyncMock()
+        table.insert = unittest.mock.AsyncMock()
+        table.update = unittest.mock.AsyncMock()
+        table.delete = unittest.mock.AsyncMock()
+        table.soft_delete = unittest.mock.AsyncMock()
+
+    return database
