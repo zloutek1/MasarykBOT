@@ -39,7 +39,7 @@ class HashableMixin(discord.mixins.EqualityComparable):
 
 
 class ColourMixin:
-    """A mixin for Mocks that provides the aliasing of color->colour like discord.py does."""
+    """A class for Mocks that provides the aliasing of color->colour like discord.py does."""
 
     @property
     def color(self) -> discord.Colour:
@@ -48,6 +48,28 @@ class ColourMixin:
     @color.setter
     def color(self, color: discord.Colour) -> None:
         self.colour = color
+
+
+class AsyncIterator:
+    """A mixin for Mocks that has similar functionality as `discord.AsyncIterator`."""
+
+    def __init__(self, seq):
+        self.iter = iter(seq)
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        try:
+            return next(self.iter)
+        except StopIteration:
+            raise StopAsyncIteration
+
+    def map(self, func):
+        return AsyncIterator(func(x) for x in self.iter)
+
+    async def flatten(self):
+        return list(self.iter)
 
 
 class CustomMockMixin:
@@ -324,6 +346,33 @@ class MockTextChannel(CustomMockMixin, unittest.mock.Mock, HashableMixin):
         if 'mention' not in kwargs:
             self.mention = f"#{self.name}"
 
+# Create a CategoryChannel instance to get a realistic MagicMock of `discord.CategoryChannel`
+category_data = {
+    'id': 1,
+    'type': 'CategoryChannel',
+    'name': 'category',
+    'position': 1,
+}
+state = unittest.mock.MagicMock()
+guild = unittest.mock.MagicMock()
+category_instance = discord.CategoryChannel(state=state, guild=guild, data=category_data)
+
+
+class MockCategoryChannel(CustomMockMixin, unittest.mock.Mock, HashableMixin):
+    """
+    A MagicMock subclass to mock CategoryChannel objects.
+
+    Instances of this class will follow the specifications of `discord.CategoryChannel` instances. For
+    more information, see the `MockGuild` docstring.
+    """
+    spec_set = category_instance
+
+    def __init__(self, **kwargs) -> None:
+        default_kwargs = {'id': next(self.discord_id), 'name': 'category', 'guild': MockGuild()}
+        super().__init__(**collections.ChainMap(kwargs, default_kwargs))
+
+        if 'mention' not in kwargs:
+            self.mention = f"#{self.name}"
 
 # Create data for the DMChannel instance
 state = unittest.mock.MagicMock()
@@ -468,9 +517,7 @@ class MockReaction(CustomMockMixin, unittest.mock.MagicMock):
         self.emoji = kwargs.get('emoji', MockEmoji())
         self.message = kwargs.get('message', MockMessage())
 
-        user_iterator = unittest.mock.AsyncMock()
-        user_iterator.__aiter__.return_value = _users
-        self.users.return_value = user_iterator
+        self.users.return_value = AsyncIterator(_users)
 
         self.__str__.return_value = str(self.emoji)
 
