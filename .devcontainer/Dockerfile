@@ -10,3 +10,4 @@ COPY bot/requirements.txt bot/requirements.txt
 RUN pip install -r bot/requirements.txt
 RUN pip install mypy
 RUN pip install flake8
+RUN pip install coverage
