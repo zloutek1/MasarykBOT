@@ -74,7 +74,11 @@ class Subject(commands.Cog):
 
     async def add(self, ctx, subject_code):
         if ctx.channel.id not in constants.subject_registration_channels:
-            await ctx.send_error("You can't add subjects here", delete_after=5)
+            valid_registration_channel = list(filter(lambda channel: channel.id in constants.subject_registration_channels, ctx.guild.text_channels))
+            if valid_registration_channel:
+                await ctx.send_error("You can't add subjects here, use a designated channel: " + ", ".join(map(lambda ch: ch.mention, valid_registration_channel)), delete_after=5)
+            else:
+                await ctx.send_error("You can't add subjects on this server", delete_after=5)
             return
 
         await ctx.safe_delete(delay=5)
@@ -386,6 +390,10 @@ class Subject(commands.Cog):
             url = subject.get("url")
             return f"**[{faculty}:{code}]({url})** {name}"
 
+        def by_term(term):
+            semester, year = term.split()
+            return (int(year), semester)
+
         embed = Embed(color=constants.MUNI_YELLOW)
         if not grouped_by_term:
             embed.add_field(
@@ -393,7 +401,7 @@ class Subject(commands.Cog):
                 name="No subjects found",
                 value="you can add % to the beginning or the end to match a pattern")
 
-        for term, subjects_in_term in grouped_by_term.items():
+        for term, subjects_in_term in sorted(grouped_by_term.items(), key=lambda x: by_term(x[0]), reverse=True):
             embed.add_field(
                 inline=False,
                 name=term,
