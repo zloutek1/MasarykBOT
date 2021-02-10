@@ -4,6 +4,7 @@
 
 CREATE TABLE muni.subject_server
 (
+    faculty character varying COLLATE pg_catalog."default" NOT NULL,
     code character varying COLLATE pg_catalog."default" NOT NULL,
     guild_id bigint NOT NULL,
     category_id bigint,
@@ -13,8 +14,8 @@ CREATE TABLE muni.subject_server
         REFERENCES server.channels (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION,
-    CONSTRAINT subject_server_fkey_code FOREIGN KEY (code)
-        REFERENCES muni.subjects (code) MATCH SIMPLE
+    CONSTRAINT subject_server_fkey_code FOREIGN KEY (code, faculty)
+        REFERENCES muni.subjects (code, faculty) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION,
     CONSTRAINT subject_server_fkey_guild FOREIGN KEY (guild_id)
@@ -22,7 +23,9 @@ CREATE TABLE muni.subject_server
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
 )
-
+WITH (
+    OIDS = FALSE
+)
 TABLESPACE pg_default;
 
 ALTER TABLE muni.subject_server

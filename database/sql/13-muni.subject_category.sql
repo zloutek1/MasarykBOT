@@ -4,11 +4,12 @@
 
 CREATE TABLE muni.subject_category
 (
+    faculty character varying COLLATE pg_catalog."default" NOT NULL,
     code character varying COLLATE pg_catalog."default" NOT NULL,
     guild_id bigint NOT NULL,
     category_name character varying COLLATE pg_catalog."default" NOT NULL,
-    CONSTRAINT subject_category_fkey_code FOREIGN KEY (code)
-        REFERENCES muni.subjects (code) MATCH SIMPLE
+    CONSTRAINT subject_category_fkey_code FOREIGN KEY (faculty, code)
+        REFERENCES muni.subjects (faculty, code) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION,
     CONSTRAINT subject_category_fkey_guild FOREIGN KEY (guild_id)
@@ -16,7 +17,9 @@ CREATE TABLE muni.subject_category
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
 )
-
+WITH (
+    OIDS = FALSE
+)
 TABLESPACE pg_default;
 
 ALTER TABLE muni.subject_category
@@ -27,7 +30,7 @@ ALTER TABLE muni.subject_category
 
 CREATE INDEX fki_subject_category_fkey_code
     ON muni.subject_category USING btree
-    (code COLLATE pg_catalog."default" ASC NULLS LAST)
+    (faculty COLLATE pg_catalog."default" ASC NULLS LAST, code COLLATE pg_catalog."default" ASC NULLS LAST)
     TABLESPACE pg_default;
 -- Index: fki_subject_category_fkey_guild
 

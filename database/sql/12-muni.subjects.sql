@@ -9,12 +9,14 @@ CREATE TABLE muni.subjects
     name character varying COLLATE pg_catalog."default" NOT NULL,
     url text COLLATE pg_catalog."default" NOT NULL,
     terms character varying[] COLLATE pg_catalog."default" NOT NULL,
-    created_at timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at timestamp without time zone NOT NULL DEFAULT now(),
     edited_at timestamp without time zone,
     deleted_at timestamp without time zone,
-    CONSTRAINT subjects_pkey PRIMARY KEY (code)
+    CONSTRAINT subjects_pkey PRIMARY KEY (faculty, code)
 )
-
+WITH (
+    OIDS = FALSE
+)
 TABLESPACE pg_default;
 
 ALTER TABLE muni.subjects
