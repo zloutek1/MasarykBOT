@@ -27,11 +27,15 @@
 
 	// Set *default* container specific settings.json values on container create.
 	"settings": {
-		"terminal.integrated.shell.linux": null
+		"terminal.integrated.shell.linux": null,
+		"git.path": "/usr/bin/git"
 	},
 
 	// Add the IDs of extensions you want installed when the container is created.
-	"extensions": [],
+	"extensions": [
+		"ms-python.python",
+		"littlefoxteam.vscode-python-test-adapter"
+	],
 
 	"mounts": [
 		"source=${localWorkspaceFolder},target=/MasarykBOT,type=bind,consistency=cached"
