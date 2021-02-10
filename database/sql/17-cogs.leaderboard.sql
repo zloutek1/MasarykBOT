@@ -36,7 +36,7 @@ CREATE FUNCTION server.update_leaderboard()
     VOLATILE NOT LEAKPROOF
 AS $BODY$
 BEGIN
-	INSERT INTO cogs._leaderboard AS ldb (channel_id, author_id, messages_sent)
+	INSERT INTO cogs.leaderboard AS ldb (channel_id, author_id, messages_sent)
 	VALUES (NEW.channel_id, NEW.author_id, 1)
 	ON CONFLICT (channel_id, author_id) DO UPDATE
 		SET messages_sent = ldb.messages_sent + 1;
