@@ -1,23 +1,58 @@
--- View: cogs.leaderboard
+-- Table: cogs.leaderboard
 
--- DROP MATERIALIZED VIEW cogs.leaderboard;
+-- DROP TABLE cogs.leaderboard;
 
-CREATE MATERIALIZED VIEW cogs.leaderboard
-TABLESPACE pg_default
-AS
- SELECT messages.channel_id,
-    messages.author_id,
-    count(*) AS messages_sent
-   FROM server.messages
-  GROUP BY messages.channel_id, messages.author_id
-  ORDER BY (count(*)) DESC
-WITH DATA;
+CREATE TABLE cogs.leaderboard
+(
+    channel_id bigint,
+    author_id bigint,
+    messages_sent integer
+)
+WITH (
+    OIDS = FALSE
+)
+TABLESPACE pg_default;
 
 ALTER TABLE cogs.leaderboard
+    OWNER to masaryk;
+
+-- Index: leaderboard_unique
+
+-- DROP INDEX cogs.leaderboard_unique;
+
+CREATE UNIQUE INDEX leaderboard_unique
+    ON cogs.leaderboard USING btree
+    (channel_id ASC NULLS LAST, author_id ASC NULLS LAST)
+    TABLESPACE pg_default;
+
+-- FUNCTION: server.update_leaderboard()
+
+-- DROP FUNCTION server.update_leaderboard();
+
+CREATE FUNCTION server.update_leaderboard()
+    RETURNS trigger
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE NOT LEAKPROOF
+AS $BODY$
+BEGIN
+	INSERT INTO cogs._leaderboard AS ldb (channel_id, author_id, messages_sent)
+	VALUES (NEW.channel_id, NEW.author_id, 1)
+	ON CONFLICT (channel_id, author_id) DO UPDATE
+		SET messages_sent = ldb.messages_sent + 1;
+	RETURN NEW;
+END
+$BODY$;
+
+ALTER FUNCTION server.update_leaderboard()
     OWNER TO masaryk;
 
+-- Trigger: update_leaderboard
 
-CREATE UNIQUE INDEX leaderboard_idx_unique
-    ON cogs.leaderboard USING btree
-    (channel_id, author_id)
-    TABLESPACE pg_default;
+-- DROP TRIGGER update_leaderboard ON server.messages;
+
+CREATE TRIGGER update_leaderboard
+    AFTER INSERT
+    ON server.messages
+    FOR EACH ROW
+    EXECUTE PROCEDURE server.update_leaderboard();
