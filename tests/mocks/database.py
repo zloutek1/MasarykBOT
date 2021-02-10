@@ -1,5 +1,6 @@
 import collections
 import unittest.mock
+from functools import wraps
 from typing import Optional, List, Union, get_origin, get_args
 import datetime
 
@@ -41,11 +42,12 @@ def record(func):
 
         return isinstance(value, ftype)
 
+    @wraps(func)
     def wrapper(**kwargs):
         """
         require all key-word arguments to be filled and have required type
         """
-        kwargs = func.__kwdefaults__ | kwargs
+        kwargs = func.__kwdefaults__ | kwargs if func.__kwdefaults__ is not None else kwargs
 
         missing = [field for field in func.__annotations__ if field not in kwargs]
         if missing:
@@ -66,6 +68,14 @@ def MockSubjectRecord(*, faculty: str, code: str, name: str, url: str, terms: Li
                          created_at: datetime.datetime, edited_at: Optional[datetime.datetime] = None, deleted_at: Optional[datetime.datetime] = None):
     pass
 
+@record
+def MockSubjectRegisteredRecord(*, faculty: str, code: str, guild_id: int, member_ids: List[int]):
+    pass
+
+@record
+def MockSubjectServerRecord(*, faculty: str, code: str, guild_id: int, category_id: Optional[int], channel_id: int, voice_channel_id: Optional[int]):
+    pass
+
 class MockPool(unittest.mock.MagicMock):
     pass
 
@@ -79,6 +89,9 @@ def MockDatabase():
                 continue
 
             if attr in ['prepare', 'prepare_one']:
+                continue
+
+            if isinstance(table, db.Members) and attr in ['prepare_from_message']:
                 continue
 
             setattr(table, attr, unittest.mock.AsyncMock())
