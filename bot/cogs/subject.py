@@ -61,25 +61,25 @@ class Subject(commands.Cog):
 
     @subject.command(name="add")
     @commands.bot_has_permissions(manage_channels=True)
-    async def _add(self, ctx, *patterns):
-        if len(patterns) > 10:
+    async def _add(self, ctx, *subject_codes):
+        if len(subject_codes) > 10:
             await ctx.send_embed(
                 "can add max of 10 channels at once",
                 color=constants.MUNI_YELLOW,
                 delete_after=10)
             return
 
-        for pattern in patterns:
-            await self.add(ctx, pattern)
+        for subject_code in subject_codes:
+            await self.add(ctx, subject_code)
 
-    async def add(self, ctx, pattern):
+    async def add(self, ctx, subject_code):
         if ctx.channel.id not in constants.subject_registration_channels:
             await ctx.send_error("You can't add subjects here", delete_after=5)
             return
 
         await ctx.safe_delete(delay=5)
 
-        faculty, code = pattern.split(":", 1) if ":" in pattern else ["FI", pattern]
+        faculty, code = subject_code.split(":", 1) if ":" in subject_code else ["FI", subject_code]
         log.info("User %s adding subject %s:%s", ctx.author, faculty, code)
 
         if (subject := await self.find_subject(code, faculty)) is None:
@@ -93,25 +93,25 @@ class Subject(commands.Cog):
 
     @subject.command(name="remove")
     @commands.bot_has_permissions(manage_channels=True)
-    async def _remove(self, ctx, *patterns):
-        if len(patterns) > 10:
+    async def _remove(self, ctx, *subject_codes):
+        if len(subject_codes) > 10:
             await ctx.send_embed(
                 "can remove max of 10 channels at once",
                 color=constants.MUNI_YELLOW,
                 delete_after=10)
             return
 
-        for pattern in patterns:
-            await self.remove(ctx, pattern)
+        for subject_code in subject_codes:
+            await self.remove(ctx, subject_code)
 
-    async def remove(self, ctx, pattern):
+    async def remove(self, ctx, subject_code):
         if ctx.channel.id not in constants.subject_registration_channels:
             await ctx.send_error("You can't remove subjects here", delete_after=5)
             return
 
         await ctx.safe_delete(delay=5)
 
-        faculty, code = pattern.split(":", 1) if ":" in pattern else ["FI", pattern]
+        faculty, code = subject_code.split(":", 1) if ":" in subject_code else ["FI", subject_code]
 
         if not (subject := await self.find_subject(code, faculty)):
             return await ctx.send_embed(
