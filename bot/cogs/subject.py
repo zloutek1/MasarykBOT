@@ -74,8 +74,8 @@ class Subject(commands.Cog):
 
     async def add(self, ctx, subject_code):
         guild_config = get(Config.guilds, id=ctx.guild.id)
-        if ctx.channel.id not in guild_config.channels.subject_registration:
-            valid_registration_channel = list(filter(lambda channel: channel.id in guild_config.channels.subject_registration, ctx.guild.text_channels))
+        if ctx.channel.id != guild_config.channels.subject_registration:
+            valid_registration_channel = list(filter(lambda channel: channel.id == guild_config.channels.subject_registration, ctx.guild.text_channels))
             if valid_registration_channel:
                 await ctx.send_error("You can't add subjects here, use a designated channel: " + ", ".join(map(lambda ch: ch.mention, valid_registration_channel)), delete_after=5)
             else:
@@ -111,7 +111,7 @@ class Subject(commands.Cog):
 
     async def remove(self, ctx, subject_code):
         guild_config = get(Config.guilds, id=ctx.guild.id)
-        if ctx.channel.id not in guild_config.channels.subject_registration:
+        if ctx.channel.id != guild_config.channels.subject_registration:
             await ctx.send_error("You can't remove subjects here", delete_after=5)
             return
 
@@ -171,7 +171,7 @@ class Subject(commands.Cog):
     @has_permissions(administrator=True)
     async def resend_subject_message(self, ctx, channel_id: int):
         guild_config = get(Config.guilds, id=ctx.guild.id)
-        if channel_id not in guild_config.channels.subject_registration:
+        if channel_id != guild_config.channels.subject_registration:
             await ctx.send_error("channel not in constants")
             return
 
@@ -423,7 +423,7 @@ class Subject(commands.Cog):
     async def on_message(self, message):
         guild_config = get(Config.guilds, id=message.guild.id)
 
-        if message.channel.id not in guild_config.channels.subject_registration:
+        if message.channel.id != guild_config.channels.subject_registration:
             return
 
         if message.author.id == self.bot.user.id and message.embeds:
