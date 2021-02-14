@@ -3,7 +3,7 @@ import traceback
 
 from discord.ext import commands
 
-from .utils import constants
+from bot.constants import Config
 
 
 log = logging.getLogger(__name__)
@@ -52,7 +52,8 @@ class Errors(commands.Cog):
 
         log.error(msg)
 
-        for channel_id in constants.error_log_channels:
+        guild_config = get(Config.guilds, id=message.guild.id)
+        for channel_id in guild_config.logs.errors:
             if (channel := self.bot.get_channel(channel_id)) is not None:
                 for i in range(0, len(msg), 1900):
                     chunk = msg[i:i+1900]

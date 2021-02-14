@@ -6,7 +6,8 @@ from collections import Counter
 
 from discord.ext import commands
 
-from bot.cogs.utils import context, constants
+from bot.constants import Config
+from bot.cogs.utils import context
 
 DESCRIPTION = """
 $ Hello
@@ -59,7 +60,7 @@ class MasarykBOT(commands.Bot):
     async def on_message(self, message):
         if message.author.bot:
             return
-        if constants.DEBUG and not message.author.guild_permissions.administrator:
+        if Config.bot.DEBUG and not message.author.guild_permissions.administrator:
             return
         await self.process_commands(message)
 
@@ -75,8 +76,6 @@ class MasarykBOT(commands.Bot):
         try:
             super().run(token, reconnect=True)
         finally:
-            for task in asyncio.Task.all_tasks(loop=self.loop):
-                task.cancel()
             log.info("exiting, bye")
 
     def intorduce(self):

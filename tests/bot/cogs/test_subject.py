@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import call
+from unittest.mock import call, patch, Mock
 
 from datetime import datetime
 
@@ -47,31 +47,47 @@ class SubjectTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(should)
 
     async def test_should_create_channel_doesnt_exist_and_not_enough_users(self):
-        bot = MockBot()
-        bot.db = MockDatabase()
-        cog = subject.Subject(bot=bot)
+        guild_config = Mock()
+        guild_config.id = 8
+        guild_config.NEEDED_REACTIONS = 10
 
-        subject_record = MockSubjectRecord(faculty="FI", code="IB000", name="MZI", url="muni/fi/ib/000", terms=["jaro 2020"], created_at=datetime(2020, 10, 11))
+        config = Mock()
+        config.guilds = [guild_config]
 
-        bot.db.subjects.find_registered.return_value = MockSubjectRegisteredRecord(faculty="FI", code="IB000", guild_id=8, member_ids=[11, 12, 13])
-        bot.db.subjects.find_serverinfo.return_value = None
-        ctx = MockContext(guild=MockGuild(id=8))
+        with patch('bot.cogs.subject.Config', config):
+            bot = MockBot()
+            bot.db = MockDatabase()
+            cog = subject.Subject(bot=bot)
 
-        should = await cog.should_create_channel(ctx, subject_record)
-        self.assertFalse(should)
+            subject_record = MockSubjectRecord(faculty="FI", code="IB000", name="MZI", url="muni/fi/ib/000", terms=["jaro 2020"], created_at=datetime(2020, 10, 11))
+
+            bot.db.subjects.find_registered.return_value = MockSubjectRegisteredRecord(faculty="FI", code="IB000", guild_id=8, member_ids=[11, 12, 13])
+            bot.db.subjects.find_serverinfo.return_value = None
+            ctx = MockContext(guild=MockGuild(id=8))
+
+            should = await cog.should_create_channel(ctx, subject_record)
+            self.assertFalse(should)
 
     async def test_should_create_channel_doesnt_exist_and_enough_users(self):
-        bot = MockBot()
-        bot.db = MockDatabase()
-        cog = subject.Subject(bot=bot)
+        guild_config = Mock()
+        guild_config.id = 8
+        guild_config.NEEDED_REACTIONS = 10
 
-        subject_record = MockSubjectRecord(faculty="FI", code="IB000", name="MZI", url="muni/fi/ib/000", terms=["jaro 2020"], created_at=datetime(2020, 10, 11))
+        config = Mock()
+        config.guilds = [guild_config]
 
-        bot.db.subjects.find_registered.return_value = MockSubjectRegisteredRecord(faculty="FI", code="IB000", guild_id=8, member_ids=[11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
-        bot.db.subjects.find_serverinfo.return_value = None
-        ctx = MockContext(guild=MockGuild(id=8))
+        with patch('bot.cogs.subject.Config', config):
+            bot = MockBot()
+            bot.db = MockDatabase()
+            cog = subject.Subject(bot=bot)
 
-        should = await cog.should_create_channel(ctx, subject_record)
-        self.assertTrue(should)
+            subject_record = MockSubjectRecord(faculty="FI", code="IB000", name="MZI", url="muni/fi/ib/000", terms=["jaro 2020"], created_at=datetime(2020, 10, 11))
+
+            bot.db.subjects.find_registered.return_value = MockSubjectRegisteredRecord(faculty="FI", code="IB000", guild_id=8, member_ids=[11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
+            bot.db.subjects.find_serverinfo.return_value = None
+            ctx = MockContext(guild=MockGuild(id=8))
+
+            should = await cog.should_create_channel(ctx, subject_record)
+            self.assertTrue(should)
 
 

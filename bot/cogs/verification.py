@@ -5,7 +5,7 @@ from discord.ext import commands
 from discord.utils import get, find
 from discord.errors import Forbidden
 
-from bot.cogs.utils import constants
+from bot.constants import Config
 
 
 log = logging.getLogger(__name__)
@@ -18,9 +18,10 @@ class Verification(commands.Cog):
 
     @property
     def verification_channels(self):
+        verification_ids = [guild.channels.verification for guild in Config.guilds]
         return [
             channel
-            for channel_id in constants.verification_channels
+            for channel_id in verification_ids
             if (channel := self.bot.get_channel(channel_id)) is not None
         ]
 
