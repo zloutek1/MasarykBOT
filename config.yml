@@ -1,0 +1,34 @@
+bot:
+  prefix: "!"
+
+guilds:
+  - id: 486184376544002073
+    name: "fi_muni"
+
+    NEEDED_REACTIONS: 10
+    STARBOARD_REACT_LIMIT: 10
+    DEBUG: False
+
+    channels:
+      verification:         621365818034356224
+      about_you:            621365826372632606
+      subject_registration: 628684083345489950
+      starboard:            761552082159271936
+
+    logs:
+      errors:               609413180137144331
+      mute:                 null
+      other:                null
+
+    roles:
+      muted:                627901278365810698
+      verified:             621304939502632960
+      moderator:            null
+      admin:                504237720965480450
+      show_all:             628684833039712266
+
+emoji:
+  Verification: 617745093889359872
+
+colors:
+  MUNI_YELLOW: 0xEACD59
