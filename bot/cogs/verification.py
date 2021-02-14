@@ -44,11 +44,13 @@ class Verification(commands.Cog):
                 await self._synchronize_react(channel.guild, verif_react)
 
     async def _synchronize_react(self, guild, verif_react):
+        guild_config = get(Config.guilds, id=guild.id)
+
         if not guild.me.guild_permissions.manage_roles:
             log.warning("I don't have manage_roles permissions in %s", guild)
             return
 
-        verified_role = find(lambda role: role.id in constants.verified_roles, guild.roles)
+        verified_role = find(lambda role: role.id == guild_config.roles.verified, guild.roles)
         if verified_role is None:
             log.warning("No verified role presnt in guild %s", guild)
             return
@@ -80,7 +82,8 @@ class Verification(commands.Cog):
         await self.on_raw_reaction_update(payload)
 
     async def on_raw_reaction_update(self, payload):
-        if payload.channel_id not in constants.verification_channels:
+        guild_config = get(Config.guilds, id=payload.guild_id)
+        if payload.channel_id != guild_config.channels.verification:
             return
 
         if payload.emoji.name.lower() not in ("verification", "verify", "accept"):
@@ -100,11 +103,12 @@ class Verification(commands.Cog):
             await self._verify_leave(member)
 
     async def _verify_join(self, member):
+        guild_config = get(Config.guilds, id=member.guild.id)
         if not isinstance(member, discord.Member):
             log.warning("user %s is not longer a member of a guild", member)
             return
 
-        verified_role = find(lambda role: role.id in constants.verified_roles, member.guild.roles)
+        verified_role = find(lambda role: role.id == guild_config.roles.verified, member.guild.roles)
         if verified_role is None:
             log.warning("No verified role presnt in guild %s", member.guild)
             return
@@ -113,12 +117,12 @@ class Verification(commands.Cog):
         log.info("verified user %s, added role %s", member.name, f"@{verified_role}")
 
     async def _verify_leave(self, member):
+        guild_config = get(Config.guilds, id=member.guild.id)
         if not isinstance(member, discord.Member):
             log.warning("user %s is not longer a member of a guild", member)
             return
 
-        removable_roles = constants.verified_roles
-        to_remove = list(filter(lambda role: role.id in removable_roles, member.roles))
+        to_remove = list(filter(lambda role: role.id == guild_config.roles.verified, member.roles))
         await member.remove_roles(*to_remove)
         removed_roles = ', '.join(map(lambda r: '@'+r.name, to_remove))
         log.info("unverified user %s, removed roles %s", member.name, removed_roles)

@@ -51,8 +51,8 @@ class Rolemenu(commands.Cog):
         await self.on_raw_reaction_update(payload)
 
     async def on_raw_reaction_update(self, payload):
-        guild_config = get(Config.guilds, id=payload.guild_id)
-        if payload.channel_id != guild_config.channels.about_you:
+        about_you_channels = [guild.channels.about_you for guild in Config.guilds]
+        if payload.channel_id not in about_you_channels:
             return
 
         guild = self.bot.get_guild(payload.guild_id)
@@ -139,8 +139,8 @@ class Rolemenu(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload):
-        guild_config = get(Config.guilds, id=payload.guild_id)
-        if payload.channel_id != guild_config.channels.about_you:
+        about_you_channels = [guild.channels.about_you for guild in Config.guilds]
+        if payload.channel_id not in about_you_channels:
             return
 
         channel = self.bot.get_channel(payload.channel_id)
