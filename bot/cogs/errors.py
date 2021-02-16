@@ -2,6 +2,7 @@ import logging
 import traceback
 
 from discord.ext import commands
+from discord.utils import get
 
 from bot.constants import Config
 
@@ -52,12 +53,11 @@ class Errors(commands.Cog):
 
         log.error(msg)
 
-        guild_config = get(Config.guilds, id=message.guild.id)
-        for channel_id in guild_config.logs.errors:
-            if (channel := self.bot.get_channel(channel_id)) is not None:
-                for i in range(0, len(msg), 1900):
-                    chunk = msg[i:i+1900]
-                    await channel.send(f"```\n{chunk}\n```")
+        guild_config = get(Config.guilds, id=ctx.guild.id)
+        if (channel := self.bot.get_channel(guild_config.logs.errors)) is not None:
+            for i in range(0, len(msg), 1900):
+                chunk = msg[i:i+1900]
+                await channel.send(f"```\n{chunk}\n```")
 
 def setup(bot):
     bot.add_cog(Errors(bot))
