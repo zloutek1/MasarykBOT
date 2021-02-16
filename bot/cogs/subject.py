@@ -325,20 +325,18 @@ class Subject(commands.Cog):
     async def create_channel(self, ctx, subject):
         guild_config = get(Config.guilds, id=ctx.guild.id)
 
-        show_all = [role
-                    for role_id in guild_config.roles.show_all
-                    if (role := ctx.guild.get_role(role_id))]
-
-        mute = [role
-                for role_id in guild_config.roles.muted
-                if (role := ctx.guild.get_role(role_id))]
-
         overwrites = {
             ctx.guild.default_role: PermissionOverwrite(read_messages=False),
-            self.bot.user: PermissionOverwrite(read_messages=True),
-            **{role: PermissionOverwrite(read_messages=True) for role in show_all},
-            **{role: PermissionOverwrite(send_messages=False) for role in mute}
+            self.bot.user: PermissionOverwrite(read_messages=True)
         }
+
+        show_all = ctx.guild.get_role(guild_config.roles.show_all)
+        if show_all is not None:
+            overwrites[show_all] = PermissionOverwrite(read_messages=True)
+
+        muted = ctx.guild.get_role(guild_config.roles.muted)
+        if muted is not None:
+            overwrites[muted] = PermissionOverwrite(send_messages=False)
 
         category = await self.create_or_get_category(ctx, subject)
 
