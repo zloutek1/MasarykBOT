@@ -20,7 +20,7 @@ class Starboard(commands.Cog):
             return
 
         channel = reaction.message.channel
-        if channel.name == "starboard" or channel.id in guild_config.channels.starboard:
+        if channel.name == "starboard" or channel.id == guild_config.channels.starboard:
             return
 
         if self.should_ignore(reaction):
@@ -29,12 +29,10 @@ class Starboard(commands.Cog):
         message = reaction.message
         guild = message.guild
 
-        if message.channel.id in guild_config.channels.verification + guild_config.channels.about_you:
+        if message.channel.id in [guild_config.channels.verification, guild_config.channels.about_you]:
             return
 
-        for channel_id in guild_config.channels.starboard:
-            if channel := get(guild.text_channels, id=channel_id):
-                break
+        channel = get(guild.text_channels, id=guild_config.channels.starboard)
         if channel is None:
             channel = get(guild.text_channels, name="starboard")
         if channel is None:
@@ -57,6 +55,7 @@ class Starboard(commands.Cog):
         emoji_name = emoji.name if isinstance(emoji := reaction.emoji, Emoji) or isinstance(emoji, PartialEmoji) else demojize(emoji)
         msg_content = reaction.message.content
 
+        guild_config = get(Config.guilds, id=reaction.message.guild.id)
         fame_limit = guild_config.STARBOARD_REACT_LIMIT
         if len(channel.members) > 100:
             fame_limit += 10
