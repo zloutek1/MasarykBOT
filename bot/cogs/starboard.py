@@ -32,14 +32,9 @@ class Starboard(commands.Cog):
         if message.channel.id in [guild_config.channels.verification, guild_config.channels.about_you]:
             return
 
-        channel = get(guild.text_channels, id=guild_config.channels.starboard)
-        if channel is None:
-            channel = get(guild.text_channels, name="starboard")
-        if channel is None:
-            channel = await guild.create_text_channel("starboard")
-
         new_embed = self.get_embed(message)
 
+        channel = await self.get_startobard_channel(guild)
         messages = await channel.history().flatten()
         for message in messages:
             for embed in message.embeds:
@@ -48,6 +43,14 @@ class Starboard(commands.Cog):
                     return
 
         await channel.send(embed=new_embed)
+
+    async def get_startobard_channel(self, guild):
+        guild_config = get(Config.guilds, id=guild.id)
+        channel = get(guild.text_channels, id=guild_config.channels.starboard)
+        if channel is None:
+            channel = get(guild.text_channels, name="starboard")
+        if channel is None:
+            channel = await guild.create_text_channel("starboard")
 
     @staticmethod
     def should_ignore(reaction):
