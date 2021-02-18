@@ -64,6 +64,11 @@ class Admin(commands.Cog):
                 file.write(content)
             await ctx.send(file=discord.File(filename))
 
+    @commands.command()
+    @has_permissions(administrator=True)
+    async def fail(self, ctx, case: int = 0):
+        raise Exception("failing code for testing purposes")
+
 
 def setup(bot):
     bot.add_cog(Admin(bot))
