@@ -93,7 +93,7 @@ class Subject(commands.Cog):
                 color=Config.colors.MUNI_YELLOW,
                 delete_after=5)
 
-        await self.bot.db.subjects.sign_user(ctx.guild.id, subject.get("code"), ctx.author.id)
+        await self.bot.db.subjects.sign_user(ctx.guild.id, subject.get("code"), ctx.author.id, faculty=subject.get("faculty"))
         await self.try_to_sign_user_to_channel(ctx, subject)
 
     @subject.command(name="remove")
@@ -125,7 +125,7 @@ class Subject(commands.Cog):
                 color=Config.colors.MUNI_YELLOW,
                 delete_after=5)
 
-        await self.bot.db.subjects.unsign_user(ctx.guild.id, subject.get("code"), ctx.author.id)
+        await self.bot.db.subjects.unsign_user(ctx.guild.id, subject.get("code"), ctx.author.id, faculty=subject.get("faculty"))
 
         try:
             channel = await self.lookup_channel(ctx, subject, recreate=False)
@@ -162,7 +162,7 @@ class Subject(commands.Cog):
                 color=Config.colors.MUNI_YELLOW,
                 delete_after=5)
 
-        registers = await self.bot.db.subjects.find_registered(ctx.guild.id, code)
+        registers = await self.bot.db.subjects.find_registered(ctx.guild.id, code, faculty)
         num_registeres = len(registers.get('member_ids')) if registers else 0
         await ctx.send_embed(f"Subject {subject.get('faculty')}:{subject.get('code')} has {num_registeres} registered")
 
@@ -192,6 +192,7 @@ class Subject(commands.Cog):
                 if not (rows := await self.is_subject_channel(channel)):
                     continue
 
+                faculty = code = rows[0].get("faculty")
                 code = rows[0].get("code")
                 log.info("database recovery for subject %s started (%s)", channel, guild)
 
@@ -199,12 +200,12 @@ class Subject(commands.Cog):
                             for (key, value) in channel.overwrites.items()
                             if value.read_messages and isinstance(key, Member)]
 
-                await self.bot.db.subjects.set_channel(ctx.guild.id, code, channel.id)
+                await self.bot.db.subjects.set_channel(ctx.guild.id, code, channel.id, faculty)
                 if channel.category:
-                    await self.bot.db.subjects.set_category(ctx.guild.id, code, channel.category.id)
+                    await self.bot.db.subjects.set_category(ctx.guild.id, code, channel.category.id, faculty)
 
                 for member_id in shown_to:
-                    await self.bot.db.subjects.sign_user(ctx.guild.id, code, member_id)
+                    await self.bot.db.subjects.sign_user(ctx.guild.id, code, member_id, faculty)
         log.info("database recovery finished")
 
     @subject.command()
@@ -215,8 +216,9 @@ class Subject(commands.Cog):
             if not (rows := await self.is_subject_channel(channel)):
                 continue
 
+            faculty = rows[0].get("faculty")
             code = rows[0].get("code")
-            if not (row := await self.bot.db.subjects.get_category(guild.id, code)):
+            if not (row := await self.bot.db.subjects.get_category(guild.id, code, faculty)):
                 continue
 
             old_category = channel.category
@@ -280,12 +282,12 @@ class Subject(commands.Cog):
 
         channel = find(is_subject_channel, ctx.guild.text_channels)
         if channel is not None:
-            await self.bot.db.subjects.set_channel(ctx.guild.id, subject.get("code"), channel.id)
+            await self.bot.db.subjects.set_channel(ctx.guild.id, subject.get("code"), channel.id, subject.get("faculty"))
         return channel
 
     async def should_create_channel(self, ctx, subject):
-        registers = await self.bot.db.subjects.find_registered(ctx.guild.id, subject.get("code"))
-        serverinfo = await self.bot.db.subjects.find_serverinfo(ctx.guild.id, subject.get("code"))
+        registers = await self.bot.db.subjects.find_registered(ctx.guild.id, subject.get("code"), subject.get("faculty"))
+        serverinfo = await self.bot.db.subjects.find_serverinfo(ctx.guild.id, subject.get("code"), subject.get("faculty"))
 
         guild_config = get(Config.guilds, id=ctx.guild.id)
         return (serverinfo is None and
@@ -307,7 +309,7 @@ class Subject(commands.Cog):
         raise ChannelNotFound(subject=f"{faculty}:{code}", searched=channel_name, potential=potential)
 
     async def remove_channel_from_database_and_retry(self, ctx, subject):
-        await self.bot.db.subjects.remove_channel(ctx.guild.id, subject.get("code"))
+        await self.bot.db.subjects.remove_channel(ctx.guild.id, subject.get("code"), subject.get("faculty"))
 
         subject = await self.find_subject(subject.get("code"), subject.get("faculty"))
         if await self.should_create_channel(ctx, subject):
@@ -349,14 +351,14 @@ class Subject(commands.Cog):
         data = await self.bot.db.channels.prepare([channel])
         await self.bot.db.channels.insert(data)
 
-        await self.bot.db.subjects.set_channel(ctx.guild.id, subject.get("code"), channel.id)
+        await self.bot.db.subjects.set_channel(ctx.guild.id, subject.get("code"), channel.id, subject.get("faculty"))
         if category:
-            await self.bot.db.subjects.set_category(ctx.guild.id, subject.get("code"), category.id)
+            await self.bot.db.subjects.set_category(ctx.guild.id, subject.get("code"), category.id, subject.get("faculty"))
 
         return channel
 
     async def create_or_get_category(self, ctx, subject):
-        row = await self.bot.db.subjects.get_category(ctx.guild.id, subject.get("code"))
+        row = await self.bot.db.subjects.get_category(ctx.guild.id, subject.get("code"), subject.get("faculty"))
         if row:
             category_name = row.get("category_name")
             if category := get(ctx.guild.categories, name=category_name):
