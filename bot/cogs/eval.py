@@ -1,5 +1,6 @@
 import json
 import aiohttp
+from asyncio import TimeoutError
 
 from discord.ext import commands
 
@@ -61,8 +62,7 @@ class Eval(commands.Cog):
         - c
         - python / py
         - haskell / hs
-        Anything else isn't supported. The C++ compiler uses g++ -std=c++14.
-        The python support is now 3.5.2.
+        Anything else isn't supported. The C++ compiler uses g++ -std=c++17.
         Please don't spam this for Stacked's sake.
         """
         payload = {
@@ -75,11 +75,8 @@ class Eval(commands.Cog):
         async with ctx.typing():
             async with aiohttp.ClientSession() as session:
                 result = await self.coliru_compile(session, data)
-                if result:
-                    await ctx.safe_send(result)
-                else:
-                    await ctx.send("no result")
 
+        await self.display(ctx, result)
 
     async def coliru_compile(self, session, data):
         async with session.post('http://coliru.stacked-crooked.com/compile', data=data) as resp:
@@ -104,15 +101,34 @@ class Eval(commands.Cog):
                 link = f'http://coliru.stacked-crooked.com/a/{shared_id}'
                 return f'Output too big. Coliru link: {link}'
 
-
     @coliru.error
     async def coliru_error(self, ctx, error):
         if isinstance(error, commands.BadArgument):
             await ctx.send_error(error)
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send_error(CodeBlock.missing_error)
-        if isinstance(error, commands.CommandOnCooldown):
-            await ctx.send_error('This command is on cooldown.')
+
+    async def display(self, ctx, result):
+        message = await ctx.safe_send(result if result else "no result")
+        await message.add_reaction('\N{WASTEBASKET}')
+        await self.wait_for_reaction_or_clear(ctx, message)
+
+    async def wait_for_reaction_or_clear(self, ctx, message):
+        def react_check(reaction, user):
+            if user is None or user.id != ctx.author.id:
+                return False
+
+            if reaction.message.id != message.id:
+                return False
+
+            return reaction.emoji == '\N{WASTEBASKET}'
+
+        try:
+            await self.bot.wait_for('reaction_add', check=react_check, timeout=120.0)
+            await message.delete()
+        except asyncio.TimeoutError:
+            await message.clear_reactions()
+
 
 def setup(bot):
     bot.add_cog(Eval(bot))
