@@ -157,17 +157,21 @@ class Leaderboard(commands.Cog):
             bot_ids = [bot.id for bot in filter(lambda user: user.bot, ctx.guild.members)]
             emoji = str(emoji) if emoji else None
 
-            await self.bot.db.emojiboard.refresh()
             data = await self.bot.db.emojiboard.select(ctx.guild.id, bot_ids, channel_id, member_id, emoji)
 
             await self.display_emojiboard(ctx, data)
 
     async def display_emojiboard(self, ctx, data):
         def get_value(row):
-            discord_emoji = get(self.bot.emojis, name=row["name"].strip(":"))
+            emojis = [emoji
+                      for emoji in self.bot.emojis
+                      if emoji.name.lower() == row["name"].strip(":").lower()
+                     ]
+
+            discord_emoji = emojis[0] if emojis else None
             demojized_emoji = emojize(row["name"])
 
-            return discord_emoji or demojized_emoji or None
+            return discord_emoji or demojized_emoji or row["name"]
 
         embed = Embed(color=0x53acf2)
 
