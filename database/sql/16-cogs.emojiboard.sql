@@ -40,10 +40,10 @@ CREATE FUNCTION server.update_emojiboard_emoji()
 AS $BODY$
 BEGIN
 	INSERT INTO cogs.emojiboard AS eb (channel_id, author_id, name, count)
-	SELECT channel_id, author_id, NEW.name, 1
+	SELECT channel_id, author_id, NEW.name, NEW.count
 		FROM server.messages WHERE server.messages.id = NEW.message_id
 	ON CONFLICT (channel_id, author_id, name) DO UPDATE
-		SET count = eb.count + 1;
+		SET count = eb.count + NEW.count;
 	RETURN NEW;
 END
 $BODY$;
