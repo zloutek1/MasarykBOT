@@ -25,6 +25,9 @@ CREATE UNIQUE INDEX leaderboard_unique
     (channel_id ASC NULLS LAST, author_id ASC NULLS LAST)
     TABLESPACE pg_default;
 
+
+
+
 -- FUNCTION: server.update_leaderboard()
 
 -- DROP FUNCTION server.update_leaderboard();
