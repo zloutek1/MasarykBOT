@@ -55,7 +55,11 @@ class MasarykBOT(commands.Bot):
         self._auto_spam_count.pop(author_id, None)
 
         log.info("user %s used command: %s", message.author, message.content)
-        await self.invoke(ctx)
+        try:
+            await self.invoke(ctx)
+        except KeyboardInterrupt:
+            log.info("User initiated power off, closing")
+            await self.close()
 
     async def on_message(self, message):
         if message.author.bot:
@@ -73,10 +77,8 @@ class MasarykBOT(commands.Bot):
         log.info("Cog unloaded: %s", name)
 
     def run(self, token):
-        try:
-            super().run(token, reconnect=True)
-        finally:
-            log.info("exiting, bye")
+        super().run(token, reconnect=True)
+
 
     def intorduce(self):
         bot_name = self.user.name.encode(errors='replace').decode()
