@@ -63,4 +63,4 @@ if __name__ == "__main__":
             log.error('Failed to load extension %s.', extension)
             traceback.print_exc()
 
-    bot.run(os.getenv("TOKEN"))
+    bot.run(os.getenv("TOKEN"), reconnect=True)

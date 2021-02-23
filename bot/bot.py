@@ -76,10 +76,6 @@ class MasarykBOT(commands.Bot):
         super().remove_cog(name)
         log.info("Cog unloaded: %s", name)
 
-    def run(self, token):
-        super().run(token, reconnect=True)
-
-
     def intorduce(self):
         bot_name = self.user.name.encode(errors='replace').decode()
 
