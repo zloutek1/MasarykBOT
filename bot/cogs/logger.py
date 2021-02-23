@@ -139,7 +139,7 @@ class BackupUntilPresent:
         to_date_str = to_date.strftime('%d.%m.%Y')
         log.info("backing up messages {%s} - {%s} in %s (%s)", from_date_str, to_date_str, channel, channel.guild)
 
-        collectables = self.get_collectables()
+        collectables = self.get_collectables(self.bot)
         async for message in channel.history(after=from_date, before=to_date, limit=1_000_000, oldest_first=True):
             for collectable in collectables:
                 await collectable.add(message)
@@ -148,27 +148,28 @@ class BackupUntilPresent:
             for collectable in collectables:
                 await collectable.db_insert()
 
-    def get_collectables(self):
+    @staticmethod
+    def get_collectables(bot):
         return [
             Collectable(
-                prepare_fn=self.bot.db.members.prepare_from_message,
-                insert_fn=self.bot.db.members.insert
+                prepare_fn=bot.db.members.prepare_from_message,
+                insert_fn=bot.db.members.insert
             ),
             Collectable(
-                prepare_fn=self.bot.db.messages.prepare,
-                insert_fn=self.bot.db.messages.insert
+                prepare_fn=bot.db.messages.prepare,
+                insert_fn=bot.db.messages.insert
             ),
             Collectable(
-                prepare_fn=self.bot.db.attachments.prepare,
-                insert_fn=self.bot.db.attachments.insert
+                prepare_fn=bot.db.attachments.prepare,
+                insert_fn=bot.db.attachments.insert
             ),
             Collectable(
-                prepare_fn=self.bot.db.reactions.prepare,
-                insert_fn=self.bot.db.reactions.insert
+                prepare_fn=bot.db.reactions.prepare,
+                insert_fn=bot.db.reactions.insert
             ),
             Collectable(
-                prepare_fn=self.bot.db.emojis.prepare,
-                insert_fn=self.bot.db.emojis.insert
+                prepare_fn=bot.db.emojis.prepare,
+                insert_fn=bot.db.emojis.insert
             )
         ]
 
@@ -186,6 +187,12 @@ class BackupOnEvents:
     def cog_unload(self):
         self.task_put_queues_to_database.cancel()
 
+    ###
+    #
+    # Guild
+    #
+    ###
+
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
         log.info("joined guild %s", guild)
@@ -202,6 +209,12 @@ class BackupOnEvents:
     async def on_guild_remove(self, guild):
         log.info("left guild %s", guild)
         await self.bot.db.guilds.soft_delete([(guild.id,)])
+
+    ###
+    #
+    # Channel
+    #
+    ###
 
     @commands.Cog.listener()
     async def on_guild_channel_create(self, channel):
@@ -249,6 +262,12 @@ class BackupOnEvents:
         elif isinstance(channel, CategoryChannel):
             await self.bot.db.categories.soft_delete([(channel.id,)])
 
+    ###
+    #
+    # Message
+    #
+    ###
+
     @commands.Cog.listener()
     async def on_message(self, message):
         if isinstance(message.channel, PrivateChannel):
@@ -257,18 +276,22 @@ class BackupOnEvents:
         if not isinstance(message.author, Member):
             return
 
-        data = await self.bot.db.messages.prepare_one(message)
-        self.insert_queues.setdefault(self.bot.db.messages.insert, deque())
-        self.insert_queues[self.bot.db.messages.insert].append(data)
+        colleactables = BackupUntilPresent.get_collectables(self.bot)
+        for collectable in colleactables:
+            data = await collectable.prepare_fn(message)
+            self.insert_queues.setdefault(collectable.insert_fn, deque())
+            self.insert_queues[collectable.insert_fn].append(data)
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
         if isinstance(before.channel, PrivateChannel):
             return
 
-        data = await self.bot.db.messages.prepare_one(after)
-        self.update_queues.setdefault(self.bot.db.messages.insert, deque())
-        self.update_queues[self.bot.db.messages.insert].append(data)
+        colleactables = BackupUntilPresent.get_collectables(self.bot)
+        for collectable in colleactables:
+            data = await collectable.prepare_fn(after)
+            self.update_queues.setdefault(collectable.insert_fn, deque())
+            self.update_queues[collectable.insert_fn].append(data)
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
@@ -277,6 +300,32 @@ class BackupOnEvents:
 
         self.delete_queues.setdefault(self.bot.db.messages.soft_delete, deque())
         self.delete_queues[self.bot.db.messages.soft_delete].append((message.id,))
+
+    ###
+    #
+    # Reaction
+    #
+    ###
+
+    @commands.Cog.listener()
+    async def on_reaction_add(self, reaction, user):
+        data = await self.bot.db.messages.prepare_one(reaction.message)
+        self.insert_queues.setdefault(self.bot.db.messages.insert, deque())
+        self.insert_queues[self.bot.db.messages.insert].append([data])
+
+        data = await self.bot.db.members.prepare_one(user)
+        self.insert_queues.setdefault(self.bot.db.members.insert, deque())
+        self.insert_queues[self.bot.db.members.insert].append([data])
+
+        data = await self.bot.db.reactions.prepare_one(reaction)
+        self.insert_queues.setdefault(self.bot.db.reactions.insert, deque())
+        self.insert_queues[self.bot.db.reactions.insert].append([data])
+
+    ###
+    #
+    # Member
+    #
+    ###
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
@@ -306,6 +355,12 @@ class BackupOnEvents:
 
         await self.bot.db.members.soft_delete([(member.id,)])
 
+    ###
+    #
+    # Role
+    #
+    ###
+
     @commands.Cog.listener()
     async def on_guild_role_create(self, role):
         log.info("added role %s (%s)", role, role.guild)
@@ -326,47 +381,39 @@ class BackupOnEvents:
 
         await self.bot.db.roles.soft_delete([(role.id,)])
 
+    ###
+    #
+    # Loop
+    #
+    ###
+
     @tasks.loop(minutes=5)
     async def task_put_queues_to_database(self):
         try:
             await self.put_queues_to_database(self.insert_queues, limit=1000)
             await self.put_queues_to_database(self.update_queues, limit=2000)
             await self.put_queues_to_database(self.delete_queues, limit=1000)
-        except Exception:
-            pass
+        except Exception as e:
+            log.error("diring loop and exception occured: %s", e)
+            raise e
 
     async def put_queues_to_database(self, queues, *, limit=1000):
         counter = 0
 
         for (process_fn, queue) in queues.items():
-            take_elements = min(limit - counter, len(queue))
-            if take_elements == 0:
+            if len(queue) == 0:
+                continue
+            if counter > limit:
+                log.info("Limit exceeded for current loop")
                 return
-            log.info("Putting %s from queue to database", take_elements)
-            elements = [queue.popleft() for _ in range(take_elements)]
+
+            take_elements = min(limit - counter, len(queue))
+            elements = [flatten for _ in range(take_elements) for flatten in queue.popleft()]
+            log.info("Putting %s from queue to database (%s)", len(elements), process_fn.__qualname__)
+
             await process_fn(elements)
+
             counter += take_elements
-
-
-class Logger(commands.Cog, BackupUntilPresent, BackupOnEvents):
-    def __init__(self, bot):
-        self.bot = bot
-
-        BackupUntilPresent.__init__(self, bot)
-        BackupOnEvents.__init__(self, bot)
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        await self.backup()
-
-    @tasks.loop(hours=168)  # 168 hours == 1 week
-    async def _repeat_backup(self):
-        await self.backup()
-
-    @commands.command(name="backup")
-    @has_permissions(administrator=True)
-    async def _backup(self, _ctx):
-        await self.backup()
 
 
 class Collectable:
@@ -383,6 +430,26 @@ class Collectable:
             batch = self.content[i:i+550]
             await self.insert_fn(batch)
 
+
+class Logger(commands.Cog, BackupUntilPresent, BackupOnEvents):
+    def __init__(self, bot):
+        self.bot = bot
+
+        BackupUntilPresent.__init__(self, bot)
+        BackupOnEvents.__init__(self, bot)
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        """await self.backup()"""
+
+    @tasks.loop(hours=168)  # 168 hours == 1 week
+    async def _repeat_backup(self):
+        await self.backup()
+
+    @commands.command(name="backup")
+    @has_permissions(administrator=True)
+    async def _backup(self, _ctx):
+        await self.backup()
 
 def setup(bot):
     bot.add_cog(Logger(bot))
