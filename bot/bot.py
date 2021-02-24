@@ -20,9 +20,6 @@ class MasarykBOT(commands.Bot):
     def __init__(self, *args, description=DESCRIPTION, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.spam_control = commands.CooldownMapping.from_cooldown(10, 12.0, commands.BucketType.user)
-        self._auto_spam_count = Counter()
-
         self.db = None
         self.uptime = None
 
@@ -30,6 +27,7 @@ class MasarykBOT(commands.Bot):
         if self.uptime is None:
             self.uptime = datetime.utcnow()
 
+        log.info("Bot is now all ready to go")
         self.intorduce()
 
     async def process_commands(self, message):
@@ -37,22 +35,6 @@ class MasarykBOT(commands.Bot):
 
         if ctx.command is None:
             return
-
-        bucket = self.spam_control.get_bucket(message)
-        current = message.created_at.replace(tzinfo=timezone.utc).timestamp()
-        retry_after = bucket.update_rate_limit(current)
-        author_id = message.author.id
-        if retry_after:
-            self._auto_spam_count[author_id] += 1
-            if self._auto_spam_count[author_id] >= 5:
-
-                # # HERE HANDLE BLACKLISTING OF SPAMMERS
-                print("blacklisting", author_id)
-                # # HERE HANDLE BLACKLISTING OF SPAMMERS
-
-                del self._auto_spam_count[author_id]
-            return
-        self._auto_spam_count.pop(author_id, None)
 
         log.info("user %s used command: %s", message.author, message.content)
         try:
@@ -78,8 +60,6 @@ class MasarykBOT(commands.Bot):
 
     def intorduce(self):
         bot_name = self.user.name.encode(errors='replace').decode()
-
-        log.info("Bot is now all ready to go")
         print("\n\n\n")
         print("""               .,***,.
         /.             *%&*
