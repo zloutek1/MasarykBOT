@@ -5,3 +5,4 @@ aiohttp
 emoji
 requests
 pyyaml
+rich

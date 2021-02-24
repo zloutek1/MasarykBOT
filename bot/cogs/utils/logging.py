@@ -1,5 +1,8 @@
 import logging
 import sys
+from pathlib import Path
+
+from rich.logging import RichHandler
 
 
 def setup_logging():
@@ -10,15 +13,25 @@ def setup_logging():
     [2019-09-29 18:51:04] [INFO   ] core.logger: Begining backup
     """
 
-    logging.getLogger('discord').setLevel(logging.INFO)
+    logging.getLogger('discord').setLevel(logging.WARNING)
     logging.getLogger('discord.http').setLevel(logging.WARNING)
+    logging.getLogger("asyncio").setLevel(logging.INFO)
 
     log = logging.getLogger()
-    log.setLevel(logging.INFO)
 
-    dt_fmt = '%Y-%m-%d %H:%M:%S'
-    fmt = logging.Formatter('[{asctime}] [{levelname:<7}] {name}: {message}', dt_fmt, style='{')
+    shell_handler = RichHandler()
+    file_handler = logging.FileHandler(Path("logs", "bot.log"))
 
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(fmt)
-    log.addHandler(handler)
+    log.setLevel(logging.DEBUG)
+    shell_handler.setLevel(logging.INFO)
+    file_handler.setLevel(logging.DEBUG)
+
+    fmt_date = '%Y-%m-%d %H:%M:%S'
+    fmt_shell = '{message}'
+    fmt_file = '{asctime} | {levelname:<7} | {filename}:{lineno} | {message}'
+
+    shell_handler.setFormatter(logging.Formatter(fmt_shell, fmt_date, style='{'))
+    file_handler.setFormatter(logging.Formatter(fmt_file, fmt_date, style='{'))
+
+    log.addHandler(shell_handler)
+    log.addHandler(file_handler)
