@@ -10,8 +10,9 @@ from asyncio import AbstractEventLoop
 from typing import Iterable, Optional
 
 import discord
-from discord.ext.commands import Context
+#from discord.ext.commands import Context
 
+from bot.cogs.utils.context import Context
 from bot.bot import MasarykBOT as Bot
 from tests.mocks._autospec import autospec  # noqa: F401 other modules import it via this module
 
@@ -418,7 +419,7 @@ message_instance = discord.Message(state=state, channel=channel, data=message_da
 
 
 # Create a Context instance to get a realistic MagicMock of `discord.ext.commands.Context`
-context_instance = Context(message=unittest.mock.MagicMock(), prefix=unittest.mock.MagicMock())
+context_instance = Context(message=unittest.mock.MagicMock(), prefix=unittest.mock.MagicMock(), bot=MockBot())
 
 
 class MockContext(CustomMockMixin, unittest.mock.MagicMock):
