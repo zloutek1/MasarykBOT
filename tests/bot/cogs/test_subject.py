@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import call, patch, Mock
+from unittest.mock import call, patch, Mock, AsyncMock
 
 from datetime import datetime
 
@@ -8,6 +8,64 @@ from tests.mocks.discord import MockBot, MockContext, MockGuild, MockMessage, Mo
 from tests.mocks.database import MockDatabase, MockSubjectRecord, MockSubjectRegisteredRecord, MockSubjectServerRecord
 
 class SubjectTests(unittest.IsolatedAsyncioTestCase):
+    async def test_subject_add_less_then_ten_codes(self):
+        bot = MockBot()
+        cog = subject.Subject(bot=bot)
+
+        for i in range(10 + 1):
+            cog.add = AsyncMock(return_value=None)
+
+            ctx = MockContext()
+            subjects = [f"IB{xxx:0>3}" for xxx in range(i)]
+            await cog._add.callback(cog, ctx, *subjects)
+
+            cog.add.assert_has_calls([
+                call(ctx, code) for code in subjects
+            ])
+
+    async def test_subject_add_too_many_codes(self):
+        bot = MockBot()
+        cog = subject.Subject(bot=bot)
+
+        for i in range(11, 20):
+            cog.add = AsyncMock(return_value=None)
+
+            ctx = AsyncMock()
+            subjects = [f"IB{xxx:0>3}" for xxx in range(i)]
+            await cog._add.callback(cog, ctx, *subjects)
+
+            self.assertEqual(ctx.send_embed.call_count, 1)
+            self.assertEqual(cog.add.call_count, 0)
+
+    async def test_subject_remove_less_then_ten_codes(self):
+        bot = MockBot()
+        cog = subject.Subject(bot=bot)
+
+        for i in range(10 + 1):
+            cog.remove = AsyncMock(return_value=None)
+
+            ctx = MockContext()
+            subjects = [f"IB{xxx:0>3}" for xxx in range(i)]
+            await cog._remove.callback(cog, ctx, *subjects)
+
+            cog.remove.assert_has_calls([
+                call(ctx, code) for code in subjects
+            ])
+
+    async def test_subject_remove_too_many_codes(self):
+        bot = MockBot()
+        cog = subject.Subject(bot=bot)
+
+        for i in range(11, 20):
+            cog.remove = AsyncMock(return_value=None)
+
+            ctx = AsyncMock()
+            subjects = [f"IB{xxx:0>3}" for xxx in range(i)]
+            await cog._remove.callback(cog, ctx, *subjects)
+
+            self.assertEqual(ctx.send_embed.call_count, 1)
+            self.assertEqual(cog.remove.call_count, 0)
+
     async def test_find_subject_not_found(self):
         bot = MockBot()
         bot.db = MockDatabase()
