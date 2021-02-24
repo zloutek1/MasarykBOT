@@ -1,7 +1,7 @@
 import logging
 
 import discord
-from discord.ext import commands
+from discord.ext import tasks, commands
 from discord.utils import get, find
 from discord.errors import Forbidden
 
@@ -29,6 +29,10 @@ class Verification(commands.Cog):
     async def on_ready(self):
         log.info("found %d verification channels", len(self.verification_channels))
 
+        await self._synchronize()
+
+    @tasks.loop(hours=168)  # 168 hours == 1 week
+    async def _repeat_synchronize(self):
         await self._synchronize()
 
     async def _synchronize(self):
