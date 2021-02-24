@@ -60,7 +60,6 @@ if __name__ == "__main__":
         try:
             bot.load_extension(extension)
         except Exception:
-            log.error('Failed to load extension %s.', extension)
-            traceback.print_exc()
+            log.error('Failed to load extension %s.', extension, exc_info=True)
 
     bot.run(os.getenv("TOKEN"), reconnect=True)
