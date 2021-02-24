@@ -73,18 +73,15 @@ class Subject(commands.Cog):
             await self.add(ctx, subject_code)
 
     async def add(self, ctx, subject_code):
-        guild_config = get(Config.guilds, id=ctx.guild.id)
-        if ctx.channel.id != guild_config.channels.subject_registration:
-            valid_registration_channel = list(filter(lambda channel: channel.id == guild_config.channels.subject_registration, ctx.guild.text_channels))
-            if valid_registration_channel:
-                await ctx.send_error("You can't add subjects here, use a designated channel: " + ", ".join(map(lambda ch: ch.mention, valid_registration_channel)), delete_after=5)
-            else:
-                await ctx.send_error("You can't add subjects on this server", delete_after=5)
+        if not self._in_subject_channel(ctx):
             return
 
         await ctx.safe_delete(delay=5)
 
-        faculty, code = subject_code.split(":", 1) if ":" in subject_code else ["FI", subject_code]
+        faculty, code = (subject_code.split(":", 1)
+                         if ":" in subject_code else
+                         ["FI", subject_code])
+
         log.info("User %s adding subject %s:%s", ctx.author, faculty, code)
 
         if (subject := await self.find_subject(code, faculty)) is None:
@@ -93,8 +90,33 @@ class Subject(commands.Cog):
                 color=Config.colors.MUNI_YELLOW,
                 delete_after=5)
 
-        await self.bot.db.subjects.sign_user(ctx.guild.id, subject.get("code"), ctx.author.id, faculty=subject.get("faculty"))
+        await self.bot.db.subjects.sign_user(
+            ctx.guild.id,
+            subject.get("code"),
+            ctx.author.id,
+            faculty=subject.get("faculty")
+        )
+
         await self.try_to_sign_user_to_channel(ctx, subject)
+
+    async def _in_subject_channel(self, ctx):
+        guild_config = get(Config.guilds, id=ctx.guild.id)
+        if ctx.channel.id != guild_config.channels.subject_registration:
+            valid_registration_channel = [
+                channel
+                for channel in ctx.guild.text_channels
+                if channel.id == guild_config.channels.subject_registration
+            ]
+
+            if valid_registration_channel:
+                designated_channels = ", ".join(
+                    channel.mention
+                    for channel in valid_registration_channel)
+                await ctx.send_error("You can't add subjects here, use a designated channel: " + designated_channels, delete_after=5)
+            else:
+                await ctx.send_error("You can't add subjects on this server", delete_after=5)
+            return False
+        return True
 
     @subject.command(name="remove")
     @commands.bot_has_permissions(manage_channels=True)
