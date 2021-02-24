@@ -522,6 +522,28 @@ class MockReaction(CustomMockMixin, unittest.mock.MagicMock):
         self.__str__.return_value = str(self.emoji)
 
 
+reaction_event_data = {
+    'channel_id': 1,
+    'guild_id': 2,
+    'message_id': 3,
+    'user_id': 4
+}
+reaction_event_instance = discord.RawReactionActionEvent(event_type='REACTION_ADD', data=reaction_event_data, emoji=unittest.mock.MagicMock())
+
+
+class MockRawReactionActionEvent(CustomMockMixin, unittest.mock.MagicMock):
+    """
+    A MagicMock subclass to mock Reaction objects.
+
+    Instances of this class will follow the specifications of `discord.RawReactionActionEvent` instances. For
+    more information, see the `MockGuild` docstring.
+    """
+    spec_set = reaction_event_instance
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+
+
 webhook_instance = discord.Webhook(data=unittest.mock.MagicMock(), adapter=unittest.mock.MagicMock())
 
 
