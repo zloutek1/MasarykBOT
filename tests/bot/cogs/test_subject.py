@@ -4,7 +4,7 @@ from unittest.mock import call, patch, Mock, AsyncMock
 from datetime import datetime
 
 from bot.cogs import subject
-from tests.mocks.discord import MockBot, MockContext, MockGuild, MockMessage, MockEmoji
+from tests.mocks.discord import MockBot, MockContext, MockGuild, MockTextChannel, MockMessage, MockEmoji
 from tests.mocks.database import MockDatabase, MockSubjectRecord, MockSubjectRegisteredRecord, MockSubjectServerRecord
 
 class SubjectTests(unittest.IsolatedAsyncioTestCase):
@@ -36,6 +36,51 @@ class SubjectTests(unittest.IsolatedAsyncioTestCase):
 
             self.assertEqual(ctx.send_embed.call_count, 1)
             self.assertEqual(cog.add.call_count, 0)
+
+    async def test_in_subject_channel_wrong_room(self):
+        bot = MockBot()
+        cog = subject.Subject(bot=bot)
+
+        #
+        guild_config = Mock()
+        guild_config.id = 8
+        guild_config.channels.subject_registration = 10
+
+        config = Mock()
+        config.guilds = [guild_config]
+        #
+
+        channel = MockTextChannel(id=12)
+        guild = MockGuild(id=8, text_channels=[channel])
+        ctx = MockContext(guild=guild)
+
+        with patch('bot.cogs.subject.Config', config):
+            await cog._in_subject_channel(ctx)
+
+        ctx.send_error.assert_called_once()
+
+    async def test_in_subject_channel_non_existing_channel(self):
+        bot = MockBot()
+        cog = subject.Subject(bot=bot)
+
+        #
+        guild_config = Mock()
+        guild_config.id = 8
+        guild_config.channels.subject_registration = 10
+
+        config = Mock()
+        config.guilds = [guild_config]
+        #
+
+        guild = MockGuild(id=8, text_channels=[])
+        ctx = MockContext(guild=guild)
+
+        with patch('bot.cogs.subject.Config', config):
+            await cog._in_subject_channel(ctx)
+
+        ctx.send_error.assert_called_once()
+
+
 
     async def test_subject_remove_less_then_ten_codes(self):
         bot = MockBot()
