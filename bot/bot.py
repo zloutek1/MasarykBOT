@@ -51,12 +51,12 @@ class MasarykBOT(commands.Bot):
         await self.process_commands(message)
 
     def add_cog(self, cog: commands.Cog) -> None:
+        log.info("loading cog: %s", cog.qualified_name)
         super().add_cog(cog)
-        log.info("Cog loaded: %s", cog.qualified_name)
 
     def remove_cog(self, name: str) -> None:
+        log.info("unloading cog: %s", name)
         super().remove_cog(name)
-        log.info("Cog unloaded: %s", name)
 
     def intorduce(self):
         bot_name = self.user.name.encode(errors='replace').decode()
