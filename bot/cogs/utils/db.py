@@ -1,11 +1,8 @@
-# pylint: disable=abstract-method
-# pylint: disable=arguments-differ
-# pylint: disable=line-too-long
-
-
 import asyncio
 import asyncpg
+import logging
 
+log = logging.getLogger(__name__)
 
 class Table:
     def __init__(self, db):
@@ -498,9 +495,15 @@ class DBBase:
 
     @classmethod
     def connect(cls, url):
-        loop = asyncio.get_event_loop()
-        pool = loop.run_until_complete(asyncpg.create_pool(url, command_timeout=1280))
-        return Database(pool)
+        try:
+            loop = asyncio.get_event_loop()
+            pool = loop.run_until_complete(asyncpg.create_pool(url, command_timeout=1280))
+            return Database(pool)
+        except OSError as e:
+            import re
+            redacted_url = re.sub(r'\:(?!\/\/)[^\@]+', ":******", url)
+            log.error("Failed to connect to database (%s)", redacted_url)
+            return None
 
 
 class Database(DBBase):
