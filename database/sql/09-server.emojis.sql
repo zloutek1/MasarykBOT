@@ -4,24 +4,17 @@
 
 CREATE TABLE server.emojis
 (
-    message_id bigint NOT NULL,
-    name text COLLATE pg_catalog."default",
-    count integer,
-    CONSTRAINT emojis_fkey_message FOREIGN KEY (message_id)
-        REFERENCES server.messages (id) MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION
+    id bigint NOT NULL,
+    name character varying COLLATE pg_catalog."default" NOT NULL,
+    url character varying COLLATE pg_catalog."default",
+    created_at timestamp without time zone,
+    animated boolean,
+    CONSTRAINT emojis_pkey PRIMARY KEY (id)
 )
-
+WITH (
+    OIDS = FALSE
+)
 TABLESPACE pg_default;
 
 ALTER TABLE server.emojis
-    OWNER to masaryk;
--- Index: emojis_idx_unique
-
--- DROP INDEX server.emojis_idx_unique;
-
-CREATE UNIQUE INDEX emojis_idx_unique
-    ON server.emojis USING btree
-    (message_id ASC NULLS LAST, name COLLATE pg_catalog."default" ASC NULLS LAST)
-    TABLESPACE pg_default;
+    OWNER to masaryk_dev;
