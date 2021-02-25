@@ -51,7 +51,8 @@ class Context(commands.Context):
                    .replace("#", "＃")
                    .replace("/", "／")
                    .replace("(", "")
-                   .replace(")", ""))
+                   .replace(")", "")
+                   .replace(":", "꞉"))
 
     async def safe_delete(self, **kwargs):
         try:
