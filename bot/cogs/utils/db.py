@@ -15,18 +15,9 @@ AnyEmote = Union[Emoji, PartialEmoji, str]
 log = logging.getLogger(__name__)
 
 
-class Table(ABC, Generic[T]):
+class Table:
     def __init__(self, db):
         self.db = db
-
-    @staticmethod
-    @abstractmethod
-    async def prepare_one(obj: T):
-        raise NotImplementedError("prepare_one form object not implemented for this table")
-
-    @abstractmethod
-    async def prepare(self, objs: List[T]):
-        raise NotImplementedError("prepare form objects not implemented for this table")
 
     async def select(self, data):
         raise NotImplementedError("select not implemented for this table")
@@ -43,8 +34,17 @@ class Table(ABC, Generic[T]):
     async def soft_delete(self, data):
         raise NotImplementedError("soft delete not implemented for this table, perhaps try hard delete?")
 
+class Mapper(ABC, Generic[T]):
+    @staticmethod
+    @abstractmethod
+    async def prepare_one(obj: T):
+        raise NotImplementedError("prepare_one form object not implemented for this table")
 
-class Guilds(Table[Guild]):
+    @abstractmethod
+    async def prepare(self, objs: List[T]):
+        raise NotImplementedError("prepare form objects not implemented for this table")
+
+class Guilds(Table, Mapper[Guild]):
     @staticmethod
     async def prepare_one(guild: Guild):
         return (guild.id, guild.name, str(guild.icon_url), guild.created_at)
@@ -72,7 +72,7 @@ class Guilds(Table[Guild]):
             await conn.executemany("UPDATE server.guilds SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
-class Categories(Table[CategoryChannel]):
+class Categories(Table, Mapper[CategoryChannel]):
     @staticmethod
     async def prepare_one(category: CategoryChannel):
         return (category.guild.id, category.id, category.name, category.position, category.created_at)
@@ -103,7 +103,7 @@ class Categories(Table[CategoryChannel]):
             await conn.executemany("UPDATE server.categories SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
-class Roles(Table[Role]):
+class Roles(Table, Mapper[Role]):
     @staticmethod
     async def prepare_one(role: Role):
         return (role.guild.id, role.id, role.name, hex(role.color.value), role.created_at)
@@ -131,7 +131,7 @@ class Roles(Table[Role]):
             await conn.executemany("UPDATE server.roles SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
-class Members(Table[Member]):
+class Members(Table, Mapper[Member]):
     @staticmethod
     async def prepare_one(member: Member):
         return (member.id, member.name, str(member.avatar_url), member.created_at)
@@ -162,7 +162,7 @@ class Members(Table[Member]):
             await conn.executemany("UPDATE server.users SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
-class Channels(Table[TextChannel]):
+class Channels(Table, Mapper[TextChannel]):
     @staticmethod
     async def prepare_one(channel: TextChannel):
         category_id = channel.category.id if channel.category is not None else None
@@ -194,7 +194,7 @@ class Channels(Table[TextChannel]):
             await conn.executemany("UPDATE server.channels SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
-class Messages(Table[Message]):
+class Messages(Table, Mapper[Message]):
     @staticmethod
     async def prepare_one(message: Message):
         return (message.channel.id, message.author.id, message.id, message.content, message.created_at, message.edited_at)
@@ -224,13 +224,16 @@ class Messages(Table[Message]):
             await conn.executemany("UPDATE server.messages SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
-class Attachments(Table[Attachment]):
+class Attachments(Table, Mapper[Attachment]):
     @staticmethod
     async def prepare_one(attachment: Attachment):
         return (attachment.id, attachment.filename, attachment.url)
 
     async def prepare(self, attachments: List[Attachment]):
         return [await self.prepare_one(attachment) for attachment in attachments]
+
+    async def prepare_from_message(self, message: Message):
+        return await self.prepare(message.attachments)
 
     async def insert(self, attachments):
         async with self.db.acquire() as conn:
@@ -245,7 +248,7 @@ class Attachments(Table[Attachment]):
             """, attachments)
 
 
-class Emojis(Table[AnyEmote]):
+class Emojis(Table, Mapper[AnyEmote]):
     @staticmethod
     async def prepare_one(emote: AnyEmote):
         if isinstance(emote, str):
@@ -264,51 +267,30 @@ class Emojis(Table[AnyEmote]):
     async def prepare(self, emotes: List[AnyEmote]):
         return [await self.prepare_one(emote) for emote in emotes]
 
-"""
-class Reactions(Table):
+class Reactions(Table, Mapper[Reaction]):
     @staticmethod
-    async def prepare_one(reaction):
+    async def prepare_one(reaction: Reaction):
         from emoji import demojize
         from discord import Emoji, PartialEmoji
 
         user_ids = await reaction.users().map(lambda member: member.id).flatten()
-        emoji_id = emote.id if isinstance(emote := reaction.emoji, (Emoji, PartialEmoji)) else demojize(emote)
+        emoji_id = emote.id if isinstance(emote := reaction.emoji, (Emoji, PartialEmoji)) else ord(emote)
 
         return (reaction.message.id, emoji_id, user_ids)
 
-    async def prepare(self, message):
-        return [await self.prepare_one(reaction) for reaction in message.reactions]
+    async def prepare(self, reactions: List[Reaction]):
+        return [await self.prepare_one(reaction) for reaction in reactions]
+
+    async def prepare_from_message(self, message: Message):
+        return await self.prepare(message.reactions)
 
     async def insert(self, reactions):
         async with self.db.acquire() as conn:
-            await conn.executemany(\"""
+            await conn.executemany("""
                 INSERT INTO server.reactions AS r (message_id, emoji_id, member_ids)
                 VALUES ($1, $2, $3)
                 ON CONFLICT (message_id, emoji_id) DO NOTHING
-            \""", reactions)
-
-
-class Emojis(Table):
-    REGEX = r"((?::\w+(?:~\d+)?:)|(?:<\d+:\w+:>))"
-
-    @staticmethod
-    async def prepare(message):
-        import re
-        from emoji import demojize
-        from collections import Counter
-
-        emojis = re.findall(Emojis.REGEX, demojize(message.content))
-
-        return [(message.id, emote, count) for (emote, count) in Counter(emojis).items()]
-
-    async def insert(self, emojis):
-        async with self.db.acquire() as conn:
-            await conn.executemany(\"""
-                INSERT INTO server.emojis AS r (message_id, name, count)
-                VALUES ($1, $2, $3)
-                ON CONFLICT (message_id, name) DO NOTHING
-            \""", emojis)
-"""
+            """, reactions)
 
 class Logger(Table):
     async def select(self, guild_id):
