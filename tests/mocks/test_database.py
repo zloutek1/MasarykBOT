@@ -5,6 +5,17 @@ from bot.cogs.utils.db import Record
 from tests.mocks import database
 
 class DatabaseMocksTests(unittest.TestCase):
+    def test_missing_repr(self):
+        self.assertIsInstance(database.MISSING, database._MISSING_TYPE)
+        self.assertEquals(repr(database.MISSING), "MISSING")
+
+    def test_field_repr(self):
+        field = database.Field(1)
+        field.name = "a"
+        field.type = int
+
+        self.assertEqual(repr(field), f"Field(name='a',type={int},default=1)")
+
     def test_MockDatabase(self):
         db = database.MockDatabase()
         table = db.guilds
