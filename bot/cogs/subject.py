@@ -228,6 +228,19 @@ class Subject(commands.Cog):
             if len(old_category.channels) == 0:
                 await old_category.delete()
 
+    async def reorder_channels(self) -> None:
+        for guild in self.bot.guilds:
+            for category in guild.categories:
+                if ':' not in category.name:
+                    continue
+
+                ordered = sorted(category.channels, key=lambda c: c.name)
+                if category.channels == ordered:
+                    continue
+
+                for i, channel in enumerate(ordered):
+                    await channel.edit(position=i)
+
     async def get_subject_from_channel(self, channel: TextChannel) -> Optional[Record]:
         if "-" not in channel.name:
             return None
@@ -391,15 +404,15 @@ class Subject(commands.Cog):
                 grouped_by_term[term].append(subject)
         return grouped_by_term
 
-    async def display_list_of_subjects(self, ctx, grouped_by_term):
-        def prepare(subject):
+    async def display_list_of_subjects(self, ctx: Context, grouped_by_term: Dict[str, List[Record]]) -> None:
+        def prepare(subject: Record) -> str:
             faculty = subject.get("faculty")
             code = subject.get("code")
             name = subject.get("name")
             url = subject.get("url")
             return f"**[{faculty}:{code}]({url})** {name}"
 
-        def by_term(term):
+        def by_term(term: str) -> Tuple[int, str]:
             semester, year = term.split()
             return (int(year), semester)
 
@@ -419,11 +432,14 @@ class Subject(commands.Cog):
         try:
             await ctx.send(embed=embed)
         except HTTPException as err:
-            if err.code == ERR_EMBED_BODY_TOO_LONG:
+            if err.code != ERR_EMBED_BODY_TOO_LONG:
                 await ctx.send_error("Found too many results to display, please be more specific")
+                return
+            raise err
+
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: Message) -> None:
         guild_config = get(Config.guilds, id=message.guild.id)
 
         if message.channel.id != guild_config.channels.subject_registration:
@@ -434,7 +450,10 @@ class Subject(commands.Cog):
                 return
 
             if message.embeds[0].color and message.embeds[0].color.value == Config.colors.MUNI_YELLOW:
-                await message.delete(delay=5)
+                try:
+                    await message.delete(delay=60)
+                except NotFound:
+                    pass
                 return
 
         try:
@@ -442,33 +461,26 @@ class Subject(commands.Cog):
         except NotFound:
             pass
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        subject_registrations = [guild.channels.subject_registration for guild in Config.guilds]
+    async def delete_messages_in_subject_channel(self, channel: TextChannel) -> None:
+        async for message in channel.history():
+            if message.author.id == self.bot.user.id and message.embeds:
+                if message.embeds[0].description == SUBJECT_MESSAGE['body']:
+                    continue
 
+            await message.delete()
+
+    async def delete_messages_in_subject_channels(self) -> None:
+        subject_registrations = [guild.channels.subject_registration for guild in Config.guilds]
         for channel_id in subject_registrations:
             if not (channel := self.bot.get_channel(channel_id)):
                 continue
 
-            async for message in channel.history():
-                if message.author.id == self.bot.user.id and message.embeds:
-                    if message.embeds[0].description == SUBJECT_MESSAGE['body']:
-                        continue
+            await self.delete_messages_in_subject_channel(channel)
 
-                await message.delete()
-
-        for guild in self.bot.guilds:
-            for category in guild.categories:
-                if ':' not in category.name:
-                    continue
-
-                ordered = sorted(category.channels, key=lambda c: c.name)
-                if category.channels == ordered:
-                    continue
-
-                for i, channel in enumerate(ordered):
-                    await channel.edit(position=i)
-
+    @commands.Cog.listener()
+    async def on_ready(self):
+        await self.delete_messages_in_subject_channels()
+        await self.reorder_channels()
 
 def setup(bot):
     bot.add_cog(Subject(bot))
