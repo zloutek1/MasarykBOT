@@ -245,6 +245,25 @@ class Attachments(Table[Attachment]):
             """, attachments)
 
 
+class Emojis(Table[AnyEmote]):
+    @staticmethod
+    async def prepare_one(emote: AnyEmote):
+        if isinstance(emote, str):
+            return await Emojis.prepare_unicode_emoji(emote)
+        return (emote.id, emote.name, emote.url, emote.created_at, emote.animated)
+
+    @staticmethod
+    async def prepare_unicode_emoji(emote: str):
+        from emoji import demojize
+        assert len(emote) == 1
+
+        url = "https://unicode.org/emoji/charts/full-emoji-list.html#{hex}".format(hex=hex(ord(emote))[2:])
+        return (ord(emote), demojize(emote).strip(':'), url, datetime.now(), False)
+
+
+    async def prepare(self, emotes: List[AnyEmote]):
+        return [await self.prepare_one(emote) for emote in emotes]
+
 """
 class Reactions(Table):
     @staticmethod
