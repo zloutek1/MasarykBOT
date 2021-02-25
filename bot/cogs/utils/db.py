@@ -2,18 +2,30 @@ import asyncio
 import asyncpg
 import logging
 
+from abc import ABC, abstractmethod
+from datetime import datetime
+
+from discord import Guild, CategoryChannel, Role, Member, TextChannel, Message, Attachment, Reaction, Emoji, PartialEmoji
+from typing import List, TypeVar, Generic, Union
+Record = asyncpg.Record
+T = TypeVar('T')
+AnyEmote = Union[Emoji, PartialEmoji, str]
+
+
 log = logging.getLogger(__name__)
 
-Record = asyncpg.Record
 
-class Table:
+class Table(ABC, Generic[T]):
     def __init__(self, db):
         self.db = db
 
-    async def prepare_one(self, obj):
+    @staticmethod
+    @abstractmethod
+    async def prepare_one(obj: T):
         raise NotImplementedError("prepare_one form object not implemented for this table")
 
-    async def prepare(self, objs):
+    @abstractmethod
+    async def prepare(self, objs: List[T]):
         raise NotImplementedError("prepare form objects not implemented for this table")
 
     async def select(self, data):
@@ -32,12 +44,12 @@ class Table:
         raise NotImplementedError("soft delete not implemented for this table, perhaps try hard delete?")
 
 
-class Guilds(Table):
+class Guilds(Table[Guild]):
     @staticmethod
-    async def prepare_one(guild):
+    async def prepare_one(guild: Guild):
         return (guild.id, guild.name, str(guild.icon_url), guild.created_at)
 
-    async def prepare(self, guilds):
+    async def prepare(self, guilds: List[Guild]):
         return [await self.prepare_one(guild) for guild in guilds]
 
     async def insert(self, data):
@@ -60,12 +72,12 @@ class Guilds(Table):
             await conn.executemany("UPDATE server.guilds SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
-class Categories(Table):
+class Categories(Table[CategoryChannel]):
     @staticmethod
-    async def prepare_one(category):
+    async def prepare_one(category: CategoryChannel):
         return (category.guild.id, category.id, category.name, category.position, category.created_at)
 
-    async def prepare(self, categories):
+    async def prepare(self, categories: List[CategoryChannel]):
         return [await self.prepare_one(category) for category in categories]
 
     async def insert(self, data):
@@ -91,12 +103,12 @@ class Categories(Table):
             await conn.executemany("UPDATE server.categories SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
-class Roles(Table):
+class Roles(Table[Role]):
     @staticmethod
-    async def prepare_one(role):
+    async def prepare_one(role: Role):
         return (role.guild.id, role.id, role.name, hex(role.color.value), role.created_at)
 
-    async def prepare(self, roles):
+    async def prepare(self, roles: List[Role]):
         return [await self.prepare_one(role) for role in roles]
 
     async def insert(self, data):
@@ -119,12 +131,12 @@ class Roles(Table):
             await conn.executemany("UPDATE server.roles SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
-class Members(Table):
+class Members(Table[Member]):
     @staticmethod
-    async def prepare_one(member):
+    async def prepare_one(member: Member):
         return (member.id, member.name, str(member.avatar_url), member.created_at)
 
-    async def prepare(self, members):
+    async def prepare(self, members: List[Member]):
         return [await self.prepare_one(member) for member in members]
 
     async def prepare_from_message(self, message):
@@ -150,13 +162,13 @@ class Members(Table):
             await conn.executemany("UPDATE server.users SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
-class Channels(Table):
+class Channels(Table[TextChannel]):
     @staticmethod
-    async def prepare_one(channel):
+    async def prepare_one(channel: TextChannel):
         category_id = channel.category.id if channel.category is not None else None
         return (channel.guild.id, category_id, channel.id, channel.name, channel.position, channel.created_at)
 
-    async def prepare(self, channels):
+    async def prepare(self, channels: List[TextChannel]):
         return [await self.prepare_one(channel) for channel in channels]
 
     async def insert(self, data):
@@ -182,13 +194,13 @@ class Channels(Table):
             await conn.executemany("UPDATE server.channels SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
-class Messages(Table):
+class Messages(Table[Message]):
     @staticmethod
-    async def prepare_one(message):
+    async def prepare_one(message: Message):
         return (message.channel.id, message.author.id, message.id, message.content, message.created_at, message.edited_at)
 
-    async def prepare(self, message):
-        return [await self.prepare_one(message)]
+    async def prepare(self, messages: List[Message]):
+        return [await self.prepare_one(message) for message in messages]
 
     async def insert(self, messages):
         async with self.db.acquire() as conn:
@@ -212,13 +224,13 @@ class Messages(Table):
             await conn.executemany("UPDATE server.messages SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
-class Attachments(Table):
+class Attachments(Table[Attachment]):
     @staticmethod
-    async def prepare_one(message, attachment):
-        return (message.id, attachment.id, attachment.filename, attachment.url)
+    async def prepare_one(attachment: Attachment):
+        return (attachment.id, attachment.filename, attachment.url)
 
-    async def prepare(self, message):
-        return [await self.prepare_one(message, attachment) for attachment in message.attachments]
+    async def prepare(self, attachments: List[Attachment]):
+        return [await self.prepare_one(attachment) for attachment in attachments]
 
     async def insert(self, attachments):
         async with self.db.acquire() as conn:
@@ -233,6 +245,7 @@ class Attachments(Table):
             """, attachments)
 
 
+"""
 class Reactions(Table):
     @staticmethod
     async def prepare_one(reaction):
@@ -240,20 +253,20 @@ class Reactions(Table):
         from discord import Emoji, PartialEmoji
 
         user_ids = await reaction.users().map(lambda member: member.id).flatten()
-        react = f":{emote.name}:" if isinstance(emote := reaction.emoji, Emoji) or isinstance(emote, PartialEmoji) else demojize(emote)
+        emoji_id = emote.id if isinstance(emote := reaction.emoji, (Emoji, PartialEmoji)) else demojize(emote)
 
-        return (reaction.message.id, react, user_ids)
+        return (reaction.message.id, emoji_id, user_ids)
 
     async def prepare(self, message):
         return [await self.prepare_one(reaction) for reaction in message.reactions]
 
     async def insert(self, reactions):
         async with self.db.acquire() as conn:
-            await conn.executemany("""
-                INSERT INTO server.reactions AS r (message_id, name, member_ids)
+            await conn.executemany(\"""
+                INSERT INTO server.reactions AS r (message_id, emoji_id, member_ids)
                 VALUES ($1, $2, $3)
-                ON CONFLICT (message_id, name) DO NOTHING
-            """, reactions)
+                ON CONFLICT (message_id, emoji_id) DO NOTHING
+            \""", reactions)
 
 
 class Emojis(Table):
@@ -271,12 +284,12 @@ class Emojis(Table):
 
     async def insert(self, emojis):
         async with self.db.acquire() as conn:
-            await conn.executemany("""
+            await conn.executemany(\"""
                 INSERT INTO server.emojis AS r (message_id, name, count)
                 VALUES ($1, $2, $3)
                 ON CONFLICT (message_id, name) DO NOTHING
-            """, emojis)
-
+            \""", emojis)
+"""
 
 class Logger(Table):
     async def select(self, guild_id):
