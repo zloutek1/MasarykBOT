@@ -44,6 +44,12 @@ class Mapper(ABC, Generic[T]):
     async def prepare(self, objs: List[T]):
         raise NotImplementedError("prepare form objects not implemented for this table")
 
+class FromMessageMapper(ABC):
+    @abstractmethod
+    async def prepare_from_message(self, objs: Message):
+        raise NotImplementedError("prepare_from_message form objects not implemented for this table")
+
+
 class Guilds(Table, Mapper[Guild]):
     @staticmethod
     async def prepare_one(guild: Guild):
@@ -131,7 +137,7 @@ class Roles(Table, Mapper[Role]):
             await conn.executemany("UPDATE server.roles SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
-class Members(Table, Mapper[Member]):
+class Members(Table, Mapper[Member], FromMessageMapper):
     @staticmethod
     async def prepare_one(member: Member):
         return (member.id, member.name, str(member.avatar_url), member.created_at)
@@ -224,7 +230,7 @@ class Messages(Table, Mapper[Message]):
             await conn.executemany("UPDATE server.messages SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
-class Attachments(Table, Mapper[Attachment]):
+class Attachments(Table, Mapper[Attachment], FromMessageMapper):
     @staticmethod
     async def prepare_one(attachment: Attachment):
         return (attachment.id, attachment.filename, attachment.url)
@@ -267,7 +273,7 @@ class Emojis(Table, Mapper[AnyEmote]):
     async def prepare(self, emotes: List[AnyEmote]):
         return [await self.prepare_one(emote) for emote in emotes]
 
-class Reactions(Table, Mapper[Reaction]):
+class Reactions(Table, Mapper[Reaction], FromMessageMapper):
     @staticmethod
     async def prepare_one(reaction: Reaction):
         from emoji import demojize
