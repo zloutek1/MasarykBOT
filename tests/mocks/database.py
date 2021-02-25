@@ -6,31 +6,16 @@ from dataclasses import dataclass
 
 import unittest.mock
 
-
 from typing import Optional, List, Union, get_origin, get_args
 
-
-#from bot.cogs.utils import db
+from bot.cogs.utils import db
 from asyncpg.protocol.protocol import _create_record as Record
 
-"""
 
-def MockDatabase():
-    database = db.Database(MockPool())
-
-    tables = [table for table in vars(database).values() if isinstance(table, db.Table)]
-    for table in tables:
-        for attr in dir(table):
-            if attr.startswith('_'):
-                continue
-
-            if attr in ['prepare', 'prepare_one', 'prepare_from_message']:
-                continue
-
-            setattr(table, attr, unittest.mock.AsyncMock())
-
-    return database
-"""
+class _MISSING_TYPE:
+    def __repr__(self):
+        return "MISSING"
+MISSING = _MISSING_TYPE()
 
 class Field:
     __slots__ = ('name', 'type', 'default')
@@ -97,7 +82,7 @@ def _process_class(cls, new):
     return cls
 
 def _get_field(cls, a_name, a_type):
-    default = getattr(cls, a_name, None)
+    default = getattr(cls, a_name, MISSING)
     if isinstance(default, Field):
         field = default
     else:
@@ -129,10 +114,10 @@ def _create_fn(name, cls_name, fields, body_lines, *, return_type=None, globals=
     if not body_lines:
         body_lines = ["pass"]
 
-    args = ', '.join(f"{field.name}: {f_type(field)}" for field in fields)
+    args = ', '.join(_to_arg(field) for field in fields)
     body = '\n'.join(f'  {b}' for b in body_lines)
 
-    txt = f'def {name}({cls_name}, {args}) -> {return_type}:\n{body}'
+    txt = f'def {name}({cls_name}, *, {args}) -> {return_type}:\n{body}'
 
     if 'typing' not in globals:
         globals['typing'] = sys.modules.get('typing')
@@ -148,6 +133,12 @@ def f_type(field):
     else:
         return field.type.__qualname__
 
+def _to_arg(field):
+    if field.default == MISSING:
+        return f"{field.name}: {f_type(field)}"
+    else:
+        return f"{field.name}: {f_type(field)} = {field.default}"
+
 
 def _is_classvar(a_type, typing):
     # This test uses a typing internal class, but it's the best way to
@@ -156,11 +147,14 @@ def _is_classvar(a_type, typing):
             or (type(a_type) is typing._GenericAlias
                 and a_type.__origin__ is typing.ClassVar))
 
-
+####
+#
+#   Mocks
+#
+####
 
 class MockPool(unittest.mock.MagicMock):
     pass
-
 
 @record
 @dataclass
@@ -202,3 +196,4 @@ class MockSubjectServerRecord:
     category_id: Optional[int]
     channel_id: int
     voice_channel_id: Optional[int]
+
