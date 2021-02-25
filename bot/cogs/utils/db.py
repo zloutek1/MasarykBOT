@@ -390,10 +390,6 @@ class Leaderboard(Table):
 
 
 class Emojiboard(Table):
-    async def refresh(self):
-        async with self.db.acquire() as conn:
-            await conn.execute("REFRESH MATERIALIZED VIEW cogs.emojiboard")
-
     async def select(self, guild_id, ignored_users, channel_id, author_id, emoji):
         async with self.db.acquire() as conn:
             return await conn.fetch("""
