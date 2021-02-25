@@ -73,11 +73,9 @@ def _process_class(cls, new):
         # param in __new__.  Use "cls"
         # if possible.
         cls_name = '__dataclass_cls__' if 'cls' in cls_fields else 'cls'
-        self_name = '__dataclass_self__' if 'self' in cls_fields else 'self'
 
         # create __new__ function that returns a record
         setattr(cls, '__new__', _new_fn(cls_name, cls_fields, globals=globals))
-        setattr(cls, '__init__', _init_fn(self_name, cls_fields, globals=globals))
 
     return cls
 
@@ -95,9 +93,6 @@ def _new_fn(cls_name, fields, *, globals=None):
     body_lines.append("return Record(mapping, elems)")
 
     return _create_fn('__new__', cls_name, fields, body_lines, globals=globals)
-
-def _init_fn(self_name, fields, *, globals=None):
-    return _create_fn('__init__', self_name, fields, [], globals=globals)
 
 
 def _create_fn(name, cls_name, fields, body_lines, *, return_type=None, globals=None):
