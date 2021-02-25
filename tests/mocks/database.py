@@ -156,6 +156,25 @@ def _is_classvar(a_type, typing):
 class MockPool(unittest.mock.MagicMock):
     pass
 
+
+def MockDatabase():
+    database = db.Database(MockPool())
+
+    for var in vars(database).values():
+        if not isinstance(var, db.Table):
+            continue
+
+        table = var
+        for attr in dir(table):
+            if (attr in vars(object) or
+                attr in vars(db.Mapper) or
+                attr in vars(db.FromMessageMapper)):
+                continue
+
+            setattr(table, attr, unittest.mock.AsyncMock())
+
+    return database
+
 @record
 @dataclass
 class MockLeaderboardRecord:
