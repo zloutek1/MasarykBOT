@@ -139,12 +139,19 @@ class BackupUntilPresent:
         to_date_str = to_date.strftime('%d.%m.%Y')
         log.info("backing up messages {%s} - {%s} in %s (%s)", from_date_str, to_date_str, channel, channel.guild)
 
+        messages = []
         collectables = self.get_collectables(self.bot)
         async for message in channel.history(after=from_date, before=to_date, limit=1_000_000, oldest_first=True):
+            data = await self.bot.db.messages.prepare_one(message)
+            messages.append(data)
             for collectable in collectables:
                 await collectable.add(message)
 
         else:
+            for i in range(0, len(messages), 550):
+                batch = messages[i:i+550]
+                await self.bot.db.messages.insert(batch)
+
             for collectable in collectables:
                 await collectable.db_insert()
 
@@ -156,21 +163,17 @@ class BackupUntilPresent:
                 insert_fn=bot.db.members.insert
             ),
             Collectable(
-                prepare_fn=bot.db.messages.prepare,
-                insert_fn=bot.db.messages.insert
-            ),
-            Collectable(
-                prepare_fn=bot.db.attachments.prepare,
+                prepare_fn=bot.db.attachments.prepare_from_message,
                 insert_fn=bot.db.attachments.insert
             ),
             Collectable(
-                prepare_fn=bot.db.reactions.prepare,
+                prepare_fn=bot.db.reactions.prepare_from_message,
                 insert_fn=bot.db.reactions.insert
             ),
-            Collectable(
-                prepare_fn=bot.db.emojis.prepare,
-                insert_fn=bot.db.emojis.insert
-            )
+            #Collectable(
+            #    prepare_fn=bot.db.emojis.prepare_from_message,
+            #    insert_fn=bot.db.emojis.insert
+            #)
         ]
 
 
