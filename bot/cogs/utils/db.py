@@ -290,10 +290,9 @@ class Emojis(Table, Mapper[AnyEmote]):
 class Reactions(Table, Mapper[Reaction], FromMessageMapper):
     @staticmethod
     async def prepare_one(reaction: Reaction):
-        from emoji import demojize
-        from discord import Emoji, PartialEmoji
-
-        user_ids = await reaction.users().map(lambda member: member.id).flatten()
+        user_ids = (await reaction.users()
+                                  .map(lambda member: member.id)
+                                  .flatten())
         emoji_id = emote.id if isinstance(emote := reaction.emoji, (Emoji, PartialEmoji)) else ord(emote)
 
         return (reaction.message.id, emoji_id, user_ids)
