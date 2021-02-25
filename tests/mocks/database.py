@@ -88,10 +88,7 @@ def MockDatabase():
             if attr.startswith('_'):
                 continue
 
-            if attr in ['prepare', 'prepare_one']:
-                continue
-
-            if isinstance(table, db.Members) and attr in ['prepare_from_message']:
+            if attr in ['prepare', 'prepare_one', 'prepare_from_message']:
                 continue
 
             setattr(table, attr, unittest.mock.AsyncMock())
