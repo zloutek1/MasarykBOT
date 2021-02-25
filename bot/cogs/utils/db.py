@@ -4,6 +4,8 @@ import logging
 
 log = logging.getLogger(__name__)
 
+Record = asyncpg.Record
+
 class Table:
     def __init__(self, db):
         self.db = db
