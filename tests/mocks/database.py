@@ -31,6 +31,22 @@ def MockDatabase():
 
     return database
 """
+
+class Field:
+    __slots__ = ('name', 'type', 'default')
+
+    def __init__(self, default):
+        self.name = None
+        self.type = None
+        self.default = default
+
+    def __repr__(self):
+        return ('Field('
+                f'name={self.name!r},'
+                f'type={self.type!r},'
+                f'default={self.default!r}'
+                ')')
+
 def record(cls=None, /, *, new=True):
     """
     @record decorator
@@ -61,12 +77,13 @@ def _process_class(cls, new):
 
     # Annotated fields defined in this class will be used
     # to generate internal functions
-    cls_fields = cls.__dict__.get('__annotations__', {})
+    cls_annotations = cls.__dict__.get('__annotations__', {})
 
     # Now find fields in our class.  While doing so, validate some
     # things, and set the default values (as class attributes) where
     # we can.
-    #cls_fields = [field for field in cls_annotations]
+    cls_fields = [_get_field(cls, name, type)
+                  for name, type in cls_annotations.items()]
 
     if new:
         # The name to use for the "cls"
@@ -79,6 +96,18 @@ def _process_class(cls, new):
 
     return cls
 
+def _get_field(cls, a_name, a_type):
+    default = getattr(cls, a_name, None)
+    if isinstance(default, Field):
+        field = default
+    else:
+        field = Field(default)
+
+    field.name = a_name
+    field.type = a_type
+
+    return field
+
 def _new_fn(cls_name, fields, *, globals=None):
     """
     create a __new__ function that has cls as first arguemnt
@@ -88,8 +117,8 @@ def _new_fn(cls_name, fields, *, globals=None):
 
     body_lines = []
 
-    body_lines.append("mapping = collections.OrderedDict({" + ", ".join(f"'{f}': {i}" for i, f in enumerate(fields)) + "})")
-    body_lines.append('elems = (' + ", ".join(f for f in fields) + ')')
+    body_lines.append("mapping = collections.OrderedDict({" + ", ".join(f"'{f.name}': {i}" for i, f in enumerate(fields)) + "})")
+    body_lines.append('elems = (' + ", ".join(f.name for f in fields) + ')')
     body_lines.append("return Record(mapping, elems)")
 
     return _create_fn('__new__', cls_name, fields, body_lines, globals=globals)
@@ -100,19 +129,32 @@ def _create_fn(name, cls_name, fields, body_lines, *, return_type=None, globals=
     if not body_lines:
         body_lines = ["pass"]
 
-    args = ', '.join(f"{field_name}: {field_type.__qualname__}" for (field_name, field_type) in fields.items())
+    args = ', '.join(f"{field.name}: {f_type(field)}" for field in fields)
     body = '\n'.join(f'  {b}' for b in body_lines)
 
     txt = f'def {name}({cls_name}, {args}) -> {return_type}:\n{body}'
+
+    if 'typing' not in globals:
+        globals['typing'] = sys.modules.get('typing')
 
     ns = {}
     exec(txt, globals, ns)
     return ns[name]
 
 
+def f_type(field):
+    if field.type.__module__ == 'typing':
+        return field.type
+    else:
+        return field.type.__qualname__
 
 
-
+def _is_classvar(a_type, typing):
+    # This test uses a typing internal class, but it's the best way to
+    # test if this is a ClassVar.
+    return (a_type is typing.ClassVar
+            or (type(a_type) is typing._GenericAlias
+                and a_type.__origin__ is typing.ClassVar))
 
 
 
