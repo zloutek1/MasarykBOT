@@ -34,6 +34,8 @@ class Table:
     async def soft_delete(self, data):
         raise NotImplementedError("soft delete not implemented for this table, perhaps try hard delete?")
 
+
+
 class Mapper(ABC, Generic[T]):
     @staticmethod
     @abstractmethod
@@ -44,10 +46,13 @@ class Mapper(ABC, Generic[T]):
     async def prepare(self, objs: List[T]):
         raise NotImplementedError("prepare form objects not implemented for this table")
 
+
+
 class FromMessageMapper(ABC):
     @abstractmethod
     async def prepare_from_message(self, objs: Message):
         raise NotImplementedError("prepare_from_message form objects not implemented for this table")
+
 
 
 class Guilds(Table, Mapper[Guild]):
@@ -76,6 +81,7 @@ class Guilds(Table, Mapper[Guild]):
     async def soft_delete(self, ids):
         async with self.db.acquire() as conn:
             await conn.executemany("UPDATE server.guilds SET deleted_at=NOW() WHERE id = $1;", ids)
+
 
 
 class Categories(Table, Mapper[CategoryChannel]):
@@ -109,6 +115,7 @@ class Categories(Table, Mapper[CategoryChannel]):
             await conn.executemany("UPDATE server.categories SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
+
 class Roles(Table, Mapper[Role]):
     @staticmethod
     async def prepare_one(role: Role):
@@ -135,6 +142,7 @@ class Roles(Table, Mapper[Role]):
     async def soft_delete(self, ids):
         async with self.db.acquire() as conn:
             await conn.executemany("UPDATE server.roles SET deleted_at=NOW() WHERE id = $1;", ids)
+
 
 
 class Members(Table, Mapper[Member], FromMessageMapper):
@@ -166,6 +174,7 @@ class Members(Table, Mapper[Member], FromMessageMapper):
     async def soft_delete(self, ids):
         async with self.db.acquire() as conn:
             await conn.executemany("UPDATE server.users SET deleted_at=NOW() WHERE id = $1;", ids)
+
 
 
 class Channels(Table, Mapper[TextChannel]):
@@ -200,6 +209,7 @@ class Channels(Table, Mapper[TextChannel]):
             await conn.executemany("UPDATE server.channels SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
+
 class Messages(Table, Mapper[Message]):
     @staticmethod
     async def prepare_one(message: Message):
@@ -230,6 +240,7 @@ class Messages(Table, Mapper[Message]):
             await conn.executemany("UPDATE server.messages SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
+
 class Attachments(Table, Mapper[Attachment], FromMessageMapper):
     @staticmethod
     async def prepare_one(attachment: Attachment):
@@ -254,6 +265,7 @@ class Attachments(Table, Mapper[Attachment], FromMessageMapper):
             """, attachments)
 
 
+
 class Emojis(Table, Mapper[AnyEmote]):
     @staticmethod
     async def prepare_one(emote: AnyEmote):
@@ -272,6 +284,8 @@ class Emojis(Table, Mapper[AnyEmote]):
 
     async def prepare(self, emotes: List[AnyEmote]):
         return [await self.prepare_one(emote) for emote in emotes]
+
+
 
 class Reactions(Table, Mapper[Reaction], FromMessageMapper):
     @staticmethod
@@ -298,6 +312,8 @@ class Reactions(Table, Mapper[Reaction], FromMessageMapper):
                 ON CONFLICT (message_id, emoji_id) DO NOTHING
             """, reactions)
 
+
+
 class Logger(Table):
     async def select(self, guild_id):
         async with self.db.acquire() as conn:
@@ -315,6 +331,7 @@ class Logger(Table):
                 async with conn.transaction():
                     await conn.execute("DELETE FROM cogs.logger WHERE guild_id = $1 AND from_date = $2 AND to_date = $3", guild_id, from_date, to_date)
                     await conn.execute("UPDATE cogs.logger SET to_date = $3, finished_at = NOW() WHERE guild_id = $1 AND to_date = $2 AND finished_at IS NOT NULL", guild_id, from_date, to_date)
+
 
 
 class Leaderboard(Table):
@@ -372,6 +389,7 @@ class Leaderboard(Table):
             """, author_id)
 
 
+
 class Emojiboard(Table):
     async def refresh(self):
         async with self.db.acquire() as conn:
@@ -395,6 +413,7 @@ class Emojiboard(Table):
                 ORDER BY sent_total DESC
                 LIMIT 10
             """, guild_id, ignored_users, channel_id, author_id, emoji)
+
 
 
 class Subjects(Table):
@@ -469,6 +488,7 @@ class Subjects(Table):
             """, guild_id, faculty, code)
 
 
+
 class Tags(Table):
     async def select(self, guild_id, user_id):
         async with self.db.acquire() as conn:
@@ -511,6 +531,7 @@ class Tags(Table):
             """, guild_id, author_id, name, new_content)
 
 
+
 class DBBase:
     def __init__(self, pool):
         self.pool = pool
@@ -526,6 +547,7 @@ class DBBase:
             redacted_url = re.sub(r'\:(?!\/\/)[^\@]+', ":******", url)
             log.error("Failed to connect to database (%s)", redacted_url)
             return None
+
 
 
 class Database(DBBase):
