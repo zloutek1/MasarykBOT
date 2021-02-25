@@ -28,7 +28,7 @@ def setup_logging():
 
     fmt_date = '%Y-%m-%d %H:%M:%S'
     fmt_shell = '{message}'
-    fmt_file = '{asctime} | {levelname:<7} | {filename}:{lineno} | {message}'
+    fmt_file = '{asctime} | {levelname:<7} | {filename:>20}:{lineno:<4} | {message}'
 
     shell_handler.setFormatter(logging.Formatter(fmt_shell, fmt_date, style='{'))
     file_handler.setFormatter(logging.Formatter(fmt_file, fmt_date, style='{'))
