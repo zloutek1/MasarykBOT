@@ -267,3 +267,28 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
         #    (17, ":kekw:", 1),
         #    (17, demojize("⭐"), 1)
         #])
+
+    async def test_Collectable(self):
+        async def prepare(attachments):
+            return [(attachment.id, attachment.filename, attachment.url)
+                    for attachment in attachments]
+
+        prepare_fn = prepare
+        insert_fn = AsyncMock()
+
+        collectable = logger.Collectable(prepare_fn, insert_fn)
+
+        attachments = [
+            MockAttachment(id=10, filename="file.txt", url="aabb.com"),
+            MockAttachment(id=11, filename="filee2.txt", url="say.com"),
+            MockAttachment(id=12, filename="zipped.zip", url="hello.com")
+        ]
+
+        await collectable.add(attachments)
+        await collectable.db_insert()
+
+        insert_fn.assert_called_once_with([
+            (10, "file.txt", "aabb.com"),
+            (11, "filee2.txt", "say.com"),
+            (12, "zipped.zip", "hello.com")
+        ])
