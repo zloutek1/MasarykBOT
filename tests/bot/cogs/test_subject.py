@@ -13,13 +13,13 @@ class SubjectTests(unittest.IsolatedAsyncioTestCase):
         cog = subject.Subject(bot=bot)
 
         for i in range(10 + 1):
-            cog.add = AsyncMock(return_value=None)
+            cog.add_subject = AsyncMock(return_value=None)
 
             ctx = MockContext()
             subjects = [f"IB{xxx:0>3}" for xxx in range(i)]
-            await cog._add.callback(cog, ctx, *subjects)
+            await cog.add.callback(cog, ctx, *subjects)
 
-            cog.add.assert_has_calls([
+            cog.add_subject.assert_has_calls([
                 call(ctx, code) for code in subjects
             ])
 
@@ -28,14 +28,14 @@ class SubjectTests(unittest.IsolatedAsyncioTestCase):
         cog = subject.Subject(bot=bot)
 
         for i in range(11, 20):
-            cog.add = AsyncMock(return_value=None)
+            cog.add_subject = AsyncMock(return_value=None)
 
             ctx = AsyncMock()
             subjects = [f"IB{xxx:0>3}" for xxx in range(i)]
-            await cog._add.callback(cog, ctx, *subjects)
+            await cog.add.callback(cog, ctx, *subjects)
 
             self.assertEqual(ctx.send_embed.call_count, 1)
-            self.assertEqual(cog.add.call_count, 0)
+            self.assertEqual(cog.add_subject.call_count, 0)
 
     async def test_in_subject_channel_wrong_room(self):
         bot = MockBot()
@@ -95,13 +95,13 @@ class SubjectTests(unittest.IsolatedAsyncioTestCase):
         cog = subject.Subject(bot=bot)
 
         for i in range(10 + 1):
-            cog.remove = AsyncMock(return_value=None)
+            cog.remove_subject = AsyncMock(return_value=None)
 
             ctx = MockContext()
             subjects = [f"IB{xxx:0>3}" for xxx in range(i)]
-            await cog._remove.callback(cog, ctx, *subjects)
+            await cog.remove.callback(cog, ctx, *subjects)
 
-            cog.remove.assert_has_calls([
+            cog.remove_subject.assert_has_calls([
                 call(ctx, code) for code in subjects
             ])
 
@@ -110,14 +110,14 @@ class SubjectTests(unittest.IsolatedAsyncioTestCase):
         cog = subject.Subject(bot=bot)
 
         for i in range(11, 20):
-            cog.remove = AsyncMock(return_value=None)
+            cog.remove_subject = AsyncMock(return_value=None)
 
             ctx = AsyncMock()
             subjects = [f"IB{xxx:0>3}" for xxx in range(i)]
-            await cog._remove.callback(cog, ctx, *subjects)
+            await cog.remove.callback(cog, ctx, *subjects)
 
             self.assertEqual(ctx.send_embed.call_count, 1)
-            self.assertEqual(cog.remove.call_count, 0)
+            self.assertEqual(cog.remove_subject.call_count, 0)
 
     async def test_find_subject_not_found(self):
         bot = MockBot()

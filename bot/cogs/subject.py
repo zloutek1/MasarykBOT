@@ -65,7 +65,7 @@ class Subject(commands.Cog):
 
     @subject.command(name="add")
     @commands.bot_has_permissions(manage_channels=True)
-    async def _add(self, ctx: Context, *subject_codes: str) -> None:
+    async def add(self, ctx: Context, *subject_codes: str) -> None:
         await ctx.safe_delete(delay=5)
 
         if len(subject_codes) > 10:
@@ -73,9 +73,9 @@ class Subject(commands.Cog):
             return
 
         for subject_code in subject_codes:
-            await self.add(ctx, subject_code)
+            await self.add_subject(ctx, subject_code)
 
-    async def add(self, ctx: Context, code_pattern: str) -> None:
+    async def add_subject(self, ctx: Context, code_pattern: str) -> None:
         if not self._in_subject_channel(ctx):
             return
 
@@ -118,7 +118,7 @@ class Subject(commands.Cog):
 
     @subject.command(name="remove")
     @commands.bot_has_permissions(manage_channels=True)
-    async def _remove(self, ctx: Context, *subject_codes: str) -> None:
+    async def remove(self, ctx: Context, *subject_codes: str) -> None:
         await ctx.safe_delete(delay=5)
 
         if len(subject_codes) > 10:
@@ -126,9 +126,9 @@ class Subject(commands.Cog):
             return
 
         for subject_code in subject_codes:
-            await self.remove(ctx, subject_code)
+            await self.remove_subject(ctx, subject_code)
 
-    async def remove(self, ctx: Context, code_pattern: str) -> None:
+    async def remove_subject(self, ctx: Context, code_pattern: str) -> None:
         if not self._in_subject_channel(ctx):
             return
 
