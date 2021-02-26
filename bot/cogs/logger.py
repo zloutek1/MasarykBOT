@@ -16,6 +16,9 @@ log = logging.getLogger(__name__)
 def partition(cond, lst):
     return [[i for i in lst if cond(i)], [i for i in lst if not cond(i)]]
 
+def chunks(lst, n):
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
 
 class BackupUntilPresent:
     def __init__(self, bot):
@@ -433,8 +436,7 @@ class Collectable:
         self.content.extend(await self.prepare_fn(item))
 
     async def db_insert(self):
-        for i in range(0, len(self.content), 550):
-            batch = self.content[i:i+550]
+        for batch in chunks(self.content, 550):
             await self.insert_fn(batch)
 
 
