@@ -3,7 +3,9 @@ import logging
 from collections import deque
 from datetime import datetime, timedelta
 
-from discord import Member, TextChannel, CategoryChannel
+from typing import List
+
+from discord import Guild, Role, Member, TextChannel, CategoryChannel
 from discord.abc import PrivateChannel
 from discord.ext import tasks, commands
 from discord.ext.commands import has_permissions
@@ -21,42 +23,44 @@ class BackupUntilPresent:
 
     async def backup(self):
         log.info("Starting backup process")
-        await self.backup_guilds()
+        await self.backup_guilds(self.bot.guilds)
 
         for guild in self.bot.guilds:
-            await self.backup_categories(guild)
-            await self.backup_roles(guild)
-            await self.backup_members(guild)
-            await self.backup_channels(guild)
-            await self.backup_messages(guild)
+            await self.backup_categories(guild.categories)
+            await self.backup_roles(guild.roles)
+            await self.backup_members(guild.members)
+            await self.backup_channels(guild.text_channels)
+
+            for channel in guild.text_channels:
+                await self.backup_messages(channel)
 
         log.info("Finished backup process")
 
-    async def backup_guilds(self):
+    async def backup_guilds(self, guilds: List[Guild]):
         log.info("backing up guilds")
-        data = await self.bot.db.guilds.prepare(self.bot.guilds)
+        data = await self.bot.db.guilds.prepare(guilds)
         await self.bot.db.guilds.insert(data)
 
-    async def backup_categories(self, guild):
+    async def backup_categories(self, categories: List[CategoryChannel]):
         log.info("backing up categories")
-        data = await self.bot.db.categories.prepare(guild.categories)
+        data = await self.bot.db.categories.prepare(categories)
         await self.bot.db.categories.insert(data)
 
-    async def backup_roles(self, guild):
+    async def backup_roles(self, roles: List[Role]):
         log.info("backing up roles")
-        data = await self.bot.db.roles.prepare(guild.roles)
+        data = await self.bot.db.roles.prepare(roles)
         await self.bot.db.roles.insert(data)
 
-    async def backup_members(self, guild):
+    async def backup_members(self, members: List[Member]):
         log.info("backing up members")
-        for i in range(0, len(guild.members), 550):
-            chunk = guild.members[i:i+550]
+        for i in range(0, len(members), 550):
+            chunk = members[i:i+550]
             data = await self.bot.db.members.prepare(chunk)
             await self.bot.db.members.insert(data)
 
-    async def backup_channels(self, guild):
+    async def backup_channels(self, text_channels: List[TextChannel]):
         log.info("backing up channels")
-        data = await self.bot.db.channels.prepare(guild.text_channels)
+        data = await self.bot.db.channels.prepare(text_channels)
         await self.bot.db.channels.insert(data)
 
     async def backup_messages(self, guild):

@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, call
+from unittest.mock import patch, call, AsyncMock
 
 from emoji import demojize
 from datetime import datetime, date
@@ -31,13 +31,9 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
             MockGuild(id=1548, name="guild3", icon_url="http://icon6.jpg", created_at=date(2010, 11, 12)),
         ]
 
-        bot = MockBot(guilds = guilds)
-        bot.db = MockDatabase()
+        await self.cog.backup_guilds(guilds)
 
-        cog = logger.Logger(bot=bot)
-        await cog.backup_guilds()
-
-        bot.db.guilds.insert.assert_called_once_with([
+        self.bot.db.guilds.insert.assert_called_once_with([
             (11,   "guild1", "http://icon.jpg", date.today()),
             (158,  "guild2", "http://icon2.jpg", date.today()),
             (1548, "guild3", "http://icon6.jpg", date(2010, 11, 12))
@@ -45,13 +41,13 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_backup_categories(self):
         guild = MockGuild(id=8)
-        guild.categories = [
+        categories = [
             MockCategoryChannel(guild=guild, id=10, name="category1", position=1, created_at=date.today()),
             MockCategoryChannel(guild=guild, id=11, name="category2", position=2, created_at=date.today()),
             MockCategoryChannel(guild=guild, id=12, name="category3", position=3, created_at=date(2010, 11, 12)),
         ]
 
-        await self.cog.backup_categories(guild)
+        await self.cog.backup_categories(categories)
 
         self.bot.db.categories.insert.assert_called_once_with([
             (8, 10, "category1", 1, date.today()),
@@ -61,13 +57,13 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_backup_roles(self):
         guild = MockGuild(id=8)
-        guild.roles = [
+        roles = [
             MockRole(guild=guild, id=10, name="Admin", color=0xfedc56, created_at=date.today()),
             MockRole(guild=guild, id=11, name="Member", created_at=date.today()),
             MockRole(guild=guild, id=12, name="everyone", created_at=date(2010, 11, 12)),
         ]
 
-        await self.cog.backup_roles(guild)
+        await self.cog.backup_roles(roles)
 
         self.bot.db.roles.insert.assert_called_once_with([
             (8, 10, "Admin", hex(0xfedc56), date.today()),
@@ -77,13 +73,13 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_backup_small_members(self):
         guild = MockGuild(id=8)
-        guild.members = [
+        members = [
             MockMember(guild=guild, id=10, name="User", avatar_url="http://image.png", discriminator="9010", created_at=date.today()),
             MockMember(guild=guild, id=11, name="Bob", avatar_url="http://image2.png", discriminator="1100", created_at=date.today()),
             MockMember(guild=guild, id=12, name="Zlo", avatar_url="http://image3.png", discriminator="0000", created_at=date(2010, 11, 12)),
         ]
 
-        await self.cog.backup_members(guild)
+        await self.cog.backup_members(members)
 
         self.bot.db.members.insert.assert_called_once_with([
             (10, "User", "http://image.png", date.today()),
@@ -95,38 +91,94 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
         names = ["User", "Bob" "Zlo", "Four", "Five"]
 
         guild = MockGuild(id=8)
-        guild.members = [
+        members = [
             MockMember(guild=guild, id=index, name=names[index % len(names)], avatar_url="http://image.png", discriminator=f"{index:0>4}", created_at=date.today())
             for index in range(1_000)
         ]
 
-        await self.cog.backup_members(guild)
+        await self.cog.backup_members(members)
 
         def fmt(m):
             return m.id, m.name, m.avatar_url, m.created_at
 
-        self.assertEqual(self.bot.db.members.insert.call_count, len(guild.members) // 550 + 1)
+        self.assertEqual(self.bot.db.members.insert.call_count, len(members) // 550 + 1)
         self.bot.db.members.insert.assert_has_calls([
-            call(list(map(fmt, guild.members[:550]))),
-            call(list(map(fmt, guild.members[550:])))
+            call(list(map(fmt, members[:550]))),
+            call(list(map(fmt, members[550:])))
         ])
 
     async def test_backup_channels(self):
         guild = MockGuild(id=8)
         category = MockCategoryChannel(guild=guild, id=9)
-        guild.text_channels = [
+        text_channels = [
             MockTextChannel(guild=guild, category=None, id=10, name="general", position=1, created_at=date.today()),
             MockTextChannel(guild=guild, category=None, id=11, name="fun", position=2, created_at=date.today()),
             MockTextChannel(guild=guild, category=category, id=12, name="nsfw", position=1, created_at=date(2010, 11, 12)),
         ]
 
-        await self.cog.backup_channels(guild)
+        await self.cog.backup_channels(text_channels)
 
         self.bot.db.channels.insert.assert_called_once_with([
             (8, None, 10, "general", 1, date.today()),
             (8, None, 11, "fun", 2, date.today()),
             (8, 9, 12, "nsfw", 1, date(2010, 11, 12))
         ])
+
+    async def test_backup(self):
+        self.cog.backup_guilds = AsyncMock()
+        self.cog.backup_roles = AsyncMock()
+        self.cog.backup_members = AsyncMock()
+        self.cog.backup_categories = AsyncMock()
+        self.cog.backup_channels = AsyncMock()
+        self.cog.backup_messages = AsyncMock()
+
+        channels = [
+            MockTextChannel(id=12),
+            MockTextChannel(id=14),
+            MockTextChannel(id=15)
+        ]
+
+        guilds = [
+            MockGuild(
+                id = 11,
+                roles=[MockRole(id=12)],
+                members=[MockMember(id=13)],
+                categories=[MockCategoryChannel(id=14)],
+                text_channels = [channels[0]]
+            ),
+            MockGuild(
+                id = 13,
+                roles=[],
+                members=[],
+                categories=[],
+                text_channels = [channels[1], channels[2]]
+            )
+        ]
+
+        self.bot.guilds = guilds
+        await self.cog.backup()
+
+        self.cog.backup_guilds.assert_has_calls([
+            call(guilds)
+        ])
+        self.cog.backup_roles.assert_has_calls([
+            call(guilds[0].roles),
+            call(guilds[1].roles)
+        ])
+        self.cog.backup_members.assert_has_calls([
+            call(guilds[0].members),
+            call(guilds[1].members)
+        ])
+        self.cog.backup_categories.assert_has_calls([
+            call(guilds[0].categories),
+            call(guilds[1].categories)
+        ])
+        self.cog.backup_channels.assert_has_calls([
+            call(guilds[0].text_channels),
+            call(guilds[1].text_channels)
+        ])
+        self.cog.backup_messages.assert_has_calls([call(channels[0]), call(channels[1]), call(channels[2])])
+
 
     async def test_get_next_week(self):
         guild = MockGuild(id=8, created_at=datetime(2020, 9, 13, 1, 10, 15))
