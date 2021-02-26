@@ -7,7 +7,7 @@ from tests.mocks import database
 class DatabaseMocksTests(unittest.TestCase):
     def test_missing_repr(self):
         self.assertIsInstance(database.MISSING, database._MISSING_TYPE)
-        self.assertEquals(repr(database.MISSING), "MISSING")
+        self.assertEqual(repr(database.MISSING), "MISSING")
 
     def test_field_repr(self):
         field = database.Field(1)
