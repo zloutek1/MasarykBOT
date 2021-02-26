@@ -50,9 +50,10 @@ class SubjectTests(unittest.IsolatedAsyncioTestCase):
         config.guilds = [guild_config]
         #
 
-        channel = MockTextChannel(id=12)
-        guild = MockGuild(id=8, text_channels=[channel])
-        ctx = MockContext(guild=guild)
+        channel1 = MockTextChannel(id=10)
+        channel2 = MockTextChannel(id=11)
+        guild = MockGuild(id=8, text_channels=[channel1, channel2])
+        ctx = MockContext(guild=guild, channel=channel2)
 
         with patch('bot.cogs.subject.Config', config):
             await cog._in_subject_channel(ctx)
