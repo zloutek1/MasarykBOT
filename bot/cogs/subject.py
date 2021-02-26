@@ -1,6 +1,7 @@
 import logging
 from collections import defaultdict
 from textwrap import dedent
+from contextlib import suppress
 
 from typing import Tuple, Optional, List, Dict
 from bot.cogs.utils.db import Record
@@ -450,16 +451,12 @@ class Subject(commands.Cog):
                 return
 
             if message.embeds[0].color and message.embeds[0].color.value == Config.colors.MUNI_YELLOW:
-                try:
+                with suppress(NotFound):
                     await message.delete(delay=60)
-                except NotFound:
-                    pass
                 return
 
-        try:
+        with suppress(NotFound):
             await message.delete(delay=0.2)
-        except NotFound:
-            pass
 
     async def delete_messages_in_subject_channel(self, channel: TextChannel) -> None:
         async for message in channel.history():
