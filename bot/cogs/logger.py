@@ -4,6 +4,7 @@ from collections import deque
 from datetime import datetime, timedelta
 
 from bot.bot import MasarykBOT
+from bot.cogs.utils.db import Record
 from typing import List
 
 from discord import Guild, Role, Member, TextChannel, CategoryChannel
@@ -25,7 +26,7 @@ class BackupUntilPresent:
     def __init__(self, bot: MasarykBOT):
         self.bot = bot
 
-    async def backup(self):
+    async def backup(self) -> None:
         log.info("Starting backup process")
         await self.backup_guilds(self.bot.guilds)
 
@@ -40,44 +41,44 @@ class BackupUntilPresent:
 
         log.info("Finished backup process")
 
-    async def backup_guilds(self, guilds: List[Guild]):
+    async def backup_guilds(self, guilds: List[Guild]) -> None:
         log.info("backing up guilds")
         data = await self.bot.db.guilds.prepare(guilds)
         await self.bot.db.guilds.insert(data)
 
-    async def backup_categories(self, categories: List[CategoryChannel]):
+    async def backup_categories(self, categories: List[CategoryChannel]) -> None:
         log.info("backing up categories")
         data = await self.bot.db.categories.prepare(categories)
         await self.bot.db.categories.insert(data)
 
-    async def backup_roles(self, roles: List[Role]):
+    async def backup_roles(self, roles: List[Role]) -> None:
         log.info("backing up roles")
         data = await self.bot.db.roles.prepare(roles)
         await self.bot.db.roles.insert(data)
 
-    async def backup_members(self, members: List[Member]):
+    async def backup_members(self, members: List[Member]) -> None:
         log.info("backing up members")
         for i in range(0, len(members), 550):
             chunk = members[i:i+550]
             data = await self.bot.db.members.prepare(chunk)
             await self.bot.db.members.insert(data)
 
-    async def backup_channels(self, text_channels: List[TextChannel]):
+    async def backup_channels(self, text_channels: List[TextChannel]) -> None:
         log.info("backing up channels")
         data = await self.bot.db.channels.prepare(text_channels)
         await self.bot.db.channels.insert(data)
 
-    async def backup_messages(self, channel: TextChannel):
+    async def backup_messages(self, channel: TextChannel) -> None:
         log.info("backing up messages")
         await self.backup_failed_weeks(channel)
         await self.backup_new_weeks(channel)
 
-    async def backup_failed_weeks(self, channel: TextChannel):
+    async def backup_failed_weeks(self, channel: TextChannel) -> None:
         while _still_failed := await self.backup_failed_week(channel):
             log.debug("finished running failed process, re-checking if everything is fine...")
             await asyncio.sleep(3)
 
-    async def backup_failed_week(self, channel: TextChannel):
+    async def backup_failed_week(self, channel: TextChannel) -> bool:
         rows = await self.bot.db.logger.select(channel.id)
         failed_rows = [row for row in rows if row.get("finished_at") is None]
 
@@ -90,7 +91,7 @@ class BackupUntilPresent:
         pass
         #await self.bot.db.logger.mark_process_finished(guild.id, from_date, to_date, is_first_week=False)
 
-    async def backup_new_weeks(self, channel: TextChannel):
+    async def backup_new_weeks(self, channel: TextChannel) -> None:
         while _still_behind := await self.backup_new_week(channel):
             log.debug("newer week exists, re-running backup for next week")
             await asyncio.sleep(2)
@@ -110,7 +111,7 @@ class BackupUntilPresent:
         await self.bot.db.logger.mark_process_finished(guild.id, from_date, to_date, is_first_week)
         return self.next_week_still_behind_today(to_date)
 
-    async def get_latest_finished_process(self, channel: TextChannel):
+    async def get_latest_finished_process(self, channel: TextChannel) -> Record:
         finished_processes = await self.bot.db.logger.select(channel.id)
         if not finished_processes:
             return None
