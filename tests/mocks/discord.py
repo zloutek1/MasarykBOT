@@ -7,7 +7,7 @@ import itertools
 import logging
 import unittest.mock
 from asyncio import AbstractEventLoop
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Dict, Any
 
 import discord
 #from discord.ext.commands import Context
@@ -90,8 +90,8 @@ class CustomMockMixin:
 
     child_mock_type = unittest.mock.MagicMock
     discord_id = itertools.count(0)
-    spec_set = None
-    additional_spec_asyncs = None
+    spec_set: Any = None
+    additional_spec_asyncs: Any = None
 
     def __init__(self, **kwargs):
         name = kwargs.pop('name', None)  # `name` has special meaning for Mock classes, so we need to set it manually.
@@ -221,6 +221,7 @@ class MockRole(CustomMockMixin, unittest.mock.Mock, ColourMixin, HashableMixin):
         if isinstance(self.colour, int):
             self.colour = discord.Colour(self.colour)
 
+        self.permissions: discord.Permissions   # annotate type
         if isinstance(self.permissions, int):
             self.permissions = discord.Permissions(self.permissions)
 
@@ -464,7 +465,7 @@ class MockMessage(CustomMockMixin, unittest.mock.MagicMock):
     spec_set = message_instance
 
     def __init__(self, **kwargs) -> None:
-        default_kwargs = {'attachments': []}
+        default_kwargs: Dict[str, Any] = {'attachments': []}
         super().__init__(**collections.ChainMap(kwargs, default_kwargs))
         self.author = kwargs.get('author', MockMember())
         self.channel = kwargs.get('channel', MockTextChannel())
@@ -521,7 +522,8 @@ class MockReaction(CustomMockMixin, unittest.mock.MagicMock):
 
         self.users.return_value = AsyncIterator(_users)
 
-        self.__str__.return_value = str(self.emoji)
+    def __str__(self):
+        return str(self.emoji)
 
 
 reaction_event_data = {
