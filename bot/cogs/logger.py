@@ -66,38 +66,33 @@ class BackupUntilPresent:
         data = await self.bot.db.channels.prepare(text_channels)
         await self.bot.db.channels.insert(data)
 
-    async def backup_messages(self, guild):
+    async def backup_messages(self, channel: TextChannel):
         log.info("backing up messages")
-        await self.backup_failed_weeks(guild)
-        await self.backup_new_weeks(guild)
+        await self.backup_failed_weeks(channel)
+        await self.backup_new_weeks(channel)
 
-    async def backup_failed_weeks(self, guild):
-        while _still_failed := await self.backup_failed_week(guild):
+    async def backup_failed_weeks(self, channel: TextChannel):
+        while _still_failed := await self.backup_failed_week(channel):
             log.debug("finished running failed process, re-checking if everything is fine...")
             await asyncio.sleep(3)
 
-    async def backup_new_weeks(self, guild):
-        while _still_behind := await self.backup_new_week(guild):
-            log.debug("newer week exists, re-running backup for next week")
-            await asyncio.sleep(2)
-
-    async def backup_failed_week(self, guild):
-        rows = await self.bot.db.logger.select(guild.id)
+    async def backup_failed_week(self, channel: TextChannel):
+        rows = await self.bot.db.logger.select(channel.id)
         failed_rows, _success_rows = partition(lambda row: row.get("finished_at") is None, rows)
 
         for failed_row in failed_rows:
-            await self.rebackup_failed_week(guild, failed_row)
+            await self.backup_in_range(channel, failed_row.get("from_date"), failed_row.get("to_date"))
 
         return len(failed_rows) != 0
 
-    async def rebackup_failed_week(self, guild, failed_row):
-        from_date = failed_row.get("from_date")
-        to_date = failed_row.get("to_date")
+    async def backup_in_range(self, channel: TextChannel, from_date: datetime, to_date: datetime):
+        pass
+        #await self.bot.db.logger.mark_process_finished(guild.id, from_date, to_date, is_first_week=False)
 
-        for channel in guild.text_channels:
-            await self.try_to_backup_messages_in_nonempty_channel(channel, from_date, to_date)
-
-        await self.bot.db.logger.mark_process_finished(guild.id, from_date, to_date, is_first_week=False)
+    async def backup_new_weeks(self, channel: TextChannel):
+        while _still_behind := await self.backup_new_week(channel):
+            log.debug("newer week exists, re-running backup for next week")
+            await asyncio.sleep(2)
 
     async def backup_new_week(self, guild):
         finished_process = await self.get_finished_process(guild)
