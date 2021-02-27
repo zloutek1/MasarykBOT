@@ -3,6 +3,7 @@ import logging
 from collections import deque
 from datetime import datetime, timedelta
 
+from bot.bot import MasarykBOT
 from typing import List
 
 from discord import Guild, Role, Member, TextChannel, CategoryChannel
@@ -21,7 +22,7 @@ def chunks(lst, n):
         yield lst[i:i + n]
 
 class BackupUntilPresent:
-    def __init__(self, bot):
+    def __init__(self, bot: MasarykBOT):
         self.bot = bot
 
     async def backup(self):
