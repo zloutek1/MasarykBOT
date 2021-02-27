@@ -12,7 +12,8 @@ from tests.mocks.discord import (MockBot,
                                 MockGuild, MockCategoryChannel, MockTextChannel,
                                 MockMessage, MockAttachment, MockReaction, MockEmoji,
                                 AsyncIterator)
-from tests.mocks.database import MockDatabase
+from tests.mocks.database import MockDatabase, MockLoggerRecord
+from tests.mocks.helpers import MockReturnFunc
 
 
 class LoggerTests(unittest.IsolatedAsyncioTestCase):
@@ -23,6 +24,61 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
 
         self.bot = bot
         self.cog = cog
+
+    async def test_backup(self):
+        self.cog.backup_guilds = AsyncMock()
+        self.cog.backup_roles = AsyncMock()
+        self.cog.backup_members = AsyncMock()
+        self.cog.backup_categories = AsyncMock()
+        self.cog.backup_channels = AsyncMock()
+        self.cog.backup_messages = AsyncMock()
+
+        channels = [
+            MockTextChannel(id=12),
+            MockTextChannel(id=14),
+            MockTextChannel(id=15)
+        ]
+
+        guilds = [
+            MockGuild(
+                id = 11,
+                roles=[MockRole(id=12)],
+                members=[MockMember(id=13)],
+                categories=[MockCategoryChannel(id=14)],
+                text_channels = [channels[0]]
+            ),
+            MockGuild(
+                id = 13,
+                roles=[],
+                members=[],
+                categories=[],
+                text_channels = [channels[1], channels[2]]
+            )
+        ]
+
+        self.bot.guilds = guilds
+        await self.cog.backup()
+
+        self.cog.backup_guilds.assert_has_calls([
+            call(guilds)
+        ])
+        self.cog.backup_roles.assert_has_calls([
+            call(guilds[0].roles),
+            call(guilds[1].roles)
+        ])
+        self.cog.backup_members.assert_has_calls([
+            call(guilds[0].members),
+            call(guilds[1].members)
+        ])
+        self.cog.backup_categories.assert_has_calls([
+            call(guilds[0].categories),
+            call(guilds[1].categories)
+        ])
+        self.cog.backup_channels.assert_has_calls([
+            call(guilds[0].text_channels),
+            call(guilds[1].text_channels)
+        ])
+        self.cog.backup_messages.assert_has_calls([call(channels[0]), call(channels[1]), call(channels[2])])
 
     async def test_backup_guilds(self):
         guilds = [
@@ -124,62 +180,63 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
             (8, 9, 12, "nsfw", 1, date(2010, 11, 12))
         ])
 
-    async def test_backup(self):
-        self.cog.backup_guilds = AsyncMock()
-        self.cog.backup_roles = AsyncMock()
-        self.cog.backup_members = AsyncMock()
-        self.cog.backup_categories = AsyncMock()
-        self.cog.backup_channels = AsyncMock()
-        self.cog.backup_messages = AsyncMock()
+    @unittest.skip("integration test")
+    async def test_messages(self):
+        pass
 
-        channels = [
-            MockTextChannel(id=12),
-            MockTextChannel(id=14),
-            MockTextChannel(id=15)
+    async def test_backup_failed_weeks(self):
+        def generator():
+            yield True
+            yield True
+            yield True
+            yield False
+
+        self.cog.backup_failed_week = AsyncMock()
+        self.cog.backup_failed_week.side_effect = MockReturnFunc(generator)
+
+        channel = MockTextChannel(id=8)
+        with patch('bot.cogs.logger.asyncio.sleep'):
+            await self.cog.backup_failed_weeks(channel)
+
+        self.assertEqual(self.cog.backup_failed_week.call_count, 4)
+
+    async def test_backup_failed_week(self):
+        rows = [
+            MockLoggerRecord(channel_id=1, from_date=datetime(2020, 9, 13), to_date=datetime(2020, 9, 20), finished_at=datetime(2020, 10, 12)),
+            MockLoggerRecord(channel_id=1, from_date=datetime(2020, 9, 20), to_date=datetime(2020, 9, 27), finished_at=None),
+            MockLoggerRecord(channel_id=1, from_date=datetime(2020, 9, 27), to_date=datetime(2020, 10, 4), finished_at=datetime(2020, 10, 12)),
+            MockLoggerRecord(channel_id=1, from_date=datetime(2020, 10, 4), to_date=datetime(2020, 10, 11), finished_at=None),
+            MockLoggerRecord(channel_id=1, from_date=datetime(2020, 10, 11), to_date=datetime(2020, 10, 18), finished_at=datetime(2020, 10, 12)),
         ]
+        self.bot.db.logger.select.return_value = rows
 
-        guilds = [
-            MockGuild(
-                id = 11,
-                roles=[MockRole(id=12)],
-                members=[MockMember(id=13)],
-                categories=[MockCategoryChannel(id=14)],
-                text_channels = [channels[0]]
-            ),
-            MockGuild(
-                id = 13,
-                roles=[],
-                members=[],
-                categories=[],
-                text_channels = [channels[1], channels[2]]
-            )
-        ]
+        self.cog.backup_in_range = AsyncMock()
 
-        self.bot.guilds = guilds
-        await self.cog.backup()
+        channel = MockTextChannel(id=8)
+        await self.cog.backup_failed_week(channel)
 
-        self.cog.backup_guilds.assert_has_calls([
-            call(guilds)
+        self.cog.backup_in_range.assert_has_calls([
+            call(channel, datetime(2020, 9, 20), datetime(2020, 9, 27)),
+            call(channel, datetime(2020, 10, 4), datetime(2020, 10, 11))
         ])
-        self.cog.backup_roles.assert_has_calls([
-            call(guilds[0].roles),
-            call(guilds[1].roles)
-        ])
-        self.cog.backup_members.assert_has_calls([
-            call(guilds[0].members),
-            call(guilds[1].members)
-        ])
-        self.cog.backup_categories.assert_has_calls([
-            call(guilds[0].categories),
-            call(guilds[1].categories)
-        ])
-        self.cog.backup_channels.assert_has_calls([
-            call(guilds[0].text_channels),
-            call(guilds[1].text_channels)
-        ])
-        self.cog.backup_messages.assert_has_calls([call(channels[0]), call(channels[1]), call(channels[2])])
 
+    async def test_backup_new_weeks(self):
+        def generator():
+            yield True
+            yield True
+            yield True
+            yield False
 
+        self.cog.backup_new_week = AsyncMock()
+        self.cog.backup_new_week.side_effect = MockReturnFunc(generator)
+
+        channel = MockTextChannel(id=8)
+        with patch('bot.cogs.logger.asyncio.sleep'):
+            await self.cog.backup_new_weeks(channel)
+
+        self.assertEqual(self.cog.backup_new_week.call_count, 4)
+
+    """
     async def test_get_next_week(self):
         guild = MockGuild(id=8, created_at=datetime(2020, 9, 13, 1, 10, 15))
         (from_date, to_date) = self.cog.get_next_week(guild, None)
@@ -267,6 +324,7 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
         #    (17, ":kekw:", 1),
         #    (17, demojize("⭐"), 1)
         #])
+    """
 
     async def test_Collectable(self):
         async def prepare(attachments):
