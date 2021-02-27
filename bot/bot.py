@@ -19,10 +19,10 @@ log = logging.getLogger(__name__)
 
 
 class MasarykBOT(commands.Bot):
-    def __init__(self, database: db.Database, *args, description=DESCRIPTION, **kwargs):
+    def __init__(self, *args, description=DESCRIPTION, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.db = database
+        self.db: Optional[db.Database] = None
         self.uptime: Optional[datetime] = None
 
     async def on_ready(self):
