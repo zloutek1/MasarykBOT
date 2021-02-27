@@ -4,7 +4,7 @@
 
 CREATE TABLE cogs.logger
 (
-    guild_id bigint NOT NULL,
+    channel_id bigint NOT NULL,
     from_date timestamp without time zone NOT NULL,
     to_date timestamp without time zone NOT NULL,
     finished_at timestamp without time zone
@@ -20,7 +20,7 @@ ALTER TABLE cogs.logger
 
 CREATE UNIQUE INDEX logger_idx_unique_end
     ON cogs.logger USING btree
-    (guild_id ASC NULLS LAST, to_date ASC NULLS LAST)
+    (channel_id ASC NULLS LAST, to_date ASC NULLS LAST)
     TABLESPACE pg_default;
 -- Index: logger_idx_unique_start
 
@@ -28,5 +28,5 @@ CREATE UNIQUE INDEX logger_idx_unique_end
 
 CREATE UNIQUE INDEX logger_idx_unique_start
     ON cogs.logger USING btree
-    (guild_id ASC NULLS LAST, from_date ASC NULLS LAST)
+    (channel_id ASC NULLS LAST, from_date ASC NULLS LAST)
     TABLESPACE pg_default;
