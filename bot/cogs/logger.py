@@ -41,6 +41,7 @@ class BackupUntilPresent:
 
         log.info("Finished backup process")
 
+
     async def backup_guilds(self, guilds: List[Guild]) -> None:
         log.info("backing up guilds")
         data = await self.bot.db.guilds.prepare(guilds)
@@ -68,10 +69,12 @@ class BackupUntilPresent:
         data = await self.bot.db.channels.prepare(text_channels)
         await self.bot.db.channels.insert(data)
 
+
     async def backup_messages(self, channel: TextChannel) -> None:
         log.info("backing up messages")
         await self.backup_failed_weeks(channel)
         await self.backup_new_weeks(channel)
+
 
     async def backup_failed_weeks(self, channel: TextChannel) -> None:
         while _still_failed := await self.backup_failed_week(channel):
@@ -87,6 +90,7 @@ class BackupUntilPresent:
 
         return len(failed_rows) != 0
 
+
     async def backup_new_weeks(self, channel: TextChannel) -> None:
         while _still_behind := await self.backup_new_week(channel):
             log.debug("newer week exists, re-running backup for next week")
@@ -99,6 +103,7 @@ class BackupUntilPresent:
         await self.try_to_backup_in_range(channel, from_date, to_date)
 
         return to_date < datetime.now()
+
 
     async def get_latest_finished_process(self, channel: TextChannel) -> Record:
         finished_processes = await self.bot.db.logger.select(channel.id)
@@ -123,6 +128,7 @@ class BackupUntilPresent:
 
         return from_date, to_date
 
+
     async def try_to_backup_in_range(self, channel: TextChannel, from_date: datetime, to_date: datetime) -> None:
         try:
             await self.backup_in_range(channel, from_date, to_date)
@@ -141,14 +147,12 @@ class BackupUntilPresent:
             messages = []
             collectables = self.get_collectables(self.bot)
             async for message in channel.history(after=from_date, before=to_date, limit=1_000_000, oldest_first=True):
-                data = await self.bot.db.messages.prepare_one(message)
-                messages.append(data)
+                messages.append(await self.bot.db.messages.prepare_one(message))
                 for collectable in collectables:
                     await collectable.add(message)
 
             else:
-                for i in range(0, len(messages), 550):
-                    batch = messages[i:i+550]
+                for batch in chunks(messages, 550):
                     await self.bot.db.messages.insert(batch)
 
                 for collectable in collectables:
