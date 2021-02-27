@@ -1,4 +1,3 @@
-# type: ignore
 """ source: https://github.com/python-discord/bot/blob/master/tests/_autospec.py (6.2.2021) """
 
 import contextlib

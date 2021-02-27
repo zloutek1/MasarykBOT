@@ -1,4 +1,3 @@
-# type: ignore
 """ source: https://github.com/python-discord/bot/blob/master/tests/helpers.py (6.2.20201) """
 
 from __future__ import annotations
