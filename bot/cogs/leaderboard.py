@@ -1,5 +1,5 @@
 import re
-from typing import Union
+from typing import Union, get_args
 from datetime import datetime
 from emoji import demojize, emojize
 
@@ -62,7 +62,7 @@ class Leaderboard(commands.Cog):
             #channel - get messages in a specific channel
         """
 
-        (channel, member) = self.resolve_arguments(arg1, arg2, types=T.__args__)
+        (channel, member) = self.resolve_arguments(arg1, arg2, types=get_args(T))
 
         async with ctx.typing():
             member = member if member else ctx.author
@@ -149,7 +149,7 @@ class Leaderboard(commands.Cog):
             #channel - get emojis/reacts in a specific channel
             :emote: - get stats of a specific emoji
         """
-        (channel, member, emoji) = self.resolve_arguments(arg1, arg2, arg3, types=U.__args__)
+        (channel, member, emoji) = self.resolve_arguments(arg1, arg2, arg3, types=get_args(U))
 
         async with ctx.typing():
             member_id = member.id if member else None
