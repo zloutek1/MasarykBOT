@@ -79,7 +79,7 @@ class BackupUntilPresent:
 
     async def backup_failed_week(self, channel: TextChannel):
         rows = await self.bot.db.logger.select(channel.id)
-        failed_rows, _success_rows = partition(lambda row: row.get("finished_at") is None, rows)
+        failed_rows = [row for row in rows if row.get("finished_at") is None]
 
         for failed_row in failed_rows:
             await self.backup_in_range(channel, failed_row.get("from_date"), failed_row.get("to_date"))
