@@ -4,14 +4,17 @@ from collections import deque
 from datetime import datetime, timedelta
 
 from bot.bot import MasarykBOT
+from bot.cogs.utils.context import Context
 from bot.cogs.utils.db import Record
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Callable, Generic, TypeVar
 
 from discord import Guild, Role, Member, TextChannel, CategoryChannel
 from discord.abc import PrivateChannel
 from discord.ext import tasks, commands
 from discord.ext.commands import has_permissions
 from discord.errors import Forbidden, NotFound
+
+T = TypeVar('T')
 
 log = logging.getLogger(__name__)
 
@@ -422,9 +425,9 @@ class BackupOnEvents:
             counter += take_elements
 
 
-class Collectable:
-    def __init__(self, prepare_fn=None, insert_fn=None):
-        self.content = []
+class Collectable(Generic[T]):
+    def __init__(self, prepare_fn: Callable[[T], List[Tuple]]=None, insert_fn: Callable[[List[Tuple]], None]=None):
+        self.content: List[Tuple] = []
         self.prepare_fn = prepare_fn
         self.insert_fn = insert_fn
 
@@ -437,7 +440,7 @@ class Collectable:
 
 
 class Logger(commands.Cog, BackupUntilPresent, BackupOnEvents):
-    def __init__(self, bot):
+    def __init__(self, bot: MasarykBOT):
         self.bot = bot
 
         BackupUntilPresent.__init__(self, bot)
@@ -453,7 +456,7 @@ class Logger(commands.Cog, BackupUntilPresent, BackupOnEvents):
 
     @commands.command(name="backup")
     @has_permissions(administrator=True)
-    async def _backup(self, _ctx):
+    async def _backup(self, _ctx: Context):
         await self.backup()
 
 def setup(bot):
