@@ -322,7 +322,7 @@ class Logger(Table):
         async with self.db.acquire() as conn:
             await conn.execute("INSERT INTO cogs.logger VALUES ($1, $2, $3, NULL)", guild_id, from_date, to_date)
 
-    async def mark_process_finished(self, guild_id, from_date, to_date, is_first_week):
+    async def mark_process_finished(self, guild_id, from_date, to_date, is_first_week=False):
         async with self.db.acquire() as conn:
             if is_first_week:
                 await conn.execute("UPDATE cogs.logger SET finished_at = NOW() WHERE guild_id = $1 AND finished_at IS NULL", guild_id)
@@ -331,6 +331,21 @@ class Logger(Table):
                     await conn.execute("DELETE FROM cogs.logger WHERE guild_id = $1 AND from_date = $2 AND to_date = $3", guild_id, from_date, to_date)
                     await conn.execute("UPDATE cogs.logger SET to_date = $3, finished_at = NOW() WHERE guild_id = $1 AND to_date = $2 AND finished_at IS NOT NULL", guild_id, from_date, to_date)
 
+    def process(self, guild_id, from_date, to_date):
+        return self.Process(self, guild_id, from_date, to_date)
+
+    class Process:
+        def __init__(self, cls, guild_id, from_date, to_date):
+            self.parent = cls
+            self.guild_id = guild_id
+            self.from_date = from_date
+            self.to_date = to_date
+
+        async def __aenter__(self):
+            return await self.parent.start_process(self.guild_id, self.from_date, self.to_date)
+
+        async def __aexit__(self, exc_type, exc, tb):
+            await self.parent.mark_process_finished(self.guild_id, self.from_date, self.to_date)
 
 
 class Leaderboard(Table):

@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
 
 from bot.cogs.utils import db
 from tests.mocks.discord import MockGuild, MockCategoryChannel, MockRole, MockMember, MockTextChannel, MockMessage, MockAttachment, MockReaction, MockEmoji, MockPartialEmoji
@@ -144,3 +144,16 @@ class DBTests(unittest.IsolatedAsyncioTestCase):
 
         actual = await table.prepare([emoji])
         self.assertListEqual([expected], actual)
+
+    async def test_logger_with_process(self):
+        table = db.Logger(MockPool())
+
+        table.start_process = AsyncMock()
+        table.mark_process_finished = AsyncMock()
+
+        async with table.process(guild_id=10, from_date=datetime(2020, 9, 20), to_date=datetime(2020, 9, 27)):
+            table.start_process.assert_called_once()
+            table.mark_process_finished.assert_not_called()
+
+        table.start_process.assert_called_once()
+        table.mark_process_finished.assert_called_once()
