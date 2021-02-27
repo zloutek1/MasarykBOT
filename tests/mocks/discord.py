@@ -13,7 +13,7 @@ import discord
 #from discord.ext.commands import Context
 
 from bot.cogs.utils.context import Context
-from bot.bot import MasarykBOT as Bot
+from bot.bot import MasarykBOT
 from tests.mocks._autospec import autospec  # noqa: F401 other modules import it via this module
 
 
@@ -303,7 +303,8 @@ class MockBot(CustomMockMixin, unittest.mock.MagicMock):
     Instances of this class will follow the specifications of `discord.ext.commands.Bot` instances.
     For more information, see the `MockGuild` docstring.
     """
-    spec_set = Bot(
+    spec_set = MasarykBOT(
+        db=unittest.mock.MagicMock(),
         command_prefix=unittest.mock.MagicMock(),
         loop=_get_mock_loop(),
     )
