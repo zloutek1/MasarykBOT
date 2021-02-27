@@ -50,11 +50,10 @@ if __name__ == "__main__":
         emojis=True,
         guild_reactions=True)
 
-    bot = MasarykBOT(command_prefix=commands.when_mentioned_or("!"),
+    bot = MasarykBOT(db=Database.connect(os.getenv("POSTGRES")),
+                     command_prefix=commands.when_mentioned_or("!"),
                      intents=intents,
                      allowed_mentions=discord.AllowedMentions(roles=False, everyone=False, users=True),)
-
-    bot.db = Database.connect(os.getenv("POSTGRES"))
 
     for extension in initail_cogs:
         try:

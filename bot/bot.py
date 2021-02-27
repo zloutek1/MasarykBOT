@@ -9,7 +9,8 @@ from typing import Optional
 from discord.ext import commands
 
 from bot.constants import Config
-from bot.cogs.utils import context, db
+from bot.cogs.utils import context
+from bot.cogs.utils.db import Database
 
 DESCRIPTION = """
 $ Hello
@@ -19,10 +20,10 @@ log = logging.getLogger(__name__)
 
 
 class MasarykBOT(commands.Bot):
-    def __init__(self, *args, description=DESCRIPTION, **kwargs):
+    def __init__(self, db: Database, *args, description=DESCRIPTION, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.db: Optional[db.Database] = None
+        self.db: Database = db
         self.uptime: Optional[datetime] = None
 
     async def on_ready(self):
