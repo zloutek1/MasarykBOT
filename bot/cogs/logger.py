@@ -96,7 +96,8 @@ class BackupUntilPresent:
             await asyncio.sleep(2)
 
     async def backup_new_week(self, guild):
-        finished_process = await self.get_finished_process(guild)
+        finished_process = await self.get_latest_finished_process(channel)
+
         (from_date, to_date) = self.get_next_week(guild, finished_process)
         if from_date > datetime.now():
             from_date, to_date = datetime.now() - timedelta(weeks=1), datetime.now()
@@ -109,8 +110,8 @@ class BackupUntilPresent:
         await self.bot.db.logger.mark_process_finished(guild.id, from_date, to_date, is_first_week)
         return self.next_week_still_behind_today(to_date)
 
-    async def get_finished_process(self, guild):
-        finished_processes = await self.bot.db.logger.select(guild.id)
+    async def get_latest_finished_process(self, channel: TextChannel):
+        finished_processes = await self.bot.db.logger.select(channel.id)
         if not finished_processes:
             return None
         return max(finished_processes, key=lambda proc: proc.get("finished_at"))

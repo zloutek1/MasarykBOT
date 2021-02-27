@@ -236,6 +236,22 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(self.cog.backup_new_week.call_count, 4)
 
+    async def test_get_latest_finished_week(self):
+        rows = [
+            MockLoggerRecord(channel_id=1, from_date=datetime(2020, 9, 13), to_date=datetime(2020, 9, 20), finished_at=datetime(2020, 10, 12)),
+            MockLoggerRecord(channel_id=1, from_date=datetime(2020, 9, 20), to_date=datetime(2020, 9, 27), finished_at=None),
+            MockLoggerRecord(channel_id=1, from_date=datetime(2020, 9, 27), to_date=datetime(2020, 10, 4), finished_at=datetime(2020, 10, 12)),
+            MockLoggerRecord(channel_id=1, from_date=datetime(2020, 10, 4), to_date=datetime(2020, 10, 11), finished_at=datetime(2020, 10, 12)),
+            MockLoggerRecord(channel_id=1, from_date=datetime(2020, 10, 11), to_date=datetime(2020, 10, 18), finished_at=None),
+        ]
+
+        self.bot.db.logger.select.return_value = rows
+
+        channel = MockTextChannel(id=1)
+        latest = await self.cog.get_latest_finished_process(channel)
+
+        self.assertEqual(latest, MockLoggerRecord(channel_id=1, from_date=datetime(2020, 10, 4), to_date=datetime(2020, 10, 11), finished_at=datetime(2020, 10, 12)))
+
     """
     async def test_get_next_week(self):
         guild = MockGuild(id=8, created_at=datetime(2020, 9, 13, 1, 10, 15))
