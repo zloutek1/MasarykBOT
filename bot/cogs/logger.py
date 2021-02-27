@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 from bot.bot import MasarykBOT
 from bot.cogs.utils.db import Record
-from typing import List
+from typing import List, Tuple, Optional
 
 from discord import Guild, Role, Member, TextChannel, CategoryChannel
 from discord.abc import PrivateChannel
@@ -83,82 +83,76 @@ class BackupUntilPresent:
         failed_rows = [row for row in rows if row.get("finished_at") is None]
 
         for failed_row in failed_rows:
-            await self.backup_in_range(channel, failed_row.get("from_date"), failed_row.get("to_date"))
+            await self.try_to_backup_in_range(channel, failed_row.get("from_date"), failed_row.get("to_date"))
 
         return len(failed_rows) != 0
-
-    async def backup_in_range(self, channel: TextChannel, from_date: datetime, to_date: datetime):
-        pass
-        #await self.bot.db.logger.mark_process_finished(guild.id, from_date, to_date, is_first_week=False)
 
     async def backup_new_weeks(self, channel: TextChannel) -> None:
         while _still_behind := await self.backup_new_week(channel):
             log.debug("newer week exists, re-running backup for next week")
             await asyncio.sleep(2)
 
-    async def backup_new_week(self, guild):
+    async def backup_new_week(self, channel: TextChannel) -> bool:
         finished_process = await self.get_latest_finished_process(channel)
+        (from_date, to_date) = self.get_next_week(channel, finished_process)
 
-        (from_date, to_date) = self.get_next_week(guild, finished_process)
-        if from_date > datetime.now():
-            from_date, to_date = datetime.now() - timedelta(weeks=1), datetime.now()
-        await self.bot.db.logger.start_process(guild.id, from_date, to_date)
+        await self.try_to_backup_in_range(channel, from_date, to_date)
 
-        for channel in guild.text_channels:
-            await self.try_to_backup_messages_in_nonempty_channel(channel, from_date, to_date)
-
-        is_first_week = finished_process is None
-        await self.bot.db.logger.mark_process_finished(guild.id, from_date, to_date, is_first_week)
-        return self.next_week_still_behind_today(to_date)
+        return to_date < datetime.now()
 
     async def get_latest_finished_process(self, channel: TextChannel) -> Record:
         finished_processes = await self.bot.db.logger.select(channel.id)
         if not finished_processes:
             return None
-        return max(finished_processes, key=lambda proc: proc.get("finished_at"))
+
+        def compare(proc: Record):
+            # sort by highest finish date, then by to_date
+            return (proc.get("finished_at") or datetime.min, proc.get("to_date"))
+
+        return max(finished_processes, key=compare)
 
     @staticmethod
-    def get_next_week(guild, process):
+    def get_next_week(channel: TextChannel, process: Optional[Record]) -> Tuple[datetime, datetime]:
         if process is None:
-            return guild.created_at, guild.created_at + timedelta(weeks=1)
+            from_date, to_date = channel.created_at, channel.created_at + timedelta(weeks=1)
         else:
-            return process.get("to_date"), process.get("to_date") + timedelta(weeks=1)
+            from_date, to_date = process.get("to_date"), process.get("to_date") + timedelta(weeks=1)
 
-    @staticmethod
-    def next_week_still_behind_today(to_date):
-        return to_date + timedelta(weeks=1) < datetime.now()
+        if from_date > datetime.now():
+            from_date, to_date = datetime.now() - timedelta(weeks=1), datetime.now()
 
-    async def try_to_backup_messages_in_nonempty_channel(self, channel, from_date, to_date):
-        if channel.last_message_id is None:
-            return
+        return from_date, to_date
 
+    async def try_to_backup_in_range(self, channel: TextChannel, from_date: datetime, to_date: datetime) -> None:
         try:
-            await self.backup_messages_in_nonempty_channel(channel, from_date, to_date)
+            await self.backup_in_range(channel, from_date, to_date)
         except Forbidden:
             log.debug("missing permissions to backup messages in %s (%s)", channel, channel.guild)
         except NotFound:
             log.debug("channel %s was not found in (%s)", channel, channel.guild)
 
-    async def backup_messages_in_nonempty_channel(self, channel, from_date, to_date):
-        from_date_str = from_date.strftime('%d.%m.%Y')
-        to_date_str = to_date.strftime('%d.%m.%Y')
-        log.info("backing up messages {%s} - {%s} in %s (%s)", from_date_str, to_date_str, channel, channel.guild)
+    async def backup_in_range(self, channel: TextChannel, from_date: datetime, to_date: datetime) -> None:
+        if channel.last_message_id is None:
+            return
 
-        messages = []
-        collectables = self.get_collectables(self.bot)
-        async for message in channel.history(after=from_date, before=to_date, limit=1_000_000, oldest_first=True):
-            data = await self.bot.db.messages.prepare_one(message)
-            messages.append(data)
-            for collectable in collectables:
-                await collectable.add(message)
+        log.info("backing up messages {%s} - {%s} in %s (%s)", from_date.strftime('%d.%m.%Y'), to_date.strftime('%d.%m.%Y'), channel, channel.guild)
 
-        else:
-            for i in range(0, len(messages), 550):
-                batch = messages[i:i+550]
-                await self.bot.db.messages.insert(batch)
+        async with self.bot.db.logger.process(channel.id, from_date, to_date):
+            messages = []
+            collectables = self.get_collectables(self.bot)
+            async for message in channel.history(after=from_date, before=to_date, limit=1_000_000, oldest_first=True):
+                data = await self.bot.db.messages.prepare_one(message)
+                messages.append(data)
+                for collectable in collectables:
+                    await collectable.add(message)
 
-            for collectable in collectables:
-                await collectable.db_insert()
+            else:
+                for i in range(0, len(messages), 550):
+                    batch = messages[i:i+550]
+                    await self.bot.db.messages.insert(batch)
+
+                for collectable in collectables:
+                    await collectable.db_insert()
 
     @staticmethod
     def get_collectables(bot):
