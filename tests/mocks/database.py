@@ -208,3 +208,11 @@ class MockSubjectServerRecord:
     channel_id: int
     voice_channel_id: Optional[int]
 
+
+@record
+@dataclass
+class MockLoggerRecord:
+    channel_id: int
+    from_date: datetime.datetime
+    to_date: datetime.datetime
+    finished_at: Optional[datetime.datetime]
