@@ -252,6 +252,33 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(latest, MockLoggerRecord(channel_id=1, from_date=datetime(2020, 10, 4), to_date=datetime(2020, 10, 11), finished_at=datetime(2020, 10, 12)))
 
+    async def test_get_next_week_channel_beginning(self):
+        channel = MockTextChannel(id=11, created_at=datetime(2020, 9, 13))
+        process = None
+
+        from_date, to_date = self.cog.get_next_week(channel, process)
+        self.assertEqual(from_date, datetime(2020, 9, 13))
+        self.assertEqual(to_date, datetime(2020, 9, 20))
+
+    async def test_get_next_week_process(self):
+        channel = MockTextChannel(id=11, created_at=datetime(2020, 9, 13))
+        process = MockLoggerRecord(channel_id=1, from_date=datetime(2020, 9, 20), to_date=datetime(2020, 9, 27), finished_at=None)
+
+        from_date, to_date = self.cog.get_next_week(channel, process)
+        self.assertEqual(from_date, datetime(2020, 9, 27))
+        self.assertEqual(to_date, datetime(2020, 10, 4))
+
+    async def test_get_next_week_current_week(self):
+        channel = MockTextChannel(id=11, created_at=datetime(2020, 9, 13))
+        process = MockLoggerRecord(channel_id=1, from_date=datetime(2020, 9, 27), to_date=datetime(2020, 10, 4), finished_at=None)
+
+        with patch('bot.cogs.logger.datetime') as mocked_datetime:
+            mocked_datetime.now.return_value = datetime(2020, 9, 27)
+
+            from_date, to_date = self.cog.get_next_week(channel, process)
+            self.assertEqual(from_date, datetime(2020, 9, 20))
+            self.assertEqual(to_date, datetime(2020, 9, 27))
+
     """
     async def test_get_next_week(self):
         guild = MockGuild(id=8, created_at=datetime(2020, 9, 13, 1, 10, 15))
