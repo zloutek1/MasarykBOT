@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from collections import deque
+from collections import deque, defaultdict
 from datetime import datetime, timedelta
 
 from bot.bot import MasarykBOT
@@ -187,9 +187,9 @@ class BackupOnEvents:
     def __init__(self, bot):
         self.bot = bot
 
-        self.insert_queues = {}
-        self.update_queues = {}
-        self.delete_queues = {}
+        self.insert_queues: Dict[Callable[[List[Tuple]], Awaitable[None]], deque[Tuple]] = defaultdict(deque)
+        self.update_queues: Dict[Callable[[List[Tuple]], Awaitable[None]], deque[Tuple]] = defaultdict(deque)
+        self.delete_queues: Dict[Callable[[List[Tuple]], Awaitable[None]], deque[Tuple]] = defaultdict(deque)
 
         self.task_put_queues_to_database.start()
 
@@ -206,18 +206,19 @@ class BackupOnEvents:
     async def on_guild_join(self, guild):
         log.info("joined guild %s", guild)
         data = await self.bot.db.guilds.prepare_one(guild)
-        await self.bot.db.guilds.insert([data])
+        self.insert_queues[self.bot.db.guilds.insert].append(data)
 
     @commands.Cog.listener()
     async def on_guild_update(self, before, after):
         log.info("updated guild from %s to %s", before, after)
         data = await self.bot.db.guilds.prepare_one(after)
-        await self.bot.db.guilds.insert([data])
+        self.update_queues[self.bot.db.guilds.update].append(data)
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
         log.info("left guild %s", guild)
-        await self.bot.db.guilds.soft_delete([(guild.id,)])
+        data = (guild.id,)
+        self.delete_queues[self.bot.db.guilds.soft_delete].append(data)
 
     ###
     #
@@ -237,11 +238,11 @@ class BackupOnEvents:
 
     async def on_textchannel_create(self, channel):
         data = await self.bot.db.channels.prepare_one(channel)
-        await self.bot.db.channels.insert([data])
+        self.insert_queues[self.bot.db.channels.insert].append(data)
 
     async def on_category_create(self, channel):
         data = await self.bot.db.categories.prepare_one(channel)
-        await self.bot.db.categories.insert([data])
+        self.insert_queues[self.bot.db.categories.insert].append(data)
 
     @commands.Cog.listener()
     async def on_guild_channel_update(self, before, after):
@@ -255,21 +256,30 @@ class BackupOnEvents:
 
     async def on_textchannel_update(self, _before, after):
         data = await self.bot.db.channels.prepare_one(after)
-        await self.bot.db.channels.update([data])
+        self.update_queues[self.bot.db.channels.update].append(data)
 
     async def on_category_update(self, _before, after):
         data = await self.bot.db.categories.prepare_one(after)
-        await self.bot.db.categories.update([data])
+        self.update_queues[self.bot.db.categories.update].append(data)
 
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel):
         log.info("deleted channel %s (%s)", channel, channel.guild)
 
         if isinstance(channel, TextChannel):
-            await self.bot.db.channels.soft_delete([(channel.id,)])
+            await self.on_textchannel_delete(channel)
 
         elif isinstance(channel, CategoryChannel):
-            await self.bot.db.categories.soft_delete([(channel.id,)])
+            await self.on_category_delete(channel)
+
+    async def on_textchannel_delete(self, channel):
+        data = (channel.id,)
+        self.delete_queues[self.bot.db.channels.soft_delete].append(data)
+
+    async def on_category_delete(self, channel):
+        data = (channel.id,)
+        self.delete_queues[self.bot.db.categories.soft_delete].append(data)
+
 
     ###
     #
@@ -288,8 +298,7 @@ class BackupOnEvents:
         colleactables = BackupUntilPresent.get_collectables(self.bot)
         for collectable in colleactables:
             data = await collectable.prepare_fn(message)
-            self.insert_queues.setdefault(collectable.insert_fn, deque())
-            self.insert_queues[collectable.insert_fn].append(data)
+            self.insert_queues[collectable.insert_fn].extend(data)
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
@@ -299,16 +308,15 @@ class BackupOnEvents:
         colleactables = BackupUntilPresent.get_collectables(self.bot)
         for collectable in colleactables:
             data = await collectable.prepare_fn(after)
-            self.update_queues.setdefault(collectable.insert_fn, deque())
-            self.update_queues[collectable.insert_fn].append(data)
+            self.update_queues[collectable.insert_fn].extend(data)
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
         if isinstance(message.channel, PrivateChannel):
             return
 
-        self.delete_queues.setdefault(self.bot.db.messages.soft_delete, deque())
-        self.delete_queues[self.bot.db.messages.soft_delete].append((message.id,))
+        data = (message.id,)
+        self.delete_queues[self.bot.db.messages.soft_delete].append(data)
 
     ###
     #
@@ -319,16 +327,13 @@ class BackupOnEvents:
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
         data = await self.bot.db.messages.prepare_one(reaction.message)
-        self.insert_queues.setdefault(self.bot.db.messages.insert, deque())
-        self.insert_queues[self.bot.db.messages.insert].append([data])
+        self.insert_queues[self.bot.db.messages.insert].append(data)
 
         data = await self.bot.db.members.prepare_one(user)
-        self.insert_queues.setdefault(self.bot.db.members.insert, deque())
-        self.insert_queues[self.bot.db.members.insert].append([data])
+        self.insert_queues[self.bot.db.members.insert].append(data)
 
         data = await self.bot.db.reactions.prepare_one(reaction)
-        self.insert_queues.setdefault(self.bot.db.reactions.insert, deque())
-        self.insert_queues[self.bot.db.reactions.insert].append([data])
+        self.insert_queues[self.bot.db.reactions.insert].append(data)
 
     ###
     #
@@ -341,7 +346,7 @@ class BackupOnEvents:
         log.info("member %s joined (%s)", member, member.guild)
 
         data = await self.bot.db.members.prepare_one(member)
-        await self.bot.db.members.insert([data])
+        self.insert_queues[self.bot.db.members.insert].append(data)
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
@@ -355,14 +360,15 @@ class BackupOnEvents:
             return
 
         data = await self.bot.db.members.prepare_one(after)
-        self.update_queues.setdefault(self.bot.db.members.insert, deque())
         self.update_queues[self.bot.db.members.insert].append(data)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
         log.info("member %s left (%s)", member, member.guild)
 
-        await self.bot.db.members.soft_delete([(member.id,)])
+        data = (member.id,)
+        await self.bot.db.members.soft_delete([])
+        self.delete_queues[self.bot.db.members.soft_delete].append(data)
 
     ###
     #
@@ -375,20 +381,21 @@ class BackupOnEvents:
         log.info("added role %s (%s)", role, role.guild)
 
         data = await self.bot.db.roles.prepare_one(role)
-        await self.bot.db.roles.insert([data])
+        self.insert_queues[self.bot.db.roles.insert].append(data)
 
     @commands.Cog.listener()
     async def on_guild_role_update(self, before, after):
         log.info("updated role from %s to %s (%s)", before, after, before.guild)
 
         data = await self.bot.db.roles.prepare_one(after)
-        await self.bot.db.roles.insert([data])
+        self.insert_queues[self.bot.db.roles.insert].append(data)
 
     @commands.Cog.listener()
     async def on_guild_role_remove(self, role):
         log.info("removed role %s (%s)", role, role.guild)
 
-        await self.bot.db.roles.soft_delete([(role.id,)])
+        data = (role.id,)
+        self.insert_queues[self.bot.db.roles.soft_delete].append(data)
 
     ###
     #
