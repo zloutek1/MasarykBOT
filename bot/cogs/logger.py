@@ -62,8 +62,7 @@ class BackupUntilPresent:
 
     async def backup_members(self, members: List[Member]) -> None:
         log.info("backing up members")
-        for i in range(0, len(members), 550):
-            chunk = members[i:i+550]
+        for chunk in chunks(members, 550):
             data = await self.bot.db.members.prepare(chunk)
             await self.bot.db.members.insert(data)
 
