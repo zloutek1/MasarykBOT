@@ -3,6 +3,7 @@ from unittest.mock import patch, call, MagicMock, AsyncMock
 
 from emoji import demojize
 from datetime import datetime, date
+from collections import deque
 
 from bot.cogs.utils import db
 from bot.cogs import logger
@@ -179,10 +180,6 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
             (8, None, 11, "fun", 2, date.today()),
             (8, 9, 12, "nsfw", 1, date(2010, 11, 12))
         ])
-
-    @unittest.skip("integration test")
-    async def test_messages(self):
-        pass
 
     async def test_backup_failed_weeks(self):
         def generator():
@@ -363,3 +360,20 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
             (11, "filee2.txt", "say.com"),
             (12, "zipped.zip", "hello.com")
         ])
+
+    async def test_put_queues_to_database(self):
+        insert_number_fn = AsyncMock()
+        insert_number_fn.__qualname__ = "insert_number_fn"
+
+        insert_str_fn = AsyncMock()
+        insert_str_fn.__qualname__ = "insert_number_fn"
+
+        queues = {
+            insert_number_fn: deque([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]),
+            insert_str_fn: deque(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'])
+        }
+
+        await self.cog.put_queues_to_database(queues, limit=10)
+
+        insert_number_fn.assert_called_once_with([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+        insert_str_fn.assert_called_once_with(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'])

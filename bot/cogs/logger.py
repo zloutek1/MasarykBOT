@@ -398,32 +398,19 @@ class BackupOnEvents:
 
     @tasks.loop(minutes=5)
     async def task_put_queues_to_database(self):
-        try:
-            await self.put_queues_to_database(self.insert_queues, limit=1000)
-            await self.put_queues_to_database(self.update_queues, limit=2000)
-            await self.put_queues_to_database(self.delete_queues, limit=1000)
-        except Exception as e:
-            log.error("diring loop and exception occured: %s", e)
-            raise e
+        await self.put_queues_to_database(self.insert_queues, limit=1000)
+        await self.put_queues_to_database(self.update_queues, limit=2000)
+        await self.put_queues_to_database(self.delete_queues, limit=1000)
 
     async def put_queues_to_database(self, queues, *, limit=1000):
-        counter = 0
-
         for (process_fn, queue) in queues.items():
             if len(queue) == 0:
                 continue
-            if counter > limit:
-                log.info("Limit exceeded for current loop")
-                return
-
-            take_elements = min(limit - counter, len(queue))
-            elements = [flatten for _ in range(take_elements) for flatten in queue.popleft()]
+            take_elements = min(limit, len(queue))
+            elements = [queue.popleft() for _ in range(take_elements)]
             log.info("Putting %s from queue to database (%s)", len(elements), process_fn.__qualname__)
 
             await process_fn(elements)
-
-            counter += take_elements
-
 
 class Collectable(Generic[T]):
     def __init__(self, prepare_fn: Callable[[T], List[Tuple]]=None, insert_fn: Callable[[List[Tuple]], None]=None):
