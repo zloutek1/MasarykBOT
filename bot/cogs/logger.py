@@ -398,19 +398,24 @@ class BackupOnEvents:
 
     @tasks.loop(minutes=5)
     async def task_put_queues_to_database(self):
-        await self.put_queues_to_database(self.insert_queues, limit=1000)
-        await self.put_queues_to_database(self.update_queues, limit=2000)
-        await self.put_queues_to_database(self.delete_queues, limit=1000)
+        for (put_fn, queue) in self.insert_queues.items():
+            self.put_queue_to_database(put_fn, queue, limit=1000)
 
-    async def put_queues_to_database(self, queues, *, limit=1000):
-        for (process_fn, queue) in queues.items():
-            if len(queue) == 0:
-                continue
-            take_elements = min(limit, len(queue))
-            elements = [queue.popleft() for _ in range(take_elements)]
-            log.info("Putting %s from queue to database (%s)", len(elements), process_fn.__qualname__)
+        for (put_fn, queue) in self.update_queues.items():
+            self.put_queue_to_database(put_fn, queue, limit=2000)
 
-            await process_fn(elements)
+        for (put_fn, queue) in self.delete_queues.items():
+            self.put_queue_to_database(put_fn, queue, limit=1000)
+
+    async def put_queue_to_database(self, put_fn, queue, *, limit=1000):
+        if len(queue) == 0:
+            return
+
+        take_elements = min(limit, len(queue))
+        elements = [queue.popleft() for _ in range(take_elements)]
+        log.info("Putting %s from queue to database (%s)", len(elements), put_fn.__qualname__)
+
+        await put_fn(elements)
 
 class Collectable(Generic[T]):
     def __init__(self, prepare_fn: Callable[[T], List[Tuple]]=None, insert_fn: Callable[[List[Tuple]], None]=None):
