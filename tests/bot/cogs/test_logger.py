@@ -361,7 +361,47 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
             (12, "zipped.zip", "hello.com")
         ])
 
+
+    async def test_task_put_queues_to_database(self):
+        self.cog.insert_queues = {
+            AsyncMock(): deque(list(range(5432))),
+            AsyncMock(): deque("a" * 1200)
+        }
+        self.update_queues = {
+            AsyncMock(): deque(list(range(8000))),
+            AsyncMock(): deque(['a', 1, 4] * 800)
+        }
+        self.delete_queues = {
+            AsyncMock(): deque([AsyncMock() for _ in range(1234)])
+        }
+
+        self.cog.put_queues_to_database = AsyncMock()
+        await self.cog.task_put_queues_to_database.coro(self.cog)
+
+        self.cog.put_queues_to_database.assert_has_calls([
+            call(self.cog.insert_queues, limit=1000),
+            call(self.cog.update_queues, limit=2000),
+            call(self.cog.delete_queues, limit=1000)
+        ])
+
     async def test_put_queues_to_database(self):
+        fn1 = AsyncMock()
+        fn2 = AsyncMock()
+
+        queues = {
+            fn1: deque([1, 2, 3]),
+            fn2: deque(['a', 1, 4])
+        }
+
+        self.cog.put_queue_to_database = AsyncMock()
+        await self.cog.put_queues_to_database(queues, limit=1000)
+
+        self.cog.put_queue_to_database.assert_has_calls([
+            call(fn1, deque([1, 2, 3]), limit=1000),
+            call(fn2, deque(['a', 1, 4]), limit=1000)
+        ])
+
+    async def test_put_queue_to_database(self):
         insert_number_fn = AsyncMock()
         insert_number_fn.__qualname__ = "insert_number_fn"
 

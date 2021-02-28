@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from bot.bot import MasarykBOT
 from bot.cogs.utils.context import Context
 from bot.cogs.utils.db import Record
-from typing import List, Tuple, Optional, Callable, Generic, TypeVar
+from typing import List, Dict, Tuple, Optional, Callable, Generic, TypeVar, Awaitable
 
 from discord import Guild, Role, Member, TextChannel, CategoryChannel
 from discord.abc import PrivateChannel
@@ -398,16 +398,15 @@ class BackupOnEvents:
 
     @tasks.loop(minutes=5)
     async def task_put_queues_to_database(self):
-        for (put_fn, queue) in self.insert_queues.items():
-            self.put_queue_to_database(put_fn, queue, limit=1000)
+        await self.put_queues_to_database(self.insert_queues, limit=1000)
+        await self.put_queues_to_database(self.update_queues, limit=2000)
+        await self.put_queues_to_database(self.delete_queues, limit=1000)
 
-        for (put_fn, queue) in self.update_queues.items():
-            self.put_queue_to_database(put_fn, queue, limit=2000)
+    async def put_queues_to_database(self, queues: Dict[Callable[[List[Tuple]], Awaitable[None]], deque[Tuple]], *, limit=1000):
+        for (put_fn, queue) in queues.items():
+            await self.put_queue_to_database(put_fn, queue, limit=limit)
 
-        for (put_fn, queue) in self.delete_queues.items():
-            self.put_queue_to_database(put_fn, queue, limit=1000)
-
-    async def put_queue_to_database(self, put_fn, queue, *, limit=1000):
+    async def put_queue_to_database(self, put_fn: Callable[[List[Tuple]], Awaitable[None]], queue: deque[Tuple], *, limit=1000):
         if len(queue) == 0:
             return
 
