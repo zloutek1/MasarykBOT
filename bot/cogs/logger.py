@@ -294,6 +294,9 @@ class BackupOnEvents:
         if not isinstance(message.author, Member):
             return
 
+        data = await self.bot.db.messages.prepare_one(message)
+        self.insert_queues[self.bot.db.messages.insert].append(data)
+
         colleactables = BackupUntilPresent.get_collectables(self.bot)
         for collectable in colleactables:
             data = await collectable.prepare_fn(message)
@@ -303,6 +306,9 @@ class BackupOnEvents:
     async def on_message_edit(self, before, after):
         if isinstance(before.channel, PrivateChannel):
             return
+
+        data = await self.bot.db.messages.prepare_one(after)
+        self.update_queues[self.bot.db.messages.update].append(data)
 
         colleactables = BackupUntilPresent.get_collectables(self.bot)
         for collectable in colleactables:
@@ -359,7 +365,7 @@ class BackupOnEvents:
             return
 
         data = await self.bot.db.members.prepare_one(after)
-        self.update_queues[self.bot.db.members.insert].append(data)
+        self.update_queues[self.bot.db.members.update].append(data)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
@@ -387,14 +393,14 @@ class BackupOnEvents:
         log.info("updated role from %s to %s (%s)", before, after, before.guild)
 
         data = await self.bot.db.roles.prepare_one(after)
-        self.insert_queues[self.bot.db.roles.insert].append(data)
+        self.update_queues[self.bot.db.roles.update].append(data)
 
     @commands.Cog.listener()
     async def on_guild_role_remove(self, role):
         log.info("removed role %s (%s)", role, role.guild)
 
         data = (role.id,)
-        self.insert_queues[self.bot.db.roles.soft_delete].append(data)
+        self.delete_queues[self.bot.db.roles.soft_delete].append(data)
 
     ###
     #

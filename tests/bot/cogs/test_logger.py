@@ -17,14 +17,11 @@ from tests.mocks.database import MockDatabase, MockLoggerRecord
 from tests.mocks.helpers import MockReturnFunc
 
 
-class LoggerTests(unittest.IsolatedAsyncioTestCase):
+class LoggerBackupUntilPresentTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
-        bot = MockBot()
-        bot.db = MockDatabase()
-        cog = logger.Logger(bot=bot)
-
-        self.bot = bot
-        self.cog = cog
+        self.bot = MockBot()
+        self.bot.db = MockDatabase()
+        self.cog = logger.Logger(bot=self.bot)
 
     async def test_backup(self):
         self.cog.backup_guilds = AsyncMock()
@@ -362,6 +359,21 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
         ])
 
 
+
+class LoggerBackupOnEventsTests(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        self.bot = MockBot()
+        self.bot.db = MockDatabase()
+        self.cog = logger.Logger(bot=self.bot)
+
+    async def _test_on_event(self, args, queues, event_fn, put_fn, *, expected):
+        """
+        Generified test for on_guild_create, on_message, ... events
+        """
+        await event_fn(*args)
+        self.assertIn(put_fn, queues)
+        self.assertEqual(queues[put_fn], expected)
+
     async def test_task_put_queues_to_database(self):
         self.cog.insert_queues = {
             AsyncMock(): deque(list(range(5432))),
@@ -415,3 +427,166 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
         queue = deque(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'])
         await self.cog.put_queue_to_database(insert_str_fn, queue, limit=10)
         insert_str_fn.assert_called_once_with(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'])
+
+    """
+    async def test_on_events(self):
+        async def test_on_insert(item, event_fn, put_fn):
+            await event_fn(item)
+            self.assertIn(put_fn, self.cog.insert_queues)
+            self.assertEqual(self.cog.insert_queues[put_fn], expected)
+
+
+        async def test_on_update(new_item, event_fn, put_fn):
+            await event_fn(AsyncMock(), new_item)
+            self.assertIn(put_fn, self.cog.update_queues)
+            self.assertEqual(self.cog.update_queues[put_fn], expected)
+
+
+        async def test_on_delete(item, event_fn, put_fn):
+            expected = deque([(item.id,)])
+            await event_fn(item)
+            self.assertIn(put_fn, self.cog.delete_queues)
+            self.assertEqual(self.cog.delete_queues[put_fn], expected)
+
+        expected = deque([(1, 2, 3)])
+        for attr in vars(self.bot.db).values():
+            if isinstance(attr, db.Mapper):
+                attr.prepare_one = AsyncMock(return_value=(1, 2, 3))
+
+        await test_on_insert(MockGuild(), self.cog.on_guild_join, self.bot.db.guilds.insert)
+        await test_on_update(MockGuild(), self.cog.on_guild_update, self.bot.db.guilds.update)
+        await test_on_delete(MockGuild(), self.cog.on_guild_remove, self.bot.db.guilds.soft_delete)
+
+        await test_on_insert(MockTextChannel(), self.cog.on_textchannel_create, self.bot.db.channels.insert)
+        await test_on_update(MockTextChannel(), self.cog.on_textchannel_update, self.bot.db.channels.update)
+        await test_on_delete(MockTextChannel(), self.cog.on_textchannel_delete, self.bot.db.channels.soft_delete)
+
+        await test_on_insert(MockCategoryChannel(), self.cog.on_category_create, self.bot.db.categories.insert)
+        await test_on_update(MockCategoryChannel(), self.cog.on_category_update, self.bot.db.categories.update)
+        await test_on_delete(MockCategoryChannel(), self.cog.on_category_delete, self.bot.db.categories.soft_delete)
+
+        await test_on_insert(MockMessage(), self.cog.on_message, self.bot.db.messages.insert)
+        await test_on_update(MockMessage(), self.cog.on_message_edit, self.bot.db.messages.update)
+        await test_on_delete(MockMessage(), self.cog.on_message_delete, self.bot.db.messages.soft_delete)
+
+        #await test_on_insert(MockReaction(), self.cog.on_reaction_add, self.bot.db.reactions.insert)
+
+        await test_on_insert(MockMember(), self.cog.on_member_join, self.bot.db.members.insert)
+        await test_on_update(MockMember(), self.cog.on_member_update, self.bot.db.members.update)
+        await test_on_delete(MockMember(), self.cog.on_member_remove, self.bot.db.members.soft_delete)
+
+        await test_on_insert(MockRole(), self.cog.on_guild_role_create, self.bot.db.roles.insert)
+        await test_on_update(MockRole(), self.cog.on_guild_role_update, self.bot.db.roles.update)
+        await test_on_delete(MockRole(), self.cog.on_guild_role_remove, self.bot.db.roles.soft_delete)
+    """
+
+    async def test_on_guild_join(self):
+        args = [MockGuild()]
+        self.bot.db.guilds.prepare_one = AsyncMock(return_value=(1, 2, 3))
+        expected = deque([(1, 2, 3)])
+        await self._test_on_event(args=args, queues=self.cog.insert_queues, event_fn=self.cog.on_guild_join, put_fn=self.bot.db.guilds.insert, expected=expected)
+
+    async def test_on_guild_update(self):
+        args = [MockGuild(), MockGuild()]
+        self.bot.db.guilds.prepare_one = AsyncMock(return_value=(1, 2, 3))
+        expected = deque([(1, 2, 3)])
+        await self._test_on_event(args=args, queues=self.cog.update_queues, event_fn=self.cog.on_guild_update, put_fn=self.bot.db.guilds.update, expected=expected)
+
+    async def test_on_guild_remove(self):
+        args = [MockGuild(id=123)]
+        expected = deque([(123,)])
+        await self._test_on_event(args=args, queues=self.cog.delete_queues, event_fn=self.cog.on_guild_remove, put_fn=self.bot.db.guilds.soft_delete, expected=expected)
+
+
+    async def test_on_textchannel_create(self):
+        args = [MockTextChannel()]
+        self.bot.db.channels.prepare_one = AsyncMock(return_value=(1, 2, 3))
+        expected = deque([(1, 2, 3)])
+        await self._test_on_event(args=args, queues=self.cog.insert_queues, event_fn=self.cog.on_textchannel_create, put_fn=self.bot.db.channels.insert, expected=expected)
+
+    async def test_on_textchannel_update(self):
+        args = [MockTextChannel(), MockTextChannel()]
+        self.bot.db.channels.prepare_one = AsyncMock(return_value=(1, 2, 3))
+        expected = deque([(1, 2, 3)])
+        await self._test_on_event(args=args, queues=self.cog.update_queues, event_fn=self.cog.on_textchannel_update, put_fn=self.bot.db.channels.update, expected=expected)
+
+    async def test_on_textchannel_delete(self):
+        args = [MockTextChannel(id=123)]
+        expected = deque([(123,)])
+        await self._test_on_event(args=args, queues=self.cog.delete_queues, event_fn=self.cog.on_textchannel_delete, put_fn=self.bot.db.channels.soft_delete, expected=expected)
+
+    async def test_on_category_create(self):
+        args = [MockCategoryChannel()]
+        self.bot.db.categories.prepare_one = AsyncMock(return_value=(1, 2, 3))
+        expected = deque([(1, 2, 3)])
+        await self._test_on_event(args=args, queues=self.cog.insert_queues, event_fn=self.cog.on_category_create, put_fn=self.bot.db.categories.insert, expected=expected)
+
+    async def test_on_category_update(self):
+        args = [MockCategoryChannel(), MockCategoryChannel()]
+        self.bot.db.categories.prepare_one = AsyncMock(return_value=(1, 2, 3))
+        expected = deque([(1, 2, 3)])
+        await self._test_on_event(args=args, queues=self.cog.update_queues, event_fn=self.cog.on_category_update, put_fn=self.bot.db.categories.update, expected=expected)
+
+    async def test_on_category_delete(self):
+        args = [MockCategoryChannel(id=123)]
+        expected = deque([(123,)])
+        await self._test_on_event(args=args, queues=self.cog.delete_queues, event_fn=self.cog.on_category_delete, put_fn=self.bot.db.categories.soft_delete, expected=expected)
+
+    async def test_on_message(self):
+        args = [MockMessage()]
+        self.bot.db.messages.prepare_one = AsyncMock(return_value=(1, 2, 3))
+        expected = deque([(1, 2, 3)])
+        await self._test_on_event(args=args, queues=self.cog.insert_queues, event_fn=self.cog.on_message, put_fn=self.bot.db.messages.insert, expected=expected)
+
+    async def test_on_message_edit(self):
+        args = [MockMessage(), MockMessage()]
+        self.bot.db.messages.prepare_one = AsyncMock(return_value=(1, 2, 3))
+        expected = deque([(1, 2, 3)])
+        await self._test_on_event(args=args, queues=self.cog.update_queues, event_fn=self.cog.on_message_edit, put_fn=self.bot.db.messages.update, expected=expected)
+
+    async def test_on_message_delete(self):
+        args = [MockMessage(id=213)]
+        expected = deque([(213,)])
+        await self._test_on_event(args=args, queues=self.cog.delete_queues, event_fn=self.cog.on_message_delete, put_fn=self.bot.db.messages.soft_delete, expected=expected)
+
+    async def test_on_reaction_add(self):
+        args = [MockReaction(), MockUser()]
+        self.bot.db.reactions.prepare_one = AsyncMock(return_value=(1, 2, 3))
+        expected = deque([(1, 2, 3)])
+        await self._test_on_event(args=args, queues=self.cog.insert_queues, event_fn=self.cog.on_reaction_add, put_fn=self.bot.db.reactions.insert, expected=expected)
+
+    async def test_on_member_join(self):
+        args = [MockMember()]
+        self.bot.db.members.prepare_one = AsyncMock(return_value=(1, 2, 3))
+        expected = deque([(1, 2, 3)])
+        await self._test_on_event(args=args, queues=self.cog.insert_queues, event_fn=self.cog.on_member_join, put_fn=self.bot.db.members.insert, expected=expected)
+
+    async def test_on_member_update(self):
+        args = [MockMember(), MockMember()]
+        self.bot.db.members.prepare_one = AsyncMock(return_value=(1, 2, 3))
+        expected = deque([(1, 2, 3)])
+        await self._test_on_event(args=args, queues=self.cog.update_queues, event_fn=self.cog.on_member_update, put_fn=self.bot.db.members.update, expected=expected)
+
+    async def test_on_member_remove(self):
+        args = [MockMember(id=123)]
+        expected = deque([(123,)])
+        await self._test_on_event(args=args, queues=self.cog.delete_queues, event_fn=self.cog.on_member_remove, put_fn=self.bot.db.members.soft_delete, expected=expected)
+
+    async def test_on_guild_role_create(self):
+        args = [MockRole()]
+        self.bot.db.roles.prepare_one = AsyncMock(return_value=(1, 2, 3))
+        expected = deque([(1, 2, 3)])
+        await self._test_on_event(args=args, queues=self.cog.insert_queues, event_fn=self.cog.on_guild_role_create, put_fn=self.bot.db.roles.insert, expected=expected)
+
+    async def test_on_guild_role_update(self):
+        args = [MockRole(), MockRole()]
+        self.bot.db.roles.prepare_one = AsyncMock(return_value=(1, 2, 3))
+        expected = deque([(1, 2, 3)])
+        await self._test_on_event(args=args, queues=self.cog.update_queues, event_fn=self.cog.on_guild_role_update, put_fn=self.bot.db.roles.update, expected=expected)
+
+    async def test_on_guild_role_remove(self):
+        args = [MockRole(id=123)]
+        expected = deque([(123,)])
+        await self._test_on_event(args=args, queues=self.cog.delete_queues, event_fn=self.cog.on_guild_role_remove, put_fn=self.bot.db.roles.soft_delete, expected=expected)
+
+
