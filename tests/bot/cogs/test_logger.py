@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, call, AsyncMock
+from unittest.mock import patch, call, MagicMock, AsyncMock
 
 from emoji import demojize
 from datetime import datetime, date
@@ -279,36 +279,6 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(from_date, datetime(2020, 9, 20))
             self.assertEqual(to_date, datetime(2020, 9, 27))
 
-    """
-    async def test_get_next_week(self):
-        guild = MockGuild(id=8, created_at=datetime(2020, 9, 13, 1, 10, 15))
-        (from_date, to_date) = self.cog.get_next_week(guild, None)
-        self.assertEqual(from_date, datetime(2020, 9, 13, 1, 10, 15))
-        self.assertEqual(to_date, datetime(2020, 9, 20, 1, 10, 15))
-
-        guild = MockGuild(id=8, created_at=datetime(2020, 9, 13, 1, 10, 15))
-        process = {'from_date': datetime(2020, 9, 20, 21, 22, 25), 'to_date':  datetime(2020, 9, 27, 22, 22, 25)}
-        (from_date, to_date) = self.cog.get_next_week(guild, process)
-        self.assertEqual(from_date, datetime(2020, 9, 27, 22, 22, 25))
-        self.assertEqual(to_date, datetime(2020, 10, 4, 22, 22, 25))
-
-
-    @patch('bot.cogs.logger.Logger.try_to_backup_messages_in_nonempty_channel')
-    async def test_backup_messages_new_week_first_time(self, mocked_backup_messages):
-        guild = MockGuild(id=8, created_at=datetime(2020, 9, 12, 12, 28, 33))
-        guild.text_channels = [MockTextChannel(id=9), MockTextChannel(id=10)]
-
-        self.bot.db.logger.select.return_value = []
-
-        still_behind = await self.cog.backup_new_week(guild)
-
-        self.assertEqual(mocked_backup_messages.call_count, len(guild.text_channels))
-        mocked_backup_messages.assert_has_calls([
-            call(guild.text_channels[0], datetime(2020, 9, 12, 12, 28, 33), datetime(2020, 9, 19, 12, 28, 33)),
-            call(guild.text_channels[1], datetime(2020, 9, 12, 12, 28, 33), datetime(2020, 9, 19, 12, 28, 33))
-        ])
-        self.assertTrue(still_behind) # assuming that you don't run this code with modified system time
-                                      # that sets the time date to before 2020.9.12, then this test would fail
 
     async def test_backup_messages_in_channel(self):
         channel = MockTextChannel(id=9)
@@ -334,9 +304,10 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
             MockReaction(message=messages[3], emoji=MockEmoji(id=1234, name="kek"), users=[authors['bob'], authors['joe']])
         ]
 
+        self.bot.db.logger.process =  MagicMock()
         channel.history.return_value = AsyncIterator(messages)
 
-        await self.cog.backup_messages_in_nonempty_channel(channel, from_date=datetime(2020, 9, 10, 12, 50, 42), to_date=datetime(2020, 9, 17, 12, 50, 42))
+        await self.cog.backup_in_range(channel, from_date=datetime(2020, 9, 10, 12, 50, 42), to_date=datetime(2020, 9, 17, 12, 50, 42))
 
         self.bot.db.members.insert.assert_called_once_with([
             (10, "Bob", "http://image.cz.jpg", datetime(2020, 9, 13, 10, 00, 00)),
@@ -367,7 +338,6 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
         #    (17, ":kekw:", 1),
         #    (17, demojize("⭐"), 1)
         #])
-    """
 
     async def test_Collectable(self):
         async def prepare(attachments):
