@@ -88,18 +88,6 @@ $BODY$;
 ALTER FUNCTION server.update_emojiboard_reaction()
     OWNER TO masaryk;
 
--- Trigger: update_emojiboard
-
--- DROP TRIGGER update_emojiboard ON server.reactions;
-
-CREATE TRIGGER update_emojiboard
-    AFTER INSERT
-    ON server.reactions
-    FOR EACH ROW
-    EXECUTE PROCEDURE server.update_emojiboard_reaction();
-
--- Trigger: update_emojiboard
-
 -- DROP TRIGGER update_emojiboard ON server.message_emotes;
 
 CREATE TRIGGER update_emojiboard
