@@ -17,4 +17,4 @@ WITH (
 TABLESPACE pg_default;
 
 ALTER TABLE server.emojis
-    OWNER to masaryk_dev;
+    OWNER to masaryk;

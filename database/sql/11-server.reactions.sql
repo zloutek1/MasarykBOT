@@ -22,7 +22,7 @@ WITH (
 TABLESPACE pg_default;
 
 ALTER TABLE server.reactions
-    OWNER to masaryk_dev;
+    OWNER to masaryk;
 -- Index: fki_reactions_fkey_emoji
 
 -- DROP INDEX server.fki_reactions_fkey_emoji;

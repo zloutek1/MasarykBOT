@@ -15,7 +15,7 @@ WITH (
 TABLESPACE pg_default;
 
 ALTER TABLE cogs.emojiboard
-    OWNER to masaryk_dev;
+    OWNER to masaryk;
 -- Index: emojiboard_idx_unique
 
 -- DROP INDEX cogs.emojiboard_idx_unique;
