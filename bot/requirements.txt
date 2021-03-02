@@ -5,5 +5,7 @@ aiohttp
 emoji
 requests
 pyyaml
+pytest
+pytest-cov
 rich
 discord-handler
