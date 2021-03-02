@@ -4,8 +4,8 @@ services:
   database:
     container_name: db
     build:
-      context: database/
-      dockerfile: Dockerfile.db
+      context: .
+      dockerfile: database/Dockerfile.db
     ports:
       - 5432:5432
     env_file:
@@ -17,7 +17,7 @@ services:
     container_name: bot
     build:
       context: .
-      dockerfile: Dockerfile.bot
+      dockerfile: bot/Dockerfile.bot
     volumes:
       - .:/MasarykBOT
     env_file: .env
