@@ -51,6 +51,7 @@ class Starboard(commands.Cog):
             channel = get(guild.text_channels, name="starboard")
         if channel is None:
             channel = await guild.create_text_channel("starboard")
+        return channel
 
     @staticmethod
     def should_ignore(reaction):
