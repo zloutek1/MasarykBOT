@@ -39,13 +39,3 @@ CREATE INDEX fki_message_emotes_fkey_message
     ON server.message_emotes USING btree
     (message_id ASC NULLS LAST)
     TABLESPACE pg_default;
-
--- Trigger: update_emojiboard
-
--- DROP TRIGGER update_emojiboard ON server.message_emotes;
-
-CREATE TRIGGER update_emojiboard
-    AFTER INSERT
-    ON server.message_emotes
-    FOR EACH ROW
-    EXECUTE PROCEDURE server.update_emojiboard_emoji();
