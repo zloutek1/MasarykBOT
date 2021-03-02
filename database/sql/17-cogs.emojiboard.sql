@@ -49,7 +49,7 @@ END
 $BODY$;
 
 ALTER FUNCTION server.update_emojiboard_emoji()
-    OWNER TO masaryk_dev;
+    OWNER TO masaryk;
 
 
 -- Trigger: update_emojiboard
@@ -86,7 +86,7 @@ END
 $BODY$;
 
 ALTER FUNCTION server.update_emojiboard_reaction()
-    OWNER TO masaryk_dev;
+    OWNER TO masaryk;
 
 -- Trigger: update_emojiboard
 
