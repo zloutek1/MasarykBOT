@@ -77,7 +77,7 @@ class Subject(commands.Cog):
             await self.add_subject(ctx, subject_code)
 
     async def add_subject(self, ctx: Context, code_pattern: str) -> None:
-        if not self._in_subject_channel(ctx):
+        if not await self._in_subject_channel(ctx):
             return
 
         faculty, code = self.pattern_to_faculty_code(code_pattern)
@@ -260,7 +260,7 @@ class Subject(commands.Cog):
     async def try_to_sign_user_to_channel(self, ctx: Context, subject: Record) -> None:
         channel_name = self.subject_to_channel_name(ctx, subject)
 
-        if self.check_if_engough_users_signed(ctx.guild.id, subject):
+        if await self.check_if_engough_users_signed(ctx.guild.id, subject):
             await self.send_subject_embed(ctx, f"Signed to subject {channel_name} successfully, but not enough users to create the subject room")
             return
 
