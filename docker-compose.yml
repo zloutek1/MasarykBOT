@@ -3,9 +3,7 @@ version: '3.8'
 services:
   database:
     container_name: db
-    build:
-      context: .
-      dockerfile: database/Dockerfile.db
+    image: postgres:12
     ports:
       - 5432:5432
     env_file:
@@ -21,7 +19,6 @@ services:
     volumes:
       - .:/MasarykBOT
     env_file: .env
-    network_mode: host
     depends_on:
       - database
 
