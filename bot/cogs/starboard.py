@@ -1,5 +1,6 @@
 import re
 from emoji import demojize
+import logging
 
 from discord import Embed, Emoji, PartialEmoji
 from discord.ext import commands
@@ -7,6 +8,7 @@ from discord.utils import get
 
 from bot.constants import Config
 
+log = logging.getLogger(__name__)
 
 class Starboard(commands.Cog):
     def __init__(self, bot):
@@ -19,15 +21,17 @@ class Starboard(commands.Cog):
         if reaction.count < guild_config.STARBOARD_REACT_LIMIT:
             return
 
-        channel = reaction.message.channel
+        message = reaction.message
+        channel = message.channel
+        guild = message.guild
+
+        log.info("message with %s reactions found (%s)", reaction.count, guild)
+
         if channel.name == "starboard" or channel.id == guild_config.channels.starboard:
             return
 
         if self.should_ignore(reaction):
             return
-
-        message = reaction.message
-        guild = message.guild
 
         if message.channel.id in [guild_config.channels.verification, guild_config.channels.about_you]:
             return
