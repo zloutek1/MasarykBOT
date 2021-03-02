@@ -19,6 +19,7 @@ guilds:
       errors:               609413180137144331
       mute:                 null
       other:                null
+      webhook:              null
 
     roles:
       muted:                627901278365810698
@@ -44,6 +45,7 @@ guilds:
       errors:               731435433564569632
       mute:                 731435469472006156
       other:                731435447787716680
+      webhook:              "https://discord.com/api/webhooks/816237455913123870/9H7BGuwt6nQi_jDa3wwGf9yZuqaUvQCXJQpM4iz_IEvKavH5hRIf_rP6ejmfqqJ6gXZS"
 
     roles:
       muted:                null

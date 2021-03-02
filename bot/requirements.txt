@@ -6,3 +6,4 @@ emoji
 requests
 pyyaml
 rich
+discord-handler
