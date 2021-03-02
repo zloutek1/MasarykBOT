@@ -9,7 +9,7 @@ COPY . /MasarykBOT
 COPY bot/requirements.txt bot/requirements.txt
 RUN pip install -r bot/requirements.txt
 
-RUN touch logs/bot.log
+RUN mkdir logs/ && touch logs/bot.log
 
 ENTRYPOINT ["python"]
 CMD ["-m", "bot"]
