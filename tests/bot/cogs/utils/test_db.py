@@ -5,8 +5,10 @@ from bot.cogs.utils import db
 from tests.mocks.discord import MockGuild, MockCategoryChannel, MockRole, MockMember, MockTextChannel, MockMessage, MockAttachment, MockReaction, MockEmoji, MockPartialEmoji
 from tests.mocks.database import MockPool
 
+import os
 from discord import Color
 from datetime import datetime
+from dotenv import load_dotenv
 
 class FixedDate(datetime):
     @classmethod
@@ -157,3 +159,13 @@ class DBTests(unittest.IsolatedAsyncioTestCase):
 
         table.start_process.assert_called_once()
         table.mark_process_finished.assert_called_once()
+
+class TestQuieries(unittest.IsolatedAsyncioTestCase):
+    def setUp(self):
+        load_dotenv()
+        self.db = db.Database.connect(os.getenv("POSTGRES"))
+        if self.db is None:
+            self.skipTest("Failed to connect to the database")
+
+    async def test_true(self):
+        self.assertTrue(True)
