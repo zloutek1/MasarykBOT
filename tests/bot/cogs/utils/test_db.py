@@ -31,6 +31,7 @@ import os
 from discord import Color
 from datetime import datetime
 from contextlib import suppress
+from functools import wraps
 
 class FixedDate(datetime):
     @classmethod
@@ -185,6 +186,7 @@ class FailTransaction(Exception):
     pass
 
 def failing_transaction(func):
+    @wraps(func)
     async def wrapper(self, conn):
         with suppress(FailTransaction):
             async with conn.transaction():
