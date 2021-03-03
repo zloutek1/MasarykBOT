@@ -335,9 +335,6 @@ class TestCategoryQueries(TestQueries):
 
 class TestRoleQueries(TestQueries):
     async def asyncSetUp(self):
-        self.guild = (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20))
-        await self.db.guilds.insert([self.guild])
-
         self.roles = [
             (8, 10, "@everyone", "0x0", datetime(2020, 9, 20)),
             (8, 11, "Admin", "0xf1c40f", datetime(2020, 9, 22))
@@ -348,9 +345,14 @@ class TestRoleQueries(TestQueries):
         self.update = self.db.roles.update.__wrapped__
         self.soft_delete = self.db.roles.soft_delete.__wrapped__
 
+    async def _prepare_data(self, conn):
+        self.guild = (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20))
+        await self.db.guilds.insert.__wrapped__(self.db.guilds, conn, [self.guild])
+
     @db.withConn
     @failing_transaction
     async def test_insert(self, conn):
+        await self._prepare_data(conn)
         _self = self.db.roles
 
         await self.insert(_self, conn, self.roles)
@@ -370,6 +372,7 @@ class TestRoleQueries(TestQueries):
     @db.withConn
     @failing_transaction
     async def test_update(self, conn):
+        await self._prepare_data(conn)
         _self = self.db.roles
 
         updated_roles = [
@@ -388,6 +391,7 @@ class TestRoleQueries(TestQueries):
     @db.withConn
     @failing_transaction
     async def test_soft_delete(self, conn):
+        await self._prepare_data(conn)
         _self = self.db.roles
 
         await self.insert(_self, conn, self.roles)
@@ -467,12 +471,6 @@ class TestMemberQueries(TestQueries):
 
 class TestChannelQueries(TestQueries):
     async def asyncSetUp(self):
-        self.guild = (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20))
-        await self.db.guilds.insert([self.guild])
-
-        self.category = (8, 9, "Main Category", 1, datetime(2020, 9, 20))
-        await self.db.categories.insert([self.category])
-
         self.channels = [
             (8, 9, 10, "general", 1, datetime(2020, 9, 22)),
             (8, None, 11, "talk", 2, datetime(2020, 9, 21))
@@ -483,9 +481,17 @@ class TestChannelQueries(TestQueries):
         self.update = self.db.channels.update.__wrapped__
         self.soft_delete = self.db.channels.soft_delete.__wrapped__
 
+    async def _prepare_data(self, conn):
+        self.guild = (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20))
+        await self.db.guilds.insert.__wrapped__(self.db.guilds, conn, [self.guild])
+
+        self.category = (8, 9, "Main Category", 1, datetime(2020, 9, 20))
+        await self.db.categories.insert.__wrapped__(self.db.categories, conn, [self.category])
+
     @db.withConn
     @failing_transaction
     async def test_insert(self, conn):
+        await self._prepare_data(conn)
         _self = self.db.channels
 
         await self.insert(_self, conn, self.channels)
@@ -506,6 +512,7 @@ class TestChannelQueries(TestQueries):
     @db.withConn
     @failing_transaction
     async def test_update(self, conn):
+        await self._prepare_data(conn)
         _self = self.db.channels
 
         updated_channels = [
@@ -524,6 +531,7 @@ class TestChannelQueries(TestQueries):
     @db.withConn
     @failing_transaction
     async def test_soft_delete(self, conn):
+        await self._prepare_data(conn)
         _self = self.db.channels
 
         await self.insert(_self, conn, self.channels)
@@ -539,15 +547,6 @@ class TestChannelQueries(TestQueries):
 
 class TestMessageQueries(TestQueries):
     async def asyncSetUp(self):
-        self.guild = (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20))
-        await self.db.guilds.insert([self.guild])
-
-        self.member = (9, "Sender1", "http://avatar.jpg", datetime(2020, 9, 20))
-        await self.db.members.insert([self.member])
-
-        self.channel = (8, None, 10, "general", 1, datetime(2020, 9, 20))
-        await self.db.channels.insert([self.channel])
-
         self.messages = [
             (10, 9, 11, "First message", datetime(2020, 9, 22)),
             (10, 9, 12, "Second message", datetime(2020, 9, 21))
@@ -558,9 +557,20 @@ class TestMessageQueries(TestQueries):
         self.update = self.db.messages.update.__wrapped__
         self.soft_delete = self.db.messages.soft_delete.__wrapped__
 
+    async def _prepare_data(self, conn):
+        self.guild = (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20))
+        await self.db.guilds.insert.__wrapped__(self.db.guilds, conn, [self.guild])
+
+        self.member = (9, "Sender1", "http://avatar.jpg", datetime(2020, 9, 20))
+        await self.db.members.insert.__wrapped__(self.db.members, conn, [self.member])
+
+        self.channel = (8, None, 10, "general", 1, datetime(2020, 9, 20))
+        await self.db.channels.insert.__wrapped__(self.db.channels, conn, [self.channel])
+
     @db.withConn
     @failing_transaction
     async def test_insert(self, conn):
+        await self._prepare_data(conn)
         _self = self.db.messages
 
         await self.insert(_self, conn, self.messages)
@@ -580,6 +590,7 @@ class TestMessageQueries(TestQueries):
     @db.withConn
     @failing_transaction
     async def test_update(self, conn):
+        await self._prepare_data(conn)
         _self = self.db.messages
 
         updated_messages = [
@@ -597,6 +608,7 @@ class TestMessageQueries(TestQueries):
     @db.withConn
     @failing_transaction
     async def test_soft_delete(self, conn):
+        await self._prepare_data(conn)
         _self = self.db.messages
 
         await self.insert(_self, conn, self.messages)
