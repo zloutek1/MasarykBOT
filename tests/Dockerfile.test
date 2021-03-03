@@ -1,0 +1,15 @@
+FROM python:3.9.1-slim
+
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+WORKDIR /MasarykBOT
+COPY . /MasarykBOT
+
+COPY bot/requirements.txt bot/requirements.txt
+RUN pip install -r bot/requirements.txt
+
+RUN mkdir -p logs/ && touch logs/bot.log
+
+ENTRYPOINT ["python"]
+CMD ["-m", "tests"]

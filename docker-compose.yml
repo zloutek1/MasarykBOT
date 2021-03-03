@@ -11,11 +11,23 @@ services:
     volumes:
       - ./database/sql:/docker-entrypoint-initdb.d/
       - postgres:/var/lib/postgresql/data     # persist data even if container shuts down
+
   bot:
     container_name: bot
     build:
       context: .
       dockerfile: Dockerfile.bot
+    volumes:
+      - .:/MasarykBOT
+    env_file: .env
+    depends_on:
+      - database
+
+  tests:
+    container_name: tests
+    build:
+      context: .
+      dockerfile: tests/Dockerfile.test
     volumes:
       - .:/MasarykBOT
     env_file: .env
