@@ -191,24 +191,34 @@ class Members(Table, Mapper[Member], FromMessageMapper):
     async def prepare_from_message(self, message):
         return [await self.prepare_one(message.author)]
 
-    async def insert(self, data):
-        async with self.db.acquire() as conn:
-            await conn.executemany("""
-                INSERT INTO server.users AS u (id, names, avatar_url, created_at)
-                VALUES ($1, ARRAY[$2], $3, $4)
-                ON CONFLICT (id) DO UPDATE
-                    SET names=array_prepend($2::varchar, u.names),
-                        avatar_url=$3,
-                        created_at=$4,
-                        edited_at=NOW()
-                    WHERE $2<>ANY(u.names) OR
-                          u.avatar_url<>excluded.avatar_url OR
-                          u.created_at<>excluded.created_at
-            """, data)
+    @withConn
+    async def select(self, conn, user_id):
+        return await conn.fetch("""
+            SELECT * FROM server.users WHERE id=$1
+        """, user_id)
 
-    async def soft_delete(self, ids):
-        async with self.db.acquire() as conn:
-            await conn.executemany("UPDATE server.users SET deleted_at=NOW() WHERE id = $1;", ids)
+    @withConn
+    async def insert(self, conn, data):
+        await conn.executemany("""
+            INSERT INTO server.users AS u (id, names, avatar_url, created_at)
+            VALUES ($1, ARRAY[$2], $3, $4)
+            ON CONFLICT (id) DO UPDATE
+                SET names=array_prepend($2::varchar, u.names),
+                    avatar_url=$3,
+                    created_at=$4,
+                    edited_at=NOW()
+                WHERE $2<>ANY(u.names) OR
+                        u.avatar_url<>excluded.avatar_url OR
+                        u.created_at<>excluded.created_at
+        """, data)
+
+    @withConn
+    async def update(self, conn, data):
+        await self.insert.__wrapped__(self, conn, data)
+
+    @withConn
+    async def soft_delete(self, conn, ids):
+        await conn.executemany("UPDATE server.users SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
 

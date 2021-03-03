@@ -3,7 +3,7 @@ from unittest.mock import patch, AsyncMock
 
 from bot.cogs.utils import db
 from tests.mocks.discord import MockGuild, MockCategoryChannel, MockRole, MockMember, MockTextChannel, MockMessage, MockAttachment, MockReaction, MockEmoji, MockPartialEmoji
-from tests.mocks.database import MockPool, MockGuildRecord, MockCategoryRecord, MockRoleRecord
+from tests.mocks.database import MockPool, MockGuildRecord, MockCategoryRecord, MockRoleRecord, MockMemberRecord
 
 import os
 from discord import Color
@@ -370,6 +370,70 @@ class TestRolesQueries(TestQueries):
         _self = self.db.roles
 
         await self.insert(_self, conn, self.roles)
+        actual = await self.select(_self, conn, 11)
+        for row in actual:
+            self.assertIsNone(row["deleted_at"])
+
+        await self.soft_delete(_self, conn, [(11,)])
+        actual = await self.select(_self, conn, 11)
+        for row in actual:
+            self.assertIsNotNone(row["deleted_at"])
+
+
+class TestMembersQueries(TestQueries):
+    async def asyncSetUp(self):
+        self.members = [
+            (10, "First", "http://avatar.jpg", datetime(2020, 9, 20)),
+            (11, "Hello", "http://avatar2.jpg", datetime(2020, 9, 22))
+        ]
+
+        self.select = self.db.members.select.__wrapped__
+        self.insert = self.db.members.insert.__wrapped__
+        self.update = self.db.members.update.__wrapped__
+        self.soft_delete = self.db.members.soft_delete.__wrapped__
+
+    @db.withConn
+    @failing_transaction
+    async def test_insert(self, conn):
+        _self = self.db.members
+
+        await self.insert(_self, conn, self.members)
+        actual = await self.select(_self, conn, 11)
+
+        expected = [MockMemberRecord(
+            id=11,
+            names=["Hello"],
+            avatar_url="http://avatar2.jpg",
+            created_at=datetime(2020, 9, 22),
+            edited_at=None,
+            deleted_at=None)]
+
+        self.assertListEqual(actual, expected)
+
+    @db.withConn
+    @failing_transaction
+    async def test_update(self, conn):
+        _self = self.db.members
+
+        updated_members = [
+            (10, "Second", "http://avatar.png", datetime(2020, 9, 20)),
+        ]
+
+        await self.insert(_self, conn, self.members)
+        await self.update(_self, conn, updated_members)
+        actual = await self.select(_self, conn, 10)
+
+        row = next(filter(lambda row: row["id"] == 10, actual))
+        self.assertListEqual(row["names"], ["Second", "First"])
+        self.assertEqual(row["avatar_url"], "http://avatar.png")
+        self.assertIsNotNone(row["edited_at"])
+
+    @db.withConn
+    @failing_transaction
+    async def test_soft_delete(self, conn):
+        _self = self.db.members
+
+        await self.insert(_self, conn, self.members)
         actual = await self.select(_self, conn, 11)
         for row in actual:
             self.assertIsNone(row["deleted_at"])

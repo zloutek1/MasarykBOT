@@ -204,6 +204,17 @@ class MockRoleRecord:
 
 @record
 @dataclass
+class MockMemberRecord:
+    id: int
+    names: List[str]
+    avatar_url: str
+    created_at: datetime.datetime
+    edited_at: Optional[datetime.datetime] = None
+    deleted_at: Optional[datetime.datetime] = None
+
+
+@record
+@dataclass
 class MockLeaderboardRecord:
     row_number: int
     author_id: int
