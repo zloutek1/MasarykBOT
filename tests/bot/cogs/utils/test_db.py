@@ -3,7 +3,7 @@ from unittest.mock import patch, AsyncMock
 
 from bot.cogs.utils import db
 from tests.mocks.discord import MockGuild, MockCategoryChannel, MockRole, MockMember, MockTextChannel, MockMessage, MockAttachment, MockReaction, MockEmoji, MockPartialEmoji
-from tests.mocks.database import MockPool, MockGuildRecord, MockCategoryRecord, MockRoleRecord, MockMemberRecord
+from tests.mocks.database import MockPool, MockGuildRecord, MockCategoryRecord, MockRoleRecord, MockMemberRecord, MockChannelRecord
 
 import os
 from discord import Color
@@ -434,6 +434,78 @@ class TestMembersQueries(TestQueries):
         _self = self.db.members
 
         await self.insert(_self, conn, self.members)
+        actual = await self.select(_self, conn, 11)
+        for row in actual:
+            self.assertIsNone(row["deleted_at"])
+
+        await self.soft_delete(_self, conn, [(11,)])
+        actual = await self.select(_self, conn, 11)
+        for row in actual:
+            self.assertIsNotNone(row["deleted_at"])
+
+
+class TestChannelQueries(TestQueries):
+    async def asyncSetUp(self):
+        self.guild = (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20))
+        await self.db.guilds.insert([self.guild])
+
+        self.category = (8, 9, "Main Category", 1, datetime(2020, 9, 20))
+        await self.db.categories.insert([self.category])
+
+        self.channels = [
+            (8, 9, 10, "general", 1, datetime(2020, 9, 22)),
+            (8, None, 11, "talk", 2, datetime(2020, 9, 21))
+        ]
+
+        self.select = self.db.channels.select.__wrapped__
+        self.insert = self.db.channels.insert.__wrapped__
+        self.update = self.db.channels.update.__wrapped__
+        self.soft_delete = self.db.channels.soft_delete.__wrapped__
+
+    @db.withConn
+    @failing_transaction
+    async def test_insert(self, conn):
+        _self = self.db.channels
+
+        await self.insert(_self, conn, self.channels)
+        actual = await self.select(_self, conn, 10)
+
+        expected = [MockChannelRecord(
+            guild_id=8,
+            category_id=9,
+            id=10,
+            name="general",
+            position=1,
+            created_at=datetime(2020, 9, 22),
+            edited_at=None,
+            deleted_at=None)]
+
+        self.assertListEqual(actual, expected)
+
+    @db.withConn
+    @failing_transaction
+    async def test_update(self, conn):
+        _self = self.db.channels
+
+        updated_channels = [
+            (8, 9, 10, "shitposting", 3, datetime(2020, 9, 22)),
+        ]
+
+        await self.insert(_self, conn, self.channels)
+        await self.update(_self, conn, updated_channels)
+        actual = await self.select(_self, conn, 10)
+
+        row = next(filter(lambda row: row["id"] == 10, actual))
+        self.assertEqual(row["name"], "shitposting")
+        self.assertEqual(row["position"], 3)
+        self.assertIsNotNone(row["edited_at"])
+
+    @db.withConn
+    @failing_transaction
+    async def test_soft_delete(self, conn):
+        _self = self.db.channels
+
+        await self.insert(_self, conn, self.channels)
         actual = await self.select(_self, conn, 11)
         for row in actual:
             self.assertIsNone(row["deleted_at"])

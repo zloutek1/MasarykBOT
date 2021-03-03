@@ -231,27 +231,34 @@ class Channels(Table, Mapper[TextChannel]):
     async def prepare(self, channels: List[TextChannel]):
         return [await self.prepare_one(channel) for channel in channels]
 
-    async def insert(self, data):
-        async with self.db.acquire() as conn:
-            await conn.executemany("""
-                INSERT INTO server.channels AS ch (guild_id, category_id, id, name, position, created_at)
-                VALUES ($1, $2, $3, $4, $5, $6)
-                ON CONFLICT (id) DO UPDATE
-                    SET name=$4,
-                        position=$5,
-                        created_at=$6,
-                        edited_at=NOW()
-                    WHERE ch.name<>excluded.name OR
-                          ch.position<>excluded.position OR
-                          ch.created_at<>excluded.created_at
-            """, data)
+    @withConn
+    async def select(self, conn, channel_id):
+        return await conn.fetch("""
+            SELECT * FROM server.channels WHERE id=$1
+        """, channel_id)
 
-    async def update(self, data):
-        await self.insert(data)
+    @withConn
+    async def insert(self, conn, data):
+        await conn.executemany("""
+            INSERT INTO server.channels AS ch (guild_id, category_id, id, name, position, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (id) DO UPDATE
+                SET name=$4,
+                    position=$5,
+                    created_at=$6,
+                    edited_at=NOW()
+                WHERE ch.name<>excluded.name OR
+                        ch.position<>excluded.position OR
+                        ch.created_at<>excluded.created_at
+        """, data)
 
-    async def soft_delete(self, ids):
-        async with self.db.acquire() as conn:
-            await conn.executemany("UPDATE server.channels SET deleted_at=NOW() WHERE id = $1;", ids)
+    @withConn
+    async def update(self, conn, data):
+        await self.insert.__wrapped__(self, conn, data)
+
+    @withConn
+    async def soft_delete(self, conn, ids):
+        await conn.executemany("UPDATE server.channels SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
 
