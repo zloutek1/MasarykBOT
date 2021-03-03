@@ -6,8 +6,11 @@ services:
     image: postgres:12
     ports:
       - 5432:5432
-    env_file:
-      - database/.env
+    environment:
+      - POSTGRES_USER: masaryk
+      - POSTGRES_PASSWORD: localdbpassword
+      - POSTGRES_DB: discord
+      - PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
       - ./database/sql:/docker-entrypoint-initdb.d/
       - postgres:/var/lib/postgresql/data     # persist data even if container shuts down
@@ -30,7 +33,8 @@ services:
       dockerfile: tests/Dockerfile.test
     volumes:
       - .:/MasarykBOT
-    env_file: .env
+    environment:
+      - POSTGRES: postgresql://masaryk:localdbpassword@database/discord
     depends_on:
       - database
 
