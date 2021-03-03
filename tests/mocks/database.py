@@ -228,6 +228,18 @@ class MockChannelRecord:
 
 @record
 @dataclass
+class MockMessageRecord:
+    channel_id: int
+    author_id: int
+    id: int
+    content: str
+    created_at: datetime.datetime
+    edited_at: Optional[datetime.datetime] = None
+    deleted_at: Optional[datetime.datetime] = None
+
+
+@record
+@dataclass
 class MockLeaderboardRecord:
     row_number: int
     author_id: int

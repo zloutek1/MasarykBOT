@@ -2,8 +2,27 @@ import unittest
 from unittest.mock import patch, AsyncMock
 
 from bot.cogs.utils import db
-from tests.mocks.discord import MockGuild, MockCategoryChannel, MockRole, MockMember, MockTextChannel, MockMessage, MockAttachment, MockReaction, MockEmoji, MockPartialEmoji
-from tests.mocks.database import MockPool, MockGuildRecord, MockCategoryRecord, MockRoleRecord, MockMemberRecord, MockChannelRecord
+from tests.mocks.discord import (
+    MockGuild,
+    MockCategoryChannel,
+    MockRole,
+    MockMember,
+    MockTextChannel,
+    MockMessage,
+    MockAttachment,
+    MockReaction,
+    MockEmoji,
+    MockPartialEmoji
+)
+from tests.mocks.database import (
+    MockPool,
+    MockGuildRecord,
+    MockCategoryRecord,
+    MockRoleRecord,
+    MockMemberRecord,
+    MockChannelRecord,
+    MockMessageRecord
+)
 
 import os
 from discord import Color
@@ -85,10 +104,9 @@ class DBTests(unittest.IsolatedAsyncioTestCase):
             content="Hello world",
             channel=MockTextChannel(id=8, name="general"),
             author=MockMember(id=9, name="Bob"),
-            created_at=datetime(2020, 9, 13, 12, 50, 42),
-            edited_at=datetime(2020, 9, 14, 12, 50, 42))
+            created_at=datetime(2020, 9, 13, 12, 50, 42))
 
-        expected = (8, 9, 10, "Hello world", datetime(2020, 9, 13, 12, 50, 42), datetime(2020, 9, 14, 12, 50, 42))
+        expected = (8, 9, 10, "Hello world", datetime(2020, 9, 13, 12, 50, 42))
         actual = await table.prepare_one(message)
         self.assertTupleEqual(expected, actual)
 
@@ -96,7 +114,7 @@ class DBTests(unittest.IsolatedAsyncioTestCase):
         self.assertListEqual([expected], actual)
 
         message.edited_at = None
-        expected = (8, 9, 10, "Hello world", datetime(2020, 9, 13, 12, 50, 42), None)
+        expected = (8, 9, 10, "Hello world", datetime(2020, 9, 13, 12, 50, 42))
         actual = await table.prepare_one(message)
         self.assertTupleEqual(expected, actual)
 
@@ -179,6 +197,9 @@ class TestQueries(unittest.IsolatedAsyncioTestCase):
         if self.db is None:
             self.skipTest("Failed to connect to the database")
         self.pool = self.db.pool
+
+    async def asyncTearDown(self):
+        await self.db.pool.close()
 
 class TestGuildQueries(TestQueries):
     async def asyncSetUp(self):
@@ -506,6 +527,79 @@ class TestChannelQueries(TestQueries):
         _self = self.db.channels
 
         await self.insert(_self, conn, self.channels)
+        actual = await self.select(_self, conn, 11)
+        for row in actual:
+            self.assertIsNone(row["deleted_at"])
+
+        await self.soft_delete(_self, conn, [(11,)])
+        actual = await self.select(_self, conn, 11)
+        for row in actual:
+            self.assertIsNotNone(row["deleted_at"])
+
+
+class TestMessageQueries(TestQueries):
+    async def asyncSetUp(self):
+        self.guild = (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20))
+        await self.db.guilds.insert([self.guild])
+
+        self.member = (9, "Sender1", "http://avatar.jpg", datetime(2020, 9, 20))
+        await self.db.members.insert([self.member])
+
+        self.channel = (8, None, 10, "general", 1, datetime(2020, 9, 20))
+        await self.db.channels.insert([self.channel])
+
+        self.messages = [
+            (10, 9, 11, "First message", datetime(2020, 9, 22)),
+            (10, 9, 12, "Second message", datetime(2020, 9, 21))
+        ]
+
+        self.select = self.db.messages.select.__wrapped__
+        self.insert = self.db.messages.insert.__wrapped__
+        self.update = self.db.messages.update.__wrapped__
+        self.soft_delete = self.db.messages.soft_delete.__wrapped__
+
+    @db.withConn
+    @failing_transaction
+    async def test_insert(self, conn):
+        _self = self.db.messages
+
+        await self.insert(_self, conn, self.messages)
+        actual = await self.select(_self, conn, 11)
+
+        expected = [MockMessageRecord(
+            channel_id=10,
+            author_id=9,
+            id=11,
+            content="First message",
+            created_at=datetime(2020, 9, 22),
+            edited_at=None,
+            deleted_at=None)]
+
+        self.assertListEqual(actual, expected)
+
+    @db.withConn
+    @failing_transaction
+    async def test_update(self, conn):
+        _self = self.db.messages
+
+        updated_messages = [
+            (10, 9, 11, "Edited message", datetime(2020, 9, 22)),
+        ]
+
+        await self.insert(_self, conn, self.messages)
+        await self.update(_self, conn, updated_messages)
+        actual = await self.select(_self, conn, 11)
+
+        row = next(filter(lambda row: row["id"] == 11, actual))
+        self.assertEqual(row["content"], "Edited message")
+        self.assertIsNotNone(row["edited_at"])
+
+    @db.withConn
+    @failing_transaction
+    async def test_soft_delete(self, conn):
+        _self = self.db.messages
+
+        await self.insert(_self, conn, self.messages)
         actual = await self.select(_self, conn, 11)
         for row in actual:
             self.assertIsNone(row["deleted_at"])

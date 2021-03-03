@@ -265,31 +265,38 @@ class Channels(Table, Mapper[TextChannel]):
 class Messages(Table, Mapper[Message]):
     @staticmethod
     async def prepare_one(message: Message):
-        return (message.channel.id, message.author.id, message.id, message.content, message.created_at, message.edited_at)
+        return (message.channel.id, message.author.id, message.id, message.content, message.created_at)
 
     async def prepare(self, messages: List[Message]):
         return [await self.prepare_one(message) for message in messages]
 
-    async def insert(self, messages):
-        async with self.db.acquire() as conn:
-            await conn.executemany("""
-                INSERT INTO server.messages AS m (channel_id, author_id, id, content, created_at, edited_at)
-                VALUES ($1, $2, $3, $4, $5, $6)
-                ON CONFLICT (id) DO UPDATE
-                    SET content=$4,
-                        created_at=$5,
-                        edited_at=$6
-                    WHERE m.content<>excluded.content OR
-                          m.created_at<>excluded.created_at OR
-                          m.edited_at<>excluded.edited_at
-            """, messages)
+    @withConn
+    async def select(self, conn, message_id):
+        return await conn.fetch("""
+            SELECT * FROM server.messages WHERE id=$1
+        """, message_id)
 
-    async def update(self, messages):
-        await self.insert(messages)
+    @withConn
+    async def insert(self, conn, messages):
+        await conn.executemany("""
+            INSERT INTO server.messages AS m (channel_id, author_id, id, content, created_at)
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (id) DO UPDATE
+                SET content=$4,
+                    created_at=$5,
+                    edited_at=NOW()
+                WHERE m.content<>excluded.content OR
+                        m.created_at<>excluded.created_at OR
+                        m.edited_at<>excluded.edited_at
+        """, messages)
 
-    async def soft_delete(self, ids):
-        async with self.db.acquire() as conn:
-            await conn.executemany("UPDATE server.messages SET deleted_at=NOW() WHERE id = $1;", ids)
+    @withConn
+    async def update(self, conn, messages):
+        await self.insert.__wrapped__(self, conn, messages)
+
+    @withConn
+    async def soft_delete(self, conn, ids):
+        await conn.executemany("UPDATE server.messages SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
 

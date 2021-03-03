@@ -312,11 +312,11 @@ class LoggerBackupUntilPresentTests(unittest.IsolatedAsyncioTestCase):
         ])
 
         self.bot.db.messages.insert.assert_called_once_with([
-            (9, 10, 11, 'First message', datetime(2020, 9, 13, 12, 50, 42), None),
-            (9, 10, 12, 'Second message', datetime(2020, 9, 13, 12, 55, 42), None),
-            (9, 13, 14, 'IMAGE!!!', datetime(2020, 9, 14, 14, 10, 12), None),
-            (9, 10, 16, 'react please', datetime(2020, 9, 14, 14, 12, 10), None),
-            (9, 13, 17, 'Hello there, I am here to try :kek: and <:kekw:4586234> and ofc ⭐', datetime(2020, 9, 14, 14, 12, 10), None)
+            (9, 10, 11, 'First message', datetime(2020, 9, 13, 12, 50, 42)),
+            (9, 10, 12, 'Second message', datetime(2020, 9, 13, 12, 55, 42)),
+            (9, 13, 14, 'IMAGE!!!', datetime(2020, 9, 14, 14, 10, 12)),
+            (9, 10, 16, 'react please', datetime(2020, 9, 14, 14, 12, 10)),
+            (9, 13, 17, 'Hello there, I am here to try :kek: and <:kekw:4586234> and ofc ⭐', datetime(2020, 9, 14, 14, 12, 10))
         ])
 
         self.bot.db.attachments.insert.assert_called_once_with([
