@@ -198,7 +198,11 @@ class TestQueries(unittest.IsolatedAsyncioTestCase):
         load_dotenv()
 
         try:
-            self.db = db.Database.connect(os.getenv("POSTGRES"))
+            url = os.getenv("POSTGRES")
+            if url is None:
+                self.skipTest("Failed to connect to the database")
+
+            self.db = db.Database.connect(url)
             if self.db is None:
                 self.skipTest("Failed to connect to the database")
         except OSError:
