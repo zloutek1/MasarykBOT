@@ -7,6 +7,9 @@ CREATE TABLE server.reactions
     message_id bigint NOT NULL,
     emoji_id bigint NOT NULL,
     member_ids bigint[] NOT NULL,
+    created_at timestamp without time zone NOT NULL DEFAULT now(),
+    edited_at timestamp without time zone,
+    deleted_at timestamp without time zone,
     CONSTRAINT reactions_fkey_emoji FOREIGN KEY (emoji_id)
         REFERENCES server.emojis (id) MATCH SIMPLE
         ON UPDATE NO ACTION
@@ -39,4 +42,13 @@ CREATE INDEX fki_reactions_fkey_message
     ON server.reactions USING btree
     (message_id ASC NULLS LAST)
     TABLESPACE pg_default;
+-- Index: idx_reactions_unique
 
+-- DROP INDEX server.idx_reactions_unique;
+
+CREATE UNIQUE INDEX idx_reactions_unique
+    ON server.reactions USING btree
+    (message_id ASC NULLS LAST, emoji_id ASC NULLS LAST)
+    TABLESPACE pg_default;
+
+-- Trigger: update_emojiboard

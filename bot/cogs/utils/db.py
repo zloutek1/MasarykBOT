@@ -399,14 +399,33 @@ class Reactions(Table, Mapper[Reaction], FromMessageMapper):
     async def prepare_from_message(self, message: Message):
         return await self.prepare(message.reactions)
 
-    async def insert(self, reactions):
-        async with self.db.acquire() as conn:
-            await conn.executemany("""
-                INSERT INTO server.reactions AS r (message_id, emoji_id, member_ids)
-                VALUES ($1, $2, $3)
-                ON CONFLICT (message_id, emoji_id) DO NOTHING
-            """, reactions)
+    @withConn
+    async def select(self, conn, message_id, emoji_id):
+        return await conn.fetch("""
+            SELECT * FROM server.reactions WHERE message_id=$1 AND emoji_id=$2
+        """, message_id, emoji_id)
 
+    @withConn
+    async def insert(self, conn, reactions):
+        await conn.executemany("""
+            INSERT INTO server.reactions AS r (message_id, emoji_id, member_ids, created_at)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (message_id, emoji_id) DO UPDATE
+                SET member_ids=$3,
+                    created_at=$4,
+                    edited_at=NOW()
+                WHERE r.member_ids<>excluded.member_ids OR
+                      r.created_at<>excluded.created_at OR
+                      r.edited_at<>excluded.edited_at
+        """, reactions)
+
+    @withConn
+    async def update(self, conn, reactions):
+        await self.insert.__wrapped__(self, conn, reactions)
+
+    @withConn
+    async def soft_delete(self, conn, ids):
+        await conn.executemany("UPDATE server.reactions SET deleted_at=NOW() WHERE message_id = $1 AND emoji_id=$2;", ids)
 
 
 class Logger(Table):

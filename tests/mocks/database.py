@@ -261,6 +261,16 @@ class MockEmojiRecord:
 
 @record
 @dataclass
+class MockReactionRecord:
+    message_id: int
+    emoji_id: int
+    member_ids: List[int]
+    created_at: datetime.datetime
+    edited_at: Optional[datetime.datetime] = None
+    deleted_at: Optional[datetime.datetime] = None
+
+@record
+@dataclass
 class MockLeaderboardRecord:
     row_number: int
     author_id: int

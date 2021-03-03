@@ -23,7 +23,8 @@ from tests.mocks.database import (
     MockChannelRecord,
     MockMessageRecord,
     MockAttachmentRecord,
-    MockEmojiRecord
+    MockEmojiRecord,
+    MockReactionRecord
 )
 
 import os
@@ -133,9 +134,9 @@ class DBTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_emojis_prepare_full_emoji(self):
         table = db.Emojis(MockPool())
-        emoji = MockEmoji(id=8, name="kek", url="http://discord.gg/emoji", created_at=datetime(2020, 9, 13, 12, 50, 42), animated=True)
+        emoji = MockEmoji(id=8, name="kek", url="http://discord.gg/emoji", animated=True, created_at=datetime(2020, 9, 13, 12, 50, 42))
 
-        expected = (8, "kek", "http://discord.gg/emoji", datetime(2020, 9, 13, 12, 50, 42), True)
+        expected = (8, "kek", "http://discord.gg/emoji", True, datetime(2020, 9, 13, 12, 50, 42))
         actual = await table.prepare_one(emoji)
         self.assertTupleEqual(expected, actual)
 
@@ -145,9 +146,9 @@ class DBTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_emojis_prepare_partial_emoji(self):
         table = db.Emojis(MockPool())
-        emoji = MockPartialEmoji(id=8, name="kek", url="http://discord.gg/emoji", created_at=datetime(2020, 9, 13, 12, 50, 42), animated=False)
+        emoji = MockPartialEmoji(id=8, name="kek", url="http://discord.gg/emoji", animated=False, created_at=datetime(2020, 9, 13, 12, 50, 42))
 
-        expected = (8, "kek", "http://discord.gg/emoji", datetime(2020, 9, 13, 12, 50, 42), False)
+        expected = (8, "kek", "http://discord.gg/emoji", False, datetime(2020, 9, 13, 12, 50, 42))
         actual = await table.prepare_one(emoji)
         self.assertTupleEqual(expected, actual)
 
@@ -727,5 +728,95 @@ class TestEmojiQueries(TestQueries):
 
         await self.soft_delete(_self, conn, [(9,)])
         actual = await self.select(_self, conn, 9)
+        for row in actual:
+            self.assertIsNotNone(row["deleted_at"])
+
+
+class TestReactionQueries(TestQueries):
+    async def asyncSetUp(self):
+        self.reactions = [
+            (11, 12, [9], datetime(2020, 9, 20)),
+            (11, 13, [9], datetime(2020, 9, 20))
+        ]
+
+        self.select = self.db.reactions.select.__wrapped__
+        self.insert = self.db.reactions.insert.__wrapped__
+        self.update = self.db.reactions.update.__wrapped__
+        self.soft_delete = self.db.reactions.soft_delete.__wrapped__
+
+    async def _prepare_data(self, conn):
+        self.guild = (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20))
+        await self.db.guilds.insert.__wrapped__(self.db.guilds, conn, [self.guild])
+
+        self.members = [
+            (100, "OP", "http://avatar2.jpg", datetime(2020, 9, 20)),
+            (9, "Sender1", "http://avatar.jpg", datetime(2020, 9, 20))
+        ]
+        await self.db.members.insert.__wrapped__(self.db.members, conn, self.members)
+
+        self.channel = (8, None, 10, "general", 1, datetime(2020, 9, 20))
+        await self.db.channels.insert.__wrapped__(self.db.channels, conn, [self.channel])
+
+        self.message = (10, 9, 11, "First message", datetime(2020, 9, 22))
+        await self.db.messages.insert.__wrapped__(self.db.messages, conn, [self.message])
+
+        self.emojis = [
+            (12, "kek", "http://discord.gg/kek", False, datetime(2020, 9, 22)),
+            (13, "pog", "http:/discord.gg/pog", False, datetime(2020, 9, 21))
+        ]
+        await self.db.emojis.insert.__wrapped__(self.db.emojis, conn, self.emojis)
+
+    @db.withConn
+    @failing_transaction
+    async def test_insert(self, conn):
+        await self._prepare_data(conn)
+        _self = self.db.reactions
+
+        await self.insert(_self, conn, self.reactions)
+        actual = await self.select(_self, conn, 11, 12)
+
+        expected = [MockReactionRecord(
+            message_id=11,
+            emoji_id=12,
+            member_ids=[9],
+            created_at=datetime(2020, 9, 20),
+            edited_at=None,
+            deleted_at=None
+        )]
+
+        self.assertListEqual(actual, expected)
+
+    @db.withConn
+    @failing_transaction
+    async def test_update(self, conn):
+        await self._prepare_data(conn)
+        _self = self.db.reactions
+
+        updated_reactions = [
+            (11, 12, [100], datetime(2020, 9, 20)),
+        ]
+
+        await self.insert(_self, conn, self.reactions)
+        await self.update(_self, conn, updated_reactions)
+        actual = await self.select(_self, conn, 11, 12)
+
+        row = next(filter(lambda row: row["message_id"] == 11 and row["emoji_id"] == 12, actual))
+        self.assertListEqual(row["member_ids"], [100])
+        self.assertIsNotNone(row["edited_at"])
+
+
+    @db.withConn
+    @failing_transaction
+    async def test_soft_delete(self, conn):
+        await self._prepare_data(conn)
+        _self = self.db.reactions
+
+        await self.insert(_self, conn, self.reactions)
+        actual = await self.select(_self, conn, 11, 12)
+        for row in actual:
+            self.assertIsNone(row["deleted_at"])
+
+        await self.soft_delete(_self, conn, [(11, 12)])
+        actual = await self.select(_self, conn, 11, 12)
         for row in actual:
             self.assertIsNotNone(row["deleted_at"])
