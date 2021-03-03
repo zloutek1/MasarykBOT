@@ -30,7 +30,6 @@ from tests.mocks.database import (
 import os
 from discord import Color
 from datetime import datetime
-from dotenv import load_dotenv
 from contextlib import suppress
 
 class FixedDate(datetime):
@@ -195,8 +194,6 @@ def failing_transaction(func):
 
 class TestQueries(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
-        load_dotenv()
-
         try:
             url = os.getenv("POSTGRES")
             if url is None:
