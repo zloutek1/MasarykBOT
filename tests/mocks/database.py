@@ -177,6 +177,7 @@ class MockGuildRecord:
     edited_at: Optional[datetime.datetime] = None
     deleted_at: Optional[datetime.datetime] = None
 
+
 @record
 @dataclass
 class MockCategoryRecord:
@@ -184,6 +185,18 @@ class MockCategoryRecord:
     id: int
     name: str
     position: int
+    created_at: datetime.datetime
+    edited_at: Optional[datetime.datetime] = None
+    deleted_at: Optional[datetime.datetime] = None
+
+
+@record
+@dataclass
+class MockRoleRecord:
+    guild_id: int
+    id: int
+    name: str
+    color: str
     created_at: datetime.datetime
     edited_at: Optional[datetime.datetime] = None
     deleted_at: Optional[datetime.datetime] = None

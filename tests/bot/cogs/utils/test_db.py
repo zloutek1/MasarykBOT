@@ -3,7 +3,7 @@ from unittest.mock import patch, AsyncMock
 
 from bot.cogs.utils import db
 from tests.mocks.discord import MockGuild, MockCategoryChannel, MockRole, MockMember, MockTextChannel, MockMessage, MockAttachment, MockReaction, MockEmoji, MockPartialEmoji
-from tests.mocks.database import MockPool, MockGuildRecord, MockCategoryRecord
+from tests.mocks.database import MockPool, MockGuildRecord, MockCategoryRecord, MockRoleRecord
 
 import os
 from discord import Color
@@ -308,6 +308,74 @@ class TestCategoryQueries(TestQueries):
 
         await self.soft_delete(_self, conn, [(10,)])
         actual = await self.select(_self, conn, 10)
+        for row in actual:
+            self.assertIsNotNone(row["deleted_at"])
+
+
+class TestRolesQueries(TestQueries):
+    async def asyncSetUp(self):
+        self.guild = (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20))
+        await self.db.guilds.insert([self.guild])
+
+        self.roles = [
+            (8, 10, "@everyone", "0x0", datetime(2020, 9, 20)),
+            (8, 11, "Admin", "0xf1c40f", datetime(2020, 9, 22))
+        ]
+
+        self.select = self.db.roles.select.__wrapped__
+        self.insert = self.db.roles.insert.__wrapped__
+        self.update = self.db.roles.update.__wrapped__
+        self.soft_delete = self.db.roles.soft_delete.__wrapped__
+
+    @db.withConn
+    @failing_transaction
+    async def test_insert(self, conn):
+        _self = self.db.roles
+
+        await self.insert(_self, conn, self.roles)
+        actual = await self.select(_self, conn, 11)
+
+        expected = [MockRoleRecord(
+            guild_id=8,
+            id=11,
+            name="Admin",
+            color='0xf1c40f',
+            created_at=datetime(2020, 9, 22),
+            edited_at=None,
+            deleted_at=None)]
+
+        self.assertListEqual(actual, expected)
+
+    @db.withConn
+    @failing_transaction
+    async def test_update(self, conn):
+        _self = self.db.roles
+
+        updated_roles = [
+            (8, 10, "@here", "0xffffff", datetime(2020, 9, 20)),
+        ]
+
+        await self.insert(_self, conn, self.roles)
+        await self.update(_self, conn, updated_roles)
+        actual = await self.select(_self, conn, 10)
+
+        row = next(filter(lambda row: row["id"] == 10, actual))
+        self.assertEqual(row["name"], "@here")
+        self.assertEqual(row["color"], "0xffffff")
+        self.assertIsNotNone(row["edited_at"])
+
+    @db.withConn
+    @failing_transaction
+    async def test_soft_delete(self, conn):
+        _self = self.db.roles
+
+        await self.insert(_self, conn, self.roles)
+        actual = await self.select(_self, conn, 11)
+        for row in actual:
+            self.assertIsNone(row["deleted_at"])
+
+        await self.soft_delete(_self, conn, [(11,)])
+        actual = await self.select(_self, conn, 11)
         for row in actual:
             self.assertIsNotNone(row["deleted_at"])
 
