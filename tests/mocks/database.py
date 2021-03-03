@@ -246,6 +246,19 @@ class MockAttachmentRecord:
     filename: str
     url: str
 
+
+@record
+@dataclass
+class MockEmojiRecord:
+    id: int
+    name: str
+    url: str
+    animated: bool
+    created_at: datetime.datetime
+    edited_at: Optional[datetime.datetime] = None
+    deleted_at: Optional[datetime.datetime] = None
+
+
 @record
 @dataclass
 class MockLeaderboardRecord:

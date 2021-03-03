@@ -318,7 +318,7 @@ class Attachments(Table, Mapper[Attachment], FromMessageMapper):
         """, attachment_id)
 
     @withConn
-    async def insert(self, conn, attachments):
+    async def insert(self, conn, data):
         await conn.executemany("""
             INSERT INTO server.attachments AS a (message_id, id, filename, url)
             VALUES ($1, $2, $3, $4)
@@ -327,7 +327,7 @@ class Attachments(Table, Mapper[Attachment], FromMessageMapper):
                     url=$4
                 WHERE a.filename<>excluded.filename OR
                         a.url<>excluded.url
-        """, attachments)
+        """, data)
 
 
 
@@ -336,7 +336,7 @@ class Emojis(Table, Mapper[AnyEmote]):
     async def prepare_one(emote: AnyEmote):
         if isinstance(emote, str):
             return await Emojis.prepare_unicode_emoji(emote)
-        return (emote.id, emote.name, emote.url, emote.created_at, emote.animated)
+        return (emote.id, emote.name, emote.url, emote.animated, emote.created_at)
 
     @staticmethod
     async def prepare_unicode_emoji(emote: str):
@@ -350,6 +350,37 @@ class Emojis(Table, Mapper[AnyEmote]):
     async def prepare(self, emotes: List[AnyEmote]):
         return [await self.prepare_one(emote) for emote in emotes]
 
+    @withConn
+    async def select(self, conn, emoji_id):
+        return await conn.fetch("""
+            SELECT * FROM server.emojis WHERE id=$1
+        """, emoji_id)
+
+    @withConn
+    async def insert(self, conn, data):
+        await conn.executemany("""
+            INSERT INTO server.emojis AS e (id, name, url, animated, created_at)
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (id) DO UPDATE
+                SET name=$2,
+                    url=$3,
+                    animated=$4,
+                    created_at=$5,
+                    edited_at=NOW()
+                WHERE e.name<>excluded.name OR
+                      e.url<>excluded.url OR
+                      e.animated<>excluded.animated OR
+                      e.created_at<>excluded.created_at OR
+                      e.edited_at<>excluded.edited_at
+        """, data)
+
+    @withConn
+    async def update(self, conn, data):
+        await self.insert.__wrapped__(self, conn, data)
+
+    @withConn
+    async def soft_delete(self, conn, ids):
+        await conn.executemany("UPDATE server.emojis SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
 class Reactions(Table, Mapper[Reaction], FromMessageMapper):

@@ -22,7 +22,8 @@ from tests.mocks.database import (
     MockMemberRecord,
     MockChannelRecord,
     MockMessageRecord,
-    MockAttachmentRecord
+    MockAttachmentRecord,
+    MockEmojiRecord
 )
 
 import os
@@ -662,3 +663,69 @@ class TestAttachmentQueries(TestQueries):
             url="http://discord.gg/file.txt")]
 
         self.assertListEqual(actual, expected)
+
+
+class TestEmojiQueries(TestQueries):
+    async def asyncSetUp(self):
+        self.emojis = [
+            (9, "kek", "http://discord.gg/kek", False, datetime(2020, 9, 22)),
+            (10, "pog", "http:/discord.gg/pog", False, datetime(2020, 9, 21))
+        ]
+
+        self.select = self.db.emojis.select.__wrapped__
+        self.insert = self.db.emojis.insert.__wrapped__
+        self.update = self.db.emojis.update.__wrapped__
+        self.soft_delete = self.db.emojis.soft_delete.__wrapped__
+
+    @db.withConn
+    @failing_transaction
+    async def test_insert(self, conn):
+        _self = self.db.emojis
+
+        await self.insert(_self, conn, self.emojis)
+        actual = await self.select(_self, conn, 9)
+
+        expected = [MockEmojiRecord(
+            id=9,
+            name="kek",
+            url="http://discord.gg/kek",
+            animated=False,
+            created_at=datetime(2020, 9, 22),
+            edited_at=None,
+            deleted_at=None)]
+
+        self.assertListEqual(actual, expected)
+
+    @db.withConn
+    @failing_transaction
+    async def test_update(self, conn):
+        _self = self.db.emojis
+
+        updated_emojis = [
+            (9, "pepega", "http://discord.gg/pepega", True, datetime(2020, 9, 22)),
+        ]
+
+        await self.insert(_self, conn, self.emojis)
+        await self.update(_self, conn, updated_emojis)
+        actual = await self.select(_self, conn, 9)
+
+        row = next(filter(lambda row: row["id"] == 9, actual))
+        self.assertEqual(row["name"], "pepega")
+        self.assertEqual(row["url"], "http://discord.gg/pepega")
+        self.assertTrue(row["animated"])
+        self.assertIsNotNone(row["edited_at"])
+
+    @db.withConn
+    @failing_transaction
+    async def test_soft_delete(self, conn):
+        _self = self.db.emojis
+
+        await self.insert(_self, conn, self.emojis)
+        actual = await self.select(_self, conn, 9)
+        for row in actual:
+            self.assertIsNone(row["deleted_at"])
+
+        await self.soft_delete(_self, conn, [(9,)])
+        actual = await self.select(_self, conn, 9)
+        for row in actual:
+            self.assertIsNotNone(row["deleted_at"])
