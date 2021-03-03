@@ -196,9 +196,14 @@ def failing_transaction(func):
 class TestQueries(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         load_dotenv()
-        self.db = db.Database.connect(os.getenv("POSTGRES"))
-        if self.db is None:
+
+        try:
+            self.db = db.Database.connect(os.getenv("POSTGRES"))
+            if self.db is None:
+                self.skipTest("Failed to connect to the database")
+        except OSError:
             self.skipTest("Failed to connect to the database")
+
         self.pool = self.db.pool
 
     async def asyncTearDown(self):
