@@ -9,6 +9,7 @@ import os
 from discord import Color
 from datetime import datetime
 from dotenv import load_dotenv
+from contextlib import suppress
 
 class FixedDate(datetime):
     @classmethod
@@ -160,12 +161,52 @@ class DBTests(unittest.IsolatedAsyncioTestCase):
         table.start_process.assert_called_once()
         table.mark_process_finished.assert_called_once()
 
-class TestQuieries(unittest.IsolatedAsyncioTestCase):
+class FailTransaction(Exception):
+    pass
+
+def failing_transaction(func):
+    async def wrapper(self, conn):
+        with suppress(FailTransaction):
+            async with conn.transaction():
+                await func(self, conn)
+                raise FailTransaction("rollback changes made by the function")
+    return wrapper
+
+class TestQueries(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         load_dotenv()
         self.db = db.Database.connect(os.getenv("POSTGRES"))
         if self.db is None:
             self.skipTest("Failed to connect to the database")
+        self.pool = self.db.pool
 
-    async def test_true(self):
-        self.assertTrue(True)
+    @db.withConn
+    @failing_transaction
+    async def test_guild_insert(self, conn):
+        _self = self.db.guilds
+        guild_select = self.db.guilds.select.__wrapped__
+        guild_insert = self.db.guilds.insert.__wrapped__
+        guilds = [
+            (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20)),
+            (156, "Second guild", "http://no-image.jpg", datetime(2020, 9, 22))
+        ]
+
+        await guild_insert(_self, conn, guilds)
+        print(await guild_select(_self, conn, 8))
+        # assert no exception raised
+
+    @db.withConn
+    @failing_transaction
+    async def test_guild_soft_delete(self, conn):
+        _self = self.db.guilds
+        guild_insert = self.db.guilds.insert.__wrapped__
+        guilds = [
+            (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20)),
+            (156, "Second guild", "http://no-image.jpg", datetime(2020, 9, 22))
+        ]
+
+        await guild_insert(_self, conn, guilds)
+
+        guild_soft_delete = self.db.guilds.soft_delete.__wrapped__
+        guild_ids = [(8,)]
+        await guild_soft_delete(_self, conn, guild_ids)

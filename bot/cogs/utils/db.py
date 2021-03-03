@@ -4,6 +4,7 @@ import logging
 
 from abc import ABC, abstractmethod
 from datetime import datetime
+from functools import wraps
 
 from discord import Guild, CategoryChannel, Role, Member, TextChannel, Message, Attachment, Reaction, Emoji, PartialEmoji
 from typing import List, TypeVar, Generic, Union
@@ -15,9 +16,16 @@ AnyEmote = Union[Emoji, PartialEmoji, str]
 log = logging.getLogger(__name__)
 
 
+def withConn(func):
+    @wraps(func)
+    async def wrapper(self, *args, **kwargs):
+        async with self.pool.acquire() as conn:
+            return await func(self, conn, *args, **kwargs)
+    return wrapper
+
 class Table:
-    def __init__(self, db):
-        self.db = db
+    def __init__(self, pool):
+        self.pool = pool
 
     async def select(self, data):
         raise NotImplementedError("select not implemented for this table")
@@ -63,24 +71,30 @@ class Guilds(Table, Mapper[Guild]):
     async def prepare(self, guilds: List[Guild]):
         return [await self.prepare_one(guild) for guild in guilds]
 
-    async def insert(self, data):
-        async with self.db.acquire() as conn:
-            await conn.executemany("""
-                INSERT INTO server.guilds AS g (id, name, icon_url, created_at)
-                VALUES ($1, $2, $3, $4)
-                ON CONFLICT (id) DO UPDATE
-                    SET name=$2,
-                        icon_url=$3,
-                        created_at=$4,
-                        edited_at=NOW()
-                    WHERE g.name<>excluded.name OR
-                          g.icon_url<>excluded.icon_url OR
-                          g.created_at<>excluded.created_at
-            """, data)
+    @withConn
+    async def select(self, conn, guild_id):
+        return await conn.fetch("""
+            SELECT * FROM server.guilds WHERE id=$1
+        """, guild_id)
 
-    async def soft_delete(self, ids):
-        async with self.db.acquire() as conn:
-            await conn.executemany("UPDATE server.guilds SET deleted_at=NOW() WHERE id = $1;", ids)
+    @withConn
+    async def insert(self, conn, data):
+        await conn.executemany("""
+            INSERT INTO server.guilds AS g (id, name, icon_url, created_at)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (id) DO UPDATE
+                SET name=$2,
+                    icon_url=$3,
+                    created_at=$4,
+                    edited_at=NOW()
+                WHERE g.name<>excluded.name OR
+                        g.icon_url<>excluded.icon_url OR
+                        g.created_at<>excluded.created_at
+        """, data)
+
+    @withConn
+    async def soft_delete(self, conn, ids):
+        await conn.executemany("UPDATE server.guilds SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
 
