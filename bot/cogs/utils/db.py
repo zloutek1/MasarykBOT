@@ -311,17 +311,23 @@ class Attachments(Table, Mapper[Attachment], FromMessageMapper):
     async def prepare_from_message(self, message: Message):
         return await self.prepare(message.attachments)
 
-    async def insert(self, attachments):
-        async with self.db.acquire() as conn:
-            await conn.executemany("""
-                INSERT INTO server.attachments AS a (message_id, id, filename, url)
-                VALUES ($1, $2, $3, $4)
-                ON CONFLICT (id) DO UPDATE
-                    SET filename=$3,
-                        url=$4
-                    WHERE a.filename<>excluded.filename OR
-                          a.url<>excluded.url
-            """, attachments)
+    @withConn
+    async def select(self, conn, attachment_id):
+        return await conn.fetch("""
+            SELECT * FROM server.attachments WHERE id=$1
+        """, attachment_id)
+
+    @withConn
+    async def insert(self, conn, attachments):
+        await conn.executemany("""
+            INSERT INTO server.attachments AS a (message_id, id, filename, url)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (id) DO UPDATE
+                SET filename=$3,
+                    url=$4
+                WHERE a.filename<>excluded.filename OR
+                        a.url<>excluded.url
+        """, attachments)
 
 
 

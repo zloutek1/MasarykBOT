@@ -21,7 +21,8 @@ from tests.mocks.database import (
     MockRoleRecord,
     MockMemberRecord,
     MockChannelRecord,
-    MockMessageRecord
+    MockMessageRecord,
+    MockAttachmentRecord
 )
 
 import os
@@ -622,3 +623,42 @@ class TestMessageQueries(TestQueries):
             self.assertIsNotNone(row["deleted_at"])
 
 
+class TestAttachmentQueries(TestQueries):
+    async def asyncSetUp(self):
+        self.attachments = [
+            (11, 12, "file.txt", "http://discord.gg/file.txt"),
+            (11, 13, "image.jpg", "http://discord.gg/image.jpg")
+        ]
+
+        self.select = self.db.attachments.select.__wrapped__
+        self.insert = self.db.attachments.insert.__wrapped__
+
+    async def _prepare_data(self, conn):
+        self.guild = (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20))
+        await self.db.guilds.insert.__wrapped__(self.db.guilds, conn, [self.guild])
+
+        self.member = (9, "Sender1", "http://avatar.jpg", datetime(2020, 9, 20))
+        await self.db.members.insert.__wrapped__(self.db.members, conn, [self.member])
+
+        self.channel = (8, None, 10, "general", 1, datetime(2020, 9, 20))
+        await self.db.channels.insert.__wrapped__(self.db.channels, conn, [self.channel])
+
+        self.message = (10, 9, 11, "First message", datetime(2020, 9, 22))
+        await self.db.messages.insert.__wrapped__(self.db.messages, conn, [self.message])
+
+    @db.withConn
+    @failing_transaction
+    async def test_insert(self, conn):
+        await self._prepare_data(conn)
+        _self = self.db.attachments
+
+        await self.insert(_self, conn, self.attachments)
+        actual = await self.select(_self, conn, 12)
+
+        expected = [MockAttachmentRecord(
+            message_id=11,
+            id=12,
+            filename="file.txt",
+            url="http://discord.gg/file.txt")]
+
+        self.assertListEqual(actual, expected)

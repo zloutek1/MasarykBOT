@@ -240,6 +240,14 @@ class MockMessageRecord:
 
 @record
 @dataclass
+class MockAttachmentRecord:
+    message_id: int
+    id: int
+    filename: str
+    url: str
+
+@record
+@dataclass
 class MockLeaderboardRecord:
     row_number: int
     author_id: int
