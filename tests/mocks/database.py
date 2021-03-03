@@ -179,6 +179,18 @@ class MockGuildRecord:
 
 @record
 @dataclass
+class MockCategoryRecord:
+    guild_id: int
+    id: int
+    name: str
+    position: int
+    created_at: datetime.datetime
+    edited_at: Optional[datetime.datetime] = None
+    deleted_at: Optional[datetime.datetime] = None
+
+
+@record
+@dataclass
 class MockLeaderboardRecord:
     row_number: int
     author_id: int

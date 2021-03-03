@@ -110,27 +110,35 @@ class Categories(Table, Mapper[CategoryChannel]):
     async def prepare(self, categories: List[CategoryChannel]):
         return [await self.prepare_one(category) for category in categories]
 
-    async def insert(self, data):
-        async with self.db.acquire() as conn:
-            await conn.executemany("""
-                INSERT INTO server.categories AS c (guild_id, id, name, position, created_at)
-                VALUES ($1, $2, $3, $4, $5)
-                ON CONFLICT (id) DO UPDATE
-                    SET name=$3,
-                        position=$4,
-                        created_at=$5,
-                        edited_at=NOW()
-                    WHERE c.name<>excluded.name OR
-                          c.position<>excluded.position OR
-                          c.created_at<>excluded.created_at
-            """, data)
+    @withConn
+    async def select(self, conn, category_id):
+        return await conn.fetch("""
+            SELECT * FROM server.categories WHERE id=$1
+        """, category_id)
 
-    async def update(self, data):
-        await self.insert(data)
 
-    async def soft_delete(self, ids):
-        async with self.db.acquire() as conn:
-            await conn.executemany("UPDATE server.categories SET deleted_at=NOW() WHERE id = $1;", ids)
+    @withConn
+    async def insert(self, conn, data):
+        await conn.executemany("""
+            INSERT INTO server.categories AS c (guild_id, id, name, position, created_at)
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (id) DO UPDATE
+                SET name=$3,
+                    position=$4,
+                    created_at=$5,
+                    edited_at=NOW()
+                WHERE c.name<>excluded.name OR
+                        c.position<>excluded.position OR
+                        c.created_at<>excluded.created_at
+        """, data)
+
+    @withConn
+    async def update(self, conn, data):
+        await self.insert.__wrapped__(self, conn, data)
+
+    @withConn
+    async def soft_delete(self, conn, ids):
+        await conn.executemany("UPDATE server.categories SET deleted_at=NOW() WHERE id = $1;", ids)
 
 
 

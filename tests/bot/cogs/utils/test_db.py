@@ -3,7 +3,7 @@ from unittest.mock import patch, AsyncMock
 
 from bot.cogs.utils import db
 from tests.mocks.discord import MockGuild, MockCategoryChannel, MockRole, MockMember, MockTextChannel, MockMessage, MockAttachment, MockReaction, MockEmoji, MockPartialEmoji
-from tests.mocks.database import MockPool, MockGuildRecord
+from tests.mocks.database import MockPool, MockGuildRecord, MockCategoryRecord
 
 import os
 from discord import Color
@@ -194,7 +194,7 @@ class TestGuildQueries(TestQueries):
 
     @db.withConn
     @failing_transaction
-    async def test_guild_insert(self, conn):
+    async def test_insert(self, conn):
         _self = self.db.guilds
 
         await self.insert(_self, conn, self.guilds)
@@ -212,7 +212,7 @@ class TestGuildQueries(TestQueries):
 
     @db.withConn
     @failing_transaction
-    async def test_guild_update(self, conn):
+    async def test_update(self, conn):
         _self = self.db.guilds
 
         updated_guilds = [
@@ -230,7 +230,7 @@ class TestGuildQueries(TestQueries):
 
     @db.withConn
     @failing_transaction
-    async def test_guild_soft_delete(self, conn):
+    async def test_soft_delete(self, conn):
         _self = self.db.guilds
 
         await self.insert(_self, conn, self.guilds)
@@ -245,26 +245,33 @@ class TestGuildQueries(TestQueries):
 
 
 class TestCategoryQueries(TestQueries):
-    @db.withConn
-    @failing_transaction
-    async def test_guild_insert(self, conn):
-        _self = self.db.guilds
+    async def asyncSetUp(self):
+        self.guild = (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20))
+        await self.db.guilds.insert([self.guild])
 
-        select = self.db.guilds.select.__wrapped__
-        insert = self.db.guilds.insert.__wrapped__
-
-        guilds = [
-            (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20)),
-            (156, "Second guild", "http://no-image.jpg", datetime(2020, 9, 22))
+        self.categories = [
+            (8, 10, "Category name", 1, datetime(2020, 9, 20)),
+            (8, 11, "second category", 2, datetime(2020, 9, 22))
         ]
 
-        await insert(_self, conn, guilds)
-        actual = await select(_self, conn, 8)
+        self.select = self.db.categories.select.__wrapped__
+        self.insert = self.db.categories.insert.__wrapped__
+        self.update = self.db.categories.update.__wrapped__
+        self.soft_delete = self.db.categories.soft_delete.__wrapped__
 
-        expected = [MockGuildRecord(
-            id=8,
-            name="Main Guild",
-            icon_url="http://image.jpg",
+    @db.withConn
+    @failing_transaction
+    async def test_insert(self, conn):
+        _self = self.db.categories
+
+        await self.insert(_self, conn, self.categories)
+        actual = await self.select(_self, conn, 10)
+
+        expected = [MockCategoryRecord(
+            guild_id=8,
+            id=10,
+            name="Category name",
+            position=1,
             created_at=datetime(2020, 9, 20),
             edited_at=None,
             deleted_at=None)]
@@ -273,130 +280,35 @@ class TestCategoryQueries(TestQueries):
 
     @db.withConn
     @failing_transaction
-    async def test_guild_update(self, conn):
-        _self = self.db.guilds
+    async def test_update(self, conn):
+        _self = self.db.categories
 
-        select = self.db.guilds.select.__wrapped__
-        insert = self.db.guilds.insert.__wrapped__
-        update = self.db.guilds.update.__wrapped__
-
-        guilds = [
-            (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20)),
-            (156, "Second guild", "http://no-image.jpg", datetime(2020, 9, 22))
+        updated_categories = [
+            (8, 10, "New Category name", 3, datetime(2020, 9, 20)),
         ]
 
-        updated_guilds = [
-            (8, "New name", "http://image.png", datetime(2020, 9, 20))
-        ]
+        await self.insert(_self, conn, self.categories)
+        await self.update(_self, conn, updated_categories)
+        actual = await self.select(_self, conn, 10)
 
-        await insert(_self, conn, guilds)
-        await update(_self, conn, updated_guilds)
-        actual = await select(_self, conn, 8)
-
-        row = next(filter(lambda row: row["id"] == 8, actual))
-        self.assertEqual(row["name"], "New name")
-        self.assertEqual(row["icon_url"], "http://image.png")
+        row = next(filter(lambda row: row["id"] == 10, actual))
+        self.assertEqual(row["name"], "New Category name")
+        self.assertEqual(row["position"], 3)
         self.assertIsNotNone(row["edited_at"])
 
     @db.withConn
     @failing_transaction
-    async def test_guild_soft_delete(self, conn):
-        _self = self.db.guilds
+    async def test_soft_delete(self, conn):
+        _self = self.db.categories
 
-        select = self.db.guilds.select.__wrapped__
-        insert = self.db.guilds.insert.__wrapped__
-        soft_delete = self.db.guilds.soft_delete.__wrapped__
-
-        guilds = [
-            (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20)),
-            (156, "Second guild", "http://no-image.jpg", datetime(2020, 9, 22))
-        ]
-
-        await insert(_self, conn, guilds)
-        actual = await select(_self, conn, 8)
+        await self.insert(_self, conn, self.categories)
+        actual = await self.select(_self, conn, 10)
         for row in actual:
             self.assertIsNone(row["deleted_at"])
 
-        await soft_delete(_self, conn, [(8,)])
-        actual = await select(_self, conn, 8)
+        await self.soft_delete(_self, conn, [(10,)])
+        actual = await self.select(_self, conn, 10)
         for row in actual:
             self.assertIsNotNone(row["deleted_at"])
 
 
-class TestRoleQueries(TestQueries):
-    @db.withConn
-    @failing_transaction
-    async def test_guild_insert(self, conn):
-        _self = self.db.guilds
-
-        select = self.db.guilds.select.__wrapped__
-        insert = self.db.guilds.insert.__wrapped__
-
-        guilds = [
-            (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20)),
-            (156, "Second guild", "http://no-image.jpg", datetime(2020, 9, 22))
-        ]
-
-        await insert(_self, conn, guilds)
-        actual = await select(_self, conn, 8)
-
-        expected = [MockGuildRecord(
-            id=8,
-            name="Main Guild",
-            icon_url="http://image.jpg",
-            created_at=datetime(2020, 9, 20),
-            edited_at=None,
-            deleted_at=None)]
-
-        self.assertListEqual(actual, expected)
-
-    @db.withConn
-    @failing_transaction
-    async def test_guild_update(self, conn):
-        _self = self.db.guilds
-
-        select = self.db.guilds.select.__wrapped__
-        insert = self.db.guilds.insert.__wrapped__
-        update = self.db.guilds.update.__wrapped__
-
-        guilds = [
-            (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20)),
-            (156, "Second guild", "http://no-image.jpg", datetime(2020, 9, 22))
-        ]
-
-        updated_guilds = [
-            (8, "New name", "http://image.png", datetime(2020, 9, 20))
-        ]
-
-        await insert(_self, conn, guilds)
-        await update(_self, conn, updated_guilds)
-        actual = await select(_self, conn, 8)
-
-        row = next(filter(lambda row: row["id"] == 8, actual))
-        self.assertEqual(row["name"], "New name")
-        self.assertEqual(row["icon_url"], "http://image.png")
-        self.assertIsNotNone(row["edited_at"])
-
-    @db.withConn
-    @failing_transaction
-    async def test_guild_soft_delete(self, conn):
-        _self = self.db.guilds
-
-        select = self.db.guilds.select.__wrapped__
-        insert = self.db.guilds.insert.__wrapped__
-        soft_delete = self.db.guilds.soft_delete.__wrapped__
-
-        guilds = [
-            (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20)),
-            (156, "Second guild", "http://no-image.jpg", datetime(2020, 9, 22))
-        ]
-
-        await insert(_self, conn, guilds)
-        actual = await select(_self, conn, 8)
-        for row in actual:
-            self.assertIsNone(row["deleted_at"])
-
-        await soft_delete(_self, conn, [(8,)])
-        actual = await select(_self, conn, 8)
-        for row in actual:
-            self.assertIsNotNone(row["deleted_at"])
