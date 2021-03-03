@@ -312,7 +312,7 @@ class TestCategoryQueries(TestQueries):
             self.assertIsNotNone(row["deleted_at"])
 
 
-class TestRolesQueries(TestQueries):
+class TestRoleQueries(TestQueries):
     async def asyncSetUp(self):
         self.guild = (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20))
         await self.db.guilds.insert([self.guild])
@@ -380,7 +380,7 @@ class TestRolesQueries(TestQueries):
             self.assertIsNotNone(row["deleted_at"])
 
 
-class TestMembersQueries(TestQueries):
+class TestMemberQueries(TestQueries):
     async def asyncSetUp(self):
         self.members = [
             (10, "First", "http://avatar.jpg", datetime(2020, 9, 20)),
