@@ -7,10 +7,10 @@ services:
     ports:
       - 5432:5432
     environment:
-      - POSTGRES_USER: masaryk
-      - POSTGRES_PASSWORD: localdbpassword
-      - POSTGRES_DB: discord
-      - PGDATA: /var/lib/postgresql/data/pgdata
+      - POSTGRES_USER=masaryk
+      - POSTGRES_PASSWORD=localdbpassword
+      - POSTGRES_DB=discord
+      - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - ./database/sql:/docker-entrypoint-initdb.d/
       - postgres:/var/lib/postgresql/data     # persist data even if container shuts down
@@ -34,7 +34,7 @@ services:
     volumes:
       - .:/MasarykBOT
     environment:
-      - POSTGRES: postgresql://masaryk:localdbpassword@database/discord
+      - POSTGRES=postgresql://masaryk:localdbpassword@database/discord
     depends_on:
       - database
 
