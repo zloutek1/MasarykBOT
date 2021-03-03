@@ -169,6 +169,16 @@ def MockDatabase():
 
 @record
 @dataclass
+class MockGuildRecord:
+    id: int
+    name: str
+    icon_url: str
+    created_at: datetime.datetime
+    edited_at: Optional[datetime.datetime] = None
+    deleted_at: Optional[datetime.datetime] = None
+
+@record
+@dataclass
 class MockLeaderboardRecord:
     row_number: int
     author_id: int

@@ -93,6 +93,10 @@ class Guilds(Table, Mapper[Guild]):
         """, data)
 
     @withConn
+    async def update(self, conn, data):
+        await self.insert.__wrapped__(self, conn, data)
+
+    @withConn
     async def soft_delete(self, conn, ids):
         await conn.executemany("UPDATE server.guilds SET deleted_at=NOW() WHERE id = $1;", ids)
 

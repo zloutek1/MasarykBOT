@@ -3,7 +3,7 @@ from unittest.mock import patch, AsyncMock
 
 from bot.cogs.utils import db
 from tests.mocks.discord import MockGuild, MockCategoryChannel, MockRole, MockMember, MockTextChannel, MockMessage, MockAttachment, MockReaction, MockEmoji, MockPartialEmoji
-from tests.mocks.database import MockPool
+from tests.mocks.database import MockPool, MockGuildRecord
 
 import os
 from discord import Color
@@ -184,29 +184,75 @@ class TestQueries(unittest.IsolatedAsyncioTestCase):
     @failing_transaction
     async def test_guild_insert(self, conn):
         _self = self.db.guilds
-        guild_select = self.db.guilds.select.__wrapped__
-        guild_insert = self.db.guilds.insert.__wrapped__
+
+        select = self.db.guilds.select.__wrapped__
+        insert = self.db.guilds.insert.__wrapped__
+
         guilds = [
             (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20)),
             (156, "Second guild", "http://no-image.jpg", datetime(2020, 9, 22))
         ]
 
-        await guild_insert(_self, conn, guilds)
-        print(await guild_select(_self, conn, 8))
-        # assert no exception raised
+        await insert(_self, conn, guilds)
+        actual = await select(_self, conn, 8)
+
+        expected = [MockGuildRecord(
+            id=8,
+            name="Main Guild",
+            icon_url="http://image.jpg",
+            created_at=datetime(2020, 9, 20),
+            edited_at=None,
+            deleted_at=None)]
+
+        self.assertListEqual(actual, expected)
+
+    @db.withConn
+    @failing_transaction
+    async def test_guild_update(self, conn):
+        _self = self.db.guilds
+
+        select = self.db.guilds.select.__wrapped__
+        insert = self.db.guilds.insert.__wrapped__
+        update = self.db.guilds.update.__wrapped__
+
+        guilds = [
+            (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20)),
+            (156, "Second guild", "http://no-image.jpg", datetime(2020, 9, 22))
+        ]
+
+        updated_guilds = [
+            (8, "New name", "http://image.png", datetime(2020, 9, 20))
+        ]
+
+        await insert(_self, conn, guilds)
+        await update(_self, conn, updated_guilds)
+        actual = await select(_self, conn, 8)
+
+        row = next(filter(lambda row: row["id"] == 8, actual))
+        self.assertEqual(row["name"], "New name")
+        self.assertEqual(row["icon_url"], "http://image.png")
+        self.assertIsNotNone(row["edited_at"])
 
     @db.withConn
     @failing_transaction
     async def test_guild_soft_delete(self, conn):
         _self = self.db.guilds
-        guild_insert = self.db.guilds.insert.__wrapped__
+
+        select = self.db.guilds.select.__wrapped__
+        insert = self.db.guilds.insert.__wrapped__
+        soft_delete = self.db.guilds.soft_delete.__wrapped__
+
         guilds = [
             (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20)),
             (156, "Second guild", "http://no-image.jpg", datetime(2020, 9, 22))
         ]
 
-        await guild_insert(_self, conn, guilds)
+        await insert(_self, conn, guilds)
+        actual = await select(_self, conn, 8)
+        for row in actual:
+            self.assertIsNone(row["deleted_at"])
 
-        guild_soft_delete = self.db.guilds.soft_delete.__wrapped__
-        guild_ids = [(8,)]
-        await guild_soft_delete(_self, conn, guild_ids)
+        await soft_delete(_self, conn, [(8,)])
+        actual = await select(_self, conn, 8)
+        for row in actual:
+            self.assertIsNotNone(row["deleted_at"])
