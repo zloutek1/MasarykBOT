@@ -22,7 +22,6 @@ services:
       dockerfile: Dockerfile.bot
     volumes:
       - .:/MasarykBOT
-    env_file: .env
     depends_on:
       - database
 
