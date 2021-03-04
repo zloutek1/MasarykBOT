@@ -202,8 +202,6 @@ class TestQueries(unittest.IsolatedAsyncioTestCase):
                 self.skipTest("No .env file found with postgres url")
 
             self.db = db.Database.connect(url)
-            if self.db is None:
-                self.skipTest("Failed to connect to the database")
         except OSError as e:
             self.skipTest("Failed to connect to the database " + str(e))
 

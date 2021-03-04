@@ -2,12 +2,15 @@ import asyncio
 import asyncpg
 import logging
 
-from abc import ABC, abstractmethod
-from datetime import datetime
+import re
+from emoji import demojize, get_emoji_regexp
 from functools import wraps
+from datetime import datetime
+from collections import Counter
+from abc import ABC, abstractmethod
 
 from discord import Guild, CategoryChannel, Role, Member, TextChannel, Message, Attachment, Reaction, Emoji, PartialEmoji
-from typing import List, TypeVar, Generic, Union
+from typing import List, Tuple, TypeVar, Generic, Union
 Record = asyncpg.Record
 T = TypeVar('T')
 AnyEmote = Union[Emoji, PartialEmoji, str]
@@ -333,22 +336,20 @@ class Attachments(Table, Mapper[Attachment], FromMessageMapper):
 
 class Emojis(Table, Mapper[AnyEmote]):
     @staticmethod
-    async def prepare_one(emote: AnyEmote):
-        if isinstance(emote, str):
-            return await Emojis.prepare_unicode_emoji(emote)
-        return (emote.id, emote.name, emote.url, emote.animated, emote.created_at)
+    async def prepare_one(emoji: AnyEmote):
+        if isinstance(emoji, str):
+            return await Emojis.prepare_unicode_emoji(emoji)
+        return (emoji.id, emoji.name, emoji.url, emoji.animated, emoji.created_at)
 
     @staticmethod
-    async def prepare_unicode_emoji(emote: str):
-        from emoji import demojize
-        assert len(emote) == 1
+    async def prepare_unicode_emoji(emoji: str):
+        emoji_id = sum(map(ord, emoji))
+        hex_id = '_'.join(hex(ord(char))[2:] for char in emoji)
+        url = "https://unicode.org/emoji/charts/full-emoji-list.html#{hex}".format(hex=hex_id)
+        return (emoji_id, demojize(emoji).strip(':'), url, datetime.now(), False)
 
-        url = "https://unicode.org/emoji/charts/full-emoji-list.html#{hex}".format(hex=hex(ord(emote))[2:])
-        return (ord(emote), demojize(emote).strip(':'), url, datetime.now(), False)
-
-
-    async def prepare(self, emotes: List[AnyEmote]):
-        return [await self.prepare_one(emote) for emote in emotes]
+    async def prepare(self, emojis: List[AnyEmote]):
+        return [await self.prepare_one(emoji) for emoji in emojis]
 
     @withConn
     async def select(self, conn, emoji_id):
@@ -381,6 +382,25 @@ class Emojis(Table, Mapper[AnyEmote]):
     @withConn
     async def soft_delete(self, conn, ids):
         await conn.executemany("UPDATE server.emojis SET deleted_at=NOW() WHERE id = $1;", ids)
+
+
+class MessageEmojis(Table, FromMessageMapper):
+    HAS_EMOTE = r":[\w~]+:"
+    REGULAR_REGEX = r"<:([\w~]+):(\d+)>"
+    ANIMATED_REGEX = r"<a:([\w~]+):(\d+)>"
+
+    async def prepare_from_message(self, message: Message):
+        if not re.search(self.HAS_EMOTE, demojize(message.content)):
+            return []
+
+        regular_emojis = re.findall(self.REGULAR_REGEX, message.content)
+        animated_emojis = re.findall(self.ANIMATED_REGEX, message.content)
+        unicode_emojis = [(emoji, hex(ord(emoji))) for emoji in get_emoji_regexp().findall(message.content)]
+        emojis = regular_emojis + animated_emojis + unicode_emojis
+
+        print("emojis:", emojis)
+
+        #return [(message.id, emote_id, count) for (emote_id, count) in Counter(emojis).items()]
 
 
 class Reactions(Table, Mapper[Reaction], FromMessageMapper):
@@ -671,7 +691,7 @@ class DBBase:
             import re
             redacted_url = re.sub(r'\:(?!\/\/)[^\@]+', ":******", url)
             log.error("Failed to connect to database (%s)", redacted_url)
-            return None
+            raise e
 
 
 
@@ -688,6 +708,7 @@ class Database(DBBase):
         self.attachments = Attachments(self.pool)
         self.reactions = Reactions(self.pool)
         self.emojis = Emojis(self.pool)
+        self.message_emojis = MessageEmojis(self.pool)
 
         self.logger = Logger(self.pool)
         self.leaderboard = Leaderboard(self.pool)
