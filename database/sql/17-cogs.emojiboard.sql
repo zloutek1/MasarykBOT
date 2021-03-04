@@ -6,7 +6,7 @@ CREATE TABLE cogs.emojiboard
 (
     channel_id bigint,
     author_id bigint,
-    name text COLLATE pg_catalog."default",
+    emoji_id bigint,
     count integer
 )
 WITH (
@@ -22,7 +22,7 @@ ALTER TABLE cogs.emojiboard
 
 CREATE UNIQUE INDEX emojiboard_idx_unique
     ON cogs.emojiboard USING btree
-    (channel_id ASC NULLS LAST, author_id ASC NULLS LAST, name COLLATE pg_catalog."default" ASC NULLS LAST)
+    (channel_id ASC NULLS LAST, author_id ASC NULLS LAST, emoji_id bigint ASC NULLS LAST)
     TABLESPACE pg_default;
 
 
@@ -39,10 +39,10 @@ CREATE FUNCTION server.update_emojiboard_message_emoji()
     VOLATILE NOT LEAKPROOF
 AS $BODY$
 BEGIN
-	INSERT INTO cogs.emojiboard AS eb (channel_id, author_id, name, count)
-	SELECT channel_id, author_id, NEW.name, NEW.count
+	INSERT INTO cogs.emojiboard AS eb (channel_id, author_id, emoji_id, count)
+	SELECT channel_id, author_id, NEW.emoji_id, NEW.count
 		FROM server.messages WHERE server.messages.id = NEW.message_id
-	ON CONFLICT (channel_id, author_id, name) DO UPDATE
+	ON CONFLICT (channel_id, author_id, emoji_id) DO UPDATE
 		SET count = eb.count + NEW.count;
 	RETURN NEW;
 END
@@ -76,10 +76,10 @@ CREATE FUNCTION server.update_emojiboard_reaction()
     VOLATILE NOT LEAKPROOF
 AS $BODY$
 BEGIN
-	INSERT INTO cogs.emojiboard AS eb (channel_id, author_id, name, count)
-	SELECT channel_id, unnest(NEW.member_ids) as author_id, NEW.name, 1
+	INSERT INTO cogs.emojiboard AS eb (channel_id, author_id, emoji_id, count)
+	SELECT channel_id, unnest(NEW.member_ids) as author_id, NEW.emoji_id, 1
 		FROM server.messages WHERE server.messages.id = NEW.message_id
-	ON CONFLICT (channel_id, author_id, name) DO UPDATE
+	ON CONFLICT (channel_id, author_id, emoji_id) DO UPDATE
 		SET count = eb.count + array_length(NEW.member_ids, 1);
 	RETURN NEW;
 END
