@@ -2,7 +2,7 @@
 
 -- DROP TABLE server.message_emotes;
 
-CREATE TABLE server.message_emotes
+CREATE TABLE server.message_emojis
 (
     message_id bigint NOT NULL,
     emoji_id bigint NOT NULL,
