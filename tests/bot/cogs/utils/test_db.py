@@ -136,7 +136,7 @@ class DBTests(unittest.IsolatedAsyncioTestCase):
         table = db.Emojis(MockPool())
         emoji = MockEmoji(id=8, name="kek", url="http://discord.gg/emoji", animated=True, created_at=datetime(2020, 9, 13, 12, 50, 42))
 
-        expected = (8, "kek", "http://discord.gg/emoji", True, datetime(2020, 9, 13, 12, 50, 42))
+        expected = (8, "kek", "http://discord.gg/emoji", True)
         actual = await table.prepare_one(emoji)
         self.assertTupleEqual(expected, actual)
 
@@ -148,7 +148,7 @@ class DBTests(unittest.IsolatedAsyncioTestCase):
         table = db.Emojis(MockPool())
         emoji = MockPartialEmoji(id=8, name="kek", url="http://discord.gg/emoji", animated=False, created_at=datetime(2020, 9, 13, 12, 50, 42))
 
-        expected = (8, "kek", "http://discord.gg/emoji", False, datetime(2020, 9, 13, 12, 50, 42))
+        expected = (8, "kek", "http://discord.gg/emoji", False)
         actual = await table.prepare_one(emoji)
         self.assertTupleEqual(expected, actual)
 
@@ -162,7 +162,7 @@ class DBTests(unittest.IsolatedAsyncioTestCase):
         table = db.Emojis(MockPool())
         emoji = '😃'
 
-        expected = (0x1f603, "grinning_face_with_big_eyes", "https://unicode.org/emoji/charts/full-emoji-list.html#1f603", datetime(2020, 9, 13, 12, 50, 42), False)
+        expected = (0x1f603, "grinning_face_with_big_eyes", "https://unicode.org/emoji/charts/full-emoji-list.html#1f603", False)
         actual = await table.prepare_one(emoji)
         self.assertTupleEqual(expected, actual)
 
@@ -176,7 +176,7 @@ class DBTests(unittest.IsolatedAsyncioTestCase):
         table = db.Emojis(MockPool())
         emoji = '🇬🇧'
 
-        expected = (0x1f1ec + 0x1f1e7, "United_Kingdom", "https://unicode.org/emoji/charts/full-emoji-list.html#1f1ec_1f1e7", datetime(2020, 9, 13, 12, 50, 42), False)
+        expected = (0x1f1ec + 0x1f1e7, "United_Kingdom", "https://unicode.org/emoji/charts/full-emoji-list.html#1f1ec_1f1e7", False)
         actual = await table.prepare_one(emoji)
         self.assertTupleEqual(expected, actual)
 
@@ -286,7 +286,6 @@ class TestGuildQueries(TestQueries):
         actual = await self.select(_self, conn, 8)
         for row in actual:
             self.assertIsNotNone(row["deleted_at"])
-
 
 class TestCategoryQueries(TestQueries):
     async def asyncSetUp(self):
@@ -689,8 +688,8 @@ class TestAttachmentQueries(TestQueries):
 class TestEmojiQueries(TestQueries):
     async def asyncSetUp(self):
         self.emojis = [
-            (9, "kek", "http://discord.gg/kek", False, datetime(2020, 9, 22)),
-            (10, "pog", "http:/discord.gg/pog", False, datetime(2020, 9, 21))
+            (9, "kek", "http://discord.gg/kek", False),
+            (10, "pog", "http:/discord.gg/pog", False)
         ]
 
         self.select = self.db.emojis.select.__wrapped__
@@ -711,9 +710,7 @@ class TestEmojiQueries(TestQueries):
             name="kek",
             url="http://discord.gg/kek",
             animated=False,
-            created_at=datetime(2020, 9, 22),
-            edited_at=None,
-            deleted_at=None)]
+            edited_at=None)]
 
         self.assertListEqual(actual, expected)
 
@@ -723,7 +720,7 @@ class TestEmojiQueries(TestQueries):
         _self = self.db.emojis
 
         updated_emojis = [
-            (9, "pepega", "http://discord.gg/pepega", True, datetime(2020, 9, 22)),
+            (9, "pepega", "http://discord.gg/pepega", True),
         ]
 
         await self.insert(_self, conn, self.emojis)
@@ -735,22 +732,6 @@ class TestEmojiQueries(TestQueries):
         self.assertEqual(row["url"], "http://discord.gg/pepega")
         self.assertTrue(row["animated"])
         self.assertIsNotNone(row["edited_at"])
-
-    @db.withConn
-    @failing_transaction
-    async def test_soft_delete(self, conn):
-        _self = self.db.emojis
-
-        await self.insert(_self, conn, self.emojis)
-        actual = await self.select(_self, conn, 9)
-        for row in actual:
-            self.assertIsNone(row["deleted_at"])
-
-        await self.soft_delete(_self, conn, [(9,)])
-        actual = await self.select(_self, conn, 9)
-        for row in actual:
-            self.assertIsNotNone(row["deleted_at"])
-
 
 class TestReactionQueries(TestQueries):
     async def asyncSetUp(self):
@@ -781,8 +762,8 @@ class TestReactionQueries(TestQueries):
         await self.db.messages.insert.__wrapped__(self.db.messages, conn, [self.message])
 
         self.emojis = [
-            (12, "kek", "http://discord.gg/kek", False, datetime(2020, 9, 22)),
-            (13, "pog", "http:/discord.gg/pog", False, datetime(2020, 9, 21))
+            (12, "kek", "http://discord.gg/kek", False),
+            (13, "pog", "http:/discord.gg/pog", False)
         ]
         await self.db.emojis.insert.__wrapped__(self.db.emojis, conn, self.emojis)
 
