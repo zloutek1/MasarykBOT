@@ -334,22 +334,45 @@ class Attachments(Table, Mapper[Attachment], FromMessageMapper):
 
 
 
-class Emojis(Table, Mapper[AnyEmote]):
+class Emojis(Table, Mapper[AnyEmote], FromMessageMapper):
+    HAS_EMOTE = r":[\w~]+:"
+    REGULAR_REGEX = r"<:([\w~]+):(\d+)>"
+    ANIMATED_REGEX = r"<a:([\w~]+):(\d+)>"
+
     @staticmethod
     async def prepare_one(emoji: AnyEmote):
         if isinstance(emoji, str):
             return await Emojis.prepare_unicode_emoji(emoji)
-        return (emoji.id, emoji.name, emoji.url, emoji.animated, emoji.created_at)
+        return (emoji.id, emoji.name, emoji.url, emoji.animated)
 
     @staticmethod
     async def prepare_unicode_emoji(emoji: str):
         emoji_id = sum(map(ord, emoji))
         hex_id = '_'.join(hex(ord(char))[2:] for char in emoji)
         url = "https://unicode.org/emoji/charts/full-emoji-list.html#{hex}".format(hex=hex_id)
-        return (emoji_id, demojize(emoji).strip(':'), url, datetime.now(), False)
+        return (emoji_id, demojize(emoji).strip(':'), url, False)
 
     async def prepare(self, emojis: List[AnyEmote]):
         return [await self.prepare_one(emoji) for emoji in emojis]
+
+    @staticmethod
+    def to_url(emoji_id: int, *, animated: bool=False):
+        return f"https://cdn.discordapp.com/emojis/{emoji_id}.{'gif' if animated else 'png'}"
+
+    async def prepare_emojis(self, message: Message, regex: str, *, is_animated: bool):
+        emojis = re.findall(regex, message.content)
+        return [(emoji_id, emoji_name, self.to_url(emoji_id, animated=is_animated), is_animated) for (emoji_name, emoji_id) in emojis]
+
+    async def prepare_from_message(self, message: Message):
+        if not re.search(self.HAS_EMOTE, demojize(message.content)):
+            return []
+
+        regular_emojis = await self.prepare_emojis(message, self.REGULAR_REGEX, is_animated=False)
+        animated_emojis = await self.prepare_emojis(message, self.ANIMATED_REGEX, is_animated=True)
+        unicode_emojis = [await Emojis.prepare_unicode_emoji(emoji)
+                          for emoji in get_emoji_regexp().findall(message.content)]
+
+        return regular_emojis + animated_emojis + unicode_emojis
 
     @withConn
     async def select(self, conn, emoji_id):
@@ -360,18 +383,16 @@ class Emojis(Table, Mapper[AnyEmote]):
     @withConn
     async def insert(self, conn, data):
         await conn.executemany("""
-            INSERT INTO server.emojis AS e (id, name, url, animated, created_at)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO server.emojis AS e (id, name, url, animated)
+            VALUES ($1, $2, $3, $4)
             ON CONFLICT (id) DO UPDATE
                 SET name=$2,
                     url=$3,
                     animated=$4,
-                    created_at=$5,
                     edited_at=NOW()
                 WHERE e.name<>excluded.name OR
                       e.url<>excluded.url OR
                       e.animated<>excluded.animated OR
-                      e.created_at<>excluded.created_at OR
                       e.edited_at<>excluded.edited_at
         """, data)
 
@@ -385,22 +406,36 @@ class Emojis(Table, Mapper[AnyEmote]):
 
 
 class MessageEmojis(Table, FromMessageMapper):
-    HAS_EMOTE = r":[\w~]+:"
-    REGULAR_REGEX = r"<:([\w~]+):(\d+)>"
-    ANIMATED_REGEX = r"<a:([\w~]+):(\d+)>"
+    def __init__(self, pool):
+        super().__init__(pool)
+        self.emojis = Emojis(self.pool)
 
     async def prepare_from_message(self, message: Message):
-        if not re.search(self.HAS_EMOTE, demojize(message.content)):
-            return []
+        emojis = self.emojis.prepare_from_message(message)
+        emoji_ids = [emojis[0] for emoji in emojis]
+        return [(message.id, emoji_id, count) for (emoji_id, count) in Counter(emoji_ids).items()]
 
-        regular_emojis = re.findall(self.REGULAR_REGEX, message.content)
-        animated_emojis = re.findall(self.ANIMATED_REGEX, message.content)
-        unicode_emojis = [(emoji, hex(ord(emoji))) for emoji in get_emoji_regexp().findall(message.content)]
-        emojis = regular_emojis + animated_emojis + unicode_emojis
+    @withConn
+    async def select(self, conn, emoji_id):
+        return await conn.fetch("""
+            SELECT * FROM server.message_emojis WHERE message_id=$1 AND emoji_id=$2
+        """, emoji_id)
 
-        print("emojis:", emojis)
+    @withConn
+    async def insert(self, conn, data):
+        await conn.executemany("""
+            INSERT INTO server.message_emojis AS me (message_id, emoji_id, count)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (message_id, emoji_id) DO UPDATE
+                SET count=$3,
+                    edited_at=NOW()
+                WHERE me.count<>excluded.count
+                      me.edited_at<>excluded.edited_at
+        """, data)
 
-        #return [(message.id, emote_id, count) for (emote_id, count) in Counter(emojis).items()]
+    @withConn
+    async def update(self, conn, data):
+        await self.insert.__wrapped__(self, conn, data)
 
 
 class Reactions(Table, Mapper[Reaction], FromMessageMapper):
