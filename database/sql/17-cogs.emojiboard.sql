@@ -28,11 +28,11 @@ CREATE UNIQUE INDEX emojiboard_idx_unique
 
 
 
--- FUNCTION: server.update_emojiboard_emoji()
+-- FUNCTION: server.update_emojiboard_message_emote()
 
--- DROP FUNCTION server.update_emojiboard_emoji();
+-- DROP FUNCTION server.update_emojiboard_message_emote();
 
-CREATE FUNCTION server.update_emojiboard_emoji()
+CREATE FUNCTION server.update_emojiboard_message_emote()
     RETURNS trigger
     LANGUAGE 'plpgsql'
     COST 100
@@ -58,7 +58,7 @@ ALTER FUNCTION server.update_emojiboard_emoji()
 
 CREATE TRIGGER update_emojiboard
     AFTER INSERT
-    ON server.emojis
+    ON server.message_emotes
     FOR EACH ROW
     EXECUTE PROCEDURE server.update_emojiboard_emoji();
 
@@ -80,7 +80,7 @@ BEGIN
 	SELECT channel_id, unnest(NEW.member_ids) as author_id, NEW.name, 1
 		FROM server.messages WHERE server.messages.id = NEW.message_id
 	ON CONFLICT (channel_id, author_id, name) DO UPDATE
-		SET count = eb.count + 1;
+		SET count = eb.count + array_length(NEW.member_ids, 1);
 	RETURN NEW;
 END
 $BODY$;
@@ -88,13 +88,6 @@ $BODY$;
 ALTER FUNCTION server.update_emojiboard_reaction()
     OWNER TO masaryk;
 
--- DROP TRIGGER update_emojiboard ON server.message_emotes;
-
-CREATE TRIGGER update_emojiboard
-    AFTER INSERT
-    ON server.message_emotes
-    FOR EACH ROW
-    EXECUTE PROCEDURE server.update_emojiboard_emoji();
 
 -- Trigger: update_emojiboard
 
