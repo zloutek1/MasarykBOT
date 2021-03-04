@@ -169,6 +169,20 @@ class DBTests(unittest.IsolatedAsyncioTestCase):
         actual = await table.prepare([emoji])
         self.assertListEqual([expected], actual)
 
+    @patch('bot.cogs.utils.db.datetime', FixedDate)
+    async def test_emojis_prepare_unicode_emoji_maltichar(self):
+        from emoji import demojize
+
+        table = db.Emojis(MockPool())
+        emoji = '🇬🇧'
+
+        expected = (0x1f1ec + 0x1f1e7, "United_Kingdom", "https://unicode.org/emoji/charts/full-emoji-list.html#1f1ec_1f1e7", datetime(2020, 9, 13, 12, 50, 42), False)
+        actual = await table.prepare_one(emoji)
+        self.assertTupleEqual(expected, actual)
+
+        actual = await table.prepare([emoji])
+        self.assertListEqual([expected], actual)
+
     async def test_logger_with_process(self):
         table = db.Logger(MockPool())
 
