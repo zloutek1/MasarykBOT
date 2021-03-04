@@ -21,21 +21,21 @@ WITH (
 )
 TABLESPACE pg_default;
 
-ALTER TABLE server.message_emotes
+ALTER TABLE server.message_emojis
     OWNER to masaryk;
--- Index: fki_message_emotes_fkey_emoji
+-- Index: fki_message_emojis_fkey_emoji
 
--- DROP INDEX server.fki_message_emotes_fkey_emoji;
+-- DROP INDEX server.fki_message_emojis_fkey_emoji;
 
-CREATE INDEX fki_message_emotes_fkey_emoji
-    ON server.message_emotes USING btree
+CREATE INDEX fki_message_emojis_fkey_emoji
+    ON server.message_emojis USING btree
     (emoji_id ASC NULLS LAST)
     TABLESPACE pg_default;
--- Index: fki_message_emotes_fkey_message
+-- Index: fki_message_emojis_fkey_message
 
--- DROP INDEX server.fki_message_emotes_fkey_message;
+-- DROP INDEX server.fki_message_emojis_fkey_message;
 
-CREATE INDEX fki_message_emotes_fkey_message
-    ON server.message_emotes USING btree
+CREATE INDEX fki_message_emojis_fkey_message
+    ON server.message_emojis USING btree
     (message_id ASC NULLS LAST)
     TABLESPACE pg_default;

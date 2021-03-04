@@ -28,11 +28,11 @@ CREATE UNIQUE INDEX emojiboard_idx_unique
 
 
 
--- FUNCTION: server.update_emojiboard_message_emote()
+-- FUNCTION: server.update_emojiboard_message_emoji()
 
--- DROP FUNCTION server.update_emojiboard_message_emote();
+-- DROP FUNCTION server.update_emojiboard_message_emoji;
 
-CREATE FUNCTION server.update_emojiboard_message_emote()
+CREATE FUNCTION server.update_emojiboard_message_emoji()
     RETURNS trigger
     LANGUAGE 'plpgsql'
     COST 100
@@ -48,7 +48,7 @@ BEGIN
 END
 $BODY$;
 
-ALTER FUNCTION server.update_emojiboard_emoji()
+ALTER FUNCTION server.update_emojiboard_message_emoji()
     OWNER TO masaryk;
 
 
@@ -58,9 +58,9 @@ ALTER FUNCTION server.update_emojiboard_emoji()
 
 CREATE TRIGGER update_emojiboard
     AFTER INSERT
-    ON server.message_emotes
+    ON server.message_emojis
     FOR EACH ROW
-    EXECUTE PROCEDURE server.update_emojiboard_emoji();
+    EXECUTE PROCEDURE server.update_emojiboard_message_emoji();
 
 
 
