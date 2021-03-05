@@ -210,8 +210,8 @@ class LoggerBackupUntilPresentTests(unittest.IsolatedAsyncioTestCase):
         await self.cog.backup_failed_week(channel)
 
         self.cog.backup_in_range.assert_has_calls([
-            call(channel, datetime(2020, 9, 20), datetime(2020, 9, 27)),
-            call(channel, datetime(2020, 10, 4), datetime(2020, 10, 11))
+            call(channel, datetime(2020, 9, 20), datetime(2020, 9, 27), False),
+            call(channel, datetime(2020, 10, 4), datetime(2020, 10, 11), False)
         ])
 
     async def test_backup_new_weeks(self):
@@ -301,7 +301,7 @@ class LoggerBackupUntilPresentTests(unittest.IsolatedAsyncioTestCase):
         self.bot.db.logger.process =  MagicMock()
         channel.history.return_value = AsyncIterator(messages)
 
-        await self.cog.backup_in_range(channel, from_date=datetime(2020, 9, 10, 12, 50, 42), to_date=datetime(2020, 9, 17, 12, 50, 42))
+        await self.cog.backup_in_range(channel, from_date=datetime(2020, 9, 10, 12, 50, 42), to_date=datetime(2020, 9, 17, 12, 50, 42), is_first_week=False)
 
         self.bot.db.members.insert.assert_called_once_with([
             (10, "Bob", "http://image.cz.jpg", datetime(2020, 9, 13, 10, 00, 00)),

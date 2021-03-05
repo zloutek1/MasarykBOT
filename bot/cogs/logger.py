@@ -128,10 +128,9 @@ class BackupUntilPresent(GetCollectables):
         finished_process = await self.get_latest_finished_process(channel)
         (from_date, to_date) = self.get_next_week(channel, finished_process)
 
-        await self.try_to_backup_in_range(channel, from_date, to_date)
+        await self.try_to_backup_in_range(channel, from_date, to_date, is_first_week=finished_process is None)
 
         return to_date < datetime.now()
-
 
     async def get_latest_finished_process(self, channel: TextChannel) -> Record:
         finished_processes = await self.bot.db.logger.select(channel.id)
@@ -157,21 +156,21 @@ class BackupUntilPresent(GetCollectables):
         return from_date, to_date
 
 
-    async def try_to_backup_in_range(self, channel: TextChannel, from_date: datetime, to_date: datetime) -> None:
+    async def try_to_backup_in_range(self, channel: TextChannel, from_date: datetime, to_date: datetime, is_first_week: bool = False) -> None:
         try:
-            await self.backup_in_range(channel, from_date, to_date)
+            await self.backup_in_range(channel, from_date, to_date, is_first_week)
         except Forbidden:
             log.debug("missing permissions to backup messages in %s (%s)", channel, channel.guild)
         except NotFound:
             log.debug("channel %s was not found in (%s)", channel, channel.guild)
 
-    async def backup_in_range(self, channel: TextChannel, from_date: datetime, to_date: datetime) -> None:
+    async def backup_in_range(self, channel: TextChannel, from_date: datetime, to_date: datetime, is_first_week: bool) -> None:
         if channel.last_message_id is None:
             return
 
         log.info("backing up messages {%s} - {%s} in %s (%s)", from_date.strftime('%d.%m.%Y'), to_date.strftime('%d.%m.%Y'), channel, channel.guild)
 
-        async with self.bot.db.logger.process(channel.id, from_date, to_date):
+        async with self.bot.db.logger.process(channel.id, from_date, to_date, is_first_week):
             messages = []
             collectables = self.get_collectables(self.bot)
             async for message in channel.history(after=from_date, before=to_date, limit=1_000_000, oldest_first=True):
