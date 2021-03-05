@@ -24,7 +24,8 @@ from tests.mocks.database import (
     MockMessageRecord,
     MockAttachmentRecord,
     MockEmojiRecord,
-    MockReactionRecord
+    MockReactionRecord,
+    MockLoggerRecord
 )
 
 import os
@@ -208,7 +209,7 @@ class DBTests(unittest.IsolatedAsyncioTestCase):
         table.start_process = AsyncMock()
         table.mark_process_finished = AsyncMock()
 
-        async with table.process(guild_id=10, from_date=datetime(2020, 9, 20), to_date=datetime(2020, 9, 27)):
+        async with table.process(channel_id=10, from_date=datetime(2020, 9, 20), to_date=datetime(2020, 9, 27)):
             table.start_process.assert_called_once()
             table.mark_process_finished.assert_not_called()
 
@@ -840,3 +841,94 @@ class TestReactionQueries(TestQueries):
         actual = await self.select(_self, conn, 11, 12)
         for row in actual:
             self.assertIsNotNone(row["deleted_at"])
+
+class TestLoggerQueries(TestQueries):
+    async def asyncSetUp(self):
+        self.logs = [
+            (10, datetime(2020, 9, 13), datetime(2020, 9, 20)),
+            (10, datetime(2020, 9, 20), datetime(2020, 9, 27))
+        ]
+
+        self.select = self.db.logger.select.__wrapped__
+        self.start_process = self.db.logger.start_process.__wrapped__
+        self.mark_process_finished = self.db.logger.mark_process_finished.__wrapped__
+        self.process = self.db.logger.process
+
+    @db.withConn
+    @failing_transaction
+    async def test_logger_start_process(self, conn):
+        _self = self.db.logger
+
+        await self.start_process(_self, conn, *self.logs[0])
+        actual = await self.select(_self, conn, channel_id=10)
+
+        row = next(filter(lambda row: row["channel_id"] == 10, actual))
+        self.assertEqual(row["from_date"], datetime(2020, 9, 13))
+        self.assertEqual(row["to_date"], datetime(2020, 9, 20))
+        self.assertIsNone(row["finished_at"])
+
+    @db.withConn
+    @failing_transaction
+    async def test_logger_mark_process_finished_first_week(self, conn):
+        _self = self.db.logger
+
+        await self.start_process(_self, conn, *self.logs[0])
+        await self.mark_process_finished(_self, conn, *self.logs[0], is_first_week=True)
+        actual = await self.select(_self, conn, channel_id=10)
+
+        row = next(filter(lambda row: row["channel_id"] == 10, actual))
+        self.assertEqual(row["from_date"], datetime(2020, 9, 13))
+        self.assertEqual(row["to_date"], datetime(2020, 9, 20))
+        self.assertIsNotNone(row["finished_at"])
+
+    @db.withConn
+    @failing_transaction
+    async def test_logger_mark_process_finished_next_week(self, conn):
+        _self = self.db.logger
+
+        await self.start_process(_self, conn, *self.logs[0])
+        await self.mark_process_finished(_self, conn, *self.logs[0], is_first_week=True)
+
+        await self.start_process(_self, conn, *self.logs[1])
+        await self.mark_process_finished(_self, conn, *self.logs[1], is_first_week=False)
+
+        actual = await self.select(_self, conn, channel_id=10)
+
+        row = next(filter(lambda row: row["channel_id"] == 10, actual))
+        self.assertEqual(row["from_date"], datetime(2020, 9, 13))
+        self.assertEqual(row["to_date"], datetime(2020, 9, 27))
+        self.assertIsNotNone(row["finished_at"])
+
+
+    @db.withConn
+    @failing_transaction
+    async def test_logger_with_process_first_week(self, conn):
+        _self = self.db.logger
+
+        async with self.process(*self.logs[0], is_first_week=True, conn=conn):
+            pass
+
+        actual = await self.select(_self, conn, channel_id=10)
+
+        row = next(filter(lambda row: row["channel_id"] == 10, actual))
+        self.assertEqual(row["from_date"], datetime(2020, 9, 13))
+        self.assertEqual(row["to_date"], datetime(2020, 9, 20))
+        self.assertIsNotNone(row["finished_at"])
+
+    @db.withConn
+    @failing_transaction
+    async def test_logger_with_process_next_week(self, conn):
+        _self = self.db.logger
+
+        async with self.process(*self.logs[0], is_first_week=True, conn=conn):
+            pass
+
+        async with self.process(*self.logs[1], is_first_week=False, conn=conn):
+            pass
+
+        actual = await self.select(_self, conn, channel_id=10)
+
+        row = next(filter(lambda row: row["channel_id"] == 10, actual))
+        self.assertEqual(row["from_date"], datetime(2020, 9, 13))
+        self.assertEqual(row["to_date"], datetime(2020, 9, 27))
+        self.assertIsNotNone(row["finished_at"])

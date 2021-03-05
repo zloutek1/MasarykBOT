@@ -485,38 +485,45 @@ class Reactions(Table, Mapper[Reaction], FromMessageMapper):
 
 
 class Logger(Table):
-    async def select(self, guild_id):
-        async with self.pool.acquire() as conn:
-            return await conn.fetch("SELECT * FROM cogs.logger WHERE guild_id = $1", guild_id)
+    @withConn
+    async def select(self, conn, channel_id):
+        return await conn.fetch("SELECT * FROM cogs.logger WHERE channel_id = $1", channel_id)
 
-    async def start_process(self, guild_id, from_date, to_date):
-        async with self.pool.acquire() as conn:
-            await conn.execute("INSERT INTO cogs.logger VALUES ($1, $2, $3, NULL)", guild_id, from_date, to_date)
+    @withConn
+    async def start_process(self, conn, channel_id, from_date, to_date):
+        await conn.execute("INSERT INTO cogs.logger VALUES ($1, $2, $3, NULL)", channel_id, from_date, to_date)
 
-    async def mark_process_finished(self, guild_id, from_date, to_date, is_first_week=False):
-        async with self.pool.acquire() as conn:
-            if is_first_week:
-                await conn.execute("UPDATE cogs.logger SET finished_at = NOW() WHERE guild_id = $1 AND finished_at IS NULL", guild_id)
-            else:
-                async with conn.transaction():
-                    await conn.execute("DELETE FROM cogs.logger WHERE guild_id = $1 AND from_date = $2 AND to_date = $3", guild_id, from_date, to_date)
-                    await conn.execute("UPDATE cogs.logger SET to_date = $3, finished_at = NOW() WHERE guild_id = $1 AND to_date = $2 AND finished_at IS NOT NULL", guild_id, from_date, to_date)
+    @withConn
+    async def mark_process_finished(self, conn, channel_id, from_date, to_date, is_first_week=False):
+        if is_first_week:
+            await conn.execute("UPDATE cogs.logger SET finished_at = NOW() WHERE channel_id = $1 AND finished_at IS NULL", channel_id)
+        else:
+            async with conn.transaction():
+                await conn.execute("DELETE FROM cogs.logger WHERE channel_id = $1 AND from_date = $2 AND to_date = $3", channel_id, from_date, to_date)
+                await conn.execute("UPDATE cogs.logger SET to_date = $3, finished_at = NOW() WHERE channel_id = $1 AND to_date = $2 AND finished_at IS NOT NULL", channel_id, from_date, to_date)
 
-    def process(self, guild_id, from_date, to_date):
-        return self.Process(self, guild_id, from_date, to_date)
+    def process(self, channel_id, from_date, to_date, is_first_week=False, conn=None):
+        return self.Process(self, channel_id, from_date, to_date, is_first_week, conn)
 
     class Process:
-        def __init__(self, cls, guild_id, from_date, to_date):
+        def __init__(self, cls, guild_id, from_date, to_date, is_first_week=False, conn=None):
             self.parent = cls
+            self.conn = conn
+
             self.guild_id = guild_id
             self.from_date = from_date
             self.to_date = to_date
+            self.is_first_week = is_first_week
 
         async def __aenter__(self):
+            if self.conn:
+                return await self.parent.start_process.__wrapped__(self.parent, self.conn, self.guild_id, self.from_date, self.to_date)
             return await self.parent.start_process(self.guild_id, self.from_date, self.to_date)
 
         async def __aexit__(self, exc_type, exc, tb):
-            await self.parent.mark_process_finished(self.guild_id, self.from_date, self.to_date)
+            if self.conn:
+                await self.parent.mark_process_finished.__wrapped__(self.parent, self.conn, self.guild_id, self.from_date, self.to_date, self.is_first_week)
+            await self.parent.mark_process_finished(self.guild_id, self.from_date, self.to_date, self.is_first_week)
 
 
 class Leaderboard(Table):
