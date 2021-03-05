@@ -359,16 +359,17 @@ class Emojis(Table, Mapper[AnyEmote], FromMessageMapper):
     def to_url(emoji_id: int, *, animated: bool=False):
         return f"https://cdn.discordapp.com/emojis/{emoji_id}.{'gif' if animated else 'png'}"
 
-    async def prepare_emojis(self, message: Message, regex: str, *, is_animated: bool):
+    async def _prepare_emojis_from_message(self, message: Message, regex: str, *, is_animated: bool):
         emojis = re.findall(regex, message.content)
-        return [(emoji_id, emoji_name, self.to_url(emoji_id, animated=is_animated), is_animated) for (emoji_name, emoji_id) in emojis]
+        return [(int(emoji_id), emoji_name, self.to_url(int(emoji_id), animated=is_animated), is_animated)
+                for (emoji_name, emoji_id) in emojis]
 
     async def prepare_from_message(self, message: Message):
         if not re.search(self.HAS_EMOTE, demojize(message.content)):
             return []
 
-        regular_emojis = await self.prepare_emojis(message, self.REGULAR_REGEX, is_animated=False)
-        animated_emojis = await self.prepare_emojis(message, self.ANIMATED_REGEX, is_animated=True)
+        regular_emojis = await self._prepare_emojis_from_message(message, self.REGULAR_REGEX, is_animated=False)
+        animated_emojis = await self._prepare_emojis_from_message(message, self.ANIMATED_REGEX, is_animated=True)
         unicode_emojis = [await Emojis.prepare_unicode_emoji(emoji)
                           for emoji in get_emoji_regexp().findall(message.content)]
 
@@ -412,7 +413,7 @@ class MessageEmojis(Table, FromMessageMapper):
 
     async def prepare_from_message(self, message: Message):
         emojis = await self.emojis.prepare_from_message(message)
-        emoji_ids = [emojis[0] for emoji in emojis]
+        emoji_ids = [emoji[0] for emoji in emojis]
         return [(message.id, emoji_id, count) for (emoji_id, count) in Counter(emoji_ids).items()]
 
     @withConn

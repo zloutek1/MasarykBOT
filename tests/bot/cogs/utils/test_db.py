@@ -143,7 +143,6 @@ class DBTests(unittest.IsolatedAsyncioTestCase):
         actual = await table.prepare([emoji])
         self.assertListEqual([expected], actual)
 
-
     async def test_emojis_prepare_partial_emoji(self):
         table = db.Emojis(MockPool())
         emoji = MockPartialEmoji(id=8, name="kek", url="http://discord.gg/emoji", animated=False, created_at=datetime(2020, 9, 13, 12, 50, 42))
@@ -182,6 +181,26 @@ class DBTests(unittest.IsolatedAsyncioTestCase):
 
         actual = await table.prepare([emoji])
         self.assertListEqual([expected], actual)
+
+    async def test_emojis_prepare_from_message(self):
+        table = db.Emojis(MockPool())
+        message = MockMessage(id=11, content="Regular: <:kek:123>, animated: <a:pepega:159>, unicode: 😃")
+
+        expected = [
+            (123, "kek", "https://cdn.discordapp.com/emojis/123.png", False),
+            (159, "pepega", "https://cdn.discordapp.com/emojis/159.gif", True),
+            (0x1f603, "grinning_face_with_big_eyes", "https://unicode.org/emoji/charts/full-emoji-list.html#1f603", False),
+        ]
+        actual = await table.prepare_from_message(message)
+        self.assertListEqual(expected, actual)
+
+    async def test_message_emojis_prepare_from_message(self):
+        table = db.MessageEmojis(MockPool())
+        message = MockMessage(id=11, content="Regular: <:kek:123>, animated: <a:pepega:159>, emoji: 1. 😃 2. 😃 3. 😃")
+
+        expected = [(11, 123, 1), (11, 159, 1), (11, 0x1f603, 3)]
+        actual = await table.prepare_from_message(message)
+        self.assertListEqual(expected, actual)
 
     async def test_logger_with_process(self):
         table = db.Logger(MockPool())
