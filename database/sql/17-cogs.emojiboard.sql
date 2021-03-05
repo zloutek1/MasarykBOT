@@ -22,7 +22,7 @@ ALTER TABLE cogs.emojiboard
 
 CREATE UNIQUE INDEX emojiboard_idx_unique
     ON cogs.emojiboard USING btree
-    (channel_id ASC NULLS LAST, author_id ASC NULLS LAST, emoji_id bigint ASC NULLS LAST)
+    (channel_id ASC NULLS LAST, author_id ASC NULLS LAST, emoji_id ASC NULLS LAST)
     TABLESPACE pg_default;
 
 
