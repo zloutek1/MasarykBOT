@@ -533,13 +533,13 @@ class LoggerBackupOnEventsTests(unittest.IsolatedAsyncioTestCase):
         await self._test_on_event(args=args, queues=self.cog.delete_queues, event_fn=self.cog.on_category_delete, put_fn=self.bot.db.categories.soft_delete, expected=expected)
 
     async def test_on_message(self):
-        args = [MockMessage()]
+        args = [MockMessage(content="hello")]
         self.bot.db.messages.prepare_one = AsyncMock(return_value=(1, 2, 3))
         expected = deque([(1, 2, 3)])
         await self._test_on_event(args=args, queues=self.cog.insert_queues, event_fn=self.cog.on_message, put_fn=self.bot.db.messages.insert, expected=expected)
 
     async def test_on_message_edit(self):
-        args = [MockMessage(), MockMessage()]
+        args = [MockMessage(), MockMessage(content="hello")]
         self.bot.db.messages.prepare_one = AsyncMock(return_value=(1, 2, 3))
         expected = deque([(1, 2, 3)])
         await self._test_on_event(args=args, queues=self.cog.update_queues, event_fn=self.cog.on_message_edit, put_fn=self.bot.db.messages.update, expected=expected)

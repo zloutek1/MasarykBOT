@@ -158,9 +158,14 @@ def MockDatabase():
 
         table = var
         for attr in dir(table):
+            # dont mock prepare functions
             if (attr in vars(object) or
                 attr in vars(db.Mapper) or
                 attr in vars(db.FromMessageMapper)):
+                continue
+
+            # dont mock constants
+            if attr.isupper():
                 continue
 
             setattr(table, attr, unittest.mock.AsyncMock())
