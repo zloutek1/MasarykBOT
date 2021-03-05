@@ -433,7 +433,7 @@ class BackupOnEvents(GetCollectables):
         await put_fn(elements)
 
 class Collectable(Generic[T]):
-    def __init__(self, prepare_fn: Callable[[T], List[Tuple]]=None, insert_fn: Callable[[List[Tuple]], None]=None):
+    def __init__(self, prepare_fn: Callable[[T], List[Tuple]], insert_fn: Callable[[List[Tuple]], None]):
         self.content: List[Tuple] = []
         self.prepare_fn = prepare_fn
         self.insert_fn = insert_fn
@@ -445,6 +445,8 @@ class Collectable(Generic[T]):
         for batch in chunks(self.content, 550):
             await self.insert_fn(batch)
 
+    def __repr__(self):
+        return f"<Collectable prepare_fn={self.prepare_fn.__qualname__} insert_fn={self.insert_fn.__qualname__}>"
 
 class Logger(commands.Cog, BackupUntilPresent, BackupOnEvents):
     def __init__(self, bot: MasarykBOT):
