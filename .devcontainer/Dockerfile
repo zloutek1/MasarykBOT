@@ -10,6 +10,6 @@ RUN apt-get update && apt-get install -y git
 
 COPY bot/requirements.txt bot/requirements.txt
 RUN pip install -r bot/requirements.txt
-RUN pip install mypy
-RUN pip install flake8
-RUN pip install coverage
+RUN pip install mypy==0.812
+RUN pip install flake8==3.8.4
+RUN pip install coverage==5.5
