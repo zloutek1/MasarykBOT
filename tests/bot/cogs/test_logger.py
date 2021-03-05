@@ -320,7 +320,7 @@ class LoggerBackupUntilPresentTests(unittest.IsolatedAsyncioTestCase):
         ])
 
         self.bot.db.attachments.insert.assert_called_once_with([
-            (15, "nsfw.gif", "discord.com/10/13/14")
+            (14, 15, "nsfw.gif", "discord.com/10/13/14")
         ])
 
         self.bot.db.reactions.insert.assert_called_once_with([

@@ -312,7 +312,9 @@ class Attachments(Table, Mapper[Attachment], FromMessageMapper):
         return [await self.prepare_one(attachment) for attachment in attachments]
 
     async def prepare_from_message(self, message: Message):
-        return await self.prepare(message.attachments)
+        return [(message.id, attachment_id, filename, url)
+                for (attachment_id, filename, url) in await self.prepare(message.attachments)
+               ]
 
     @withConn
     async def select(self, conn, attachment_id):
