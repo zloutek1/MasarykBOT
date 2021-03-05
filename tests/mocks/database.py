@@ -158,14 +158,16 @@ def MockDatabase():
 
         table = var
         for attr in dir(table):
+            value = getattr(table, attr)
+
             # dont mock prepare functions
             if (attr in vars(object) or
                 attr in vars(db.Mapper) or
                 attr in vars(db.FromMessageMapper)):
                 continue
 
-            # dont mock constants
-            if attr.isupper():
+            # dont mock methods without @withConn
+            if not hasattr(value, '__wrapped__'):
                 continue
 
             setattr(table, attr, unittest.mock.AsyncMock())

@@ -30,19 +30,24 @@ class Table:
     def __init__(self, pool):
         self.pool = pool
 
-    async def select(self, data):
+    @withConn
+    async def select(self, conn, data):
         raise NotImplementedError("select not implemented for this table")
 
-    async def insert(self, data):
+    @withConn
+    async def insert(self, conn, data):
         raise NotImplementedError("insert not implemented for this table")
 
-    async def update(self, data):
+    @withConn
+    async def update(self, conn, data):
         raise NotImplementedError("update not implemented for this table")
 
-    async def delete(self, data):
+    @withConn
+    async def delete(self, conn, data):
         raise NotImplementedError("hard delete not implemented for this table, perhaps try soft delete?")
 
-    async def soft_delete(self, data):
+    @withConn
+    async def soft_delete(self, conn, data):
         raise NotImplementedError("soft delete not implemented for this table, perhaps try hard delete?")
 
 
@@ -449,7 +454,7 @@ class Reactions(Table, Mapper[Reaction], FromMessageMapper):
                                   .flatten())
         emoji_id = emote.id if isinstance(emote := reaction.emoji, (Emoji, PartialEmoji)) else ord(emote)
 
-        return (reaction.message.id, emoji_id, user_ids)
+        return (reaction.message.id, emoji_id, user_ids, reaction.message.created_at)
 
     async def prepare(self, reactions: List[Reaction]):
         return [await self.prepare_one(reaction) for reaction in reactions]
