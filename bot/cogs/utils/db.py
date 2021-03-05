@@ -486,15 +486,15 @@ class Reactions(Table, Mapper[Reaction], FromMessageMapper):
 
 class Logger(Table):
     async def select(self, guild_id):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             return await conn.fetch("SELECT * FROM cogs.logger WHERE guild_id = $1", guild_id)
 
     async def start_process(self, guild_id, from_date, to_date):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             await conn.execute("INSERT INTO cogs.logger VALUES ($1, $2, $3, NULL)", guild_id, from_date, to_date)
 
     async def mark_process_finished(self, guild_id, from_date, to_date, is_first_week=False):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             if is_first_week:
                 await conn.execute("UPDATE cogs.logger SET finished_at = NOW() WHERE guild_id = $1 AND finished_at IS NULL", guild_id)
             else:
@@ -521,7 +521,7 @@ class Logger(Table):
 
 class Leaderboard(Table):
     async def preselect(self, guild_id, ignored_users, channel_id):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             await conn.execute("DROP TABLE IF EXISTS ldb_lookup")
             await conn.execute("""
                 CREATE TEMPORARY TABLE IF NOT EXISTS ldb_lookup AS
@@ -546,11 +546,11 @@ class Leaderboard(Table):
             """, guild_id, ignored_users, channel_id)
 
     async def get_top10(self):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             return await conn.fetch("SELECT * FROM ldb_lookup LIMIT 10")
 
     async def get_around(self, author_id):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             return await conn.fetch("""
                 WITH desired_count AS (
                     SELECT sent_total
@@ -577,7 +577,7 @@ class Leaderboard(Table):
 
 class Emojiboard(Table):
     async def select(self, guild_id, ignored_users, channel_id, author_id, emoji):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             return await conn.fetch("""
                 SELECT
                     emoji.name,
@@ -599,23 +599,23 @@ class Emojiboard(Table):
 
 class Subjects(Table):
     async def find(self, code, faculty="FI"):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             return await conn.fetch("SELECT * FROM muni.subjects WHERE LOWER(code) LIKE LOWER($1) AND LOWER(faculty) = LOWER($2)", code, faculty)
 
     async def find_registered(self, guild_id, code, faculty="FI"):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             return await conn.fetchrow("""
                 SELECT * FROM muni.registers
                 WHERE guild_id = $1 AND LOWER(code) LIKE LOWER($2) AND LOWER(faculty) = LOWER($3)""", guild_id, code, faculty)
 
     async def find_serverinfo(self, guild_id, code, faculty="FI"):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             return await conn.fetchrow("""
                 SELECT * FROM muni.subject_server
                 WHERE guild_id = $1 AND LOWER(code) LIKE LOWER($2) AND LOWER(faculty) = LOWER($3)""", guild_id, code, faculty)
 
     async def sign_user(self, guild_id, code, member_id, faculty="FI"):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             await conn.execute("""
                 INSERT INTO muni.registers AS r (guild_id, faculty, code, member_ids)
                        VALUES ($1, $2, $3, ARRAY[$4::bigint])
@@ -625,7 +625,7 @@ class Subjects(Table):
             """, guild_id, faculty, code, member_id)
 
     async def unsign_user(self, guild_id, code, member_id, faculty="FI"):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             await conn.execute("""
                 UPDATE muni.registers
                     SET member_ids = array_remove(member_ids, $4::bigint)
@@ -636,13 +636,13 @@ class Subjects(Table):
             """, guild_id, faculty, code, member_id)
 
     async def get_category(self, guild_id, code, faculty="FI"):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             return await conn.fetchrow(
                 "SELECT * FROM muni.subject_category WHERE LOWER(faculty) = LOWER($1) AND LOWER(code) LIKE LOWER($2) AND guild_id = $3",
                 faculty, code, guild_id)
 
     async def set_channel(self, guild_id, code, channel_id, faculty="FI"):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             await conn.execute("""
                 INSERT INTO muni.subject_server AS ss (guild_id, faculty, code, channel_id)
                        VALUES ($1, $2, $3, $4)
@@ -652,7 +652,7 @@ class Subjects(Table):
             """, guild_id, faculty, code, channel_id)
 
     async def set_category(self, guild_id, code, category_id, faculty="FI"):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             await conn.execute("""
                 UPDATE muni.subject_server
                     SET category_id = $4
@@ -660,7 +660,7 @@ class Subjects(Table):
             """, guild_id, faculty, code, category_id)
 
     async def remove_channel(self, guild_id, code, faculty="FI"):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             await conn.execute("""
                 DELETE FROM muni.subject_server
                     WHERE guild_id = $1 AND
@@ -672,15 +672,15 @@ class Subjects(Table):
 
 class Tags(Table):
     async def select(self, guild_id, user_id):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             return await conn.fetch("SELECT * FROM cogs.tags WHERE guild_id = $1 AND author_id = $2", guild_id, user_id)
 
     async def get_tag(self, guild_id, name):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             return await conn.fetchrow("SELECT * FROM cogs.tags WHERE guild_id = $1 AND LOWER(name) = $2", guild_id, name)
 
     async def find_tags(self, guild_id, name):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             return await conn.fetch("""
                 SELECT name, id FROM cogs.tags
                 WHERE guild_id=$1 AND name % $2
@@ -689,7 +689,7 @@ class Tags(Table):
             """, guild_id, name)
 
     async def create_tag(self, guild_id, author_id, name, content):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             try:
                 await conn.execute("""
                     INSERT INTO cogs.tags (guild_id, author_id, name, content)
@@ -700,11 +700,11 @@ class Tags(Table):
                 return False
 
     async def delete_tag(self, guild_id, author_id, name):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             await conn.execute("DELETE FROM cogs.tags WHERE guild_id=$1 AND author_id=$2 AND LOWER(name)=$3", guild_id, author_id, name)
 
     async def edit_tag(self, guild_id, author_id, name, new_content):
-        async with self.db.acquire() as conn:
+        async with self.pool.acquire() as conn:
             return await conn.execute("""
                 UPDATE cogs.tags
                 SET content=$4
