@@ -324,14 +324,18 @@ class LoggerBackupUntilPresentTests(unittest.IsolatedAsyncioTestCase):
         ])
 
         self.bot.db.reactions.insert.assert_called_once_with([
-            (16, 1234, [10, 13])
+            (16, 1234, [10, 13], datetime(2020, 9, 14, 14, 12, 10))
         ])
 
-        #self.bot.db.emojis.insert.assert_called_once_with([
-        #    (17, ":kek:", 1),
-        #    (17, ":kekw:", 1),
-        #    (17, demojize("⭐"), 1)
-        #])
+        self.bot.db.emojis.insert.assert_called_once_with([
+            (4586234, "kekw", "https://cdn.discordapp.com/emojis/4586234.png", False),
+            (0x2B50, demojize("⭐").strip(":"), "https://unicode.org/emoji/charts/full-emoji-list.html#2b50", False)
+        ])
+
+        self.bot.db.message_emojis.insert.assert_called_once_with([
+            (17, 4586234, 1),
+            (17, 0x2B50, 1)
+        ])
 
     async def test_Collectable(self):
         async def prepare(attachments):
