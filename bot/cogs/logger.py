@@ -25,7 +25,33 @@ def chunks(lst, n):
     for i in range(0, len(lst), n):
         yield lst[i:i + n]
 
-class BackupUntilPresent:
+class GetCollectables:
+    @staticmethod
+    def get_collectables(bot):
+        return [
+            Collectable(
+                prepare_fn=bot.db.members.prepare_from_message,
+                insert_fn=bot.db.members.insert
+            ),
+            Collectable(
+                prepare_fn=bot.db.attachments.prepare_from_message,
+                insert_fn=bot.db.attachments.insert
+            ),
+            Collectable(
+                prepare_fn=bot.db.reactions.prepare_from_message,
+                insert_fn=bot.db.reactions.insert
+            ),
+            Collectable(
+                prepare_fn=bot.db.emojis.prepare_from_message,
+                insert_fn=bot.db.emojis.insert
+            ),
+            Collectable(
+                prepare_fn=bot.db.message_emojis.prepare_from_message,
+                insert_fn=bot.db.message_emojis.insert
+            )
+        ]
+
+class BackupUntilPresent(GetCollectables):
     def __init__(self, bot: MasarykBOT):
         self.bot = bot
 
@@ -160,29 +186,8 @@ class BackupUntilPresent:
                 for collectable in collectables:
                     await collectable.db_insert()
 
-    @staticmethod
-    def get_collectables(bot):
-        return [
-            Collectable(
-                prepare_fn=bot.db.members.prepare_from_message,
-                insert_fn=bot.db.members.insert
-            ),
-            Collectable(
-                prepare_fn=bot.db.attachments.prepare_from_message,
-                insert_fn=bot.db.attachments.insert
-            ),
-            Collectable(
-                prepare_fn=bot.db.reactions.prepare_from_message,
-                insert_fn=bot.db.reactions.insert
-            ),
-            #Collectable(
-            #    prepare_fn=bot.db.emojis.prepare_from_message,
-            #    insert_fn=bot.db.emojis.insert
-            #)
-        ]
 
-
-class BackupOnEvents:
+class BackupOnEvents(GetCollectables):
     def __init__(self, bot):
         self.bot = bot
 
@@ -297,7 +302,7 @@ class BackupOnEvents:
         data = await self.bot.db.messages.prepare_one(message)
         self.insert_queues[self.bot.db.messages.insert].append(data)
 
-        colleactables = BackupUntilPresent.get_collectables(self.bot)
+        colleactables = self.get_collectables(self.bot)
         for collectable in colleactables:
             data = await collectable.prepare_fn(message)
             self.insert_queues[collectable.insert_fn].extend(data)
@@ -310,7 +315,7 @@ class BackupOnEvents:
         data = await self.bot.db.messages.prepare_one(after)
         self.update_queues[self.bot.db.messages.update].append(data)
 
-        colleactables = BackupUntilPresent.get_collectables(self.bot)
+        colleactables = self.get_collectables(self.bot)
         for collectable in colleactables:
             data = await collectable.prepare_fn(after)
             self.update_queues[collectable.insert_fn].extend(data)
