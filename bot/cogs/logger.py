@@ -38,12 +38,12 @@ class GetCollectables:
                 insert_fn=bot.db.attachments.insert
             ),
             Collectable(
-                prepare_fn=bot.db.reactions.prepare_from_message,
-                insert_fn=bot.db.reactions.insert
-            ),
-            Collectable(
                 prepare_fn=bot.db.emojis.prepare_from_message,
                 insert_fn=bot.db.emojis.insert
+            ),
+            Collectable(
+                prepare_fn=bot.db.reactions.prepare_from_message,
+                insert_fn=bot.db.reactions.insert
             ),
             Collectable(
                 prepare_fn=bot.db.message_emojis.prepare_from_message,
