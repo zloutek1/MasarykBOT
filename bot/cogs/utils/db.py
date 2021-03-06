@@ -427,7 +427,7 @@ class MessageEmojis(Table, FromMessageMapper):
         self.emojis = Emojis(self.pool)
 
     async def prepare_from_message(self, message: Message):
-        emojis = await self.emojis.prepare_from_message(message)
+        emojis = await self.emojis._prepare_from_message_content(message)
         emoji_ids = [emoji[0] for emoji in emojis]
         return [(message.id, emoji_id, count) for (emoji_id, count) in Counter(emoji_ids).items()]
 

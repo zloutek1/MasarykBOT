@@ -270,8 +270,8 @@ class LoggerBackupUntilPresentTests(unittest.IsolatedAsyncioTestCase):
             mocked_datetime.now.return_value = datetime(2020, 9, 27)
 
             from_date, to_date = self.cog.get_next_week(channel, process)
-            self.assertEqual(from_date, datetime(2020, 9, 20))
-            self.assertEqual(to_date, datetime(2020, 9, 27))
+            self.assertEqual(from_date, datetime(2020, 9, 26))
+            self.assertEqual(to_date, datetime(2020, 10, 4))
 
 
     async def test_backup_messages_in_channel(self):
@@ -294,8 +294,12 @@ class LoggerBackupUntilPresentTests(unittest.IsolatedAsyncioTestCase):
             MockAttachment(id=15, filename="nsfw.gif", url="discord.com/10/13/14")
         ]
 
+        emojis = [
+            MockEmoji(id=1234, name="kek", url="https://cdn.discordapp.com/emojis/1234.png", animated=False)
+        ]
+
         messages[3].reactions = [
-            MockReaction(message=messages[3], emoji=MockEmoji(id=1234, name="kek"), users=[authors['bob'], authors['joe']])
+            MockReaction(message=messages[3], emoji=emojis[0], users=[authors['bob'], authors['joe']])
         ]
 
         self.bot.db.logger.process =  MagicMock()
@@ -328,6 +332,7 @@ class LoggerBackupUntilPresentTests(unittest.IsolatedAsyncioTestCase):
         ])
 
         self.bot.db.emojis.insert.assert_called_once_with([
+            (1234, "kek", "https://cdn.discordapp.com/emojis/1234.png", False),
             (4586234, "kekw", "https://cdn.discordapp.com/emojis/4586234.png", False),
             (0x2B50, demojize("⭐").strip(":"), "https://unicode.org/emoji/charts/full-emoji-list.html#2b50", False)
         ])
