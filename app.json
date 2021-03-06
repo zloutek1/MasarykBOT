@@ -17,5 +17,10 @@
             "description": "discord bot token from https://discord.com/developers/applications",
             "value": ""
         }
-    }
+    },
+    "buildpacks": [
+        {
+          "url": "heroku/python"
+        }
+    ]
 }
