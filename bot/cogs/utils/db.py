@@ -408,8 +408,7 @@ class Emojis(Table, Mapper[AnyEmote], FromMessageMapper):
                     edited_at=NOW()
                 WHERE e.name<>excluded.name OR
                       e.url<>excluded.url OR
-                      e.animated<>excluded.animated OR
-                      e.edited_at<>excluded.edited_at
+                      e.animated<>excluded.animated
         """, data)
 
     @withConn
@@ -445,8 +444,7 @@ class MessageEmojis(Table, FromMessageMapper):
             ON CONFLICT (message_id, emoji_id) DO UPDATE
                 SET count=$3,
                     edited_at=NOW()
-                WHERE me.count<>excluded.count OR
-                      me.edited_at<>excluded.edited_at
+                WHERE me.count<>excluded.count
         """, data)
 
     @withConn
@@ -488,8 +486,7 @@ class Reactions(Table, Mapper[Reaction], FromMessageMapper):
                     created_at=$4,
                     edited_at=NOW()
                 WHERE r.member_ids<>excluded.member_ids OR
-                      r.created_at<>excluded.created_at OR
-                      r.edited_at<>excluded.edited_at
+                      r.created_at<>excluded.created_at
         """, reactions)
 
     @withConn
@@ -510,8 +507,7 @@ class Logger(Table):
     async def start_process(self, conn, channel_id, from_date, to_date):
         await conn.execute("""
             INSERT INTO cogs.logger VALUES ($1, $2, $3, NULL)
-            ON CONFLICT (channel_id, from_date) DO UPDATE
-                SET to_date=$3
+            ON CONFLICT (channel_id, from_date) DO NOTHING
         """, channel_id, from_date, to_date)
 
     @withConn
