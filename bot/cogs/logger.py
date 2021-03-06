@@ -64,6 +64,7 @@ class BackupUntilPresent(GetCollectables):
 
             for channel in guild.text_channels:
                 await self.backup_messages(channel)
+                await asyncio.sleep(5)
 
         log.info("Finished backup process")
 
@@ -460,7 +461,7 @@ class Logger(commands.Cog, BackupUntilPresent, BackupOnEvents):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        """await self.backup()"""
+        await self.backup()
 
     @tasks.loop(hours=168)  # 168 hours == 1 week
     async def _repeat_backup(self):
