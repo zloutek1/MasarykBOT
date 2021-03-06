@@ -130,7 +130,7 @@ class Subject(commands.Cog):
             await self.remove_subject(ctx, subject_code)
 
     async def remove_subject(self, ctx: Context, code_pattern: str) -> None:
-        if not self._in_subject_channel(ctx):
+        if not await self._in_subject_channel(ctx):
             return
 
         faculty, code = self.pattern_to_faculty_code(code_pattern)
