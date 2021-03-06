@@ -40,3 +40,11 @@ CREATE INDEX fki_message_emojis_fkey_message
     ON server.message_emojis USING btree
     (message_id ASC NULLS LAST)
     TABLESPACE pg_default;
+-- Index: idx_message_emojis_unique
+
+-- DROP INDEX server.idx_message_emojis_unique;
+
+CREATE UNIQUE INDEX idx_message_emojis_unique
+    ON server.message_emojis USING btree
+    (message_id ASC NULLS LAST, emoji_id ASC NULLS LAST)
+    TABLESPACE pg_default;
