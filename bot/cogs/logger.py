@@ -125,6 +125,10 @@ class BackupUntilPresent(GetCollectables):
         finished_process = await self.get_latest_finished_process(channel)
         (from_date, to_date) = self.get_next_week(channel, finished_process)
 
+        if channel.last_message_id is None:
+            log.info("skipping messages in empty channel %s (%s)", channel, channel.guild)
+            return False
+
         await self.try_to_backup_in_range(channel, from_date, to_date, is_first_week=finished_process is None)
 
         return to_date < datetime.now()
@@ -162,14 +166,9 @@ class BackupUntilPresent(GetCollectables):
             log.debug("channel %s was not found in (%s)", channel, channel.guild)
 
     async def backup_in_range(self, channel: TextChannel, from_date: datetime, to_date: datetime, is_first_week: bool) -> None:
-        if channel.last_message_id is None:
-            log.info("skipping messages in empty channel %s (%s)", channel, channel.guild)
-            async with self.bot.db.logger.process(channel.id, channel.created_at, datetime.now()):
-                return
-
-        log.info("backing up messages {%s} - {%s} in %s (%s)", from_date.strftime('%d.%m.%Y'), to_date.strftime('%d.%m.%Y'), channel, channel.guild)
-
         async with self.bot.db.logger.process(channel.id, from_date, to_date, is_first_week):
+            log.info("backing up messages {%s} - {%s} in %s (%s)", from_date.strftime('%d.%m.%Y'), to_date.strftime('%d.%m.%Y'), channel, channel.guild)
+
             members = []
             messages = []
             collectables = self.get_collectables(self.bot)
