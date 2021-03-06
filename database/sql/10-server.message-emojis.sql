@@ -7,6 +7,7 @@ CREATE TABLE server.message_emojis
     message_id bigint NOT NULL,
     emoji_id bigint NOT NULL,
     count integer NOT NULL,
+    edited_at timestamp without time zone,
     CONSTRAINT message_emotes_fkey_emoji FOREIGN KEY (emoji_id)
         REFERENCES server.emojis (id) MATCH SIMPLE
         ON UPDATE NO ACTION
