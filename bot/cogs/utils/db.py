@@ -508,7 +508,11 @@ class Logger(Table):
 
     @withConn
     async def start_process(self, conn, channel_id, from_date, to_date):
-        await conn.execute("INSERT INTO cogs.logger VALUES ($1, $2, $3, NULL)", channel_id, from_date, to_date)
+        await conn.execute("""
+            INSERT INTO cogs.logger VALUES ($1, $2, $3, NULL)
+            ON CONFLICT (channel_id, from_date) DO UPDATE
+                SET to_date=$3
+        """, channel_id, from_date, to_date)
 
     @withConn
     async def mark_process_finished(self, conn, channel_id, from_date, to_date, is_first_week=False):
