@@ -148,7 +148,7 @@ class BackupUntilPresent(GetCollectables):
             from_date, to_date = process.get("to_date"), process.get("to_date") + timedelta(weeks=1)
 
         if from_date > datetime.now():
-            from_date, to_date = datetime.now() - timedelta(weeks=1), datetime.now()
+            from_date, to_date = datetime.now() - timedelta(days=1), datetime.now() + timedelta(weeks=1)
 
         return from_date, to_date
 
@@ -163,7 +163,9 @@ class BackupUntilPresent(GetCollectables):
 
     async def backup_in_range(self, channel: TextChannel, from_date: datetime, to_date: datetime, is_first_week: bool) -> None:
         if channel.last_message_id is None:
-            return
+            log.info("skipping messages in empty channel %s (%s)", channel, channel.guild)
+            async with self.bot.db.logger.process(channel.id, channel.created_at, datetime.now()):
+                return
 
         log.info("backing up messages {%s} - {%s} in %s (%s)", from_date.strftime('%d.%m.%Y'), to_date.strftime('%d.%m.%Y'), channel, channel.guild)
 
