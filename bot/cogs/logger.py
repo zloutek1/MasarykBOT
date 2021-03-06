@@ -345,6 +345,9 @@ class BackupOnEvents(GetCollectables):
         data = await self.bot.db.members.prepare_one(user)
         self.insert_queues[self.bot.db.members.insert].append(data)
 
+        data = await self.bot.db.emojis.prepare_one(reaction.emoji)
+        self.insert_queues[self.bot.db.emojis.insert].append(data)
+
         data = await self.bot.db.reactions.prepare_one(reaction)
         self.insert_queues[self.bot.db.reactions.insert].append(data)
 
