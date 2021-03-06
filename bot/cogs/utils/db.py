@@ -534,196 +534,196 @@ class Logger(Table):
 
 
 class Leaderboard(Table):
-    async def preselect(self, guild_id, ignored_users, channel_id):
-        async with self.pool.acquire() as conn:
-            await conn.execute("DROP TABLE IF EXISTS ldb_lookup")
-            await conn.execute("""
-                CREATE TEMPORARY TABLE IF NOT EXISTS ldb_lookup AS
+    @withConn
+    async def preselect(self, conn, guild_id, ignored_users, channel_id):
+        await conn.execute("DROP TABLE IF EXISTS ldb_lookup")
+        await conn.execute("""
+            CREATE TEMPORARY TABLE IF NOT EXISTS ldb_lookup AS
+                SELECT
+                    ROW_NUMBER() OVER (ORDER BY sent_total DESC), *
+                FROM (
                     SELECT
-                        ROW_NUMBER() OVER (ORDER BY sent_total DESC), *
-                    FROM (
-                        SELECT
-                            author_id,
-                            author.names[1] AS author,
-                            SUM(messages_sent) AS sent_total
-                        FROM cogs._leaderboard
-                        INNER JOIN server.users AS author
-                            ON author_id = author.id
-                        INNER JOIN server.channels AS channel
-                            ON channel_id = channel.id
-                        WHERE guild_id = $1::bigint AND
-                              author_id<>ALL($2::bigint[]) AND
-                              ($3::bigint IS NULL OR channel_id = $3)
-                        GROUP BY author_id, author.names
-                        ORDER BY sent_total DESC
-                    ) AS lookup
-            """, guild_id, ignored_users, channel_id)
+                        author_id,
+                        author.names[1] AS author,
+                        SUM(messages_sent) AS sent_total
+                    FROM cogs._leaderboard
+                    INNER JOIN server.users AS author
+                        ON author_id = author.id
+                    INNER JOIN server.channels AS channel
+                        ON channel_id = channel.id
+                    WHERE guild_id = $1::bigint AND
+                            author_id<>ALL($2::bigint[]) AND
+                            ($3::bigint IS NULL OR channel_id = $3)
+                    GROUP BY author_id, author.names
+                    ORDER BY sent_total DESC
+                ) AS lookup
+        """, guild_id, ignored_users, channel_id)
 
-    async def get_top10(self):
-        async with self.pool.acquire() as conn:
-            return await conn.fetch("SELECT * FROM ldb_lookup LIMIT 10")
+    @withConn
+    async def get_top10(self, conn):
+        return await conn.fetch("SELECT * FROM ldb_lookup LIMIT 10")
 
-    async def get_around(self, author_id):
-        async with self.pool.acquire() as conn:
-            return await conn.fetch("""
-                WITH desired_count AS (
-                    SELECT sent_total
-                    FROM ldb_lookup
-                    WHERE author_id = $1
-                )
+    @withConn
+    async def get_around(self, conn, author_id):
+        return await conn.fetch("""
+            WITH desired_count AS (
+                SELECT sent_total
+                FROM ldb_lookup
+                WHERE author_id = $1
+            )
 
-                (   SELECT *
-                    FROM ldb_lookup
-                    WHERE sent_total >= (SELECT * FROM desired_count) AND author_id <> $1
-                    ORDER BY sent_total LIMIT 2
-                ) UNION (
-                    SELECT *
-                    FROM ldb_lookup
-                    WHERE sent_total = (SELECT * FROM desired_count) AND author_id = $1 LIMIT 1
-                ) UNION (
-                    SELECT *
-                    FROM ldb_lookup
-                    WHERE sent_total < (SELECT * FROM desired_count) AND author_id <> $1 LIMIT 2
-                ) ORDER BY sent_total DESC
-            """, author_id)
+            (   SELECT *
+                FROM ldb_lookup
+                WHERE sent_total >= (SELECT * FROM desired_count) AND author_id <> $1
+                ORDER BY sent_total LIMIT 2
+            ) UNION (
+                SELECT *
+                FROM ldb_lookup
+                WHERE sent_total = (SELECT * FROM desired_count) AND author_id = $1 LIMIT 1
+            ) UNION (
+                SELECT *
+                FROM ldb_lookup
+                WHERE sent_total < (SELECT * FROM desired_count) AND author_id <> $1 LIMIT 2
+            ) ORDER BY sent_total DESC
+        """, author_id)
 
 
 
 class Emojiboard(Table):
-    async def select(self, guild_id, ignored_users, channel_id, author_id, emoji):
-        async with self.pool.acquire() as conn:
-            return await conn.fetch("""
-                SELECT
-                    emoji.name,
-                    SUM(count) AS sent_total
-                FROM cogs.emojiboard AS emoji
-                INNER JOIN server.channels AS channel
-                    ON channel_id = channel.id
-                WHERE guild_id = $1::bigint AND
-                      author_id<>ALL($2::bigint[]) AND
-                      ($3::bigint IS NULL OR channel_id = $3) AND
-                      ($4::bigint IS NULL OR author_id = $4) AND
-                      ($5::text IS NULL OR emoji.name = $5)
-                GROUP BY emoji.name
-                ORDER BY sent_total DESC
-                LIMIT 10
-            """, guild_id, ignored_users, channel_id, author_id, emoji)
+    @withConn
+    async def select(self, conn, guild_id, ignored_users, channel_id, author_id, emoji):
+        return await conn.fetch("""
+            SELECT
+                emoji.name,
+                SUM(count) AS sent_total
+            FROM cogs.emojiboard AS emoji
+            INNER JOIN server.channels AS channel
+                ON channel_id = channel.id
+            WHERE guild_id = $1::bigint AND
+                    author_id<>ALL($2::bigint[]) AND
+                    ($3::bigint IS NULL OR channel_id = $3) AND
+                    ($4::bigint IS NULL OR author_id = $4) AND
+                    ($5::text IS NULL OR emoji.name = $5)
+            GROUP BY emoji.name
+            ORDER BY sent_total DESC
+            LIMIT 10
+        """, guild_id, ignored_users, channel_id, author_id, emoji)
 
 
 
 class Subjects(Table):
-    async def find(self, code, faculty="FI"):
-        async with self.pool.acquire() as conn:
-            return await conn.fetch("SELECT * FROM muni.subjects WHERE LOWER(code) LIKE LOWER($1) AND LOWER(faculty) = LOWER($2)", code, faculty)
+    @withConn
+    async def find(self, conn, code, faculty="FI"):
+        return await conn.fetch("SELECT * FROM muni.subjects WHERE LOWER(code) LIKE LOWER($1) AND LOWER(faculty) = LOWER($2)", code, faculty)
 
-    async def find_registered(self, guild_id, code, faculty="FI"):
-        async with self.pool.acquire() as conn:
-            return await conn.fetchrow("""
-                SELECT * FROM muni.registers
-                WHERE guild_id = $1 AND LOWER(code) LIKE LOWER($2) AND LOWER(faculty) = LOWER($3)""", guild_id, code, faculty)
+    @withConn
+    async def find_registered(self, conn, guild_id, code, faculty="FI"):
+        return await conn.fetchrow("""
+            SELECT * FROM muni.registers
+            WHERE guild_id = $1 AND LOWER(code) LIKE LOWER($2) AND LOWER(faculty) = LOWER($3)""", guild_id, code, faculty)
 
-    async def find_serverinfo(self, guild_id, code, faculty="FI"):
-        async with self.pool.acquire() as conn:
-            return await conn.fetchrow("""
-                SELECT * FROM muni.subject_server
-                WHERE guild_id = $1 AND LOWER(code) LIKE LOWER($2) AND LOWER(faculty) = LOWER($3)""", guild_id, code, faculty)
+    @withConn
+    async def find_serverinfo(self, conn, guild_id, code, faculty="FI"):
+        return await conn.fetchrow("""
+            SELECT * FROM muni.subject_server
+            WHERE guild_id = $1 AND LOWER(code) LIKE LOWER($2) AND LOWER(faculty) = LOWER($3)""", guild_id, code, faculty)
 
-    async def sign_user(self, guild_id, code, member_id, faculty="FI"):
-        async with self.pool.acquire() as conn:
-            await conn.execute("""
-                INSERT INTO muni.registers AS r (guild_id, faculty, code, member_ids)
-                       VALUES ($1, $2, $3, ARRAY[$4::bigint])
-                ON CONFLICT (guild_id, code) DO UPDATE
-                    SET member_ids = array_append(r.member_ids, $4::bigint)
-                    WHERE $4::bigint <> ALL(r.member_ids);
-            """, guild_id, faculty, code, member_id)
+    @withConn
+    async def sign_user(self, conn, guild_id, code, member_id, faculty="FI"):
+        await conn.execute("""
+            INSERT INTO muni.registers AS r (guild_id, faculty, code, member_ids)
+                    VALUES ($1, $2, $3, ARRAY[$4::bigint])
+            ON CONFLICT (guild_id, code) DO UPDATE
+                SET member_ids = array_append(r.member_ids, $4::bigint)
+                WHERE $4::bigint <> ALL(r.member_ids);
+        """, guild_id, faculty, code, member_id)
 
-    async def unsign_user(self, guild_id, code, member_id, faculty="FI"):
-        async with self.pool.acquire() as conn:
-            await conn.execute("""
-                UPDATE muni.registers
-                    SET member_ids = array_remove(member_ids, $4::bigint)
-                    WHERE guild_id = $1 AND
-                          LOWER(faculty) = LOWER($2) AND
-                          LOWER(code) = LOWER($3) AND
-                          $4 = ANY(member_ids);
-            """, guild_id, faculty, code, member_id)
+    @withConn
+    async def unsign_user(self, conn, guild_id, code, member_id, faculty="FI"):
+        await conn.execute("""
+            UPDATE muni.registers
+                SET member_ids = array_remove(member_ids, $4::bigint)
+                WHERE guild_id = $1 AND
+                        LOWER(faculty) = LOWER($2) AND
+                        LOWER(code) = LOWER($3) AND
+                        $4 = ANY(member_ids);
+        """, guild_id, faculty, code, member_id)
 
-    async def get_category(self, guild_id, code, faculty="FI"):
-        async with self.pool.acquire() as conn:
-            return await conn.fetchrow(
-                "SELECT * FROM muni.subject_category WHERE LOWER(faculty) = LOWER($1) AND LOWER(code) LIKE LOWER($2) AND guild_id = $3",
-                faculty, code, guild_id)
+    @withConn
+    async def get_category(self, conn, guild_id, code, faculty="FI"):
+        return await conn.fetchrow(
+            "SELECT * FROM muni.subject_category WHERE LOWER(faculty) = LOWER($1) AND LOWER(code) LIKE LOWER($2) AND guild_id = $3",
+            faculty, code, guild_id)
 
-    async def set_channel(self, guild_id, code, channel_id, faculty="FI"):
-        async with self.pool.acquire() as conn:
-            await conn.execute("""
-                INSERT INTO muni.subject_server AS ss (guild_id, faculty, code, channel_id)
-                       VALUES ($1, $2, $3, $4)
-                ON CONFLICT (guild_id, faculty, code) DO UPDATE
-                    SET channel_id = excluded.channel_id
-                    WHERE ss.channel_id IS NULL OR ss.channel_id <> excluded.channel_id;
-            """, guild_id, faculty, code, channel_id)
+    @withConn
+    async def set_channel(self, conn, guild_id, code, channel_id, faculty="FI"):
+        await conn.execute("""
+            INSERT INTO muni.subject_server AS ss (guild_id, faculty, code, channel_id)
+                    VALUES ($1, $2, $3, $4)
+            ON CONFLICT (guild_id, faculty, code) DO UPDATE
+                SET channel_id = excluded.channel_id
+                WHERE ss.channel_id IS NULL OR ss.channel_id <> excluded.channel_id;
+        """, guild_id, faculty, code, channel_id)
 
-    async def set_category(self, guild_id, code, category_id, faculty="FI"):
-        async with self.pool.acquire() as conn:
-            await conn.execute("""
-                UPDATE muni.subject_server
-                    SET category_id = $4
-                    WHERE guild_id = $1 AND LOWER(faculty) = LOWER($2) AND LOWER(code) LIKE LOWER($3);
-            """, guild_id, faculty, code, category_id)
+    @withConn
+    async def set_category(self, conn, guild_id, code, category_id, faculty="FI"):
+        await conn.execute("""
+            UPDATE muni.subject_server
+                SET category_id = $4
+                WHERE guild_id = $1 AND LOWER(faculty) = LOWER($2) AND LOWER(code) LIKE LOWER($3);
+        """, guild_id, faculty, code, category_id)
 
-    async def remove_channel(self, guild_id, code, faculty="FI"):
-        async with self.pool.acquire() as conn:
-            await conn.execute("""
-                DELETE FROM muni.subject_server
-                    WHERE guild_id = $1 AND
-                          LOWER(faculty) = LOWER($2) AND
-                          LOWER(code) = LOWER($3)
-            """, guild_id, faculty, code)
+    @withConn
+    async def remove_channel(self, conn, guild_id, code, faculty="FI"):
+        await conn.execute("""
+            DELETE FROM muni.subject_server
+                WHERE guild_id = $1 AND
+                        LOWER(faculty) = LOWER($2) AND
+                        LOWER(code) = LOWER($3)
+        """, guild_id, faculty, code)
 
 
 
 class Tags(Table):
-    async def select(self, guild_id, user_id):
-        async with self.pool.acquire() as conn:
-            return await conn.fetch("SELECT * FROM cogs.tags WHERE guild_id = $1 AND author_id = $2", guild_id, user_id)
+    @withConn
+    async def select(self, conn, guild_id, user_id):
+        return await conn.fetch("SELECT * FROM cogs.tags WHERE guild_id = $1 AND author_id = $2", guild_id, user_id)
 
-    async def get_tag(self, guild_id, name):
-        async with self.pool.acquire() as conn:
-            return await conn.fetchrow("SELECT * FROM cogs.tags WHERE guild_id = $1 AND LOWER(name) = $2", guild_id, name)
+    @withConn
+    async def get_tag(self, conn, guild_id, name):
+        return await conn.fetchrow("SELECT * FROM cogs.tags WHERE guild_id = $1 AND LOWER(name) = $2", guild_id, name)
 
-    async def find_tags(self, guild_id, name):
-        async with self.pool.acquire() as conn:
-            return await conn.fetch("""
-                SELECT name, id FROM cogs.tags
-                WHERE guild_id=$1 AND name % $2
-                ORDER BY similarity(name, $2) DESC
-                LIMIT 100;
-            """, guild_id, name)
+    @withConn
+    async def find_tags(self, conn, guild_id, name):
+        return await conn.fetch("""
+            SELECT name, id FROM cogs.tags
+            WHERE guild_id=$1 AND name % $2
+            ORDER BY similarity(name, $2) DESC
+            LIMIT 100;
+        """, guild_id, name)
 
-    async def create_tag(self, guild_id, author_id, name, content):
-        async with self.pool.acquire() as conn:
-            try:
-                await conn.execute("""
-                    INSERT INTO cogs.tags (guild_id, author_id, name, content)
-                    VALUES ($1, $2, $3, $4)
-                """, guild_id, author_id, name, content)
-                return True
-            except asyncpg.UniqueViolationError:
-                return False
+    @withConn
+    async def create_tag(self, conn, guild_id, author_id, name, content):
+        try:
+            await conn.execute("""
+                INSERT INTO cogs.tags (guild_id, author_id, name, content)
+                VALUES ($1, $2, $3, $4)
+            """, guild_id, author_id, name, content)
+            return True
+        except asyncpg.UniqueViolationError:
+            return False
 
-    async def delete_tag(self, guild_id, author_id, name):
-        async with self.pool.acquire() as conn:
-            await conn.execute("DELETE FROM cogs.tags WHERE guild_id=$1 AND author_id=$2 AND LOWER(name)=$3", guild_id, author_id, name)
+    @withConn
+    async def delete_tag(self, conn, guild_id, author_id, name):
+        await conn.execute("DELETE FROM cogs.tags WHERE guild_id=$1 AND author_id=$2 AND LOWER(name)=$3", guild_id, author_id, name)
 
-    async def edit_tag(self, guild_id, author_id, name, new_content):
-        async with self.pool.acquire() as conn:
-            return await conn.execute("""
-                UPDATE cogs.tags
-                SET content=$4
-                WHERE guild_id=$1 AND author_id=$2 AND LOWER(name)=$3
-            """, guild_id, author_id, name, new_content)
+    @withConn
+    async def edit_tag(self, conn, guild_id, author_id, name, new_content):
+        return await conn.execute("""
+            UPDATE cogs.tags
+            SET content=$4
+            WHERE guild_id=$1 AND author_id=$2 AND LOWER(name)=$3
+        """, guild_id, author_id, name, new_content)
 
 
 
