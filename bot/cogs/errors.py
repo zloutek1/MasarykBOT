@@ -68,6 +68,8 @@ class Errors(commands.Cog):
                 else:
                     await channel.send(f"```\n{part}\n```")
                     part = line
+            if part:
+                await channel.send(f"```\n{part}\n```")
 
 def setup(bot):
     bot.add_cog(Errors(bot))
