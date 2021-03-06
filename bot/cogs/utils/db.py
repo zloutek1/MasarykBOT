@@ -350,7 +350,7 @@ class Emojis(Table, Mapper[AnyEmote], FromMessageMapper):
     async def prepare_one(emoji: AnyEmote):
         if isinstance(emoji, str):
             return await Emojis.prepare_unicode_emoji(emoji)
-        return (emoji.id, emoji.name, emoji.url, emoji.animated)
+        return (emoji.id, emoji.name, str(emoji.url), emoji.animated)
 
     @staticmethod
     async def prepare_unicode_emoji(emoji: str):
