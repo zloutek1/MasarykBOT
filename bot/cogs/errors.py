@@ -56,9 +56,18 @@ class Errors(commands.Cog):
         guild_config = get(Config.guilds, id=ctx.guild.id)
         channel_id = guild_config.logs.errors
         if channel_id and (channel := self.bot.get_channel(channel_id)) is not None:
-            for i in range(0, len(msg), 1900):
-                chunk = msg[i:i+1900]
-                await channel.send(f"```\n{chunk}\n```")
+            part = ""
+            for line in msg.split("\n"):
+                if len(part) + len(line) < 1900:
+                    part += line + "\n"
+                elif len(line) >= 1900:
+                    await channel.send(f"```\n{part}\n```")
+                    for i in range(0, len(line), 1900):
+                        await channel.send(f"```\n{chunk}\n```")
+                    part = ""
+                else:
+                    await channel.send(f"```\n{part}\n```")
+                    part = line
 
 def setup(bot):
     bot.add_cog(Errors(bot))
