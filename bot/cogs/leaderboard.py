@@ -165,11 +165,10 @@ class Leaderboard(commands.Cog):
         def get_value(row):
             emojis = [emoji
                       for emoji in self.bot.emojis
-                      if emoji.name.lower() == row["name"].strip(":").lower()
-                     ]
+                      if emoji.name.lower() == row["name"].lower()]
 
             discord_emoji = emojis[0] if emojis else None
-            demojized_emoji = emojize(row["name"])
+            demojized_emoji = emojize(':' + row["name"] + ':')
 
             return discord_emoji or demojized_emoji or row["name"]
 

@@ -560,7 +560,7 @@ class Leaderboard(Table):
                         author_id,
                         author.names[1] AS author,
                         SUM(messages_sent) AS sent_total
-                    FROM cogs._leaderboard
+                    FROM cogs.leaderboard
                     INNER JOIN server.users AS author
                         ON author_id = author.id
                     INNER JOIN server.channels AS channel
@@ -605,23 +605,25 @@ class Leaderboard(Table):
 
 class Emojiboard(Table):
     @withConn
-    async def select(self, conn, guild_id, ignored_users, channel_id, author_id, emoji):
+    async def select(self, conn, guild_id, ignored_users, channel_id, author_id, emoji_id):
         return await conn.fetch("""
             SELECT
                 emoji.name,
                 SUM(count) AS sent_total
-            FROM cogs.emojiboard AS emoji
+            FROM cogs.emojiboard
             INNER JOIN server.channels AS channel
                 ON channel_id = channel.id
+            INNER JOIN server.emojis AS emoji
+                ON emoji_id = emoji.id
             WHERE guild_id = $1::bigint AND
                     author_id<>ALL($2::bigint[]) AND
                     ($3::bigint IS NULL OR channel_id = $3) AND
                     ($4::bigint IS NULL OR author_id = $4) AND
-                    ($5::text IS NULL OR emoji.name = $5)
+                    ($5::bigint IS NULL OR emoji_id = $5)
             GROUP BY emoji.name
             ORDER BY sent_total DESC
             LIMIT 10
-        """, guild_id, ignored_users, channel_id, author_id, emoji)
+        """, guild_id, ignored_users, channel_id, author_id, emoji_id)
 
 
 
