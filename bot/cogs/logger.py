@@ -30,10 +30,6 @@ class GetCollectables:
     def get_collectables(bot):
         return [
             Collectable(
-                prepare_fn=bot.db.members.prepare_from_message,
-                insert_fn=bot.db.members.insert
-            ),
-            Collectable(
                 prepare_fn=bot.db.attachments.prepare_from_message,
                 insert_fn=bot.db.attachments.insert
             ),
@@ -100,7 +96,7 @@ class BackupUntilPresent(GetCollectables):
 
 
     async def backup_messages(self, channel: TextChannel) -> None:
-        log.info("backing up messages")
+        log.info("backing up messages in (%s, %s)", channel, channel.guild)
         await self.backup_failed_weeks(channel)
         await self.backup_new_weeks(channel)
 
@@ -172,14 +168,19 @@ class BackupUntilPresent(GetCollectables):
         log.info("backing up messages {%s} - {%s} in %s (%s)", from_date.strftime('%d.%m.%Y'), to_date.strftime('%d.%m.%Y'), channel, channel.guild)
 
         async with self.bot.db.logger.process(channel.id, from_date, to_date, is_first_week):
+            members = []
             messages = []
             collectables = self.get_collectables(self.bot)
             async for message in channel.history(after=from_date, before=to_date, limit=1_000_000, oldest_first=True):
+                members.append(await self.bot.db.members.prepare_one(message.author))
                 messages.append(await self.bot.db.messages.prepare_one(message))
                 for collectable in collectables:
                     await collectable.add(message)
 
             else:
+                for batch in chunks(members, 550):
+                    await self.bot.db.members.insert(batch)
+
                 for batch in chunks(messages, 550):
                     await self.bot.db.messages.insert(batch)
 
