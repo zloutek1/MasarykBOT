@@ -260,13 +260,15 @@ class Subject(commands.Cog):
     async def try_to_sign_user_to_channel(self, ctx: Context, subject: Record) -> None:
         channel_name = self.subject_to_channel_name(ctx, subject)
 
-        if await self.check_if_engough_users_signed(ctx.guild.id, subject):
+        if not await self.check_if_engough_users_signed(ctx.guild.id, subject):
+            log.info("Not enough users signed for subject %s", subject)
             await self.send_subject_embed(ctx, f"Signed to subject {channel_name} successfully, but not enough users to create the subject room")
             return
 
         channel = await self.create_or_get_existing_channel(ctx, subject)
         await channel.set_permissions(ctx.author,overwrite=PermissionOverwrite(read_messages=True))
         await self.send_subject_embed(ctx, f"Signed to subject {channel_name} successfully")
+        log.info("Signed user %s to channel %s", str(ctx.author), channel_name)
 
     async def try_to_unsign_user_from_channel(self, ctx: Context, subject: Record) -> None:
         try:
