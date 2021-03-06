@@ -46,5 +46,5 @@ CREATE INDEX fki_subject_category_fkey_guild
 
 CREATE UNIQUE INDEX subject_category_idx_unique
     ON muni.subject_category USING btree
-    (code COLLATE pg_catalog."default" ASC NULLS LAST, guild_id ASC NULLS LAST)
+    (faculty COLLATE pg_catalog."default" ASC NULLS LAST, code COLLATE pg_catalog."default" ASC NULLS LAST, guild_id ASC NULLS LAST)
     TABLESPACE pg_default;
