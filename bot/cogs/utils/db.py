@@ -371,7 +371,7 @@ class Emojis(Table, Mapper[AnyEmote], FromMessageMapper):
         return [(int(emoji_id), emoji_name, self.to_url(int(emoji_id), animated=is_animated), is_animated)
                 for (emoji_name, emoji_id) in emojis]
 
-    async def prepare_from_message(self, message: Message):
+    async def _prepare_from_message_content(self, message: Message):
         if not re.search(self.HAS_EMOTE, demojize(message.content)):
             return []
 
@@ -381,6 +381,14 @@ class Emojis(Table, Mapper[AnyEmote], FromMessageMapper):
                           for emoji in get_emoji_regexp().findall(message.content)]
 
         return regular_emojis + animated_emojis + unicode_emojis
+
+    async def _prepare_from_message_reactions(self, message: Message):
+        return [await self.prepare_one(reaction.emoji)
+                for reaction in message.reactions]
+
+    async def prepare_from_message(self, message: Message):
+        return (await self._prepare_from_message_content(message)
+               + await self._prepare_from_message_reactions(message))
 
     @withConn
     async def select(self, conn, emoji_id):
@@ -437,7 +445,7 @@ class MessageEmojis(Table, FromMessageMapper):
             ON CONFLICT (message_id, emoji_id) DO UPDATE
                 SET count=$3,
                     edited_at=NOW()
-                WHERE me.count<>excluded.count
+                WHERE me.count<>excluded.count OR
                       me.edited_at<>excluded.edited_at
         """, data)
 
@@ -452,7 +460,9 @@ class Reactions(Table, Mapper[Reaction], FromMessageMapper):
         user_ids = (await reaction.users()
                                   .map(lambda member: member.id)
                                   .flatten())
-        emoji_id = emote.id if isinstance(emote := reaction.emoji, (Emoji, PartialEmoji)) else ord(emote)
+        emoji_id = (emote.id
+                    if isinstance(emote := reaction.emoji, (Emoji, PartialEmoji)) else
+                    sum(map(ord, emote)))
 
         return (reaction.message.id, emoji_id, user_ids, reaction.message.created_at)
 
