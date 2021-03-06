@@ -289,9 +289,9 @@ class Subject(commands.Cog):
 
     async def try_to_get_existing_channel(self, ctx: Context, subject: Record) -> Optional[TextChannel]:
         def is_subject_channel(channel):
-            faculty, code = subject.get("faculty"), subject.get("code")
-            return (channel.name.startswith(code) or
-                    channel.name.startswith(f"{faculty}꞉{code}"))
+            faculty, code = subject.get("faculty").lower(), subject.get("code").lower()
+            return (channel.name.lower().startswith(code) or
+                    channel.name.lower().startswith(f"{faculty}꞉{code}"))
 
         channel = find(is_subject_channel, ctx.guild.text_channels)
         if channel is not None:
