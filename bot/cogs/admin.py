@@ -1,8 +1,10 @@
 import logging
+from contextlib import suppress
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import has_permissions
+from discord.errors import NotFound
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +27,8 @@ class Admin(commands.Cog):
     @commands.is_owner()
     async def shutdown(self, ctx):
         log.info("Shutting down...")
-        await ctx.message.delete()
+        with suppress(NotFound):
+            await ctx.message.delete()
         raise KeyboardInterrupt
 
     @commands.command()
