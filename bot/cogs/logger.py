@@ -60,6 +60,7 @@ class BackupUntilPresent(GetCollectables):
         await self.backup_guilds(self.bot.guilds)
 
         for guild in self.bot.guilds:
+            log.info("Backing up everything in guild: %s", guild)
             await self.backup_categories(guild.categories)
             await self.backup_roles(guild.roles)
             await self.backup_members(guild.members)
@@ -72,28 +73,28 @@ class BackupUntilPresent(GetCollectables):
 
 
     async def backup_guilds(self, guilds: List[Guild]) -> None:
-        log.info("backing up guilds")
+        log.info(f"backing up {len(guilds)} guilds")
         data = await self.bot.db.guilds.prepare(guilds)
         await self.bot.db.guilds.insert(data)
 
     async def backup_categories(self, categories: List[CategoryChannel]) -> None:
-        log.info("backing up categories")
+        log.info(f"backing up {len(categories)} categories")
         data = await self.bot.db.categories.prepare(categories)
         await self.bot.db.categories.insert(data)
 
     async def backup_roles(self, roles: List[Role]) -> None:
-        log.info("backing up roles")
+        log.info(f"backing up {len(roles)} roles")
         data = await self.bot.db.roles.prepare(roles)
         await self.bot.db.roles.insert(data)
 
     async def backup_members(self, members: List[Member]) -> None:
-        log.info("backing up members")
+        log.info(f"backing up {len(members)} members")
         for chunk in chunks(members, 550):
             data = await self.bot.db.members.prepare(chunk)
             await self.bot.db.members.insert(data)
 
     async def backup_channels(self, text_channels: List[TextChannel]) -> None:
-        log.info("backing up channels")
+        log.info(f"backing up {len(text_channels)} channels")
         data = await self.bot.db.channels.prepare(text_channels)
         await self.bot.db.channels.insert(data)
 
