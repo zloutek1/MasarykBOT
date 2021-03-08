@@ -9,9 +9,10 @@ from discord.utils import get, escape_markdown
 
 
 class Emote(commands.Converter):
-    REGEX = r"(?::\w+(?:~\d+)?:)"
+    REGEX = r":(\w+):(\d+)?"
 
-    def __init__(self, name=None):
+    def __init__(self, id=None, name=None):
+        self.id = None
         self.name = name
 
     async def convert(self, ctx, argument):
@@ -20,7 +21,9 @@ class Emote(commands.Converter):
         if emote is None:
             raise commands.BadArgument(f"Emote {argument} not found")
 
-        self.name = emote.group().strip(":")
+        self.id = int(emote.group(2) or sum(map(ord, argument)))
+        self.name = emote.group(1)
+
         return self
 
     def __repr__(self):
@@ -139,7 +142,7 @@ class Leaderboard(commands.Cog):
         }.get(i, get(self.bot.emojis, name="BLANK"))
 
     @commands.command()
-    @commands.cooldown(1, 900, commands.BucketType.user)
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def emojiboard(self, ctx, arg1: U = None, arg2: U = None, arg3: U = None):
         """
         Display the top 10 most sent emojis and reactions
@@ -155,11 +158,12 @@ class Leaderboard(commands.Cog):
             member_id = member.id if member else None
             channel_id = channel.id if channel else None
             bot_ids = [bot.id for bot in filter(lambda user: user.bot, ctx.guild.members)]
-            emoji = str(emoji) if emoji else None
+            emoji_id = emoji.id if emoji else None
 
-            data = await self.bot.db.emojiboard.select(ctx.guild.id, bot_ids, channel_id, member_id, emoji)
+            data = await self.bot.db.emojiboard.select(ctx.guild.id, bot_ids, channel_id, member_id, emoji_id)
 
-            await self.display_emojiboard(ctx, data)
+            embed =await self.display_emojiboard(ctx, data)
+            await ctx.send(embed=embed)
 
     async def display_emojiboard(self, ctx, data):
         def get_value(row):
@@ -184,7 +188,7 @@ class Leaderboard(commands.Cog):
 
         time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         embed.set_footer(text=f"{str(ctx.author)} at {time_now}", icon_url=ctx.author.avatar_url)
-        await ctx.send(embed=embed)
+        return embed
 
 
 def setup(bot):
