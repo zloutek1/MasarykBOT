@@ -16,6 +16,7 @@ initail_cogs = [
     "bot.cogs.cog_manager",
     "bot.cogs.leaderboard",
     "bot.cogs.starboard",
+    "bot.cogs.bookmark",
     "bot.cogs.rolemenu",
     "bot.cogs.subject",
     "bot.cogs.errors",
@@ -48,7 +49,8 @@ if __name__ == "__main__":
         members=True,
         presences = True,
         emojis=True,
-        guild_reactions=True)
+        guild_reactions=True,
+        dm_reactions=True)
 
     bot = MasarykBOT(db=Database.connect(os.getenv("POSTGRES")),
                      command_prefix=commands.when_mentioned_or("!"),
