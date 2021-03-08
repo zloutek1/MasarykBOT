@@ -86,7 +86,11 @@ class Verification(commands.Cog):
         await self.on_raw_reaction_update(payload)
 
     async def on_raw_reaction_update(self, payload):
+        if payload.guild_id is None:
+            return
+
         guild_config = get(Config.guilds, id=payload.guild_id)
+
         if payload.channel_id != guild_config.channels.verification:
             return
 
