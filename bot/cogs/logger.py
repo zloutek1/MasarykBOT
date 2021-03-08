@@ -47,11 +47,25 @@ class GetCollectables:
             )
         ]
 
+class BackupInProgressException(Exception):
+    pass
+
 class BackupUntilPresent(GetCollectables):
     def __init__(self, bot: MasarykBOT):
         self.bot = bot
+        self.backup_in_progress = False
 
     async def backup(self) -> None:
+        if self.backup_in_progress:
+           raise BackupInProgressException
+
+        self.backup_in_progress = True
+        try:
+            await self._start_backup()
+        finally:
+            self.backup_in_progress = False
+
+    async def _start_backup(self) -> None:
         log.info("Starting backup process")
         await self.backup_guilds(self.bot.guilds)
 
@@ -67,7 +81,6 @@ class BackupUntilPresent(GetCollectables):
                 await asyncio.sleep(5)
 
         log.info("Finished backup process")
-
 
     async def backup_guilds(self, guilds: List[Guild]) -> None:
         log.info(f"backing up {len(guilds)} guilds")
@@ -472,7 +485,11 @@ class Logger(commands.Cog, BackupUntilPresent, BackupOnEvents):
 
     @commands.command(name="backup")
     @has_permissions(administrator=True)
-    async def _backup(self, _ctx: Context):
+    async def _backup(self, ctx: Context):
+        if self.backup_in_progress:
+            await ctx.send_error("Backup is already running")
+            return
+
         await self.backup()
 
 def setup(bot):
