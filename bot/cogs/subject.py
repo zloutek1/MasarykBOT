@@ -307,7 +307,12 @@ class Subject(commands.Cog):
                 len(registers.get("member_ids")) >= guild_config.NEEDED_REACTIONS)
 
     async def lookup_channel(self, ctx: Context, subject: Record) -> TextChannel:
-        channel = get(ctx.guild.text_channels, name=self.subject_to_channel_name(ctx, subject))
+        def is_subject_channel(channel):
+            faculty, code = subject.get("faculty").lower(), subject.get("code").lower()
+            return (channel.name.lower().startswith(code) or
+                    channel.name.lower().startswith(f"{faculty}꞉{code}"))
+
+        channel = find(is_subject_channel, ctx.guild.text_channels)
         if channel is None:
             self.throw_not_found(ctx, subject)
         return channel
