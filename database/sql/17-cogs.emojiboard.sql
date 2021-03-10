@@ -80,7 +80,7 @@ BEGIN
 	SELECT channel_id, unnest(NEW.member_ids) as author_id, NEW.emoji_id, 1
 		FROM server.messages WHERE server.messages.id = NEW.message_id
 	ON CONFLICT (channel_id, author_id, emoji_id) DO UPDATE
-		SET count = eb.count + array_length(NEW.member_ids, 1);
+		SET count = eb.count + 1;
 	RETURN NEW;
 END
 $BODY$;
