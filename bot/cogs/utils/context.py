@@ -2,6 +2,8 @@ import io
 import discord
 from discord.utils import get
 from discord.ext import commands
+from discord.errors import NotFound
+from contextlib import suppress
 import asyncio
 
 
@@ -111,8 +113,9 @@ class Context(commands.Context):
 
             return reaction.emoji == '\N{WASTEBASKET}'
 
-        try:
-            await self.bot.wait_for('reaction_add', check=react_check, timeout=120.0)
-            await message.delete(delete_after=5)
-        except asyncio.TimeoutError:
-            await message.clear_reactions()
+        with suppress(NotFound):
+            try:
+                await self.bot.wait_for('reaction_add', check=react_check, timeout=120.0)
+                await message.delete(delete_after=5)
+            except asyncio.TimeoutError:
+                await message.clear_reactions()
