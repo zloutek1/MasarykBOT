@@ -67,17 +67,18 @@ class Leaderboard(commands.Cog):
 
         (channel, member) = self.resolve_arguments(arg1, arg2, types=get_args(T))
 
-        async with ctx.typing():
-            member = member if member else ctx.author
-            channel_id = channel.id if channel else None
-            bot_ids = [bot.id for bot in filter(lambda user: user.bot, ctx.guild.members)]
+        await ctx.trigger_typing()
 
-            await self.bot.db.leaderboard.preselect(ctx.guild.id, bot_ids, channel_id)
-            top10 = await self.bot.db.leaderboard.get_top10()
-            around = await self.bot.db.leaderboard.get_around(member.id)
+        member = member if member else ctx.author
+        channel_id = channel.id if channel else None
+        bot_ids = [bot.id for bot in filter(lambda user: user.bot, ctx.guild.members)]
 
-            embed = await self.display_leaderboard(ctx, top10, around, member)
-            await ctx.send(embed=embed)
+        await self.bot.db.leaderboard.preselect(ctx.guild.id, bot_ids, channel_id)
+        top10 = await self.bot.db.leaderboard.get_top10()
+        around = await self.bot.db.leaderboard.get_around(member.id)
+
+        embed = await self.display_leaderboard(ctx, top10, around, member)
+        await ctx.send(embed=embed)
 
     async def display_leaderboard(self, ctx, top10, around, member):
         def get_value(row):
@@ -154,16 +155,17 @@ class Leaderboard(commands.Cog):
         """
         (channel, member, emoji) = self.resolve_arguments(arg1, arg2, arg3, types=get_args(U))
 
-        async with ctx.typing():
-            member_id = member.id if member else None
-            channel_id = channel.id if channel else None
-            bot_ids = [bot.id for bot in filter(lambda user: user.bot, ctx.guild.members)]
-            emoji_id = emoji.id if emoji else None
+        await ctx.trigger_typing()
 
-            data = await self.bot.db.emojiboard.select(ctx.guild.id, bot_ids, channel_id, member_id, emoji_id)
+        member_id = member.id if member else None
+        channel_id = channel.id if channel else None
+        bot_ids = [bot.id for bot in filter(lambda user: user.bot, ctx.guild.members)]
+        emoji_id = emoji.id if emoji else None
 
-            embed =await self.display_emojiboard(ctx, data)
-            await ctx.send(embed=embed)
+        data = await self.bot.db.emojiboard.select(ctx.guild.id, bot_ids, channel_id, member_id, emoji_id)
+
+        embed =await self.display_emojiboard(ctx, data)
+        await ctx.send(embed=embed)
 
     async def display_emojiboard(self, ctx, data):
         def get_value(row):
