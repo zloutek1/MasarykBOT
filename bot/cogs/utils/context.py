@@ -2,6 +2,7 @@ import io
 import discord
 from discord.utils import get
 from discord.ext import commands
+import asyncio
 
 
 class Context(commands.Context):
@@ -93,3 +94,25 @@ class Context(commands.Context):
                               name="Error",
                               delete_after=delete_after,
                               color=discord.Color.red())
+
+    async def send(self, *args, **kwargs):
+        print("send")
+        message = await super().send(*args, **kwargs)
+        await message.add_reaction('\N{WASTEBASKET}')
+        await self._wait_for_reaction_or_clear(message)
+
+    async def _wait_for_reaction_or_clear(self, message):
+        def react_check(reaction, user):
+            if user is None or user.id != self.author.id:
+                return False
+
+            if reaction.message.id != message.id:
+                return False
+
+            return reaction.emoji == '\N{WASTEBASKET}'
+
+        try:
+            await self.bot.wait_for('reaction_add', check=react_check, timeout=120.0)
+            await message.delete()
+        except asyncio.TimeoutError:
+            await message.clear_reactions()
