@@ -23,7 +23,7 @@ class Info(commands.Cog):
         after_typing = time.monotonic()
         milliseconds = int((after_typing - before_typing) * 1000)
         msg = ':ping_pong: **PONG!** (~{}ms)'.format(milliseconds)
-        await ctx.channel.send(msg)
+        await ctx.send(msg)
 
     @commands.command()
     async def invite(self, ctx):
