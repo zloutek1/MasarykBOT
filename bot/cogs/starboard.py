@@ -1,6 +1,7 @@
 import re
 from emoji import demojize
 import logging
+from collections import deque
 
 from discord import Embed, Emoji, PartialEmoji
 from discord.ext import commands
@@ -14,8 +15,13 @@ class Starboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+        self.known_messages = deque(maxlen=30)
+
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, _user):
+        if reaction.message.id in self.known_messages:
+            return
+
         guild_config = get(Config.guilds, id=reaction.message.guild.id)
 
         if reaction.count < guild_config.STARBOARD_REACT_LIMIT:
@@ -46,6 +52,7 @@ class Starboard(commands.Cog):
                     await message.edit(embed=new_embed)
                     return
 
+        self.known_messages.append(message.id)
         await channel.send(embed=new_embed)
 
     async def get_startobard_channel(self, guild):
