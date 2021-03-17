@@ -116,6 +116,6 @@ class Context(commands.Context):
         with suppress(NotFound):
             try:
                 await self.bot.wait_for('reaction_add', check=react_check, timeout=120.0)
-                await message.delete(delete_after=5)
+                await message.delete(delay=5)
             except asyncio.TimeoutError:
                 await message.clear_reactions()
