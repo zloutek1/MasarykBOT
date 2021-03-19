@@ -440,7 +440,7 @@ class Subject(commands.Cog):
         try:
             await ctx.send(embed=embed)
         except HTTPException as err:
-            if err.code != ERR_EMBED_BODY_TOO_LONG:
+            if err.code == ERR_EMBED_BODY_TOO_LONG:
                 await ctx.send_error("Found too many results to display, please be more specific")
                 return
             raise err
