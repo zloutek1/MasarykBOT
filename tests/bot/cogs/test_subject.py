@@ -144,6 +144,50 @@ class SubjectTests(unittest.IsolatedAsyncioTestCase):
         found_subject = await cog.find_subject(faculty="FI", code="IB000")
         self.assertEqual(found_subject, subjects[0])
 
+    async def test_try_to_get_existing_channel(self):
+        bot = MockBot()
+        bot.db.subjects.set_channel = AsyncMock(return_value=None)
+        cog = subject.Subject(bot=bot)
+
+        categories = [
+            MockCategoryChannel(id=3, name="IBXXX", position=0),
+            MockCategoryChannel(id=5, name="PVXXX", position=1)
+        ]
+        text_channels = [
+            MockTextChannel(id=2, name="IB000", category=categories[0], position=0),
+            MockTextChannel(id=4, name="IB002", category=categories[0], position=1),
+            MockTextChannel(id=6, name="PV102", category=categories[1], position=0)
+        ]
+        guild = MockGuild(id=1, text_channels=text_channels, categories=categories)
+        ctx = MockContext(guild=guild)
+
+        subject_record = MockSubjectRecord(faculty="FI", code="IB000", name="MZI Of Ab", url="muni/fi/ib/000", terms=["jaro 2020"], created_at=datetime(2020, 10, 11))
+        actual = await cog.try_to_get_existing_channel(ctx, subject_record)
+        self.assertEqual(actual, text_channels[0])
+
+    async def test_try_to_get_existing_channel_exactly(self):
+        bot = MockBot()
+        bot.db.subjects.set_channel = AsyncMock(return_value=None)
+        cog = subject.Subject(bot=bot)
+
+        categories = [
+            MockCategoryChannel(id=3, name="IBXXX", position=0),
+            MockCategoryChannel(id=5, name="PVXXX", position=1)
+        ]
+        text_channels = [
+            MockTextChannel(id=1, name="IB000cv", category=categories[0], position=0),
+            MockTextChannel(id=2, name="IB000", category=categories[0], position=0),
+            MockTextChannel(id=4, name="IB002", category=categories[0], position=1),
+            MockTextChannel(id=6, name="PV102", category=categories[1], position=0)
+        ]
+        guild = MockGuild(id=1, text_channels=text_channels, categories=categories)
+        ctx = MockContext(guild=guild)
+
+        subject_record = MockSubjectRecord(faculty="FI", code="IB000", name="MZI Of Ab", url="muni/fi/ib/000", terms=["jaro 2020"], created_at=datetime(2020, 10, 11))
+        actual = await cog.try_to_get_existing_channel(ctx, subject_record)
+        self.assertEqual(actual, text_channels[1])
+
+
     async def test_reorder_in_order(self):
         bot = MockBot()
         cog = subject.Subject(bot=bot)
