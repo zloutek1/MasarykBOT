@@ -1,5 +1,7 @@
+import os
 import logging
 from contextlib import suppress
+from datetime import datetime
 
 import discord
 from discord.ext import commands
@@ -72,6 +74,24 @@ class Admin(commands.Cog):
     async def fail(self, ctx, case: int = 0):
         raise Exception("failing code for testing purposes")
 
+
+    @commands.command()
+    @has_permissions(administrator=True)
+    async def logs(self, ctx, filename: str = None):
+        with suppress(NotFound):
+            await ctx.delete()
+
+        if filename is None:
+            await ctx.send("\n".join(os.listdir("./logs/")))
+            return
+
+        filepath = "./logs/" + os.path.basename(filename)
+        if not os.path.exists(filepath):
+            await ctx.send("file does not exist")
+
+        filename = os.path.splitext(filename)[0] + "_" + datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".log"
+        with open(filepath, 'r', encoding='utf-8') as fp:
+            await ctx.author.send(file=discord.File(fp, filename))
 
 def setup(bot):
     bot.add_cog(Admin(bot))
