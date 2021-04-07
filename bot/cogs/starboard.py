@@ -42,6 +42,8 @@ class Starboard(commands.Cog):
         if message.channel.id in [guild_config.channels.verification, guild_config.channels.about_you]:
             return
 
+        self.known_messages.append(message.id)
+
         new_embed = self.get_embed(message)
 
         channel = await self.get_startobard_channel(guild)
@@ -52,7 +54,6 @@ class Starboard(commands.Cog):
                     await message.edit(embed=new_embed)
                     return
 
-        self.known_messages.append(message.id)
         await channel.send(embed=new_embed)
 
     async def get_startobard_channel(self, guild):
