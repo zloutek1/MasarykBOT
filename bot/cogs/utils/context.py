@@ -98,10 +98,11 @@ class Context(commands.Context):
                               color=discord.Color.red())
 
     async def send(self, *args, **kwargs):
-        print("send")
         message = await super().send(*args, **kwargs)
-        await message.add_reaction('\N{WASTEBASKET}')
-        await self._wait_for_reaction_or_clear(message)
+
+        with suppress(NotFound):
+            await message.add_reaction('\N{WASTEBASKET}')
+            await self._wait_for_reaction_or_clear(message)
 
     async def _wait_for_reaction_or_clear(self, message):
         def react_check(reaction, user):
