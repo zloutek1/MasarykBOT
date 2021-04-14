@@ -1,11 +1,13 @@
 import re
+import math
 from emoji import demojize
 import logging
 from collections import deque
+from textwrap import dedent
 
-from discord import Embed, Emoji, PartialEmoji
+from discord import Embed, Emoji, PartialEmoji, TextChannel
 from discord.ext import commands
-from discord.utils import get
+from discord.utils import get, find
 
 from bot.constants import Config
 
@@ -18,12 +20,17 @@ class Starboard(commands.Cog):
         self.known_messages = deque(maxlen=30)
 
     @commands.Cog.listener()
-    async def on_reaction_add(self, reaction, _user):
+    async def on_raw_reaction_add(self, payload):
+        channel = self.bot.get_channel(payload.channel_id)
+        message = await channel.fetch_message(payload.message_id)
+        reaction = find(lambda r: payload.emoji.name == (r.emoji if isinstance(r.emoji, str) else r.emoji.name), message.reactions)
+        await self.process_starboard(reaction)
+
+    async def process_starboard(self, reaction):
         if reaction.message.id in self.known_messages:
             return
 
         guild_config = get(Config.guilds, id=reaction.message.guild.id)
-
         if reaction.count < guild_config.STARBOARD_REACT_LIMIT:
             return
 
@@ -36,7 +43,7 @@ class Starboard(commands.Cog):
         if channel.name == "starboard" or channel.id == guild_config.channels.starboard:
             return
 
-        if self.should_ignore(reaction):
+        if reaction.count < self.calculate_ignore_score(reaction):
             return
 
         if message.channel.id in [guild_config.channels.verification, guild_config.channels.about_you]:
@@ -44,17 +51,12 @@ class Starboard(commands.Cog):
 
         self.known_messages.append(message.id)
 
-        new_embed = self.get_embed(message)
-
         channel = await self.get_startobard_channel(guild)
-        messages = await channel.history().flatten()
-        for message in messages:
-            for embed in message.embeds:
-                if embed.description.split('\n')[-1] == new_embed.description.split('\n')[-1]:
-                    await message.edit(embed=new_embed)
-                    return
+        if await reaction.users().get(id=self.bot.user.id) is not None:
+            return
 
-        await channel.send(embed=new_embed)
+        await message.add_reaction("⭐")
+        await channel.send(embed=self.get_embed(message))
 
     async def get_startobard_channel(self, guild):
         guild_config = get(Config.guilds, id=guild.id)
@@ -66,7 +68,7 @@ class Starboard(commands.Cog):
         return channel
 
     @staticmethod
-    def should_ignore(reaction):
+    def calculate_ignore_score(reaction):
         channel = reaction.message.channel
         emoji_name = emoji.name if isinstance(emoji := reaction.emoji, Emoji) or isinstance(emoji, PartialEmoji) else demojize(emoji)
         msg_content = reaction.message.content
@@ -78,7 +80,7 @@ class Starboard(commands.Cog):
 
         ignored_rooms = ['cute', 'fame']
         if any(map(lambda ignored_pattern: ignored_pattern in channel.name.lower(), ignored_rooms)):
-            return True
+            return math.inf
 
         common_rooms = ['memes']
         if any(map(lambda common_pattern: common_pattern in channel.name.lower(), common_rooms)):
@@ -90,19 +92,15 @@ class Starboard(commands.Cog):
         blocked_reactions = ['_wine']
         for blocked_pattern in blocked_reactions:
             if blocked_pattern in emoji_name.lower():
-                return True
+                return math.inf
 
         common_reactions = ['kek', 'pepe', 'lul', 'lol', 'pog', 'peepo', 'ano', 'no', 'yes', 'no', 'cringe']
         if any(map(lambda common_pattern: common_pattern in emoji_name.lower(), common_reactions)):
             fame_limit += 5
 
-        if "star" in emoji_name and reaction.count < fame_limit - 5:
-            return False
-
-        if reaction.count < fame_limit:
-            return True
-
-        return False
+        if "star" in emoji_name:
+            return fame_limit - 5
+        return fame_limit
 
     def get_embed(self, message):
         def format_reaction(react):
@@ -151,6 +149,26 @@ class Starboard(commands.Cog):
             if url in spoiler:
                 return True
         return False
+
+    @commands.command()
+    async def starboard(self, ctx, channel: TextChannel, message_id: int):
+        message = await channel.fetch_message(message_id)
+
+        starscore = '\n        '.join(
+                        f"`{self.calculate_ignore_score(r):< 3}` {r.emoji}" for r in message.reactions)
+
+        result = dedent(f"""
+        **author**: {message.author}
+        **content**[{len(message.content)}]: {message.content}
+        **reactions**[{len(message.reactions)}]: {message.reactions}
+        **attachments**[{len(message.attachments)}]: {message.attachments}
+        **embeds**[{len(message.embeds)}]: {message.embeds}
+
+        **starboard score**:
+        {starscore}
+        """)
+
+        await ctx.send(result)
 
 def setup(bot):
     bot.add_cog(Starboard(bot))
