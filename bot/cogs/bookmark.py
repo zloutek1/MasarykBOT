@@ -9,11 +9,13 @@ class Bookmark(commands.Cog):
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
+        if not isinstance(reaction.emoji, str):
+            return
+
         if reaction.emoji not in ('🔖'):
             return
 
         embed = self.get_embed(reaction.message)
-
         message = await user.send(embed=embed)
 
     def get_embed(self, message):
