@@ -51,14 +51,13 @@ class Starboard(commands.Cog):
 
         self.known_messages.append(message.id)
 
-        channel = await self.get_startobard_channel(guild)
+        starboard_channel = await self.get_startobard_channel(guild)
+        for reaction in message.reactions:
+            if await reaction.users().get(id=self.bot.user.id) is not None:
+                return
 
-        star = get(message.reactions, emoji="⭐")
-        if star and await star.users().get(id=self.bot.user.id) is not None:
-            return
-
-        await message.add_reaction("⭐")
-        await channel.send(embed=self.get_embed(message))
+        await message.add_reaction(reaction.emoji)
+        await starboard_channel.send(embed=self.get_embed(message))
 
     async def get_startobard_channel(self, guild):
         guild_config = get(Config.guilds, id=guild.id)
