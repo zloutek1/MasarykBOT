@@ -52,7 +52,9 @@ class Starboard(commands.Cog):
         self.known_messages.append(message.id)
 
         channel = await self.get_startobard_channel(guild)
-        if await reaction.users().get(id=self.bot.user.id) is not None:
+
+        star = get(message.reactions, emoji="⭐")
+        if star and await star.users().get(id=self.bot.user.id) is not None:
             return
 
         await message.add_reaction("⭐")
