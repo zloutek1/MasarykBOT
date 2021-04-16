@@ -51,7 +51,7 @@ class Starboard(commands.Cog):
 
         self.known_messages.append(message.id)
 
-        starboard_channel = await self.get_startobard_channel(guild)
+        starboard_channel = await self.get_starboard_channel(guild)
         for reaction in message.reactions:
             if await reaction.users().get(id=self.bot.user.id) is not None:
                 return
@@ -59,7 +59,7 @@ class Starboard(commands.Cog):
         await message.add_reaction(reaction.emoji)
         await starboard_channel.send(embed=self.get_embed(message))
 
-    async def get_startobard_channel(self, guild):
+    async def get_starboard_channel(self, guild):
         guild_config = get(Config.guilds, id=guild.id)
         channel = get(guild.text_channels, id=guild_config.channels.starboard)
         if channel is None:
@@ -160,7 +160,7 @@ class Starboard(commands.Cog):
 
         result = dedent(f"""
         **author**: {message.author}
-        **content**[{len(message.content)}]: {message.content}
+        **content**[{len(message.content)}]: {message.link}
         **reactions**[{len(message.reactions)}]: {message.reactions}
         **attachments**[{len(message.attachments)}]: {message.attachments}
         **embeds**[{len(message.embeds)}]: {message.embeds}
