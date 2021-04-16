@@ -156,12 +156,12 @@ class Starboard(commands.Cog):
         message = await channel.fetch_message(message_id)
 
         starscore = '\n        '.join(
-                        f"`{self.calculate_ignore_score(r):< 3}` {r.emoji}" for r in message.reactions)
+                        f"`{r.count} / {self.calculate_ignore_score(r):< 4}` {r.emoji}" for r in message.reactions)
 
         result = dedent(f"""
         **author**: {message.author}
-        **content**[{len(message.content)}]: {message.link}
-        **reactions**[{len(message.reactions)}]: {message.reactions}
+        **content**[{len(message.content)}]: {message.jump_url}
+        **reactions**[{len(message.reactions)}]: {[(r.name, r.count) for r in message.reactions]}
         **attachments**[{len(message.attachments)}]: {message.attachments}
         **embeds**[{len(message.embeds)}]: {message.embeds}
 
