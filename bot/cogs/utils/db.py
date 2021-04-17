@@ -641,6 +641,13 @@ class Subjects(Table):
             WHERE guild_id = $1 AND LOWER(code) LIKE LOWER($2) AND LOWER(faculty) = LOWER($3)""", guild_id, code, faculty)
 
     @withConn
+    async def find_users_subjects(self, conn, guild_id, member_id):
+        return await conn.fetch("""
+            SELECT * FROM muni.registers
+            WHERE guild_id = $1 AND $2::bigint = ANY(member_ids)
+        """, guild_id, member_id)
+
+    @withConn
     async def sign_user(self, conn, guild_id, code, member_id, faculty="FI"):
         await conn.execute("""
             INSERT INTO muni.registers AS r (guild_id, faculty, code, member_ids)
@@ -660,6 +667,15 @@ class Subjects(Table):
                         LOWER(code) = LOWER($3) AND
                         $4 = ANY(member_ids);
         """, guild_id, faculty, code, member_id)
+
+    @withConn
+    async def unsign_user_from_all(self, conn, guild_id, member_id):
+        await conn.execute("""
+            UPDATE muni.registers
+                SET member_ids = array_remove(member_ids, $2::bigint)
+                WHERE guild_id = $1 AND
+                      $2::bigint = ANY(member_ids)
+        """, guild_id, member_id)
 
     @withConn
     async def get_category(self, conn, guild_id, code, faculty="FI"):
