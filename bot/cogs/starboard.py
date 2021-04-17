@@ -51,15 +51,16 @@ class Starboard(commands.Cog):
 
         self.known_messages.append(message.id)
 
-        starboard_channel = await self.get_startobard_channel(guild)
         for reaction in message.reactions:
             if await reaction.users().get(id=self.bot.user.id) is not None:
                 return
 
         await message.add_reaction(reaction.emoji)
+        
+        starboard_channel = await self.get_starboard_channel(guild)
         await starboard_channel.send(embed=self.get_embed(message))
 
-    async def get_startobard_channel(self, guild):
+    async def get_starboard_channel(self, guild):
         guild_config = get(Config.guilds, id=guild.id)
         channel = get(guild.text_channels, id=guild_config.channels.starboard)
         if channel is None:
@@ -156,12 +157,12 @@ class Starboard(commands.Cog):
         message = await channel.fetch_message(message_id)
 
         starscore = '\n        '.join(
-                        f"`{self.calculate_ignore_score(r):< 3}` {r.emoji}" for r in message.reactions)
+                        f"`{r.count} / {self.calculate_ignore_score(r)}` {r.emoji}" for r in message.reactions)
 
         result = dedent(f"""
         **author**: {message.author}
-        **content**[{len(message.content)}]: {message.content}
-        **reactions**[{len(message.reactions)}]: {message.reactions}
+        **content**[{len(message.content)}]: {message.jump_url}
+        **reactions**[{len(message.reactions)}]: {[(str(r), r.count) for r in message.reactions]}
         **attachments**[{len(message.attachments)}]: {message.attachments}
         **embeds**[{len(message.embeds)}]: {message.embeds}
 

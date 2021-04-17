@@ -67,6 +67,14 @@ class Subject(commands.Cog):
     @subject.command(name="add")
     @commands.bot_has_permissions(manage_channels=True)
     async def add(self, ctx: Context, *subject_codes: str) -> None:
+        """
+        sign up to a subject channel
+
+        usage:
+        !subject add ib000 ib002
+        !subject add fi:ib000 ib002
+        """
+
         await ctx.safe_delete(delay=5)
 
         if len(subject_codes) > 10:
@@ -120,6 +128,15 @@ class Subject(commands.Cog):
     @subject.command(name="remove")
     @commands.bot_has_permissions(manage_channels=True)
     async def remove(self, ctx: Context, *subject_codes: str) -> None:
+        """
+        unsign from subjects you have signed up to
+
+        usage:
+        !subject remove ib000 ib002
+        !subject remove fi:ib000 ib002
+        !subject remove all
+        """
+
         await ctx.safe_delete(delay=5)
 
         if len(subject_codes) > 10:
@@ -133,6 +150,10 @@ class Subject(commands.Cog):
         if not await self._in_subject_channel(ctx):
             return
 
+        if code_pattern == "all":
+            await self.remove_all_subjects(ctx)
+            return
+
         faculty, code = self.pattern_to_faculty_code(code_pattern)
 
         if not (subject := await self.find_subject(code, faculty)):
@@ -141,6 +162,18 @@ class Subject(commands.Cog):
 
         await self.bot.db.subjects.unsign_user(ctx.guild.id, subject.get("code"), ctx.author.id, faculty=subject.get("faculty"))
         await self.try_to_unsign_user_from_channel(ctx, subject)
+
+    async def remove_all_subjects(self, ctx: Context) -> None:
+        users_subjects = await self.bot.db.subjects.find_users_subjects(ctx.guild.id, ctx.author.id)
+        subject_names = [f'{s.get("faculty")}:{s.get("code")}' for s in users_subjects]
+
+        if len(subject_names) == 0:
+            await self.send_subject_embed(ctx, "you have no subjects to unsign from")
+            return
+
+        await self.bot.db.subjects.unsign_user_from_all(ctx.guild.id, ctx.author.id)
+        await self.send_subject_embed(ctx, "unsigned from all subjects: " + ", ".join(subject_names))
+
 
     @subject.command(aliases=["search", "lookup"])
     async def find(self, ctx, subject_code: str) -> None:
