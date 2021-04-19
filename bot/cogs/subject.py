@@ -482,7 +482,7 @@ class Subject(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: Message) -> None:
-        if guild_config := get(Config.guilds, id=message.guild.id) is None:
+        if (guild_config := get(Config.guilds, id=message.guild.id)) is None:
             return
 
         if message.channel.id != guild_config.channels.subject_registration:

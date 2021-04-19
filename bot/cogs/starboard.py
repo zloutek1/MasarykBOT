@@ -30,7 +30,7 @@ class Starboard(commands.Cog):
         if reaction.message.id in self.known_messages:
             return
 
-        if guild_config := get(Config.guilds, id=reaction.message.guild.id) is None:
+        if (guild_config := get(Config.guilds, id=reaction.message.guild.id)) is None:
             return
         if reaction.count < guild_config.STARBOARD_REACT_LIMIT:
             return
