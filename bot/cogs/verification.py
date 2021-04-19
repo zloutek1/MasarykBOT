@@ -89,7 +89,8 @@ class Verification(commands.Cog):
         if payload.guild_id is None:
             return
 
-        guild_config = get(Config.guilds, id=payload.guild_id)
+        if (guild_config := get(Config.guilds, id=payload.guild_id)) is None:
+            return
 
         if payload.channel_id != guild_config.channels.verification:
             return

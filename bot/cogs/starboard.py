@@ -30,7 +30,8 @@ class Starboard(commands.Cog):
         if reaction.message.id in self.known_messages:
             return
 
-        guild_config = get(Config.guilds, id=reaction.message.guild.id)
+        if (guild_config := get(Config.guilds, id=reaction.message.guild.id)) is None:
+            return
         if reaction.count < guild_config.STARBOARD_REACT_LIMIT:
             return
 
@@ -56,7 +57,7 @@ class Starboard(commands.Cog):
                 return
 
         await message.add_reaction(reaction.emoji)
-        
+
         starboard_channel = await self.get_starboard_channel(guild)
         await starboard_channel.send(embed=self.get_embed(message))
 

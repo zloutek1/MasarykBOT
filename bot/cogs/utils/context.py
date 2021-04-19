@@ -58,10 +58,8 @@ class Context(commands.Context):
                    .replace(":", "꞉"))
 
     async def safe_delete(self, **kwargs):
-        try:
+        with suppress(NotFound):
             await self.message.delete(**kwargs)
-        except discord.errors.NotFound:
-            pass
 
     async def safe_send(self, content, *, escape_mentions=True, **kwargs):
         if escape_mentions:
@@ -102,7 +100,7 @@ class Context(commands.Context):
 
         with suppress(NotFound):
             await message.add_reaction('\N{WASTEBASKET}')
-            await self._wait_for_reaction_or_clear(message)
+            asyncio.get_event_loop().create_task(self._wait_for_reaction_or_clear(message))
 
     async def _wait_for_reaction_or_clear(self, message):
         def react_check(reaction, user):
