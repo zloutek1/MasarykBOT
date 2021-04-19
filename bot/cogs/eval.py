@@ -1,7 +1,9 @@
 import json
 import aiohttp
+from io import StringIO
 from asyncio import TimeoutError
 
+from discord import File
 from discord.ext import commands
 
 def get_cmds():
@@ -76,7 +78,8 @@ class Eval(commands.Cog):
             async with aiohttp.ClientSession() as session:
                 result = await self.coliru_compile(session, data)
 
-        await self.display(ctx, result)
+        fp = StringIO(result)
+        await ctx.send(file = File(fp, filename="eval_result.txt"))
 
     async def coliru_compile(self, session, data):
         async with session.post('http://coliru.stacked-crooked.com/compile', data=data) as resp:
@@ -85,11 +88,15 @@ class Eval(commands.Cog):
 
             output = await resp.text(encoding='utf-8')
 
+            return output
+
+            """
             if len(output) < 1992:
                 return output
 
             # output is too big so post it in gist
             return await self.coliru_shorten(session, data)
+            """
 
     @staticmethod
     async def coliru_shorten(session, data):
@@ -107,8 +114,9 @@ class Eval(commands.Cog):
             await ctx.send_error(error)
         if isinstance(error, commands.MissingRequiredArgument):
             await ctx.send_error(CodeBlock.missing_error)
+        print(error)
 
-    async def display(self, ctx, result):
+    async def display(self, ctx, file):
         message = await ctx.safe_send(result if result else "no result")
         await message.add_reaction('\N{WASTEBASKET}')
         await self.wait_for_reaction_or_clear(ctx, message)
