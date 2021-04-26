@@ -52,8 +52,8 @@ class Starboard(commands.Cog):
 
         self.known_messages.append(message.id)
 
-        for reaction in message.reactions:
-            if await reaction.users().get(id=self.bot.user.id) is not None:
+        for react in message.reactions:
+            if await react.users().get(id=self.bot.user.id) is not None:
                 return
 
         await message.add_reaction(reaction.emoji)
