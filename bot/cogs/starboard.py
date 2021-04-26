@@ -61,6 +61,7 @@ class Starboard(commands.Cog):
         if channel.name == "memes":
             memes_channel = await self.get_or_create_channel(guild, guild_config.channels.best_of_memes, "best-of-memes")
             await memes_channel.send(embed=self.get_embed(message))
+            return
 
         starboard_channel = await self.get_or_create_channel(guild, guild_config.channels.starboard, "starboard")
         await starboard_channel.send(embed=self.get_embed(message))
