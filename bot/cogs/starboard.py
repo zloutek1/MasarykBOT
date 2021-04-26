@@ -58,16 +58,19 @@ class Starboard(commands.Cog):
 
         await message.add_reaction(reaction.emoji)
 
-        starboard_channel = await self.get_starboard_channel(guild)
+        if channel.name == "memes":
+            memes_channel = await self.get_or_create_channel(guild, guild_config.channels.best_of_memes, "best-of-memes")
+            await memes_channel.send(embed=self.get_embed(message))
+
+        starboard_channel = await self.get_or_create_channel(guild, guild_config.channels.starboard, "starboard")
         await starboard_channel.send(embed=self.get_embed(message))
 
-    async def get_starboard_channel(self, guild):
-        guild_config = get(Config.guilds, id=guild.id)
-        channel = get(guild.text_channels, id=guild_config.channels.starboard)
+    async def get_or_create_channel(self, guild, existing_id=None, name=None):
+        channel = get(guild.text_channels, id=existing_id)
         if channel is None:
-            channel = get(guild.text_channels, name="starboard")
+            channel = get(guild.text_channels, name=name)
         if channel is None:
-            channel = await guild.create_text_channel("starboard")
+            channel = await guild.create_text_channel(name)
         return channel
 
     @staticmethod

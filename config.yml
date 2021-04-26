@@ -14,6 +14,7 @@ guilds:
       about_you:            621365826372632606
       subject_registration: 628684083345489950
       starboard:            761552082159271936
+      best_of_memes:        836224046030520410
 
     logs:
       errors:               609413180137144331
@@ -40,6 +41,7 @@ guilds:
       about_you:            760211019405590540
       subject_registration: 758267743119212576
       starboard:            751062312781217792
+      best_of_memes:        null
 
     logs:
       errors:               731435433564569632
