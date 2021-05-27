@@ -334,17 +334,15 @@ class Subject(commands.Cog):
 
     async def check_if_engough_users_signed(self, guild_id: int, subject: Record) -> bool:
         registers = await self.bot.db.subjects.find_registered(guild_id, subject.get("code"), subject.get("faculty"))
-        serverinfo = await self.bot.db.subjects.find_serverinfo(guild_id, subject.get("code"), subject.get("faculty"))
 
         guild_config = get(Config.guilds, id=guild_id)
-        return (serverinfo is not None and
-                len(registers.get("member_ids")) >= guild_config.NEEDED_REACTIONS)
+        return len(registers.get("member_ids")) >= guild_config.NEEDED_REACTIONS
 
     async def lookup_channel(self, ctx: Context, subject: Record) -> TextChannel:
         def is_subject_channel(channel):
             faculty, code = subject.get("faculty").lower(), subject.get("code").lower()
-            return (channel.name.lower().startswith(code) or
-                    channel.name.lower().startswith(f"{faculty}꞉{code}"))
+            return (channel.name.lower().startswith(code+"-") or
+                    channel.name.lower().startswith(f"{faculty}꞉{code}-"))
 
         channel = find(is_subject_channel, ctx.guild.text_channels)
         if channel is None:
