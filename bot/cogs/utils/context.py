@@ -117,4 +117,4 @@ class Context(commands.Context):
                 await self.bot.wait_for('reaction_add', check=react_check, timeout=120.0)
                 await message.delete(delay=5)
             except asyncio.TimeoutError:
-                await message.clear_reactions()
+                await message.clear_reaction('\N{WASTEBASKET}')
