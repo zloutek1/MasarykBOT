@@ -171,6 +171,13 @@ class Subject(commands.Cog):
             await self.send_subject_embed(ctx, "you have no subjects to unsign from")
             return
 
+        for subject_name in subject_names:
+            faculty, code = self.pattern_to_faculty_code(subject_name)
+            if not (subject := await self.find_subject(code, faculty)):
+                log.info(f"failed to find subject {subject_name} during remove all")
+                continue
+            await self.try_to_unsign_user_from_channel(ctx, subject)
+
         await self.bot.db.subjects.unsign_user_from_all(ctx.guild.id, ctx.author.id)
         await self.send_subject_embed(ctx, "unsigned from all subjects: " + ", ".join(subject_names))
 
