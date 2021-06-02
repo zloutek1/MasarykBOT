@@ -1,5 +1,5 @@
 import logging
-import sys
+import os
 from pathlib import Path
 
 from rich.logging import RichHandler
@@ -20,7 +20,10 @@ def setup_logging():
     log = logging.getLogger()
 
     shell_handler = RichHandler()
-    file_handler = logging.FileHandler(Path("logs", "bot.log"))
+
+    filename = Path("logs", "bot.log")
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    file_handler = logging.FileHandler(filename, mode='a')
 
     log.setLevel(logging.DEBUG)
     shell_handler.setLevel(logging.INFO)
