@@ -5,7 +5,7 @@ import logging
 import re
 from emoji import demojize, get_emoji_regexp
 from functools import wraps
-from datetime import datetime
+from datetime import datetime, timezone
 from collections import Counter
 from abc import ABC, abstractmethod
 
@@ -711,49 +711,45 @@ class Subjects(Table):
         """, guild_id, faculty, code)
 
 
-
-class Tags(Table):
+class Seasons(Table):
     @withConn
-    async def select(self, conn, guild_id, user_id):
-        return await conn.fetch("SELECT * FROM cogs.tags WHERE guild_id = $1 AND author_id = $2", guild_id, user_id)
-
-    @withConn
-    async def get_tag(self, conn, guild_id, name):
-        return await conn.fetchrow("SELECT * FROM cogs.tags WHERE guild_id = $1 AND LOWER(name) = $2", guild_id, name)
-
-    @withConn
-    async def find_tags(self, conn, guild_id, name):
+    async def load_events(self, conn, guild_id):
         return await conn.fetch("""
-            SELECT name, id FROM cogs.tags
-            WHERE guild_id=$1 AND name % $2
-            ORDER BY similarity(name, $2) DESC
-            LIMIT 100;
-        """, guild_id, name)
+            SELECT * FROM cogs.seasons
+            WHERE guild_id = $1
+        """, guild_id)
 
     @withConn
-    async def create_tag(self, conn, guild_id, author_id, name, content):
-        try:
-            await conn.execute("""
-                INSERT INTO cogs.tags (guild_id, author_id, name, content)
-                VALUES ($1, $2, $3, $4)
-            """, guild_id, author_id, name, content)
-            return True
-        except asyncpg.UniqueViolationError:
-            return False
+    async def load_current_event(self, conn, guild_id):
+        return await conn.fetchrow("""
+            SELECT * FROM cogs.seasons
+            WHERE guild_id = $1 AND
+                  from_date < NOW() AND
+                  NOW() < to_date
+        """, guild_id)
 
     @withConn
-    async def delete_tag(self, conn, guild_id, author_id, name):
-        await conn.execute("DELETE FROM cogs.tags WHERE guild_id=$1 AND author_id=$2 AND LOWER(name)=$3", guild_id, author_id, name)
+    async def load_default_event(self, conn, guild_id):
+        return await conn.fetchrow("""
+            SELECT * FROM cogs.seasons
+            WHERE guild_id = $1 AND
+                  event_name = 'default'
+        """, guild_id)
+
 
     @withConn
-    async def edit_tag(self, conn, guild_id, author_id, name, new_content):
-        return await conn.execute("""
-            UPDATE cogs.tags
-            SET content=$4
-            WHERE guild_id=$1 AND author_id=$2 AND LOWER(name)=$3
-        """, guild_id, author_id, name, new_content)
+    async def insert(self, conn, events):
+        await conn.executemany("""
+            INSERT INTO cogs.seasons(guild_id, event_name, from_date, to_date, icon, banner)
+            VALUES ($1, $2, $3, $4, $5, $6)
+        """, events)
 
-
+    @withConn
+    async def delete(self, conn, guild_id, event_name):
+        await conn.execute("""
+            DELETE FROM cogs.seasons
+            WHERE guild_id = $1 AND event_name = $2
+        """, guild_id, event_name)
 
 class DBBase:
     def __init__(self, pool):
@@ -792,4 +788,4 @@ class Database(DBBase):
         self.leaderboard = Leaderboard(self.pool)
         self.emojiboard = Emojiboard(self.pool)
         self.subjects = Subjects(self.pool)
-        self.tags = Tags(self.pool)
+        self.seasons = Seasons(self.pool)
