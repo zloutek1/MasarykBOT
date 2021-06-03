@@ -34,7 +34,7 @@ class Seasonal(commands.Cog):
             await guild.edit(icon=current_event['icon'])
 
         if current_event["banner"] is not None:
-            await guild.edit(icon=current_event['banner'])
+            await guild.edit(banner=current_event['banner'])
 
     @commands.group(aliases=['season'])
     async def seasonal(self, ctx):
