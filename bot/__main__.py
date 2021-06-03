@@ -18,6 +18,7 @@ initail_cogs = [
     "bot.cogs.starboard",
     "bot.cogs.bookmark",
     "bot.cogs.rolemenu",
+    "bot.cogs.seasonal",
     "bot.cogs.subject",
     "bot.cogs.errors",
     "bot.cogs.logger",
