@@ -31,10 +31,10 @@ class Seasonal(commands.Cog):
                 return
 
         if current_event["icon"] is not None:
-            await guild.edit(icon=current_event['icon'])
+            await guild.edit(icon=current_event['icon'], reason="Switching to seasonal event " + current_event['event_name'])
 
         if current_event["banner"] is not None:
-            await guild.edit(banner=current_event['banner'])
+            await guild.edit(banner=current_event['banner'], reason="Switching to seasonal event " + current_event['event_name'])
 
     @commands.group(aliases=['season'])
     async def seasonal(self, ctx):
@@ -54,8 +54,18 @@ class Seasonal(commands.Cog):
         """
         Display all seasonal events
         """
+        def format(event):
+            dates = (f"*{event['from_date'].strftime('%d.%m.%Y')}-{event['to_date'].strftime('%d.%m.%Y')}*"
+                     if event['from_date'] is not None and event['to_date'] is not None else
+                     "")
+            return f"» {dates: >19} {event['event_name']}"
+
+        def right_justify(text, by=0, pad=" "):
+            return pad * (by - len(str(text))) + str(text)
+
         events = await self.bot.db.seasons.load_events(ctx.guild.id)
-        await ctx.send_embed("\n".join("» " + event['event_name'] for event in events) or "no events", name=f"Upcomming seasonal events: \n")
+        formatted_events = "\n".join(map(format, events))
+        await ctx.send_embed(formatted_events or "There are no events for this guild", name=f"Upcomming seasonal events: \n")
 
     @seasonal.command(name='add')
     @has_permissions(administrator=True)
