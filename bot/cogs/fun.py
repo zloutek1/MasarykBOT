@@ -49,7 +49,6 @@ class Fun(commands.Cog):
             await ctx.send("this guild has no logo")
             return
 
-        await ctx.send(ctx.guild.icon)
         await self.send_asset(ctx, ctx.guild.icon_url)
 
     @commands.command()
