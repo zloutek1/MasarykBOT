@@ -11,6 +11,9 @@ class Seasonal(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
+    def cog_unload(self):
+        self.check_season.cancel()
+
     @commands.Cog.listener()
     async def on_ready(self):
         self.check_season.start()
