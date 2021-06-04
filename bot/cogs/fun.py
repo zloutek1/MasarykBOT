@@ -68,12 +68,15 @@ class Fun(commands.Cog):
         await ctx.send(f"`{ctx.author.avatar_url}`")
 
     @commands.command()
-    async def avatar(self, ctx):
-        if ctx.author.avatar is None:
-            await ctx.send("this user has no avatar")
+    async def avatar(self, ctx, member: Member = None):
+        if member is None:
+            member = ctx.author
+
+        if member is None:
+            await ctx.send(f"{member} has no avatar")
             return
 
-        await self.send_asset(ctx, ctx.author.avatar_url)
+        await self.send_asset(ctx, member.avatar_url)
 
     @commands.command(aliases=['choice', 'pick'])
     async def choose(self, ctx, *choices):
