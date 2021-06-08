@@ -85,7 +85,7 @@ class Starboard(commands.Cog):
         if len(channel.members) > 100:
             fame_limit += 10
 
-        ignored_rooms = ['cute', 'fame', 'best-of-memes']
+        ignored_rooms = ['cute', 'fame', 'best-of-memes', 'newcomers']
         if any(map(lambda ignored_pattern: ignored_pattern in channel.name.lower(), ignored_rooms)):
             return math.inf
 
