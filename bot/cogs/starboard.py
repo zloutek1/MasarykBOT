@@ -127,6 +127,8 @@ class Starboard(commands.Cog):
         embed.set_author(name=message.author.display_name,
                          icon_url=message.author.avatar_url_as(format='png'))
 
+        embed.set_footer(text=message.created_at.strftime("%Y-%m-%d %H:%M"))
+
         if message.embeds:
             data = message.embeds[0]
             if data.type == 'image' and not self.is_url_spoiler(message.content, data.url):
