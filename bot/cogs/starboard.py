@@ -4,6 +4,7 @@ from emoji import demojize
 import logging
 from collections import deque
 from textwrap import dedent
+from datetime import timezone, timedelta
 
 from discord import Embed, Emoji, PartialEmoji, TextChannel
 from discord.ext import commands
@@ -127,7 +128,8 @@ class Starboard(commands.Cog):
         embed.set_author(name=message.author.display_name,
                          icon_url=message.author.avatar_url_as(format='png'))
 
-        embed.set_footer(text=message.created_at.strftime("%Y-%m-%d %H:%M"))
+        CEST = timezone(offset=timedelta(hours=+2))
+        embed.set_footer(text=message.created_at.astimezone(CEST).strftime("%d.%m.%Y %H:%M"))
 
         if message.embeds:
             data = message.embeds[0]
