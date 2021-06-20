@@ -83,6 +83,11 @@ class Seasonal(commands.Cog):
 
         from_date = self.parse_time(from_date)
         to_date = self.parse_time(to_date)
+
+        if to_date < from_date:
+            await ctx.send("invalid date ranges")
+            return
+
         icon = await self.prompt_icon(ctx)
         banner = await self.prompt_banner(ctx)
 

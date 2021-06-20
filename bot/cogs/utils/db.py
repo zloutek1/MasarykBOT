@@ -711,6 +711,7 @@ class Subjects(Table):
         """, guild_id, faculty, code)
 
 
+
 class Seasons(Table):
     @withConn
     async def load_events(self, conn, guild_id):
@@ -726,6 +727,7 @@ class Seasons(Table):
             WHERE guild_id = $1 AND
                   from_date < NOW() AND
                   NOW() < to_date
+		 	ORDER BY (to_date - from_date)
         """, guild_id)
 
     @withConn
@@ -750,6 +752,8 @@ class Seasons(Table):
             DELETE FROM cogs.seasons
             WHERE guild_id = $1 AND event_name = $2
         """, guild_id, event_name)
+
+
 
 class DBBase:
     def __init__(self, pool):
