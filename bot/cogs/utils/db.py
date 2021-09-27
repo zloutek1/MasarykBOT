@@ -710,15 +710,27 @@ class Subjects(Table):
                         LOWER(code) = LOWER($3)
         """, guild_id, faculty, code)
 
-
-
 class Seasons(Table):
     @withConn
     async def load_events(self, conn, guild_id):
         return await conn.fetch("""
             SELECT * FROM cogs.seasons
-            WHERE guild_id = $1
+            WHERE guild_id = $1 AND
+                  from_date IS NOT NULL AND
+                  to_date IS NOT NULL
+            ORDER BY to_date ASC, from_date DESC
         """, guild_id)
+
+    @withConn
+    async def find(self, conn, guild_id, id):
+        return await conn.fetchrow("""
+            SELECT * FROM cogs.seasons
+            WHERE guild_id = $1 AND
+                  id = $2 AND
+                  from_date IS NOT NULL AND
+                  to_date IS NOT NULL
+            ORDER BY to_date ASC, from_date DESC
+        """, guild_id, id)
 
     @withConn
     async def load_current_event(self, conn, guild_id):
@@ -735,25 +747,34 @@ class Seasons(Table):
         return await conn.fetchrow("""
             SELECT * FROM cogs.seasons
             WHERE guild_id = $1 AND
-                  event_name = 'default'
+                  name = 'default'
         """, guild_id)
-
 
     @withConn
     async def insert(self, conn, events):
         await conn.executemany("""
-            INSERT INTO cogs.seasons(guild_id, event_name, from_date, to_date, icon, banner)
+            INSERT INTO cogs.seasons AS s (guild_id, name, from_date, to_date, icon, banner)
             VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (guild_id, name) DO UPDATE
+                SET icon = excluded.icon,
+                    banner = excluded.banner
         """, events)
 
     @withConn
-    async def delete(self, conn, guild_id, event_name):
+    async def update(self, conn, guild_id, icon, banner):
+        await conn.execute("""
+            UPDATE cogs.seasons
+            SET icon = $2,
+                banner = $3
+            WHERE guild_id = $1
+        """, guild_id, icon, banner)
+
+    @withConn
+    async def delete(self, conn, guild_id, id):
         await conn.execute("""
             DELETE FROM cogs.seasons
-            WHERE guild_id = $1 AND event_name = $2
-        """, guild_id, event_name)
-
-
+            WHERE guild_id = $1 AND id = $2
+        """, guild_id, id)
 
 class DBBase:
     def __init__(self, pool):

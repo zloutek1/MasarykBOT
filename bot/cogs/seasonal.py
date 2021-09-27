@@ -1,10 +1,35 @@
-from os import stat
-from typing import Optional
-from discord.ext import tasks, commands
-from datetime import datetime
+import asyncio
+import itertools
 from contextlib import suppress
+from datetime import datetime, timezone, timedelta
 
+from discord import Embed
+from discord.ext import tasks, commands
 from discord.ext.commands.core import has_permissions
+
+
+
+class SeasonDate(commands.Converter):
+    async def convert(self, ctx, argument):
+        with suppress(ValueError):
+            return datetime.strptime(argument, '%d.%m.%YT%H:%M')
+        with suppress(ValueError):
+            return datetime.strptime(argument, '%d.%m.%Y')
+        raise commands.BadArgument(f"Failed to parse datetime {argument}")
+
+
+CEST = timezone(offset=timedelta(hours=+2))
+def next_midnight(timezone):
+    return datetime.now(timezone)\
+                   .replace(hour=0, minute=0, second=0, microsecond=0) \
+                   + timedelta(days=1)
+
+
+def partition(items, predicate=bool):
+    a, b = itertools.tee((predicate(item), item) for item in items)
+    return ((item for pred, item in a if not pred),
+            (item for pred, item in b if pred))
+
 
 
 class Seasonal(commands.Cog):
@@ -14,17 +39,114 @@ class Seasonal(commands.Cog):
     def cog_unload(self):
         self.check_season.cancel()
 
+
+
+    @commands.group(aliases=['seasonal', 'seasons'])
+    async def season(self, ctx):
+        pass
+
+    @season.command()
+    async def current(self, ctx):
+        if (current_event := await self.bot.db.seasons.load_current_event(ctx.guild.id)) is None:
+            return await ctx.send_embed("There are no seasonal event", name="seasonal events")
+        await ctx.send_embed(f"Current event is {current_event['name']} (**{current_event['id']}**)", name="seasonal events")
+
+    @season.command(name="list", aliases=['all'])
+    async def list_all(self, ctx):
+        def format(event):
+            dates = (f"*{event['from_date'].strftime('%d.%m.%Y')}-{event['to_date'].strftime('%d.%m.%Y')}*"
+                     if event['from_date'] is not None and event['to_date'] is not None else
+                     "")
+            return f"» {dates: >19} (**{event['id']}**) \n​ ​ ​ ​ {event['name']}\n"
+
+        events = await self.bot.db.seasons.load_events(ctx.guild.id)
+        (past_events, upcoming_events) = partition(events, lambda e: e['to_date'] > datetime.now(CEST))
+
+        embed = Embed()
+        embed.add_field(name="Upcoming events: \n", value="\n".join(list(map(format, upcoming_events))))
+        embed.add_field(name="Past events: \n", value="\n".join(list(map(format, past_events))[-5:][::-1]))
+
+        if not events:
+            await ctx.send("There are no events for this guild")
+        else:
+            await ctx.send(embed=embed)
+
+
+    @season.command(name="add")
+    @has_permissions(administrator=True)
+    async def add_season(self, ctx, name,
+                               from_date: SeasonDate, to_date: SeasonDate,
+                               should_change_icon = True, should_change_banner = False):
+        if to_date <= from_date:
+            await ctx.send("invalid date range")
+            return
+
+        if name == "default":
+            await ctx.send("this name is not allowed")
+            return
+
+        icon = await self.prompt_icon(ctx) if should_change_icon else None
+        banner = await self.prompt_icon(ctx) if should_change_banner else None
+
+        event = (ctx.guild.id, name, from_date, to_date, icon, banner)
+        await self.bot.db.seasons.insert([event])
+
+        await ctx.send_embed(f"added event {name}", name=f"seasonal events")
+
+
+    @season.group(name="set")
+    @has_permissions(administrator=True)
+    async def season_set(self, ctx):
+        pass
+
+    @season_set.command(name="default")
+    async def set_default_season(self, ctx, should_change_icon = True, should_change_banner = False):
+        icon = await self.prompt_icon(ctx) if should_change_icon else None
+        banner = await self.prompt_icon(ctx) if should_change_banner else None
+
+        event = (ctx.guild.id, "default", None, None, icon, banner)
+        await self.bot.db.seasons.insert([event])
+
+        await ctx.send_embed(f"set default event", name=f"seasonal events")
+
+    @season_set.command(name="icon")
+    async def set_season_icon(self, ctx, id: int):
+        icon = await self.prompt_icon(ctx)
+        event = await self.bot.db.seasons.find(ctx.guild.id, id)
+        await self.bot.db.seasons.update(ctx.guild.id, icon, event['banner'])
+        await ctx.send_embed(f"Updated event with id {id}", name=f"seasonal events")
+
+    @season_set.command(name="banner")
+    async def set_season_banner(self, ctx, id: int):
+        banner = await self.prompt_icon(ctx)
+        event = await self.bot.db.seasons.find(ctx.guild.id, id)
+        await self.bot.db.seasons.update(ctx.guild.id, event['icon'], banner)
+        await ctx.send_embed(f"Updated event with id {id}", name=f"seasonal events")
+
+    @season.command(name="remove")
+    @has_permissions(administrator=True)
+    async def remove_season(self, ctx, id: int):
+        await self.bot.db.seasons.delete(ctx.guild.id, id)
+        await ctx.send_embed(f"deleted event with id {id}", name=f"seasonal events")
+
+    @season.command()
+    @has_permissions(administrator=True)
+    async def sync(self, ctx):
+        await self.check_season_in_guild(ctx.guild)
+
     @commands.Cog.listener()
     async def on_ready(self):
+        loop = asyncio.get_event_loop()
+        loop.create_task(self.start_check_at_midnight())
+
+    async def start_check_at_midnight(self):
+        sleep_for = (next_midnight(CEST) - datetime.now(CEST)).total_seconds()
+        await asyncio.sleep(sleep_for)
+
         self.check_season.start()
 
     @tasks.loop(hours=6)
     async def check_season(self):
-        """
-        check for any seasons matching current time and update
-        discord display according to that season
-        """
-
         for guild in self.bot.guilds:
             await self.check_season_in_guild(guild)
 
@@ -34,76 +156,12 @@ class Seasonal(commands.Cog):
                 return
 
         if current_event["icon"] is not None:
-            await guild.edit(icon=current_event['icon'], reason="Switching to seasonal event " + current_event['event_name'])
+            await guild.edit(icon=current_event['icon'], reason="Switching to seasonal event " + current_event['name'])
 
         if current_event["banner"] is not None:
-            await guild.edit(banner=current_event['banner'], reason="Switching to seasonal event " + current_event['event_name'])
+            await guild.edit(banner=current_event['banner'], reason="Switching to seasonal event " + current_event['name'])
 
-    @commands.group(aliases=['season'])
-    async def seasonal(self, ctx):
-        pass
 
-    @seasonal.command(name='current')
-    async def current_event(self, ctx):
-        """
-        Display current seasonal event
-        """
-        if (current_event := await self.bot.db.seasons.load_current_event(ctx.guild.id)) is None:
-            return await ctx.send_embed("There are no seasonal event", name="seasonal events")
-        await ctx.send_embed(f"Current event is {current_event['event_name']}", name="seasonal events")
-
-    @seasonal.command(name='events', aliases=['all', 'list'])
-    async def all_events(self, ctx):
-        """
-        Display all seasonal events
-        """
-        def format(event):
-            dates = (f"*{event['from_date'].strftime('%d.%m.%Y')}-{event['to_date'].strftime('%d.%m.%Y')}*"
-                     if event['from_date'] is not None and event['to_date'] is not None else
-                     "")
-            return f"» {dates: >19} {event['event_name']}"
-
-        def right_justify(text, by=0, pad=" "):
-            return pad * (by - len(str(text))) + str(text)
-
-        events = await self.bot.db.seasons.load_events(ctx.guild.id)
-        formatted_events = "\n".join(map(format, events))
-        await ctx.send_embed(formatted_events or "There are no events for this guild", name=f"Upcomming seasonal events: \n")
-
-    @seasonal.command(name='add')
-    @has_permissions(administrator=True)
-    async def add_event(self, ctx, name: str, from_date: str, to_date: str):
-        """
-        Add a new seasonal event
-        example: !seasonal add myname 15.08.2020T00:00 11.6.2022T00:00
-
-        Add the default event with
-        example: !seasonal add default None None
-        """
-
-        from_date = self.parse_time(from_date)
-        to_date = self.parse_time(to_date)
-
-        if to_date < from_date:
-            await ctx.send("invalid date ranges")
-            return
-
-        icon = await self.prompt_icon(ctx)
-        banner = await self.prompt_banner(ctx)
-
-        event = (ctx.guild.id, name, from_date, to_date, icon, banner)
-        await self.bot.db.seasons.insert([event])
-
-        await ctx.send_embed(f"added event {name}", name=f"seasonal events")
-
-    @staticmethod
-    def parse_time(time: str) -> Optional[datetime]:
-        if time is None or time.lower() == 'none':
-            return None
-        with suppress(ValueError):
-            return datetime.strptime(time, '%d.%m.%YT%H:%M')
-        with suppress(ValueError):
-            return datetime.strptime(time, '%d.%m.%Y')
 
     async def prompt_icon(self, ctx):
         def check(message):
@@ -117,30 +175,6 @@ class Seasonal(commands.Cog):
             icon = await icon_msg.attachments[0].read()
 
         return icon
-
-    async def prompt_banner(self, ctx):
-        def check(message):
-            return message.author == ctx.author and message.channel == ctx.channel
-
-        await ctx.send_embed("Please send new banner (write None for empty)", name=f"seasonal events")
-        banner_msg = await self.bot.wait_for('message', check=check, timeout=120.0)
-
-        banner = None
-        if banner_msg.attachments and banner_msg.content.lower() != "none":
-            banner = await banner_msg.attachments[0].read()
-
-        return banner
-
-    @seasonal.command()
-    @has_permissions(administrator=True)
-    async def remove(self, ctx, name: str):
-        await self.bot.db.seasons.delete(ctx.guild.id, name)
-        await ctx.send_embed(f"removed event {name}", name=f"seasonal events")
-
-    @seasonal.command()
-    @has_permissions(administrator=True)
-    async def sync(self, ctx):
-        await self.check_season_in_guild(ctx.guild)
 
 def setup(bot):
     bot.add_cog(Seasonal(bot))
