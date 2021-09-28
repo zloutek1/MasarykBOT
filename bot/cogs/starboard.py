@@ -1,16 +1,15 @@
-import re
-import math
-from emoji import demojize
 import logging
+import math
+import re
 from collections import deque
+from datetime import timedelta, timezone
 from textwrap import dedent
-from datetime import timezone, timedelta
-
-from discord import Embed, Emoji, PartialEmoji, TextChannel
-from discord.ext import commands
-from discord.utils import get, find
 
 from bot.constants import Config
+from discord import Embed, Emoji, PartialEmoji, TextChannel
+from discord.ext import commands
+from discord.utils import find, get
+from emoji import demojize
 
 log = logging.getLogger(__name__)
 
@@ -59,13 +58,17 @@ class Starboard(commands.Cog):
 
         await message.add_reaction(reaction.emoji)
 
-        if channel.name == "memes":
-            memes_channel = await self.get_or_create_channel(guild, guild_config.channels.best_of_memes, "best-of-memes")
-            await memes_channel.send(embed=self.get_embed(message))
-            return
+        starboard_channel = await self.get_or_create_channel(guild, *self.channel_to_starboard_map(channel, guild_config))
 
-        starboard_channel = await self.get_or_create_channel(guild, guild_config.channels.starboard, "starboard")
-        await starboard_channel.send(embed=self.get_embed(message))
+        await starboard_channel.send(embed=await self.get_embed(message))
+
+    @staticmethod
+    def channel_to_starboard_map(channel, guild_config):
+        if channel.name == "memes":
+            return (guild_config.channels.best_of_memes, "best-of-memes")
+        else:
+            return (guild_config.channels.starboard, "starboard")
+
 
     async def get_or_create_channel(self, guild, existing_id=None, name=None):
         channel = get(guild.text_channels, id=existing_id)
@@ -86,7 +89,7 @@ class Starboard(commands.Cog):
         if len(channel.members) > 100:
             fame_limit += 10
 
-        ignored_rooms = ['cute', 'fame', 'best-of-memes', 'newcomers']
+        ignored_rooms = ['cute', 'fame', 'best-of-memes', 'newcomers', 'fetish']
         if any(map(lambda ignored_pattern: ignored_pattern in channel.name.lower(), ignored_rooms)):
             return math.inf
 
@@ -110,7 +113,7 @@ class Starboard(commands.Cog):
             return fame_limit - 5
         return fame_limit
 
-    def get_embed(self, message):
+    async def get_embed(self, message):
         def format_reaction(react):
             emoji = react.emoji
             if react.custom_emoji:
@@ -118,10 +121,28 @@ class Starboard(commands.Cog):
             else:
                 return f"{react.count} {react}"
 
+        reply_emoji = get(self.bot.emojis, name="reply")
+        async def get_reply_thread(message, depth=5):
+            if not message.reference or depth <= 0:
+                return []
+
+            reply = await message.channel.fetch_message(message.reference.message_id)
+            return [f"{reply_emoji} {reply.content}"] + await get_reply_thread(reply, depth-1)
+
         reactions = " ".join(format_reaction(react) for react in message.reactions)
 
+        total_length = len(message.content) + len(reactions)
+        reply_thread = await get_reply_thread(message)
+        skipped = 0
+        while len(reply_thread) > 0 and total_length + sum(map(len, reply_thread)) > 1200:
+            reply_thread.pop()
+            skipped += 1
+        for _ in range(skipped):
+            reply_thread.append(f"{reply_emoji} [Reply too long to render]")
+        reply_thread = '\n'.join(reply_thread)
+
         embed = Embed(
-            description=f"{message.content}\n{reactions}\n" +
+            description=f"{reply_thread}\n{message.content}\n{reactions}\n" +
                         f"[Jump to original!]({message.jump_url}) in {message.channel.mention}",
             color=0xFFDF00)
 
