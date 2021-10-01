@@ -122,12 +122,17 @@ class Starboard(commands.Cog):
                 return f"{react.count} {react}"
 
         reply_emoji = get(self.bot.emojis, name="reply")
-        async def get_reply_thread(message, depth=5):
-            if not message.reference or depth <= 0:
+        async def get_reply_thread(message, depth=15):
+            if not message.reference:
                 return []
+            if depth <= 0:
+                return [f"{reply_emoji} [truncated]"]
 
             reply = await message.channel.fetch_message(message.reference.message_id)
-            return [f"{reply_emoji} {reply.content}"] + await get_reply_thread(reply, depth-1)
+            replies = await get_reply_thread(reply, depth-1)
+
+            replies.append(f"{reply_emoji} {reply.content}")
+            return replies
 
         reactions = " ".join(format_reaction(react) for react in message.reactions)
 
