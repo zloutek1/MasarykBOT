@@ -131,7 +131,7 @@ class Starboard(commands.Cog):
             reply = await message.channel.fetch_message(message.reference.message_id)
             replies = await get_reply_thread(reply, depth-1)
 
-            replies.append(f"{reply_emoji} {reply.content}")
+            replies.append(f"{reply_emoji} {reply.content}" if replies else reply.content)
             return replies
 
         reactions = " ".join(format_reaction(react) for react in message.reactions)
@@ -147,7 +147,7 @@ class Starboard(commands.Cog):
         reply_thread = '\n'.join(reply_thread)
 
         embed = Embed(
-            description=f"{reply_thread}\n{message.content}\n{reactions}\n" +
+            description=f"{reply_thread}\n{f'{reply_emoji} ' if message.reference else ''}{message.content}\n{reactions}\n" +
                         f"[Jump to original!]({message.jump_url}) in {message.channel.mention}",
             color=0xFFDF00)
 
