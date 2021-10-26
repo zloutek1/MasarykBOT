@@ -1,3 +1,17 @@
+-- SEQUENCE: cogs.seasons_id_seq
+
+-- DROP SEQUENCE cogs.seasons_id_seq;
+
+CREATE SEQUENCE cogs.seasons_id_seq
+    INCREMENT 1
+    START 1
+    MINVALUE 1
+    MAXVALUE 9223372036854775807
+    CACHE 1;
+
+ALTER SEQUENCE cogs.seasons_id_seq
+    OWNER TO masaryk_dev;
+
 -- Table: cogs.seasons
 
 -- DROP TABLE cogs.seasons;
@@ -5,12 +19,13 @@
 CREATE TABLE IF NOT EXISTS cogs.seasons
 (
     guild_id bigint NOT NULL,
-    event_name character varying COLLATE pg_catalog."default" NOT NULL,
-    from_date timestamp without time zone,
-    to_date timestamp without time zone,
+    id integer NOT NULL DEFAULT nextval('cogs.seasons_id_seq'::regclass),
+    name character varying COLLATE pg_catalog."default" NOT NULL,
+    from_date timestamp with time zone,
+    to_date timestamp with time zone,
     icon bytea,
     banner bytea,
-    CONSTRAINT seasons_pkey PRIMARY KEY (guild_id, event_name)
+    CONSTRAINT seasons_pkey PRIMARY KEY (guild_id, id)
 )
 WITH (
     OIDS = FALSE
@@ -25,5 +40,5 @@ ALTER TABLE cogs.seasons
 
 CREATE UNIQUE INDEX idx_seasons_unique
     ON cogs.seasons USING btree
-    (guild_id ASC NULLS LAST, event_name ASC NULLS LAST, from_date ASC NULLS LAST, to_date ASC NULLS LAST)
+    (guild_id ASC NULLS LAST, name COLLATE pg_catalog."default" ASC NULLS LAST)
     TABLESPACE pg_default;
