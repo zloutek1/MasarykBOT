@@ -20,7 +20,7 @@ log = logging.getLogger(__name__)
 ERR_EMBED_BODY_TOO_LONG = 50035
 SUBJECT_MESSAGE = {
     "body": dedent("""
-        zde si můžete "zapsat" (zobrazit) místnost na tomto discorde pre daný předět
+        zde si můžete "zapsat" (zobrazit) místnost na tomto discorde pre daný předmět
 
         :warning: tenhle bot není nijako napojen na IS.MUNI
         :warning: předmět si můžeš zapsat/zrušit každých 5 sekund
