@@ -1,20 +1,18 @@
 import logging
 from collections import defaultdict
-from textwrap import dedent
 from contextlib import suppress
+from textwrap import dedent
+from typing import Dict, List, Optional, Tuple
 
-from typing import Tuple, Optional, List, Dict
+from bot.cogs.utils.context import Context
 from bot.cogs.utils.db import Record
-
-from discord import Color, Embed, PermissionOverwrite, HTTPException, Member, Message, TextChannel, CategoryChannel
+from bot.constants import Config
+from discord import (CategoryChannel, Color, Embed, HTTPException, Member,
+                     Message, PermissionOverwrite, TextChannel)
+from discord.errors import NotFound
 from discord.ext import commands
 from discord.ext.commands import has_permissions
-from discord.errors import NotFound
-from discord.utils import get, find
-
-from bot.constants import Config
-from bot.cogs.utils.context import Context
-
+from discord.utils import find, get
 
 log = logging.getLogger(__name__)
 
@@ -22,7 +20,11 @@ log = logging.getLogger(__name__)
 ERR_EMBED_BODY_TOO_LONG = 50035
 SUBJECT_MESSAGE = {
     "body": dedent("""
+        zde si můžete "zapsat" (zobrazit) místnost na tomto discorde pre daný předět
+
+        :warning: tenhle bot není nijako napojen na IS.MUNI
         :warning: předmět si můžeš zapsat/zrušit každých 5 sekund
+
         příkazem !subject add/remove <faculty>:<subject_code>
         např.
         ```yaml
