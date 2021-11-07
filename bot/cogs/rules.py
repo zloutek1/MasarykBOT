@@ -1,6 +1,6 @@
 from textwrap import dedent
 
-from discord import Embed, Color, Member
+from discord import Color, Embed, Member
 from discord.ext import commands
 from discord.utils import get
 
@@ -99,7 +99,7 @@ class Rules(commands.Cog):
                 Tento server není nijak spřízněn s FI jako takovou, je to čistě studentská iniciativa bez oficiálního dohledu.
                 To ovšem neznamená, že tu nejsou zaměstnanci FI - právě naopak. Z toho důvodu **důrazně doporučujeme veřejně nesdílet** příspěvky, které
                 porušují školní řád, např. screeny vyplněných odpovědníků, zadání písemek atd. Pokud už se rozhodnete tak učinit, tak zodpovědnost
-                nesete **sami**."""))
+                nesete **sami**. Tento bot zálohuje aktivitu na tomto serveri pre analytické účeli."""))
 
         embeds[1].add_field(
             inline=False,
@@ -119,7 +119,6 @@ class Rules(commands.Cog):
                 ❯ [katalog předmětů od 2019/2020](https://www.fi.muni.cz/catalogue2019/)
                 ❯ [harmonogram fakult](https://is.muni.cz/predmety/obdobi)
                 ❯ [fi.muny.cz](http://fi.muny.cz/)
-                ❯ [kabell drill](https://kabell.sk/fi_muni_drill/)
                 ❯ [statistika studia](https://is.muni.cz/studium/statistika)
                 ❯ [statistika kreditů](https://is.muni.cz/auth/ucitel/statistika_kreditu)
                 ❯ [statistika bodů](https://is.muni.cz/auth/student/poznamkove_bloky_statistika)
