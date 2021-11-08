@@ -99,7 +99,7 @@ class Rules(commands.Cog):
                 Tento server není nijak spřízněn s FI jako takovou, je to čistě studentská iniciativa bez oficiálního dohledu.
                 To ovšem neznamená, že tu nejsou zaměstnanci FI - právě naopak. Z toho důvodu **důrazně doporučujeme veřejně nesdílet** příspěvky, které
                 porušují školní řád, např. screeny vyplněných odpovědníků, zadání písemek atd. Pokud už se rozhodnete tak učinit, tak zodpovědnost
-                nesete **sami**. Tento bot zálohuje aktivitu na tomto serveri pre analytické účeli."""))
+                nesete **sami**. Tento bot zálohuje aktivitu na tomto serveru pro analytické účely."""))
 
         embeds[1].add_field(
             inline=False,

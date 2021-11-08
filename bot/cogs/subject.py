@@ -20,9 +20,9 @@ log = logging.getLogger(__name__)
 ERR_EMBED_BODY_TOO_LONG = 50035
 SUBJECT_MESSAGE = {
     "body": dedent("""
-        zde si můžete "zapsat" (zobrazit) místnost na tomto discorde pre daný předmět
+        zde si můžete "zapsat" (zobrazit) místnost na tomto discordu pro daný předmět
 
-        :warning: tenhle bot není nijako napojen na IS.MUNI
+        :warning: tento bot není nijak napojen na IS.MUNI
         :warning: předmět si můžeš zapsat/zrušit každých 5 sekund
 
         příkazem !subject add/remove <faculty>:<subject_code>
@@ -33,7 +33,7 @@ SUBJECT_MESSAGE = {
         !subject add FF:CJL09
         !subject remove FF:CJL09
         ```
-        na předměty které si můžeš pridat použij !subject search <pattern>%
+        na zobrazení seznamu předmětů které si můžeš přidat použij !subject search <pattern>%
         např.
         ```yaml
         !subject find IB000
