@@ -17,7 +17,7 @@ class Starboard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-        self.known_messages = deque(maxlen=30)
+        self.known_messages = {}
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
@@ -27,19 +27,23 @@ class Starboard(commands.Cog):
         await self.process_starboard(reaction)
 
     async def process_starboard(self, reaction):
-        if reaction.message.id in self.known_messages:
-            return
-
-        if (guild_config := get(Config.guilds, id=reaction.message.guild.id)) is None:
-            return
-        if reaction.count < guild_config.STARBOARD_REACT_LIMIT:
-            return
-
         message = reaction.message
         channel = message.channel
         guild = message.guild
 
-        log.info("message with %s reactions found (%s)", reaction.count, guild)
+        self.known_messages.setdefault(guild.id, deque(maxlen=50))
+
+        if message.id in self.known_messages[guild.id]:
+            return
+
+        if (guild_config := get(Config.guilds, id=guild.id)) is None:
+            return
+        if reaction.count < guild_config.STARBOARD_REACT_LIMIT:
+            return
+
+        self.known_messages[guild.id].append(reaction.message.id)
+
+        log.debug("message with %s(%s) reactions found (%s, %s, %s)", reaction.emoji, reaction.count, guild, channel, message.id)
 
         if channel.name == "starboard" or channel.id == guild_config.channels.starboard:
             return
@@ -50,11 +54,12 @@ class Starboard(commands.Cog):
         if message.channel.id in [guild_config.channels.verification, guild_config.channels.about_you]:
             return
 
-        self.known_messages.append(message.id)
-
         for react in message.reactions:
             if await react.users().get(id=self.bot.user.id) is not None:
                 return
+
+        if message.author.id != self.bot.user.id:
+            log.info("adding message with %s reactions to starboard (%s, %s, %s)", reaction.count, guild, channel, message.id)
 
         await message.add_reaction(reaction.emoji)
 
