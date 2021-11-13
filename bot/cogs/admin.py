@@ -1,12 +1,12 @@
-import os
 import logging
+import os
 from contextlib import suppress
 from datetime import datetime
 
 import discord
+from discord.errors import NotFound
 from discord.ext import commands
 from discord.ext.commands import has_permissions
-from discord.errors import NotFound
 
 log = logging.getLogger(__name__)
 
@@ -71,18 +71,17 @@ class Admin(commands.Cog):
 
     @commands.command()
     @has_permissions(administrator=True)
-    async def fail(self, ctx, case: int = 0):
+    async def fail(self, ctx):
         raise Exception("failing code for testing purposes")
 
 
     @commands.command()
     @has_permissions(administrator=True)
     async def logs(self, ctx, filename: str = None):
-        with suppress(NotFound):
-            await ctx.delete()
+        await ctx.safe_delete()
 
         if filename is None:
-            await ctx.send("\n".join(os.listdir("./logs/")))
+            await ctx.send("Available log files:\n[-] " + "\n[-] ".join(os.listdir("./logs/")))
             return
 
         filepath = "./logs/" + os.path.basename(filename)
