@@ -1,18 +1,18 @@
 import asyncio
 import logging
-from collections import deque, defaultdict
+from collections import defaultdict, deque
 from datetime import datetime, timedelta
+from typing import (Awaitable, Callable, Dict, Generic, List, Optional, Tuple,
+                    TypeVar)
 
 from bot.bot import MasarykBOT
 from bot.cogs.utils.context import Context
 from bot.cogs.utils.db import Record
-from typing import List, Dict, Tuple, Optional, Callable, Generic, TypeVar, Awaitable
-
-from discord import Guild, Role, Member, TextChannel, CategoryChannel
+from discord import CategoryChannel, Guild, Member, Role, TextChannel
 from discord.abc import PrivateChannel
-from discord.ext import tasks, commands
-from discord.ext.commands import has_permissions
 from discord.errors import Forbidden, NotFound
+from discord.ext import commands, tasks
+from discord.ext.commands import has_permissions
 
 T = TypeVar('T')
 
@@ -77,8 +77,9 @@ class BackupUntilPresent(GetCollectables):
             await self.backup_channels(guild.text_channels)
 
             for channel in guild.text_channels:
-                await self.backup_messages(channel)
-                await asyncio.sleep(5)
+                changed = await self.backup_messages(channel)
+                if changed:
+                    await asyncio.sleep(5)
 
         log.info("Finished backup process")
 
@@ -108,17 +109,22 @@ class BackupUntilPresent(GetCollectables):
         data = await self.bot.db.channels.prepare(text_channels)
         await self.bot.db.channels.insert(data)
 
-
-    async def backup_messages(self, channel: TextChannel) -> None:
+    async def backup_messages(self, channel: TextChannel) -> bool:
         log.info("backing up messages in (%s, %s)", channel, channel.guild)
+
+        past = {record.get('channel_id'): record.get('id')
+                for record in await self.bot.db.logger.select_latest_backup_message_ids()}
+
         await self.backup_failed_weeks(channel)
-        await self.backup_new_weeks(channel)
+        return await self.backup_new_weeks(channel, past)
 
-
-    async def backup_failed_weeks(self, channel: TextChannel) -> None:
+    async def backup_failed_weeks(self, channel: TextChannel) -> bool:
+        changed = False
         while _still_failed := await self.backup_failed_week(channel):
             log.debug("finished running failed process, re-checking if everything is fine...")
+            changed = True
             await asyncio.sleep(3)
+        return changed
 
     async def backup_failed_week(self, channel: TextChannel) -> bool:
         rows = await self.bot.db.logger.select(channel.id)
@@ -129,18 +135,24 @@ class BackupUntilPresent(GetCollectables):
 
         return len(failed_rows) != 0
 
-
-    async def backup_new_weeks(self, channel: TextChannel) -> None:
-        while _still_behind := await self.backup_new_week(channel):
+    async def backup_new_weeks(self, channel: TextChannel, past) -> bool:
+        changed = False
+        while _still_behind := await self.backup_new_week(channel, past):
             log.debug("newer week exists, re-running backup for next week")
+            changed = True
             await asyncio.sleep(2)
+        return changed
 
-    async def backup_new_week(self, channel: TextChannel) -> bool:
+    async def backup_new_week(self, channel: TextChannel, past) -> bool:
         finished_process = await self.get_latest_finished_process(channel)
         (from_date, to_date) = self.get_next_week(channel, finished_process)
 
         if channel.last_message_id is None:
             log.info("skipping messages in empty channel %s (%s)", channel, channel.guild)
+            return False
+
+        if channel.last_message_id == past.get(channel.id):
+            log.info("skipping messages in caught up channel %s (%s)", channel, channel.guild)
             return False
 
         await self.try_to_backup_in_range(channel, from_date, to_date, is_first_week=finished_process is None)
@@ -434,9 +446,11 @@ class BackupOnEvents(GetCollectables):
 
     @tasks.loop(minutes=5)
     async def task_put_queues_to_database(self):
-        await self.put_queues_to_database(self.insert_queues, limit=1000)
-        await self.put_queues_to_database(self.update_queues, limit=2000)
-        await self.put_queues_to_database(self.delete_queues, limit=1000)
+        while self.insert_queues or self.update_queues or self.delete_queues:
+            await self.put_queues_to_database(self.insert_queues, limit=2_000)
+            await self.put_queues_to_database(self.update_queues, limit=1_000)
+            await self.put_queues_to_database(self.delete_queues, limit=1_000)
+            await asyncio.sleep(5)
 
     async def put_queues_to_database(self, queues: Dict[Callable[[List[Tuple]], Awaitable[None]], deque[Tuple]], *, limit=1000):
         for (put_fn, queue) in queues.items():

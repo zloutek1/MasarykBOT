@@ -1,16 +1,17 @@
 import asyncio
-import asyncpg
 import logging
-
 import re
-from emoji import demojize, get_emoji_regexp
-from functools import wraps
-from datetime import datetime, timezone
-from collections import Counter
 from abc import ABC, abstractmethod
+from collections import Counter
+from datetime import datetime, timezone
+from functools import wraps
+from typing import Generic, List, Tuple, TypeVar, Union
 
-from discord import Guild, CategoryChannel, Role, Member, TextChannel, Message, Attachment, Reaction, Emoji, PartialEmoji
-from typing import List, Tuple, TypeVar, Generic, Union
+import asyncpg
+from discord import (Attachment, CategoryChannel, Emoji, Guild, Member,
+                     Message, PartialEmoji, Reaction, Role, TextChannel)
+from emoji import demojize, get_emoji_regexp
+
 Record = asyncpg.Record
 T = TypeVar('T')
 AnyEmote = Union[Emoji, PartialEmoji, str]
@@ -211,11 +212,14 @@ class Members(Table, Mapper[Member], FromMessageMapper):
             INSERT INTO server.users AS u (id, names, avatar_url, created_at)
             VALUES ($1, ARRAY[$2], $3, $4)
             ON CONFLICT (id) DO UPDATE
-                SET names=array_prepend($2::varchar, u.names),
+                SET names=ARRAY(
+                        SELECT DISTINCT e
+                        FROM unnest(array_prepend($2::varchar, excluded.names)) AS a(e)
+                    ),
                     avatar_url=$3,
                     created_at=$4,
                     edited_at=NOW()
-                WHERE $2<>ANY(u.names) OR
+                WHERE $2<>ANY(excluded.names) OR
                         u.avatar_url<>excluded.avatar_url OR
                         u.created_at<>excluded.created_at
         """, data)
@@ -542,6 +546,9 @@ class Logger(Table):
                 await self.parent.mark_process_finished.__wrapped__(self.parent, self.conn, self.guild_id, self.from_date, self.to_date, self.is_first_week)
             await self.parent.mark_process_finished(self.guild_id, self.from_date, self.to_date, self.is_first_week)
 
+    @withConn
+    async def select_latest_backup_message_ids(self, conn):
+        return await conn.fetch("""SELECT channel_id, MAX(id) as id FROM server.messages GROUP BY channel_id;""")
 
 class Leaderboard(Table):
     @withConn
