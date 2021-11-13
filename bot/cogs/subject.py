@@ -291,7 +291,7 @@ class Subject(commands.Cog):
         pattern = channel.name.split("-")[0]
         faculty, code = pattern.split("꞉") if "꞉" in pattern else ["fi", pattern]
 
-        return self.find_subject(code, faculty)
+        return await self.find_subject(code, faculty)
 
     async def find_subject(self, code: str, faculty: str="FI") -> Optional[Record]:
         subjects = await self.bot.db.subjects.find(code, faculty)
