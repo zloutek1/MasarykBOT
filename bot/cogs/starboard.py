@@ -24,7 +24,8 @@ class Starboard(commands.Cog):
         channel = self.bot.get_channel(payload.channel_id)
         message = await channel.fetch_message(payload.message_id)
         reaction = find(lambda r: payload.emoji.name == (r.emoji if isinstance(r.emoji, str) else r.emoji.name), message.reactions)
-        await self.process_starboard(reaction)
+        if reaction:
+            await self.process_starboard(reaction)
 
     async def process_starboard(self, reaction):
         message = reaction.message
