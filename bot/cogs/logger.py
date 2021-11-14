@@ -446,10 +446,16 @@ class BackupOnEvents(GetCollectables):
 
     @tasks.loop(minutes=5)
     async def task_put_queues_to_database(self):
-        while self.insert_queues or self.update_queues or self.delete_queues:
+        async def do():
             await self.put_queues_to_database(self.insert_queues, limit=2_000)
             await self.put_queues_to_database(self.update_queues, limit=1_000)
             await self.put_queues_to_database(self.delete_queues, limit=1_000)
+
+        await do()
+        while (sum(len(v) for v in self.insert_queues.values()) > 2_000 or
+               sum(len(v) for v in self.update_queues.values()) > 1_000 or
+               sum(len(v) for v in self.delete_queues.values()) > 1_000):
+            await do()
             await asyncio.sleep(5)
 
     async def put_queues_to_database(self, queues: Dict[Callable[[List[Tuple]], Awaitable[None]], deque[Tuple]], *, limit=1000):
