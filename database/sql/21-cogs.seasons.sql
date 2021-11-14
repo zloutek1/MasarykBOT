@@ -10,7 +10,7 @@ CREATE SEQUENCE cogs.seasons_id_seq
     CACHE 1;
 
 ALTER SEQUENCE cogs.seasons_id_seq
-    OWNER TO masaryk_dev;
+    OWNER TO masaryk;
 
 -- Table: cogs.seasons
 
@@ -33,7 +33,7 @@ WITH (
 TABLESPACE pg_default;
 
 ALTER TABLE cogs.seasons
-    OWNER to masaryk_dev;
+    OWNER to masaryk;
 -- Index: idx_seasons_unique
 
 -- DROP INDEX cogs.idx_seasons_unique;
