@@ -1,19 +1,16 @@
 import unittest
-from unittest.mock import patch, call, MagicMock, AsyncMock
-
-from emoji import demojize
-from datetime import datetime, date
 from collections import deque
+from datetime import date, datetime
+from unittest.mock import AsyncMock, MagicMock, call, patch
 
-from bot.cogs.utils import db
 from bot.cogs import logger
-
-from tests.mocks.discord import (MockBot,
-                                MockRole, MockMember, MockUser,
-                                MockGuild, MockCategoryChannel, MockTextChannel,
-                                MockMessage, MockAttachment, MockReaction, MockEmoji,
-                                AsyncIterator)
+from bot.cogs.utils import db
+from emoji import demojize
 from tests.mocks.database import MockDatabase, MockLoggerRecord
+from tests.mocks.discord import (AsyncIterator, MockAttachment, MockBot,
+                                 MockCategoryChannel, MockEmoji, MockGuild,
+                                 MockMember, MockMessage, MockReaction,
+                                 MockRole, MockTextChannel, MockUser)
 from tests.mocks.helpers import MockReturnFunc
 
 
@@ -29,7 +26,7 @@ class LoggerBackupUntilPresentTests(unittest.IsolatedAsyncioTestCase):
         self.cog.backup_members = AsyncMock()
         self.cog.backup_categories = AsyncMock()
         self.cog.backup_channels = AsyncMock()
-        self.cog.backup_messages = AsyncMock()
+        self.cog.backup_messages = AsyncMock(return_value=False)
 
         channels = [
             MockTextChannel(id=12),
@@ -226,7 +223,7 @@ class LoggerBackupUntilPresentTests(unittest.IsolatedAsyncioTestCase):
 
         channel = MockTextChannel(id=8)
         with patch('bot.cogs.logger.asyncio.sleep'):
-            await self.cog.backup_new_weeks(channel)
+            await self.cog.backup_new_weeks(channel, past={})
 
         self.assertEqual(self.cog.backup_new_week.call_count, 4)
 
@@ -396,12 +393,20 @@ class LoggerBackupOnEventsTests(unittest.IsolatedAsyncioTestCase):
             AsyncMock(): deque([AsyncMock() for _ in range(1234)])
         }
 
-        self.cog.put_queues_to_database = AsyncMock()
+        async def put_queues_to_database(queue, limit):
+            i = 0
+            for queue in queue.values():
+                i += len(queue)
+                [queue.popleft() for _i in range(max(i, limit))]
+                if i > limit:
+                    break
+
+        self.cog.put_queues_to_database = AsyncMock(wraps=put_queues_to_database)
         await self.cog.task_put_queues_to_database.coro(self.cog)
 
         self.cog.put_queues_to_database.assert_has_calls([
-            call(self.cog.insert_queues, limit=1000),
-            call(self.cog.update_queues, limit=2000),
+            call(self.cog.insert_queues, limit=2000),
+            call(self.cog.update_queues, limit=1000),
             call(self.cog.delete_queues, limit=1000)
         ])
 

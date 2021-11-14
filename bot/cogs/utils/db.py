@@ -214,7 +214,7 @@ class Members(Table, Mapper[Member], FromMessageMapper):
             ON CONFLICT (id) DO UPDATE
                 SET names=ARRAY(
                         SELECT DISTINCT e
-                        FROM unnest(array_prepend($2::varchar, excluded.names)) AS a(e)
+                        FROM unnest(array_prepend($2::varchar, u.names)) AS a(e)
                     ),
                     avatar_url=$3,
                     created_at=$4,

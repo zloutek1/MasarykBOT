@@ -1,38 +1,22 @@
+import os
 import unittest
-from unittest.mock import patch, AsyncMock
+from contextlib import suppress
+from datetime import datetime
+from functools import wraps
+from unittest.mock import AsyncMock, patch
 
 from bot.cogs.utils import db
-from tests.mocks.discord import (
-    MockGuild,
-    MockCategoryChannel,
-    MockRole,
-    MockMember,
-    MockTextChannel,
-    MockMessage,
-    MockAttachment,
-    MockReaction,
-    MockEmoji,
-    MockPartialEmoji
-)
-from tests.mocks.database import (
-    MockPool,
-    MockGuildRecord,
-    MockCategoryRecord,
-    MockRoleRecord,
-    MockMemberRecord,
-    MockChannelRecord,
-    MockMessageRecord,
-    MockAttachmentRecord,
-    MockEmojiRecord,
-    MockReactionRecord,
-    MockLoggerRecord
-)
-
-import os
 from discord import Color
-from datetime import datetime
-from contextlib import suppress
-from functools import wraps
+from tests.mocks.database import (MockAttachmentRecord, MockCategoryRecord,
+                                  MockChannelRecord, MockEmojiRecord,
+                                  MockGuildRecord, MockLoggerRecord,
+                                  MockMemberRecord, MockMessageRecord,
+                                  MockPool, MockReactionRecord, MockRoleRecord)
+from tests.mocks.discord import (MockAttachment, MockCategoryChannel,
+                                 MockEmoji, MockGuild, MockMember, MockMessage,
+                                 MockPartialEmoji, MockReaction, MockRole,
+                                 MockTextChannel)
+
 
 class FixedDate(datetime):
     @classmethod
@@ -483,6 +467,25 @@ class TestMemberQueries(TestQueries):
         _self = self.db.members
 
         updated_members = [
+            (10, "Second", "http://avatar.png", datetime(2020, 9, 20)),
+        ]
+
+        await self.insert(_self, conn, self.members)
+        await self.update(_self, conn, updated_members)
+        actual = await self.select(_self, conn, 10)
+
+        row = next(filter(lambda row: row["id"] == 10, actual))
+        self.assertListEqual(row["names"], ["Second", "First"])
+        self.assertEqual(row["avatar_url"], "http://avatar.png")
+        self.assertIsNotNone(row["edited_at"])
+
+    @db.withConn
+    @failing_transaction
+    async def test_update_twice(self, conn):
+        _self = self.db.members
+
+        updated_members = [
+            (10, "Second", "http://avatar.png", datetime(2020, 9, 20)),
             (10, "Second", "http://avatar.png", datetime(2020, 9, 20)),
         ]
 
