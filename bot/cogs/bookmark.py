@@ -1,4 +1,5 @@
-from discord import Embed, DMChannel
+from discord import DMChannel, Embed
+from discord.errors import NotFound
 from discord.ext import commands
 from discord.utils import find
 
@@ -12,7 +13,11 @@ class Bookmark(commands.Cog):
     async def on_raw_reaction_add(self, payload):
         channel = self.bot.get_channel(payload.channel_id)
         user = await channel.guild.fetch_member(payload.user_id)
-        message = await channel.fetch_message(payload.message_id)
+        try:
+            message = await channel.fetch_message(payload.message_id)
+        except NotFound as ex:
+            await channel.send(f"{user.mention} {ex.text}")
+            return
         reaction = find(lambda r: payload.emoji.name == (r.emoji if isinstance(r.emoji, str) else r.emoji.name), message.reactions)
 
         if not isinstance(reaction.emoji, str):
