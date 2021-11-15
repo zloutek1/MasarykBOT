@@ -23,18 +23,25 @@ def setup_logging():
 
     filename = Path("logs", "bot.log")
     os.makedirs(os.path.dirname(filename), exist_ok=True)
-    file_handler = logging.FileHandler(filename, mode='a')
+    all_file_handler = logging.FileHandler(filename, mode='a')
+
+    filename = Path("logs", "warn.log")
+    os.makedirs(os.path.dirname(filename), exist_ok=True)
+    warn_file_handler = logging.FileHandler(filename, mode='a')
 
     log.setLevel(logging.DEBUG)
     shell_handler.setLevel(logging.INFO)
-    file_handler.setLevel(logging.DEBUG)
+    all_file_handler.setLevel(logging.DEBUG)
+    warn_file_handler.setLevel(logging.WARNING)
 
     fmt_date = '%Y-%m-%d %H:%M:%S'
     fmt_shell = '{message}'
     fmt_file = '{asctime} | {levelname:<7} | {filename:>20}:{lineno:<4} | {message}'
 
     shell_handler.setFormatter(logging.Formatter(fmt_shell, fmt_date, style='{'))
-    file_handler.setFormatter(logging.Formatter(fmt_file, fmt_date, style='{'))
+    all_file_handler.setFormatter(logging.Formatter(fmt_file, fmt_date, style='{'))
+    warn_file_handler.setFormatter(logging.Formatter(fmt_file, fmt_date, style='{'))
 
     log.addHandler(shell_handler)
-    log.addHandler(file_handler)
+    log.addHandler(all_file_handler)
+    log.addHandler(warn_file_handler)
