@@ -448,15 +448,18 @@ class BackupOnEvents(GetCollectables):
 
     @tasks.loop(minutes=5)
     async def task_put_queues_to_database(self):
+        def total(queue):
+            return sum(len(v) for v in queue.values())
+
         async def do():
+            log.info("putting queues to database (ins %s, upd %s, del %s)",
+                     total(self.insert_queues), total(self.update_queues), total(self.delete_queues))
             await self.put_queues_to_database(self.insert_queues, limit=2_000)
             await self.put_queues_to_database(self.update_queues, limit=1_000)
             await self.put_queues_to_database(self.delete_queues, limit=1_000)
 
         await do()
-        while (sum(len(v) for v in self.insert_queues.values()) > 2_000 or
-               sum(len(v) for v in self.update_queues.values()) > 1_000 or
-               sum(len(v) for v in self.delete_queues.values()) > 1_000):
+        while (total(self.insert_queues) > 2_000 or total(self.update_queues) > 1_000 or total(self.delete_queues) > 1_000):
             await do()
             await asyncio.sleep(5)
 
@@ -470,7 +473,7 @@ class BackupOnEvents(GetCollectables):
 
         take_elements = min(limit, len(queue))
         elements = [queue.popleft() for _ in range(take_elements)]
-        log.info("Putting %s from queue to database (%s)", len(elements), put_fn.__qualname__)
+        log.debug("Putting %s from queue to database (%s)", len(elements), put_fn.__qualname__)
 
         await put_fn(elements)
 
