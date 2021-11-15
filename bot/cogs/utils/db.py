@@ -459,9 +459,13 @@ class MessageEmojis(Table, FromMessageMapper):
 class Reactions(Table, Mapper[Reaction], FromMessageMapper):
     @staticmethod
     async def prepare_one(reaction: Reaction):
-        user_ids = (await reaction.users()
-                                  .map(lambda member: member.id)
-                                  .flatten())
+        try:
+            user_ids = (await reaction.users()
+                                    .map(lambda member: member.id)
+                                    .flatten())
+        except asyncio.TimeoutError:
+            user_ids = []
+
         emoji_id = (emote.id
                     if isinstance(emote := reaction.emoji, (Emoji, PartialEmoji)) else
                     sum(map(ord, emote)))

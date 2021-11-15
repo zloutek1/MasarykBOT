@@ -190,6 +190,8 @@ class BackupUntilPresent(GetCollectables):
             log.debug("missing permissions to backup messages in %s (%s)", channel, channel.guild)
         except NotFound:
             log.debug("channel %s was not found in (%s)", channel, channel.guild)
+        except asyncio.TimeoutError:
+            log.warn("backup in %s between %s-%s timed out", channel, from_date, to_date)
 
     async def backup_in_range(self, channel: TextChannel, from_date: datetime, to_date: datetime, is_first_week: bool) -> None:
         async with self.bot.db.logger.process(channel.id, from_date, to_date, is_first_week):
