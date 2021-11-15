@@ -110,13 +110,21 @@ class BackupUntilPresent(GetCollectables):
         await self.bot.db.channels.insert(data)
 
     async def backup_messages(self, channel: TextChannel) -> bool:
-        log.info("backing up messages in (%s, %s)", channel, channel.guild)
-
         past = {record.get('channel_id'): record.get('id')
                 for record in await self.bot.db.logger.select_latest_backup_message_ids()}
 
+        if channel.last_message_id is None:
+            log.info("skipping messages in empty channel %s (%s)", channel, channel.guild)
+            return False
+
+        if channel.last_message_id == past.get(channel.id):
+            log.info("skipping messages in caught up channel %s (%s)", channel, channel.guild)
+            return False
+
+        log.info("backing up messages in (%s, %s)", channel, channel.guild)
+
         await self.backup_failed_weeks(channel)
-        return await self.backup_new_weeks(channel, past)
+        return await self.backup_new_weeks(channel)
 
     async def backup_failed_weeks(self, channel: TextChannel) -> bool:
         changed = False
@@ -135,25 +143,17 @@ class BackupUntilPresent(GetCollectables):
 
         return len(failed_rows) != 0
 
-    async def backup_new_weeks(self, channel: TextChannel, past) -> bool:
+    async def backup_new_weeks(self, channel: TextChannel) -> bool:
         changed = False
-        while _still_behind := await self.backup_new_week(channel, past):
+        while _still_behind := await self.backup_new_week(channel):
             log.debug("newer week exists, re-running backup for next week")
             changed = True
             await asyncio.sleep(2)
         return changed
 
-    async def backup_new_week(self, channel: TextChannel, past) -> bool:
+    async def backup_new_week(self, channel: TextChannel) -> bool:
         finished_process = await self.get_latest_finished_process(channel)
         (from_date, to_date) = self.get_next_week(channel, finished_process)
-
-        if channel.last_message_id is None:
-            log.info("skipping messages in empty channel %s (%s)", channel, channel.guild)
-            return False
-
-        if channel.last_message_id == past.get(channel.id):
-            log.info("skipping messages in caught up channel %s (%s)", channel, channel.guild)
-            return False
 
         await self.try_to_backup_in_range(channel, from_date, to_date, is_first_week=finished_process is None)
 
