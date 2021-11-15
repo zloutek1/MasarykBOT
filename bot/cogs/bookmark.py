@@ -1,4 +1,4 @@
-from discord import DMChannel, Embed
+from discord import Embed, Member
 from discord.errors import NotFound
 from discord.ext import commands
 from discord.utils import find
@@ -11,23 +11,26 @@ class Bookmark(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
+        if not payload.emoji.is_unicode_emoji():
+            return
+
+        if payload.emoji.name not in ('🔖'):
+            return
+
         channel = self.bot.get_channel(payload.channel_id)
         user = await channel.guild.fetch_member(payload.user_id)
+
         try:
             message = await channel.fetch_message(payload.message_id)
         except NotFound as ex:
-            await channel.send(f"{user.mention} {ex.text}")
-            return
-        reaction = find(lambda r: payload.emoji.name == (r.emoji if isinstance(r.emoji, str) else r.emoji.name), message.reactions)
-
-        if not isinstance(reaction.emoji, str):
+            await user.reply(f"[Error]: {ex.message}")
             return
 
-        if reaction.emoji not in ('🔖'):
+        if not isinstance(user, Member):
             return
 
-        embed = self.get_embed(reaction.message)
-        message = await user.send(embed=embed)
+        embed = self.get_embed(message)
+        await user.send(embed=embed)
 
     def get_embed(self, message):
         embed = Embed(
