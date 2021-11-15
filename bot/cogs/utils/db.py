@@ -464,7 +464,7 @@ class Reactions(Table, Mapper[Reaction], FromMessageMapper):
                                     .map(lambda member: member.id)
                                     .flatten())
         except asyncio.TimeoutError:
-            log.warn("fetching users from reaction %s timed out (%s, %s)", reaction.emoji, reaction.message.id, reaction.message.channel.id)
+            log.warn("fetching users from reaction %s timed out (%s, %s)", reaction.emoji, reaction.message.channel, reaction.message.id)
             user_ids = []
 
         emoji_id = (emote.id
