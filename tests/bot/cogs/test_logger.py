@@ -223,7 +223,7 @@ class LoggerBackupUntilPresentTests(unittest.IsolatedAsyncioTestCase):
 
         channel = MockTextChannel(id=8)
         with patch('bot.cogs.logger.asyncio.sleep'):
-            await self.cog.backup_new_weeks(channel, past={})
+            await self.cog.backup_new_weeks(channel)
 
         self.assertEqual(self.cog.backup_new_week.call_count, 4)
 
@@ -397,7 +397,7 @@ class LoggerBackupOnEventsTests(unittest.IsolatedAsyncioTestCase):
             i = 0
             for queue in queue.values():
                 i += len(queue)
-                [queue.popleft() for _i in range(max(i, limit))]
+                [queue.popleft() for _ in range(min(len(queue), limit))]
                 if i > limit:
                     break
 
