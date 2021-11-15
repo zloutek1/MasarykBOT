@@ -20,6 +20,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.bot
+    environment:
+      - COLUMNS=150
     volumes:
       - .:/MasarykBOT
     depends_on:
