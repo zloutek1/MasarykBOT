@@ -87,6 +87,7 @@ class Admin(commands.Cog):
         filepath = "./logs/" + os.path.basename(filename)
         if not os.path.exists(filepath):
             await ctx.send("file does not exist")
+            return
 
         filename = os.path.splitext(filename)[0] + "_" + datetime.now().strftime("%Y_%m_%d_%H_%M_%S") + ".log"
         with open(filepath, 'r', encoding='utf-8') as fp:
