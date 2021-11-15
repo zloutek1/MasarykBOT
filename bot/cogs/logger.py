@@ -451,15 +451,21 @@ class BackupOnEvents(GetCollectables):
         def total(queue):
             return sum(len(v) for v in queue.values())
 
+        inserts = total(self.insert_queues)
+        updates = total(self.update_queues)
+        deletes = total(self.delete_queues)
+
         async def do():
-            log.info("putting queues to database (ins %s, upd %s, del %s)",
-                     total(self.insert_queues), total(self.update_queues), total(self.delete_queues))
+            log.info("putting queues to database (ins %s, upd %s, del %s)", inserts, updates, deletes)
             await self.put_queues_to_database(self.insert_queues, limit=2_000)
             await self.put_queues_to_database(self.update_queues, limit=1_000)
             await self.put_queues_to_database(self.delete_queues, limit=1_000)
 
+        if inserts == 0 and updates == 0 and deletes == 0:
+            return
+
         await do()
-        while (total(self.insert_queues) > 2_000 or total(self.update_queues) > 1_000 or total(self.delete_queues) > 1_000):
+        while (inserts > 2_000 or updates > 1_000 or deletes > 1_000):
             await do()
             await asyncio.sleep(5)
 
