@@ -6,11 +6,12 @@ from pathlib import Path
 
 from rich.logging import RichHandler
 
+
 def my_namer(default_name):
     # This will be called when doing the log rotation
     # default_name is the default filename that would be assigned, e.g. Rotate_Test.txt.YYYY-MM-DD
     # Do any manipulations to that name here, for example this changes the name to Rotate_Test.YYYY-MM-DD.txt
-    base_filename, ext, date = default_name.split(".")
+    base_filename, _, ext, date = default_name.split(".")
     return f"{base_filename}.{date}.{ext}"
 
 def setup_logging():
@@ -29,7 +30,7 @@ def setup_logging():
 
     shell_handler = RichHandler()
 
-    filename = Path("logs", "bot.log")
+    filename = Path("logs", __import__("datetime").datetime.now().strftime('bot.%Y-%m-%d.log'))
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     all_file_handler = TimedRotatingFileHandler(filename, when='midnight')
     all_file_handler.namer = my_namer
