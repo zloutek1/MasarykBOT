@@ -24,8 +24,6 @@ services:
       - COLUMNS=150
     volumes:
       - .:/MasarykBOT
-    depends_on:
-      - database
 
   tests:
     container_name: tests

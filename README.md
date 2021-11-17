@@ -69,18 +69,8 @@ cd MasarykBOT
 ```
 # .env
 
-POSTGRES=postgres://user:pass@host:port/database?option=value
+POSTGRES=postgresql://masaryk:localdbpassword@database/discord
 TOKEN=your-token
-SNEKBOX=http://127.0.0.1:8060/eval
-```
-
-```
-# ./database/.env
-
-POSTGRES_USER=masaryk
-POSTGRES_PASSWORD=your-pass
-POSTGRES_DB=discord
-PGDATA=/var/lib/postgresql/data/pgdata
 ```
 
 3. build docker
@@ -88,11 +78,20 @@ PGDATA=/var/lib/postgresql/data/pgdata
 docker build . -t bot
 ```
 
-4. run docker-compose
+4. to run the bot alone run
 ```
-docker-compose down && docker-compose up --build
+docker-compose down && docker-compose up --build bot
 ```
 
+5. to run the bot with a local database run
+```
+docker-compose down && docker-compose up --build bot database database_backup
+```
+
+6. to only test the application run
+```
+docker-compose down && docker-compose up --build tests
+```
 
 
 ## Manually (optional)
@@ -105,9 +104,8 @@ cd MasarykBOT
 
 2. set the environment variables
 ```
-POSTGRES=postgres://user:pass@host:port/database?option=value
+POSTGRES=postgresql://masaryk:localdbpassword@database/discord
 TOKEN=your-token
-SNEKBOX=http://127.0.0.1:8060/eval
 ```
 
 3. install python dependencies
