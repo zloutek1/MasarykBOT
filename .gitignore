@@ -120,3 +120,6 @@ TEST-**.xml
 
 # Mac OS .DS_Store, which is a file that stores custom attributes of its containing folder
 .DS_Store
+
+# backups
+*.sql.gz

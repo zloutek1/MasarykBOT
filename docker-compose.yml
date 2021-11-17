@@ -39,7 +39,22 @@ services:
     depends_on:
       - database
 
-
+  database_backup:
+    container_name: db_backup
+    image: prodrigestivill/postgres-backup-local
+    volumes:
+        - ./database/backup:/backups
+    links:
+        - database
+    depends_on:
+        - database
+    environment:
+        - POSTGRES_HOST=database
+        - POSTGRES_USER=masaryk
+        - POSTGRES_PASSWORD=localdbpassword
+        - POSTGRES_DB=discord
+        - POSTGRES_EXTRA_OPTS=-Z6 --blobs
+        - SCHEDULE=@daily
 
 volumes:
   postgres:
