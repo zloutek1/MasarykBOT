@@ -14,6 +14,7 @@ services:
     volumes:
       - ./database/sql:/docker-entrypoint-initdb.d/
       - postgres:/var/lib/postgresql/data     # persist data even if container shuts down
+    restart: unless-stopped
 
   bot:
     container_name: bot
@@ -24,6 +25,7 @@ services:
       - COLUMNS=150
     volumes:
       - .:/MasarykBOT
+    restart: unless-stopped
 
   tests:
     container_name: tests
@@ -41,18 +43,19 @@ services:
     container_name: db_backup
     image: prodrigestivill/postgres-backup-local
     volumes:
-        - ./database/backup:/backups
+      - ./database/backup:/backups
     links:
-        - database
+      - database
     depends_on:
-        - database
+      - database
     environment:
-        - POSTGRES_HOST=database
-        - POSTGRES_USER=masaryk
-        - POSTGRES_PASSWORD=localdbpassword
-        - POSTGRES_DB=discord
-        - POSTGRES_EXTRA_OPTS=-Z6 --blobs
-        - SCHEDULE=@daily
+      - POSTGRES_HOST=database
+      - POSTGRES_USER=masaryk
+      - POSTGRES_PASSWORD=localdbpassword
+      - POSTGRES_DB=discord
+      - POSTGRES_EXTRA_OPTS=-Z6 --blobs
+      - SCHEDULE=@daily
+    restart: unless-stopped
 
 volumes:
   postgres:
