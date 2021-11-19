@@ -33,6 +33,8 @@ class MasarykBOT(commands.Bot):
         log.info("Bot is now all ready to go")
         self.intorduce()
 
+        raise Exception("hello")
+
     async def process_commands(self, message):
         ctx = await self.get_context(message, cls=context.Context)
 
@@ -87,3 +89,7 @@ class MasarykBOT(commands.Bot):
                *&&, ,&&,
                  /&&&.                 \n""")
         print("     [BOT] {0} ready to serve! \n\n\n".format(bot_name))
+
+    async def on_error(self, event_method, *args, **kwargs):
+        """ reimplement on_error method to print to a log file instead of sys.stderr"""
+        log.error(f'Ignoring exception in {event_method}', exc_info=True)
