@@ -33,8 +33,6 @@ class MasarykBOT(commands.Bot):
         log.info("Bot is now all ready to go")
         self.intorduce()
 
-        raise Exception("hello")
-
     async def process_commands(self, message):
         ctx = await self.get_context(message, cls=context.Context)
 
