@@ -83,6 +83,10 @@ class Fun(commands.Cog):
         """Chooses between multiple choices."""
         embed = Embed()
 
+        if not choices:
+            await ctx.send("no options to choose from")
+            return
+
         extended_choices = list(choices) * 7
         for _ in range(7):
             shuffle(extended_choices)
