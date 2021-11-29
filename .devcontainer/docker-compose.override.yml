@@ -14,4 +14,8 @@ services:
     depends_on:
       - database
 
+  bot:
+    restart: "no"
+    entrypoint: /bin/bash
+
 
