@@ -1,11 +1,13 @@
 import os
 from datetime import datetime
+from io import BytesIO
 from random import choice, shuffle
 from urllib.parse import urlparse
 
 import requests
 from discord import Embed, File, Member, PartialEmoji
 from discord.ext import commands
+from PIL import Image
 
 
 class Fun(commands.Cog):
@@ -147,6 +149,39 @@ class Fun(commands.Cog):
         await ctx.send(file=File(filename))
 
         os.remove(filename)
+
+    @commands.command()
+    async def asciify(self, ctx, emoji: PartialEmoji, treshold: int = 127, size: int = 60, inverted: bool = False):
+        if size < 0 or size > 300: return
+        if treshold < 0 or treshold > 255: return
+
+        response = requests.get(emoji.url)
+        img = Image.open(BytesIO(response.content)).convert('L')
+        img = img.resize((size, size))
+
+        asciiXDots = 2
+        asciiYDots = 4
+
+        ascii = ""
+        for y in range(0, img.height, asciiYDots):
+            line = ""
+            for x in range(0, img.width, asciiXDots):
+                c = self.chunk2braille( img.crop((x, y, x+asciiXDots, y+asciiYDots)), treshold, inverted )
+                line += c
+            ascii += line+"\n"
+
+        await ctx.send(ascii)
+
+    @staticmethod
+    def chunk2braille( slice: Image, treshold = 127, inverted = False ):
+        """https://en.wikipedia.org/wiki/Braille_Patterns"""
+        dots = [ (1 + int(inverted) + int(slice.getpixel((x, y)) < treshold)) % 2
+                 for y in range(slice.height)
+                 for x in range(slice.width)]
+
+        dots = [ dots[ 0 ], dots[ 2 ], dots[ 4 ], dots[ 1 ], dots[ 3 ], dots[ 5 ], dots[ 6 ], dots[ 7 ] ]
+
+        return chr( 10240 + int( '0b' + ''.join(map(str, reversed(dots))), 2) )
 
 def setup(bot):
     bot.add_cog(Fun(bot))
