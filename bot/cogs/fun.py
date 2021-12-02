@@ -152,8 +152,8 @@ class Fun(commands.Cog):
 
     @commands.command()
     async def asciify(self, ctx, emoji: PartialEmoji, treshold: int = 127, size: int = 60, inverted: bool = False):
-        if size < 0 or size > 300: return
-        if treshold < 0 or treshold > 255: return
+        if size < 0 or size > 300: return await ctx.send_error("Invalid image size")
+        if treshold < 0 or treshold > 255: return await ctx.send_error("Invalid treshold")
 
         response = requests.get(emoji.url)
         img = Image.open(BytesIO(response.content)).convert('L')
@@ -169,6 +169,8 @@ class Fun(commands.Cog):
                 c = self.chunk2braille( img.crop((x, y, x+asciiXDots, y+asciiYDots)), treshold, inverted )
                 line += c
             ascii += line+"\n"
+
+        if len(ascii) > 3800: return await ctx.send_error("output too large")
 
         await ctx.send(ascii)
 
