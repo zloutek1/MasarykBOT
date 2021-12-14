@@ -117,3 +117,8 @@ python -m pip install -r requirements.txt
 ```
 python __main__.py
 ```
+
+## Links
+
+- [Development GitHub repository](https://github.com/zloutek1/MasarykBOT)
+- [FI MUNI Discord invite](https://discord.gg/fimuni)
