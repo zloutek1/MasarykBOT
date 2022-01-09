@@ -57,5 +57,18 @@ services:
       - SCHEDULE=@daily
     restart: unless-stopped
 
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    ports:
+      - 8832:80
+    links:
+      - database
+    depends_on:
+      - database
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=masaryk@gmail.com
+      - PGADMIN_DEFAULT_PASSWORD=pass
+
 volumes:
   postgres:
