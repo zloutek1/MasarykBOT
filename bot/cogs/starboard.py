@@ -9,6 +9,7 @@ from bot.constants import Config
 from discord import Embed, Emoji, PartialEmoji, TextChannel
 from discord.ext import commands
 from discord.utils import find, get
+from discord.erros import NotFound
 from emoji import demojize
 
 log = logging.getLogger(__name__)
@@ -195,7 +196,10 @@ class Starboard(commands.Cog):
 
     @commands.command()
     async def starboard(self, ctx, channel: TextChannel, message_id: int):
-        message = await channel.fetch_message(message_id)
+        try:
+            message = await channel.fetch_message(message_id)
+        except NotFound :
+            return await ctx.send_error("Message not found")
 
         starscore = '\n        '.join(
                         f"`{r.count} / {self.calculate_ignore_score(r)}` {r.emoji}" for r in message.reactions)
