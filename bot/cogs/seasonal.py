@@ -1,12 +1,11 @@
 import asyncio
 import itertools
 from contextlib import suppress
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 from discord import Embed
-from discord.ext import tasks, commands
+from discord.ext import commands, tasks
 from discord.ext.commands.core import has_permissions
-
 
 
 class SeasonDate(commands.Converter):
@@ -62,14 +61,15 @@ class Seasonal(commands.Cog):
         events = await self.bot.db.seasons.load_events(ctx.guild.id)
         (past_events, upcoming_events) = partition(events, lambda e: e['to_date'] > datetime.now(CEST))
 
-        embed = Embed()
-        embed.add_field(name="Upcoming events: \n", value="\n".join(list(map(format, upcoming_events))))
-        embed.add_field(name="Past events: \n", value="\n".join(list(map(format, past_events))[-5:][::-1]))
-
         if not events:
             await ctx.send("There are no events for this guild")
-        else:
-            await ctx.send(embed=embed)
+            return
+
+        embed = Embed()
+        embed.add_field(name="Upcoming events: \n", value="\n".join(list(map(format, upcoming_events))) or "No upcoming events")
+        embed.add_field(name="Past events: \n", value="\n".join(list(map(format, past_events))[-5:][::-1]) or "No past events")
+
+        await ctx.send(embed=embed)
 
 
     @season.command(name="add")
