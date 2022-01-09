@@ -122,4 +122,4 @@ TEST-**.xml
 .DS_Store
 
 # backups
-*.sql.gz
+database/backup
