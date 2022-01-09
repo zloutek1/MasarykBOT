@@ -7,9 +7,9 @@ from textwrap import dedent
 
 from bot.constants import Config
 from discord import Embed, Emoji, PartialEmoji, TextChannel
+from discord.errors import NotFound
 from discord.ext import commands
 from discord.utils import find, get
-from discord.erros import NotFound
 from emoji import demojize
 
 log = logging.getLogger(__name__)
