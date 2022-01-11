@@ -8,6 +8,7 @@ from typing import Dict, List, Tuple, cast
 
 from discord.ext import commands, tasks
 from discord.ext.commands import has_permissions
+from discord.utils import escape_mentions
 
 log = logging.getLogger(__name__)
 
@@ -38,7 +39,7 @@ class Markov(commands.Cog):
             return await ctx.send_error("no data loaded")
 
         message = self.to_message(self.simulate())
-        await ctx.send(message)
+        await ctx.send(escape_mentions(message))
 
     @markov.command(aliases=['retrain'])
     @has_permissions(administrator=True)
