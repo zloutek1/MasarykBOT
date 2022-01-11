@@ -131,3 +131,32 @@ AS $BODY$
 		END LOOP;
 	END
 $BODY$;
+
+-- FUNCTION: server.update_markov()
+
+-- DROP FUNCTION IF EXISTS server.update_markov();
+
+CREATE OR REPLACE FUNCTION server.update_markov()
+    RETURNS trigger
+    LANGUAGE 'plpgsql'
+    COST 100
+    VOLATILE NOT LEAKPROOF
+AS $BODY$
+BEGIN
+    CALL cogs.markov_train_line(NEW.content);
+	RETURN NEW;
+END
+$BODY$;
+
+ALTER FUNCTION server.update_markov()
+    OWNER TO masaryk;
+
+-- Trigger: update_markov
+
+-- DROP TRIGGER IF EXISTS update_markov ON server.messages;
+
+CREATE TRIGGER update_markov
+    AFTER INSERT
+    ON server.messages
+    FOR EACH ROW
+    EXECUTE FUNCTION server.update_markov();
