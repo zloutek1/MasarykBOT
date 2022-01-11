@@ -11,23 +11,7 @@ from bot.cogs.utils.db import Database
 from bot.cogs.utils.logging import setup_logging
 
 initail_cogs = [
-    "bot.cogs.verification",
-    "bot.cogs.cog_manager",
-    "bot.cogs.leaderboard",
-    "bot.cogs.starboard",
-    "bot.cogs.bookmark",
-    "bot.cogs.rolemenu",
-    "bot.cogs.seasonal",
-    "bot.cogs.subject",
-    "bot.cogs.errors",
-    "bot.cogs.logger",
     "bot.cogs.markov",
-    "bot.cogs.rules",
-    "bot.cogs.admin",
-    "bot.cogs.eval",
-    "bot.cogs.help",
-    "bot.cogs.info",
-    "bot.cogs.fun"
 ]
 
 if __name__ == "__main__":

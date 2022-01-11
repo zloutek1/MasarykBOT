@@ -802,9 +802,9 @@ class Markov(Table):
 
     @withConn
     async def train(self, conn):
-        await conn.execute(f"""
-            CALL markov_train();
-        """)
+        await conn.fetch(f"""
+            CALL cogs.markov_train();
+        """, timeout=604800)
 
 class DBBase:
     def __init__(self, pool):
