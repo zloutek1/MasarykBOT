@@ -63,7 +63,8 @@ AS $BODY$
 	WHERE NOT (
 		word LIKE '!%' OR
 		word LIKE '@%' OR
-		word LIKE '%<@%'
+		word LIKE '%<@%' OR
+		word LIKE '%<!@%'
 	)
 $BODY$;
 
