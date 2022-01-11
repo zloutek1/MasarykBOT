@@ -1,5 +1,5 @@
-import os
 import logging
+import os
 import traceback
 
 import discord
@@ -7,9 +7,8 @@ from discord.ext import commands
 from dotenv import load_dotenv
 
 from bot.bot import MasarykBOT
-from bot.cogs.utils.logging import setup_logging
 from bot.cogs.utils.db import Database
-
+from bot.cogs.utils.logging import setup_logging
 
 initail_cogs = [
     "bot.cogs.verification",
@@ -22,6 +21,7 @@ initail_cogs = [
     "bot.cogs.subject",
     "bot.cogs.errors",
     "bot.cogs.logger",
+    "bot.cogs.markov",
     "bot.cogs.rules",
     "bot.cogs.admin",
     "bot.cogs.eval",
