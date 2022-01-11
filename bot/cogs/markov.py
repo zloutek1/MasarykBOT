@@ -8,6 +8,7 @@ from typing import Dict, List, Tuple, cast
 
 from discord.ext import commands, tasks
 from discord.ext.commands import has_permissions
+from discord.utils import escape_mentions
 
 log = logging.getLogger(__name__)
 
@@ -30,14 +31,15 @@ class Markov(commands.Cog):
         self.state = MarkovState.UNINITIALIZED
 
     @commands.group(invoke_without_command=True)
-    async def markov(self, ctx, *message):
+    async def markov(self, ctx, *_anything):
         if self.state != MarkovState.READY:
             return await ctx.send_error(f"markov is not ready, current state is {self.state}")
 
         if not self.ngrams:
             return await ctx.send_error("no data loaded")
 
-        await ctx.send(self.to_message(self.simulate()))
+        message = self.to_message(self.simulate())
+        await ctx.send(escape_mentions(message))
 
     @markov.command(aliases=['retrain'])
     @has_permissions(administrator=True)
