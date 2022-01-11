@@ -798,6 +798,7 @@ class Markov(Table):
     async def load(self, conn):
         return await conn.fetch("""
             SELECT * FROM cogs.markov
+            LIMIT 1000000
         """)
 
     @withConn
