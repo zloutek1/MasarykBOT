@@ -29,8 +29,6 @@ class Markov(commands.Cog):
         self.ngrams: defaultdict[NGram] = defaultdict(dict[str, int])
         self.state = MarkovState.UNINITIALIZED
 
-        self.task_reload_markov.start()
-
     @commands.group(invoke_without_command=True)
     async def markov(self, ctx, *message):
         if self.state != MarkovState.READY:
@@ -62,6 +60,10 @@ class Markov(commands.Cog):
         if not await self._load():
             return await ctx.send_error(f"markov is not ready, current state is {self.state}")
         await ctx.reply("[Markov] Data loaded")
+
+    @commands.Cog.listener()
+    async def on_ready(self):
+        self.task_reload_markov.start()
 
     async def _load(self):
         """

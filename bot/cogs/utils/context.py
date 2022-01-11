@@ -1,10 +1,11 @@
-import io
-import discord
-from discord.utils import get
-from discord.ext import commands
-from discord.errors import NotFound
-from contextlib import suppress
 import asyncio
+import io
+from contextlib import suppress
+
+import discord
+from discord.errors import HTTPException, NotFound
+from discord.ext import commands
+from discord.utils import get
 
 
 class Context(commands.Context):
@@ -73,7 +74,7 @@ class Context(commands.Context):
             return await self.send(content)
 
     async def send_embed(self, content, name="Message", delete_after=None, **kwargs):
-        from datetime import datetime, timezone, timedelta
+        from datetime import datetime, timedelta, timezone
         CEST = timezone(offset=timedelta(hours=+2))
         now = datetime.now(CEST).strftime("%d.%m.%Y %H:%M:%S")
 
@@ -101,6 +102,12 @@ class Context(commands.Context):
         with suppress(NotFound):
             await message.add_reaction('\N{WASTEBASKET}')
             asyncio.get_event_loop().create_task(self._wait_for_reaction_or_clear(message))
+
+    async def reply(self, *args, **kwargs):
+        try:
+            return await super().reply(*args, **kwargs)
+        except HTTPException:
+            return await self.send(*args, **kwargs)
 
     async def _wait_for_reaction_or_clear(self, message):
         def react_check(reaction, user):
