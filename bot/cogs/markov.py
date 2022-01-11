@@ -11,8 +11,8 @@ from discord.ext.commands import has_permissions
 
 log = logging.getLogger(__name__)
 
-N = 3
-NGram = Tuple[str, str, str]
+N = 2
+NGram = Tuple[str, str]
 
 SOF = "​SOF​"
 EOF = "​EOF​"
@@ -93,10 +93,9 @@ class Markov(commands.Cog):
         return self.simulate_from(start)
 
     def simulate_from(self, ngram: NGram) -> List[str]:
-        assert N == 3
+        assert N == 2
 
         options = self.ngrams.get(ngram)
-        print("opt", ngram, options)
         if options is None or len(options.keys()) == 0:
             return list(ngram) + [EOF]
 

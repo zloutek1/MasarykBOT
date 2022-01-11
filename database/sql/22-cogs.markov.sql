@@ -5,8 +5,7 @@
 CREATE TYPE cogs."NGram" AS
 (
 	first character varying,
-	second character varying,
-	third character varying
+	second character varying
 );
 
 ALTER TYPE cogs."NGram"
@@ -24,7 +23,7 @@ CREATE OR REPLACE FUNCTION cogs.array_to_ngram(
     VOLATILE PARALLEL UNSAFE
 AS $BODY$
 	BEGIN
-		RETURN ROW(words[1], words[2], words[3]) :: cogs."NGram";
+		RETURN ROW(words[1], words[2]) :: cogs."NGram";
 	END
 $BODY$;
 
@@ -81,7 +80,7 @@ LANGUAGE 'plpgsql'
 AS $BODY$
 	#variable_conflict use_column
 	DECLARE
-		N         int := 3; -- depends on size of cogs."NGram"
+		N         int := 2; -- depends on size of cogs."NGram"
 		i         int;
 
 		words     text[];
@@ -123,7 +122,7 @@ AS $BODY$
 		msg   text;
 	BEGIN
 		TRUNCATE cogs.markov;
-		FOR msg IN EXECUTE 'SELECT content FROM server.messages'
+		FOR msg IN EXECUTE 'SELECT content FROM server.messages  WHERE length(content) > 50'
 		LOOP
 			IF msg <> '' THEN
 				msg := '​SOF​ ' || msg || ' ​EOF​';

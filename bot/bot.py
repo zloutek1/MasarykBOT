@@ -50,6 +50,7 @@ class MasarykBOT(commands.Bot):
     async def reply_markov(self, ctx):
         markov = self.get_command("markov")
         if markov is not None and await markov.can_run(ctx):
+            log.info("user %s used markov by mention: %s", ctx.message.author, ctx.message.content)
             await markov(ctx)
 
     async def on_message(self, message):
