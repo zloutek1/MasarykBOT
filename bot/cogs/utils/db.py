@@ -289,6 +289,10 @@ class Messages(Table, Mapper[Message]):
         """, message_id)
 
     @withConn
+    async def select_all(self, conn):
+        return await conn.fetch("SELECT * FROM server.messages")
+
+    @withConn
     async def insert(self, conn, messages):
         await conn.executemany("""
             INSERT INTO server.messages AS m (channel_id, author_id, id, content, created_at)
@@ -309,7 +313,6 @@ class Messages(Table, Mapper[Message]):
     @withConn
     async def soft_delete(self, conn, ids):
         await conn.executemany("UPDATE server.messages SET deleted_at=NOW() WHERE id = $1;", ids)
-
 
 
 class Attachments(Table, Mapper[Attachment], FromMessageMapper):
@@ -788,6 +791,21 @@ class Seasons(Table):
             WHERE guild_id = $1 AND id = $2
         """, guild_id, id)
 
+
+
+class Markov(Table):
+    @withConn
+    async def load(self, conn):
+        return await conn.fetch("""
+            SELECT * FROM cogs.markov
+        """)
+
+    @withConn
+    async def train(self, conn):
+        await conn.execute(f"""
+            CALL markov_train();
+        """)
+
 class DBBase:
     def __init__(self, pool):
         self.pool = pool
@@ -826,3 +844,4 @@ class Database(DBBase):
         self.emojiboard = Emojiboard(self.pool)
         self.subjects = Subjects(self.pool)
         self.seasons = Seasons(self.pool)
+        self.markov = Markov(self.pool)

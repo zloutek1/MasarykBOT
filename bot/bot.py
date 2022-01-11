@@ -1,16 +1,15 @@
 import asyncio
 import logging
 import traceback
-from datetime import datetime, timezone
 from collections import Counter
-
+from datetime import datetime, timezone
 from typing import Optional
 
 from discord.ext import commands
 
-from bot.constants import Config
 from bot.cogs.utils import context
 from bot.cogs.utils.db import Database
+from bot.constants import Config
 
 DESCRIPTION = """
 $ Hello
@@ -37,6 +36,8 @@ class MasarykBOT(commands.Bot):
         ctx = await self.get_context(message, cls=context.Context)
 
         if ctx.command is None:
+            if self.user.id in ctx.message.raw_mentions:
+                await self.reply_markov(ctx)
             return
 
         log.info("user %s used command: %s", message.author, message.content)
@@ -45,6 +46,11 @@ class MasarykBOT(commands.Bot):
         except KeyboardInterrupt:
             log.info("User initiated power off, closing")
             await self.close()
+
+    async def reply_markov(self, ctx):
+        markov = self.get_command("markov")
+        if markov is not None and await markov.can_run(ctx):
+            await markov(ctx)
 
     async def on_message(self, message):
         if message.author.bot:
