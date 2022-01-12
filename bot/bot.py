@@ -1,11 +1,11 @@
-import asyncio
 import logging
-import traceback
+import os
 from collections import Counter
 from datetime import datetime, timezone
 from typing import Optional
 
 from discord.ext import commands
+from redis import Redis
 
 from bot.cogs.utils import context
 from bot.cogs.utils.db import Database
@@ -19,10 +19,11 @@ log = logging.getLogger(__name__)
 
 
 class MasarykBOT(commands.Bot):
-    def __init__(self, db: Database, *args, description=DESCRIPTION, **kwargs):
+    def __init__(self, db: Database, *args, redis: Optional[Redis] = None, description=DESCRIPTION, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.db: Database = db
+        self.redis: Optional[Redis] = redis
         self.uptime: Optional[datetime] = None
 
     async def on_ready(self):
