@@ -10,3 +10,4 @@ pytest-cov==2.11.1
 rich==9.12.4
 discord-handler==0.0.2
 Pillow==8.4.0
+redis==4.1.0

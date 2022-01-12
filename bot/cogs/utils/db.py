@@ -291,8 +291,11 @@ class Messages(Table, Mapper[Message]):
         """, message_id)
 
     @withConn
-    async def select_all(self, conn):
-        return await conn.fetch("SELECT * FROM server.messages")
+    async def select_all_long(self, conn):
+        return await conn.fetch("""
+            SELECT * FROM server.messages
+            WHERE LENGTH(content) > 50
+        """)
 
     @withConn
     async def insert(self, conn, messages):

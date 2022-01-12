@@ -16,6 +16,13 @@ services:
       - postgres:/var/lib/postgresql/data     # persist data even if container shuts down
     restart: unless-stopped
 
+  redis:
+    container_name: redis
+    image: redislabs/rejson:2.0.6
+    ports:
+      - 6379:6379
+    restart: unless-stopped
+
   bot:
     container_name: bot
     build:
