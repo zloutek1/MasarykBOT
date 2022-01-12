@@ -39,7 +39,7 @@ class Markov(commands.Cog):
             return await ctx.send_error("no data loaded")
 
         message = self.to_message(self.simulate())
-        await ctx.send(escape_mentions(message))
+        await ctx.reply(escape_mentions(message), mention_author=False)
 
     @markov.command(aliases=['retrain'])
     @has_permissions(administrator=True)
