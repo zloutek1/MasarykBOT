@@ -45,8 +45,11 @@ class Markov(commands.Cog):
     @has_permissions(administrator=True)
     async def train(self, ctx):
         await ctx.send("[Markov] Training ...")
-        if not await self._train():
+
+        success = await asyncio.loop.run_in_executor(None, self._train)
+        if not success:
             return await ctx.send_error(f"markov is not ready, current state is {self.state}")
+
         await ctx.reply("[Markov] Finished training")
 
     @commands.Cog.listener()
@@ -84,6 +87,7 @@ class Markov(commands.Cog):
         if self.state not in (MarkovState.UNINITIALIZED, MarkovState.READY):
             return False
         self.state = MarkovState.TRAINING
+        log.info("Markov training started")
 
         messages = await self.bot.db.messages.select_all_long()
         for i, message in enumerate(messages):
@@ -97,6 +101,7 @@ class Markov(commands.Cog):
             line = f"{SOF} {message.get('content')} {EOF}"
             self.markov_train_line(message, line)
 
+        log.info("Markov training finished")
         self.state = MarkovState.UNINITIALIZED
 
     def markov_train_line(self, message, line: str):
