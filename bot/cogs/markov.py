@@ -81,9 +81,7 @@ class Markov(commands.Cog):
 
     def simulate(self) -> List[str]:
         start = random.choice(self.possible_starts)
-
-        ngram = cast(NGram, tuple(start.lstrip("markov.").split(SEP)))
-        return self.simulate_from(ngram)
+        return self.simulate_from(start)
 
     def simulate_from(self, ngram: NGram) -> List[str]:
         assert N == 2
