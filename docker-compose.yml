@@ -34,6 +34,9 @@ services:
       - COLUMNS=150
     volumes:
       - .:/MasarykBOT
+    depends_on:
+      - database
+      - redis
     restart: unless-stopped
 
   tests:
