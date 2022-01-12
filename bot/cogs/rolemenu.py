@@ -1,14 +1,12 @@
-import re
 import logging
+import re
 from typing import Union
 
-from discord import Emoji, PartialEmoji, PermissionOverwrite, Member, User
-from discord.ext import commands
-from discord.utils import get, find
-from discord.errors import HTTPException, Forbidden
-
 from bot.constants import Config
-
+from discord import Emoji, Member, PartialEmoji, PermissionOverwrite, User
+from discord.errors import Forbidden, HTTPException
+from discord.ext import commands
+from discord.utils import find, get
 
 log = logging.getLogger(__name__)
 
@@ -191,6 +189,8 @@ class Rolemenu(commands.Cog):
             except Forbidden as err:
                 if err.code == E_MISSING_ACCESS:
                     log.warning("Missing access for option %s", row)
+            except TimeoutError as err:
+                log.warning("Balancing rolemenu for guild %s timed out", message.guild)
 
     @staticmethod
     def parse(message):
