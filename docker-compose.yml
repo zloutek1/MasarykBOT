@@ -21,6 +21,8 @@ services:
     image: redislabs/rejson:2.0.6
     ports:
       - 6379:6379
+    volumes:
+      - redis:/data                           # persist data even if container shuts down
     restart: unless-stopped
 
   bot:
@@ -79,3 +81,4 @@ services:
 
 volumes:
   postgres:
+  redis:
