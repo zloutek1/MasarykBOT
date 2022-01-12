@@ -53,7 +53,7 @@ class Markov(commands.Cog):
         else:
             return await ctx.send_error(f"markov chain simulation timed out :(")
 
-        await ctx.reply(escape_mentions(self.to_message(sate)), mention_author=False)
+        await ctx.reply(escape_mentions(self.to_message(state)), mention_author=False)
 
     @markov.command(aliases=['retrain'])
     @has_permissions(administrator=True)
