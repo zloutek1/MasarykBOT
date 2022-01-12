@@ -31,6 +31,8 @@ class Markov(commands.Cog):
         self.bot = bot
         self.state = MarkovState.UNINITIALIZED
 
+        assert self.bot.redis is not None, "this cog requires redis to function"
+
     @commands.group(invoke_without_command=True)
     async def markov(self, ctx, *_anything):
         if self.state != MarkovState.READY:
