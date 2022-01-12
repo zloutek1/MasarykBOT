@@ -34,6 +34,7 @@ class Markov(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.state = MarkovState.UNINITIALIZED
+        self.possible_starts = []
 
         assert self.bot.redis is not None, "this cog requires redis to function"
 
@@ -42,8 +43,17 @@ class Markov(commands.Cog):
         if self.state != MarkovState.READY:
             return await ctx.send_error(f"markov is not ready, current state is {self.state}")
 
-        message = self.to_message(self.simulate())
-        await ctx.reply(escape_mentions(message), mention_author=False)
+        i = 0
+        while i < 100:
+            state = self.simulate()
+            if len(state) <= 2:
+                i += 2
+            else:
+                break
+        else:
+            return await ctx.send_error(f"markov chain simulation timed out :(")
+
+        await ctx.reply(escape_mentions(self.to_message(sate)), mention_author=False)
 
     @markov.command(aliases=['retrain'])
     @has_permissions(administrator=True)
@@ -58,19 +68,19 @@ class Markov(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        await self._train()
+        messages = await self.bot.db.messages.select_all_long()
+        self.possible_starts = [
+            (SOF, message.get('content').split(maxsplit=1)[0])
+            for message in messages]
+        self.state = MarkovState.READY
 
-    def to_message(self, message: List[str]) -> str:
-        assert message[0] == SOF
-        assert message[-1] == EOF
-        return " ".join(message[1:-1])
+    def to_message(self, parts: List[str]) -> str:
+        assert parts[0] == SOF, f"message parts must start with SOF, but was {parts}"
+        assert parts[-1] == EOF, f"message parts must end with EOF, but was {parts}"
+        return " ".join(parts[1:-1])
 
     def simulate(self) -> List[str]:
-        possible_starts = [
-            key
-            for key in self.bot.redis.scan_iter("markov.*")
-            if key.startswith("markov." + SOF)]
-        start = random.choice(possible_starts)
+        start = random.choice(self.possible_starts)
 
         ngram = cast(NGram, tuple(start.lstrip("markov.").split(SEP)))
         return self.simulate_from(ngram)
