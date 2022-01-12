@@ -1,11 +1,9 @@
 import asyncio
+import functools
 import logging
-import math
 import random
-import re
-from collections import Counter, defaultdict
 from enum import Enum
-from typing import Dict, List, Tuple, cast
+from typing import Callable, Coroutine, List, Tuple, cast
 
 from discord.ext import commands, tasks
 from discord.ext.commands import has_permissions
@@ -25,6 +23,12 @@ class MarkovState(Enum):
     UNINITIALIZED = "UNINITIALIZED"
     READY = "READY"
     TRAINING = "TRAINING"
+
+def to_thread(func: Callable) -> Coroutine:
+    @functools.wraps(func)
+    async def wrapper(*args, **kwargs):
+        return await asyncio.to_thread(func, *args, **kwargs)
+    return wrapper
 
 class Markov(commands.Cog):
     def __init__(self, bot):
@@ -46,7 +50,7 @@ class Markov(commands.Cog):
     async def train(self, ctx):
         await ctx.send("[Markov] Training ...")
 
-        success = await asyncio.loop.run_in_executor(None, self._train)
+        success = await self._train()
         if not success:
             return await ctx.send_error(f"markov is not ready, current state is {self.state}")
 
@@ -99,11 +103,12 @@ class Markov(commands.Cog):
                 continue
 
             line = f"{SOF} {message.get('content')} {EOF}"
-            self.markov_train_line(message, line)
+            await self.markov_train_line(message, line)
 
         log.info("Markov training finished")
         self.state = MarkovState.UNINITIALIZED
 
+    @to_thread
     def markov_train_line(self, message, line: str):
         words = line.split()
         words = [word for word in words if self.filter_word(message, word)]
