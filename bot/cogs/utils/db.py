@@ -192,7 +192,7 @@ class Roles(Table, Mapper[Role]):
 class Members(Table, Mapper[Member], FromMessageMapper):
     @staticmethod
     async def prepare_one(member: Member):
-        return (member.id, member.name, str(member.avatar_url), member.created_at)
+        return (member.id, member.name, str(member.avatar_url), member.bot, member.created_at)
 
     async def prepare(self, members: List[Member]):
         return [await self.prepare_one(member) for member in members]
@@ -209,18 +209,20 @@ class Members(Table, Mapper[Member], FromMessageMapper):
     @withConn
     async def insert(self, conn, data):
         await conn.executemany("""
-            INSERT INTO server.users AS u (id, names, avatar_url, created_at)
-            VALUES ($1, ARRAY[$2], $3, $4)
+            INSERT INTO server.users AS u (id, names, avatar_url, is_bot, created_at)
+            VALUES ($1, ARRAY[$2], $3, $4, $5)
             ON CONFLICT (id) DO UPDATE
                 SET names=ARRAY(
                         SELECT DISTINCT e
                         FROM unnest(array_prepend($2::varchar, u.names)) AS a(e)
                     ),
                     avatar_url=$3,
-                    created_at=$4,
+                    is_bot=$4,
+                    created_at=$5,
                     edited_at=NOW()
                 WHERE $2<>ANY(excluded.names) OR
                         u.avatar_url<>excluded.avatar_url OR
+                        u.is_bot<>excluded.is_bot OR
                         u.created_at<>excluded.created_at
         """, data)
 
