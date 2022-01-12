@@ -71,14 +71,15 @@ class Starboard(commands.Cog):
 
         await message.add_reaction(reaction.emoji)
 
-        starboard_channel = await self.get_or_create_channel(guild, *self.channel_to_starboard_map(channel, guild_config))
+        starboard_channel = await self.get_or_create_channel(guild, *self.pick_target_starboard_channel(message, guild_config))
 
         await starboard_channel.send(embed=await self.get_embed(message))
 
-    @staticmethod
-    def channel_to_starboard_map(channel, guild_config):
-        if channel.name == "memes":
+    def pick_target_starboard_channel(self, message, guild_config):
+        if message.channel.name == "memes":
             return (guild_config.channels.best_of_memes, "best-of-memes")
+        elif message.author.id == self.bot.user.id:
+            return (guild_config.channels.best_of_masaryk, "best-of-masaryk")
         else:
             return (guild_config.channels.starboard, "starboard")
 
