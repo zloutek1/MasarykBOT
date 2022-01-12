@@ -3,6 +3,7 @@ import os
 import traceback
 
 import discord
+import redis
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -38,11 +39,23 @@ if __name__ == "__main__":
 
     if os.getenv("POSTGRES") is None:
         log.exception("postgresql connection is required to run the bot, exiting...")
-        exit()
+        exit(1)
 
     if os.getenv("TOKEN") is None:
         log.exception("discord bot token is required to run the bot, exiting...")
-        exit()
+        exit(1)
+
+    redis_client = None
+    if os.getenv("REDIS"):
+        try:
+            host, port = os.getenv("REDIS").split(":")
+            redis_client = redis.Redis(host=host, port=port, db=0,
+                                       decode_responses=True)
+            redis_client.get("--test--")
+        except redis.exceptions.ConnectionError:
+            log.exception("redis connection failed, exiting...")
+            exit(1)
+
 
     intents = discord.Intents(
         guilds=True,
@@ -54,6 +67,7 @@ if __name__ == "__main__":
         dm_reactions=True)
 
     bot = MasarykBOT(db=Database.connect(os.getenv("POSTGRES")),
+                     redis=redis_client,
                      command_prefix=commands.when_mentioned_or("!"),
                      intents=intents,
                      allowed_mentions=discord.AllowedMentions(roles=False, everyone=False, users=True),)
