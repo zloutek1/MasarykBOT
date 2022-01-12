@@ -1,6 +1,6 @@
 import logging
 import os
-import traceback
+import time
 
 import discord
 import redis
@@ -47,14 +47,19 @@ if __name__ == "__main__":
 
     redis_client = None
     if os.getenv("REDIS"):
-        try:
-            host, port = os.getenv("REDIS").split(":")
-            redis_client = redis.Redis(host=host, port=port, db=0,
-                                       decode_responses=True)
-            redis_client.get("--test--")
-        except redis.exceptions.ConnectionError:
-            log.exception("redis connection failed, exiting...")
-            exit(1)
+        while True:
+            try:
+                host, port = os.getenv("REDIS").split(":")
+                redis_client = redis.Redis(host=host, port=port, db=0,
+                                        decode_responses=True)
+                redis_client.get("--test--")
+                break
+            except redis.exceptions.BusyLoadingError:
+                log.warning("redis is loading, sleeping for 10 seconds...")
+                time.sleep(10)
+            except redis.exceptions.ConnectionError:
+                log.exception("redis connection failed, exiting...")
+                exit(1)
 
 
     intents = discord.Intents(
