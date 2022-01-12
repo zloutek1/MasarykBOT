@@ -1,15 +1,13 @@
-import sys
 import collections
 import datetime
-from functools import wraps
-from dataclasses import dataclass
-
+import sys
 import unittest.mock
+from dataclasses import dataclass
+from functools import wraps
+from typing import List, Optional, Union, get_args, get_origin
 
-from typing import Optional, List, Union, get_origin, get_args
-
-from bot.cogs.utils import db
 from asyncpg.protocol.protocol import _create_record as Record
+from bot.cogs.utils import db
 
 
 class _MISSING_TYPE:
@@ -215,6 +213,7 @@ class MockMemberRecord:
     id: int
     names: List[str]
     avatar_url: str
+    is_bot: bool
     created_at: datetime.datetime
     edited_at: Optional[datetime.datetime] = None
     deleted_at: Optional[datetime.datetime] = None

@@ -125,17 +125,17 @@ class LoggerBackupUntilPresentTests(unittest.IsolatedAsyncioTestCase):
     async def test_backup_small_members(self):
         guild = MockGuild(id=8)
         members = [
-            MockMember(guild=guild, id=10, name="User", avatar_url="http://image.png", discriminator="9010", created_at=date.today()),
-            MockMember(guild=guild, id=11, name="Bob", avatar_url="http://image2.png", discriminator="1100", created_at=date.today()),
-            MockMember(guild=guild, id=12, name="Zlo", avatar_url="http://image3.png", discriminator="0000", created_at=date(2010, 11, 12)),
+            MockMember(guild=guild, id=10, name="User", avatar_url="http://image.png", bot=False, discriminator="9010", created_at=date.today()),
+            MockMember(guild=guild, id=11, name="Bob", avatar_url="http://image2.png", bot=False, discriminator="1100", created_at=date.today()),
+            MockMember(guild=guild, id=12, name="Zlo", avatar_url="http://image3.png", bot=False, discriminator="0000", created_at=date(2010, 11, 12)),
         ]
 
         await self.cog.backup_members(members)
 
         self.bot.db.members.insert.assert_called_once_with([
-            (10, "User", "http://image.png", date.today()),
-            (11, "Bob", "http://image2.png", date.today()),
-            (12, "Zlo", "http://image3.png", date(2010, 11, 12))
+            (10, "User", "http://image.png", False, date.today()),
+            (11, "Bob", "http://image2.png", False, date.today()),
+            (12, "Zlo", "http://image3.png", False, date(2010, 11, 12))
         ])
 
     async def test_backup_thousand_members(self):
@@ -143,14 +143,14 @@ class LoggerBackupUntilPresentTests(unittest.IsolatedAsyncioTestCase):
 
         guild = MockGuild(id=8)
         members = [
-            MockMember(guild=guild, id=index, name=names[index % len(names)], avatar_url="http://image.png", discriminator=f"{index:0>4}", created_at=date.today())
+            MockMember(guild=guild, id=index, name=names[index % len(names)], avatar_url="http://image.png", bot=False, discriminator=f"{index:0>4}", created_at=date.today())
             for index in range(1_000)
         ]
 
         await self.cog.backup_members(members)
 
         def fmt(m):
-            return m.id, m.name, m.avatar_url, m.created_at
+            return m.id, m.name, m.avatar_url, m.bot, m.created_at
 
         self.assertEqual(self.bot.db.members.insert.call_count, len(members) // 550 + 1)
         self.bot.db.members.insert.assert_has_calls([
@@ -275,7 +275,7 @@ class LoggerBackupUntilPresentTests(unittest.IsolatedAsyncioTestCase):
         channel = MockTextChannel(id=9)
 
         authors = {
-            'bob': MockMember(id=10, name="Bob", avatar_url="http://image.cz.jpg", created_at=datetime(2020, 9, 13, 10, 00, 00)),
+            'bob': MockMember(id=10, name="Bob", avatar_url="http://image.cz.jpg", bot=False, created_at=datetime(2020, 9, 13, 10, 00, 00)),
             'joe': MockUser(id=13, name="Joe", avatar_url="http://spam.com/thumb.png", created_at=datetime(2010, 9, 13, 10, 00, 00))
         }
 
@@ -305,11 +305,11 @@ class LoggerBackupUntilPresentTests(unittest.IsolatedAsyncioTestCase):
         await self.cog.backup_in_range(channel, from_date=datetime(2020, 9, 10, 12, 50, 42), to_date=datetime(2020, 9, 17, 12, 50, 42), is_first_week=False)
 
         self.bot.db.members.insert.assert_called_once_with([
-            (10, "Bob", "http://image.cz.jpg", datetime(2020, 9, 13, 10, 00, 00)),
-            (10, "Bob", "http://image.cz.jpg", datetime(2020, 9, 13, 10, 00, 00)),
-            (13, "Joe", "http://spam.com/thumb.png", datetime(2010, 9, 13, 10, 00, 00)),
-            (10, "Bob", "http://image.cz.jpg", datetime(2020, 9, 13, 10, 00, 00)),
-            (13, "Joe", "http://spam.com/thumb.png", datetime(2010, 9, 13, 10, 00, 00)),
+            (10, "Bob", "http://image.cz.jpg", False, datetime(2020, 9, 13, 10, 00, 00)),
+            (10, "Bob", "http://image.cz.jpg", False, datetime(2020, 9, 13, 10, 00, 00)),
+            (13, "Joe", "http://spam.com/thumb.png", False, datetime(2010, 9, 13, 10, 00, 00)),
+            (10, "Bob", "http://image.cz.jpg", False, datetime(2020, 9, 13, 10, 00, 00)),
+            (13, "Joe", "http://spam.com/thumb.png", False, datetime(2010, 9, 13, 10, 00, 00)),
         ])
 
         self.bot.db.messages.insert.assert_called_once_with([

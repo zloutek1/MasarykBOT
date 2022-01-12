@@ -60,9 +60,9 @@ class DBTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_member_prepare(self):
         table = db.Members(MockPool())
-        member = MockMember(id=10, name="Bob", avatar_url="http://www.image.com", created_at=datetime(2020, 9, 13, 12, 50, 42))
+        member = MockMember(id=10, name="Bob", avatar_url="http://www.image.com", bot=False, created_at=datetime(2020, 9, 13, 12, 50, 42))
 
-        expected = (10, "Bob", 'http://www.image.com', datetime(2020, 9, 13, 12, 50, 42))
+        expected = (10, "Bob", 'http://www.image.com', False, datetime(2020, 9, 13, 12, 50, 42))
         actual = await table.prepare_one(member)
         self.assertTupleEqual(expected, actual)
 
@@ -434,8 +434,8 @@ class TestRoleQueries(TestQueries):
 class TestMemberQueries(TestQueries):
     async def asyncSetUp(self):
         self.members = [
-            (10, "First", "http://avatar.jpg", datetime(2020, 9, 20)),
-            (11, "Hello", "http://avatar2.jpg", datetime(2020, 9, 22))
+            (10, "First", "http://avatar.jpg", False, datetime(2020, 9, 20)),
+            (11, "Hello", "http://avatar2.jpg", False, datetime(2020, 9, 22))
         ]
 
         self.select = self.db.members.select.__wrapped__
@@ -455,6 +455,7 @@ class TestMemberQueries(TestQueries):
             id=11,
             names=["Hello"],
             avatar_url="http://avatar2.jpg",
+            is_bot=False,
             created_at=datetime(2020, 9, 22),
             edited_at=None,
             deleted_at=None)]
@@ -467,7 +468,7 @@ class TestMemberQueries(TestQueries):
         _self = self.db.members
 
         updated_members = [
-            (10, "Second", "http://avatar.png", datetime(2020, 9, 20)),
+            (10, "Second", "http://avatar.png", False, datetime(2020, 9, 20)),
         ]
 
         await self.insert(_self, conn, self.members)
@@ -477,6 +478,7 @@ class TestMemberQueries(TestQueries):
         row = next(filter(lambda row: row["id"] == 10, actual))
         self.assertListEqual(row["names"], ["Second", "First"])
         self.assertEqual(row["avatar_url"], "http://avatar.png")
+        self.assertEqual(row["is_bot"], False)
         self.assertIsNotNone(row["edited_at"])
 
     @db.withConn
@@ -485,8 +487,8 @@ class TestMemberQueries(TestQueries):
         _self = self.db.members
 
         updated_members = [
-            (10, "Second", "http://avatar.png", datetime(2020, 9, 20)),
-            (10, "Second", "http://avatar.png", datetime(2020, 9, 20)),
+            (10, "Second", "http://avatar.png", False, datetime(2020, 9, 20)),
+            (10, "Second", "http://avatar.png", False, datetime(2020, 9, 20)),
         ]
 
         await self.insert(_self, conn, self.members)
@@ -496,6 +498,7 @@ class TestMemberQueries(TestQueries):
         row = next(filter(lambda row: row["id"] == 10, actual))
         self.assertListEqual(row["names"], ["Second", "First"])
         self.assertEqual(row["avatar_url"], "http://avatar.png")
+        self.assertEqual(row["is_bot"], False)
         self.assertIsNotNone(row["edited_at"])
 
     @db.withConn
@@ -606,7 +609,7 @@ class TestMessageQueries(TestQueries):
         self.guild = (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20))
         await self.db.guilds.insert.__wrapped__(self.db.guilds, conn, [self.guild])
 
-        self.member = (9, "Sender1", "http://avatar.jpg", datetime(2020, 9, 20))
+        self.member = (9, "Sender1", "http://avatar.jpg", False, datetime(2020, 9, 20))
         await self.db.members.insert.__wrapped__(self.db.members, conn, [self.member])
 
         self.channel = (8, None, 10, "general", 1, datetime(2020, 9, 20))
@@ -681,7 +684,7 @@ class TestAttachmentQueries(TestQueries):
         self.guild = (8, "Main Guild", "http://image.jpg", datetime(2020, 9, 20))
         await self.db.guilds.insert.__wrapped__(self.db.guilds, conn, [self.guild])
 
-        self.member = (9, "Sender1", "http://avatar.jpg", datetime(2020, 9, 20))
+        self.member = (9, "Sender1", "http://avatar.jpg", False, datetime(2020, 9, 20))
         await self.db.members.insert.__wrapped__(self.db.members, conn, [self.member])
 
         self.channel = (8, None, 10, "general", 1, datetime(2020, 9, 20))
@@ -773,8 +776,8 @@ class TestReactionQueries(TestQueries):
         await self.db.guilds.insert.__wrapped__(self.db.guilds, conn, [self.guild])
 
         self.members = [
-            (100, "OP", "http://avatar2.jpg", datetime(2020, 9, 20)),
-            (9, "Sender1", "http://avatar.jpg", datetime(2020, 9, 20))
+            (100, "OP", "http://avatar2.jpg", False, datetime(2020, 9, 20)),
+            (9, "Sender1", "http://avatar.jpg", False, datetime(2020, 9, 20))
         ]
         await self.db.members.insert.__wrapped__(self.db.members, conn, self.members)
 
