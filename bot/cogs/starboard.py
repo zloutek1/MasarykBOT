@@ -23,7 +23,13 @@ class Starboard(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         channel = self.bot.get_channel(payload.channel_id)
-        message = await channel.fetch_message(payload.message_id)
+
+        try:
+            message = await channel.fetch_message(payload.message_id)
+        except NotFound:
+            log.warn(f"message with id {payload.message_id} in channel {channel} not found")
+            return
+
         reaction = find(lambda r: payload.emoji.name == (r.emoji if isinstance(r.emoji, str) else r.emoji.name), message.reactions)
         if reaction:
             await self.process_starboard(reaction)
