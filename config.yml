@@ -15,6 +15,7 @@ guilds:
       subject_registration: 628684083345489950
       starboard:            761552082159271936
       best_of_memes:        836224046030520410
+      best_of_masaryk:      930957842356244530
 
     logs:
       errors:               609413180137144331
@@ -42,6 +43,7 @@ guilds:
       subject_registration: 758267743119212576
       starboard:            751062312781217792
       best_of_memes:        null
+      best_of_masaryk:      930952840703262744
 
     logs:
       errors:               731435433564569632
