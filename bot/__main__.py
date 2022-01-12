@@ -51,7 +51,8 @@ if __name__ == "__main__":
             try:
                 host, port = os.getenv("REDIS").split(":")
                 redis_client = redis.Redis(host=host, port=port, db=0,
-                                        decode_responses=True)
+                                           decode_responses=True,
+                                           health_check_interval=30)
                 redis_client.get("--test--")
                 break
             except redis.exceptions.BusyLoadingError:
