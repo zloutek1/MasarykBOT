@@ -5,6 +5,7 @@ from random import choice, shuffle
 from urllib.parse import urlparse
 
 import requests
+import unicodeit
 from discord import Embed, File, Member, PartialEmoji
 from discord.ext import commands
 from PIL import Image
@@ -184,6 +185,11 @@ class Fun(commands.Cog):
         dots = [ dots[ 0 ], dots[ 2 ], dots[ 4 ], dots[ 1 ], dots[ 3 ], dots[ 5 ], dots[ 6 ], dots[ 7 ] ]
 
         return chr( 10240 + int( '0b' + ''.join(map(str, reversed(dots))), 2) )
+
+    @commands.command()
+    async def unicode(self, ctx, latex: str):
+        """Convert latex into unicode: https://github.com/svenkreiss/unicodeit"""
+        await ctx.send(unicodeit.replace(latex.strip('`')))
 
 def setup(bot):
     bot.add_cog(Fun(bot))

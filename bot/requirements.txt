@@ -11,3 +11,4 @@ rich==9.12.4
 discord-handler==0.0.2
 Pillow==9.0.0
 redis==4.1.0
+unicodeit==0.7.2
