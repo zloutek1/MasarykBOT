@@ -1,4 +1,7 @@
-from discord import Member, Color
+from ast import alias
+from typing import Optional
+
+from discord import Color, Member
 from discord.ext import commands
 from discord.utils import escape_markdown
 
@@ -8,8 +11,8 @@ from .utils import paginator
 class TagPages(paginator.Pages):
     def prepare_embed(self, entries, page, *, first=False):
         body = []
-        for entry in entries:
-            body.append(f'**•** {entry["name"]}')
+        for i, entry in enumerate(entries):
+            body.append(f'**{i+1}.** {entry["name"]}')
 
         if self.maximum_pages > 1:
             if self.show_entry_count:
@@ -57,74 +60,54 @@ class Tags(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     async def tag(self, ctx, *, name: TagName(lower=True)):
-        tag = await self.bot.db.tags.get_tag(ctx.guild.id, name)
+        tag = await self.bot.db.tags.find(ctx.guild.id, ctx.author.id, name)
         if tag is None:
-            return await ctx.send_error("Tag not found")
+            tag = await self.bot.db.tags.find(ctx.guild.id, None, name)
+        if tag is None:
+            return await ctx.send_error(f"Tag not `{name}` found")
 
         await ctx.send_embed(tag.get('content'),
                         name=tag.get('name') + "\n​",
                         color=Color.blurple())
 
-    @tag.command(aliases=["add"])
-    async def create(self, ctx, name: TagName(lower=True), *, content: commands.clean_content):
-        success = await self.bot.db.tags.create_tag(ctx.guild.id, ctx.author.id, name, content)
-        if success:
-            await ctx.send(f'Tag {name} successfully created.')
-        else:
-            await ctx.send('Could not create tag, probably already exists.')
-
-    @tag.command(aliases=["delete"])
-    async def remove(self, ctx, *, name: TagName(lower=True)):
-        tag = await self.bot.db.tags.get_tag(ctx.guild.id, name)
-
-        if tag is None:
-            return await ctx.send_error("Tag not found")
-
-        await self.bot.db.tags.delete_tag(ctx.guild.id, ctx.author.id, name)
-        await ctx.send('Tag successfully deleted.')
-
-    @tag.command()
-    async def edit(self, ctx, name: TagName(lower=True), *, content: commands.clean_content):
-        status = await self.bot.db.tags.edit_tag(ctx.guild.id, ctx.author.id, name, content)
-
-        # the status returns UPDATE <count>
-        # if the <count> is 0, then nothing got updated
-        # probably due to the WHERE clause failing
-
-        if status[-1] == '0':
-            await ctx.send_error('Could not edit that tag. Are you sure it exists and you own it?')
-        else:
-            await ctx.send('Successfully edited tag.')
-
-    @tag.command(pass_context=True)
-    async def raw(self, ctx, *, name: TagName(lower=True)):
-        tag = await self.bot.db.tags.get_tag(ctx.guild.id, name)
-
-        first_step = escape_markdown(tag.get('content'))
-        await ctx.safe_send(first_step.replace('<', '\\<'))
-
-    @tag.command()
-    async def search(self, ctx, *, query: commands.clean_content):
+    @tag.command(aliases=["find"])
+    async def search(self, ctx, member: Optional[Member] = None, *, query: commands.clean_content = ""):
         if len(query) < 3:
-            return await ctx.send('The query length must be at least three characters.')
+            return await ctx.send_error('The query length must be at least three characters.')
 
-        results = await self.bot.db.tags.find_tags(ctx.guild.id, query)
+        member_id = member.id if member else None
+        results = await self.bot.db.tags.search(ctx.guild.id, member_id, f"%{query}%")
         if results:
             try:
                 pages = TagPages(ctx, entries=results, per_page=20)
             except Exception as err:
                 await ctx.send(err)
             else:
-                await ctx.release()
                 await pages.paginate()
         else:
-            await ctx.send('No tags found.')
+            await ctx.send(f'No tags containing `{query}` found.')
 
-    @tag.command(name='list')
+    @tag.command(aliases=["add", "edit"])
+    async def create(self, ctx, name: TagName(lower=True), *, content: commands.clean_content):
+        await self.bot.db.tags.insert(ctx.guild.id, ctx.author.id, name, content)
+        await ctx.send(f'Tag {name} successfully created/updated.')
+        await ctx.invoke(self.tag, name=name)
+
+
+    @tag.command(aliases=["delete"])
+    async def remove(self, ctx, *, name: TagName(lower=True)):
+        tag = await self.bot.db.tags.find(ctx.guild.id, ctx.author.id, name)
+        if tag is None:
+            return await ctx.send_error(f"Tag `{name}` not found")
+
+        await self.bot.db.tags.delete(ctx.guild.id, ctx.author.id, name)
+        await ctx.send('Tag successfully deleted.')
+
+    @tag.command(name="list")
     async def _list(self, ctx, *, member: Member = None):
         member = member or ctx.author
 
-        rows = await self.bot.db.tags.select(ctx.guild.id, member.id)
+        rows = await self.bot.db.tags.findAll(ctx.guild.id, member.id)
         if rows:
             try:
                 pages = TagPages(ctx, entries=rows)
@@ -134,10 +117,66 @@ class Tags(commands.Cog):
         else:
             await ctx.send(f'{member} has no tags.')
 
-    @commands.command(aliases=["t"])
+    @tag.group(name="public", invoke_without_command=True)
+    async def tag_public(self, ctx, *, name: TagName(lower=True)):
+        tag = await self.bot.db.tags.find(ctx.guild.id, None, name)
+        if tag is None:
+            return await ctx.send_error(f"Tag `{name}` not found")
+
+        await ctx.send_embed(tag.get('content'),
+                        name=tag.get('name') + "\n​",
+                        color=Color.blurple())
+
+    @tag.command(aliases=["clone", "move"])
+    async def copy(self, ctx, member: Member, *, name: TagName(lower=True)):
+        await self.bot.db.tags.copy(ctx.guild.id, member.id, ctx.author.id, name)
+        await ctx.send(f'Tag {name} successfully copied/updated.')
+        await ctx.invoke(self.tag_public, name=name)
+
+    @tag.command()
+    async def publish(self, ctx, member: Member, *, name: TagName(lower=True)):
+        await self.bot.db.tags.copy(ctx.guild.id, member.id, None, name)
+        await ctx.send(f'Tag {name} successfully published/updated.')
+        await ctx.invoke(self.tag_public, name=name)
+
+    @tag.command()
+    async def raw(self, ctx, member: Optional[Member]=None, *, name: TagName(lower=True) = ""):
+        member_id = member.id if member else None
+        tag = await self.bot.db.tags.find(ctx.guild.id, member_id, name)
+        if tag is None:
+            return await ctx.send_error(f"Tag `{name}` not found")
+
+        first_step = escape_markdown(tag.get('content'))
+        await ctx.safe_send(first_step.replace('<', '\\<'))
+
+    @tag_public.command(name="remove", aliases=["delete"])
+    async def public_remove(self, ctx, *, name: TagName(lower=True)):
+        tag = await self.bot.db.tags.find(ctx.guild.id, None, name)
+        if tag is None:
+            return await ctx.send_error("Tag not found")
+
+        await self.bot.db.tags.delete(ctx.guild.id, None, name)
+        await ctx.send('Tag successfully deleted.')
+
+    @tag_public.command(name="list")
+    async def public_list(self, ctx):
+        rows = await self.bot.db.tags.findAll(ctx.guild.id, None)
+        if rows:
+            try:
+                pages = TagPages(ctx, entries=rows)
+                await pages.paginate()
+            except Exception as err:
+                await ctx.send(err)
+        else:
+            await ctx.send(f'There are no public tags.')
+
+    @commands.group(aliases=["t"], invoke_without_command=True)
     async def tags(self, ctx, *, member: Member = None):
         await ctx.invoke(self._list, member=member)
 
+    @tags.command(name="public")
+    async def tags_public(self, ctx):
+        await ctx.invoke(self.public_list)
 
 def setup(bot):
     bot.add_cog(Tags(bot))

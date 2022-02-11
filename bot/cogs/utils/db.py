@@ -5,9 +5,10 @@ from abc import ABC, abstractmethod
 from collections import Counter
 from datetime import datetime, timezone
 from functools import wraps
-from typing import Generic, List, Tuple, TypeVar, Union
+from typing import Generic, List, Optional, Tuple, TypeVar, Union
 
 import asyncpg
+from asyncpg.exceptions import UniqueViolationError
 from discord import (Attachment, CategoryChannel, Emoji, Guild, Member,
                      Message, PartialEmoji, Reaction, Role, TextChannel)
 from emoji import demojize, get_emoji_regexp
@@ -812,6 +813,70 @@ class Markov(Table):
             CALL cogs.markov_train();
         """, timeout=604800)
 
+
+
+class Tags(Table):
+    @withConn
+    async def find(self, conn, guild_id, author_id: Optional[int], name: str):
+        return await conn.fetchrow("""
+            SELECT * FROM cogs.tags
+            WHERE guild_id = $1
+              AND (author_id = $2 OR $2 IS NULL)
+              AND name = $3
+              AND deleted_at IS NULL
+        """, guild_id, author_id, name)
+
+    @withConn
+    async def findAll(self, conn, guild_id, author_id: Optional[int]):
+        return await conn.fetch("""
+            SELECT * FROM cogs.tags
+            WHERE guild_id = $1
+              AND (author_id = $2 OR (author_id IS NULL AND $2 IS NULL))
+              AND deleted_at IS NULL
+        """, guild_id, author_id)
+
+    @withConn
+    async def search(self, conn, guild_id, author_id: Optional[int], query: str):
+        return await conn.fetch("""
+            SELECT * FROM cogs.tags
+            WHERE guild_id = $1
+              AND (author_id = $2 OR $2 IS NULL)
+              AND name LIKE $3
+              AND deleted_at IS NULL
+        """, guild_id, author_id, query)
+
+    @withConn
+    async def insert(self, conn, guild_id, author_id: Optional[int], name, content):
+        await conn.execute("""
+            INSERT INTO cogs.tags AS t (guild_id, author_id, name, content)
+                    VALUES ($1, $2, $3, $4)
+            ON CONFLICT (guild_id, author_id, name) DO UPDATE
+                SET content = excluded.content,
+                    edited_at = NOW()
+                WHERE t.content <> excluded.content;
+        """, guild_id, author_id, name, content)
+
+    @withConn
+    async def delete(self, conn, guild_id, author_id: Optional[int], name):
+        await conn.execute("""
+            UPDATE cogs.tags
+            SET deleted_at = NOW()
+            WHERE guild_id = $1 AND (author_id = $2 OR $2 IS NULL) AND name = $3
+        """, guild_id, author_id, name)
+
+    @withConn
+    async def copy(self, conn, guild_id, author_id: int, new_author_id: Optional[int], name):
+        await conn.execute("""
+            INSERT INTO cogs.tags AS t (guild_id, author_id, name, content)
+                SELECT guild_id, $3, name, content FROM cogs.tags
+                WHERE guild_id = $1 AND author_id = $2 AND name = $4
+            ON CONFLICT (guild_id, author_id, name) DO UPDATE
+                SET content = excluded.content,
+                    edited_at = NOW()
+                WHERE t.content <> excluded.content;
+        """, guild_id, author_id, new_author_id, name)
+
+
 class DBBase:
     def __init__(self, pool):
         self.pool = pool
@@ -851,3 +916,4 @@ class Database(DBBase):
         self.subjects = Subjects(self.pool)
         self.seasons = Seasons(self.pool)
         self.markov = Markov(self.pool)
+        self.tags = Tags(self.pool)
