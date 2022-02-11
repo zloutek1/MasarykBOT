@@ -14,8 +14,13 @@ class Activity(commands.Cog):
 
 
     @commands.command()
-    async def activity(self, ctx, member: Optional[Member] = None, past_days: int = 7):
-        member_id = member.id if member else ctx.author.id
+    async def activity(self, ctx, member: Optional[Member] = None, past_days: int = 365):
+        """
+        Show frequency of messages sent
+        |past_days| <= 365
+        """
+
+        member_id = member.id if member else None
 
         past_days = min(abs(past_days), 365)
         past_days = 7 * round(past_days / 7)
@@ -38,7 +43,6 @@ class Activity(commands.Cog):
 
     @staticmethod
     def prepare_data(data, from_date: datetime, to_date: datetime):
-        print(dict(data))
         data = pd.Series(dict(data))
         data.index = pd.DatetimeIndex(data.index)
 
