@@ -23,14 +23,17 @@ MONTHS: List[str] = [
     "Dec",
 ]
 DAYS: List[str] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+COLORS = [
+    [0.09, 0.11, 0.13, 1],
+    [0.05, 0.27, 0.16, 1],
+    [0.00, 0.43, 0.20, 1],
+    [0.15, 0.65, 0.25, 1],
+    [0.22, 0.83, 0.33, 1],
+]
 GITHUB_CMAP = ListedColormap(
-    [
-        [0.09, 0.11, 0.13, 1],
-        [0.05, 0.27, 0.16, 1],
-        [0.00, 0.43, 0.20, 1],
-        [0.15, 0.65, 0.25, 1],
-        [0.22, 0.83, 0.33, 1],
-    ]
+    np.concatenate([
+        np.linspace(x, y, 64) for x, y in zip(COLORS, COLORS[1:])
+    ])
 )
 
 
