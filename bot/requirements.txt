@@ -1,14 +1,27 @@
+# core dependenices
 discord.py==1.7.3
-asyncpg==0.22.0
+
+# configs
 python-dotenv==0.15.0
+pyyaml==5.4.1
+
+# database access
 aiohttp==3.7.4
+asyncpg==0.22.0
+
+# markov cog
+redis==4.1.0
+
+# fun cog
+unicodeit==0.7.2
 emoji==1.2.0
 requests==2.25.1
-pyyaml==5.4.1
+
+# testing library
 pytest==6.2.2
 pytest-cov==2.11.1
+Pillow==9.0.0
+
+# logging
 rich==9.12.4
 discord-handler==0.0.2
-Pillow==9.0.0
-redis==4.1.0
-unicodeit==0.7.2
