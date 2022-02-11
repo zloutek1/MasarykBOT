@@ -12,6 +12,11 @@ asyncpg==0.22.0
 # markov cog
 redis==4.1.0
 
+# activity cog
+numpy==1.22.2
+matplotlib==3.5.1
+pandas==1.4.0
+
 # fun cog
 unicodeit==0.7.2
 emoji==1.2.0
