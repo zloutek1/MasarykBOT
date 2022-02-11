@@ -4,8 +4,8 @@ from typing import Optional
 
 import pandas as pd
 from bot.cogs.utils import heatmap
-from discord import File, Member
-from discord.ext import commands
+from disnake import File, Member
+from disnake.ext import commands
 
 
 class Activity(commands.Cog):

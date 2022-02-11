@@ -1,8 +1,8 @@
 import asyncio
 import itertools
 
-import discord
-from discord.ext import commands
+import disnake as discord
+from disnake.ext import commands
 
 from .utils.paginator import Pages
 
@@ -98,7 +98,6 @@ class HelpPaginator(Pages):
 class PaginatedHelpCommand(commands.HelpCommand):
     def __init__(self):
         super().__init__(command_attrs={
-            'cooldown': commands.Cooldown(1, 3.0, commands.BucketType.member),
             'help': 'Shows help about the bot, a command, or a category'
         })
 

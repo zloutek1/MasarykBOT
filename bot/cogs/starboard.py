@@ -6,10 +6,10 @@ from datetime import timedelta, timezone
 from textwrap import dedent
 
 from bot.constants import Config
-from discord import Embed, Emoji, PartialEmoji, TextChannel
-from discord.errors import NotFound
-from discord.ext import commands
-from discord.utils import find, get
+from disnake import Embed, Emoji, PartialEmoji, TextChannel
+from disnake.errors import NotFound
+from disnake.ext import commands
+from disnake.utils import find, get
 from emoji import demojize
 
 log = logging.getLogger(__name__)

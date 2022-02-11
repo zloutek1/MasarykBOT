@@ -5,8 +5,8 @@ from urllib.parse import urlparse
 
 import requests
 import unicodeit
-from discord import Embed, File, Member, PartialEmoji
-from discord.ext import commands
+from disnake import Embed, File, Member, PartialEmoji
+from disnake.ext import commands
 from PIL import Image
 
 

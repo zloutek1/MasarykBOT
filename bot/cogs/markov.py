@@ -5,9 +5,9 @@ import random
 from enum import Enum
 from typing import Callable, Coroutine, List, Tuple
 
-from discord.ext import commands
-from discord.ext.commands import has_permissions
-from discord.utils import escape_mentions
+from disnake.ext import commands
+from disnake.ext.commands import has_permissions
+from disnake.utils import escape_mentions
 from redis.commands.json.path import Path
 
 log = logging.getLogger(__name__)

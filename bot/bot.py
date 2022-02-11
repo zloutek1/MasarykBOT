@@ -4,7 +4,7 @@ from collections import Counter
 from datetime import datetime, timezone
 from typing import Optional
 
-from discord.ext import commands
+from disnake.ext import commands
 from redis import Redis
 
 from bot.cogs.utils import context

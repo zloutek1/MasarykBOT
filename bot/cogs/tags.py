@@ -1,8 +1,8 @@
 from typing import Optional
 
-from discord import Color, Member
-from discord.ext import commands
-from discord.utils import escape_markdown
+from disnake import Color, Member
+from disnake.ext import commands
+from disnake.utils import escape_markdown
 
 from .utils import paginator
 

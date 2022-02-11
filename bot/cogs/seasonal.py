@@ -3,9 +3,9 @@ import itertools
 from contextlib import suppress
 from datetime import datetime, timedelta, timezone
 
-from discord import Embed
-from discord.ext import commands, tasks
-from discord.ext.commands.core import has_permissions
+from disnake import Embed
+from disnake.ext import commands, tasks
+from disnake.ext.commands.core import has_permissions
 
 
 class SeasonDate(commands.Converter):

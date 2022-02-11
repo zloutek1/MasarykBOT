@@ -1,5 +1,5 @@
 # core dependenices
-discord.py==1.7.3
+disnake==2.3.2
 
 # configs
 python-dotenv==0.15.0

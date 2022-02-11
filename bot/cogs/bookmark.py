@@ -1,6 +1,6 @@
-from discord import Embed, Member
-from discord.errors import NotFound
-from discord.ext import commands
+from disnake import Embed, Member
+from disnake.errors import NotFound
+from disnake.ext import commands
 
 
 class Bookmark(commands.Cog):

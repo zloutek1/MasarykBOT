@@ -8,11 +8,11 @@ from typing import (Awaitable, Callable, Dict, Generic, List, Optional, Tuple,
 from bot.bot import MasarykBOT
 from bot.cogs.utils.context import Context
 from bot.cogs.utils.db import Record
-from discord import CategoryChannel, Guild, Member, Role, TextChannel
-from discord.abc import PrivateChannel
-from discord.errors import Forbidden, NotFound
-from discord.ext import commands, tasks
-from discord.ext.commands import has_permissions
+from disnake import CategoryChannel, Guild, Member, Role, TextChannel
+from disnake.abc import PrivateChannel
+from disnake.errors import Forbidden, NotFound
+from disnake.ext import commands, tasks
+from disnake.ext.commands import has_permissions
 
 T = TypeVar('T')
 

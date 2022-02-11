@@ -2,10 +2,10 @@ import asyncio
 import io
 from contextlib import suppress
 
-import discord
-from discord.errors import HTTPException, NotFound
-from discord.ext import commands
-from discord.utils import get
+import disnake as discord
+from disnake.errors import HTTPException, NotFound
+from disnake.ext import commands
+from disnake.utils import get
 
 
 class Context(commands.Context):
