@@ -6,6 +6,7 @@ import pandas as pd
 from bot.cogs.utils import heatmap
 from discord import File, Member
 from discord.ext import commands
+from matplotlib.cm import get_cmap
 
 
 class Activity(commands.Cog):
@@ -15,15 +16,16 @@ class Activity(commands.Cog):
 
     @commands.command()
     @commands.cooldown(1, 10, commands.BucketType.user)
-    async def activity(self, ctx, member: Optional[Member] = None, past_days: int = 365):
+    async def activity(self, ctx, color_map: Optional[str], member: Optional[Member] = None, past_days: int = 365):
         """
         Show frequency of messages sent
         |past_days| <= 365
         """
 
         member_id = member.id if member else None
+        color_map = get_cmap(color_map) if color_map else None
 
-        past_days = min(abs(past_days), 365)
+        past_days = max(1, min(abs(past_days), 365))
         past_days = 7 * round(past_days / 7)
 
         tomorrow = (datetime.now()
@@ -34,7 +36,7 @@ class Activity(commands.Cog):
         rows = await self.bot.db.activity.select(ctx.guild.id, member_id, past, tomorrow)
         series = self.prepare_data(rows, from_date=past, to_date=tomorrow)
 
-        fig = heatmap.generate_heatmap(series)
+        fig = heatmap.generate_heatmap(series, color_map)
 
         with BytesIO() as buffer:
             fig.savefig(buffer, format="PNG", bbox_inches="tight", dpi=400)
