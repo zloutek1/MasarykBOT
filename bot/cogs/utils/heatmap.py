@@ -106,6 +106,5 @@ def generate_heatmap(series: pd.Series, cmap: Optional[str] = None) -> plt.Figur
     # force cells to be squares
     ax.set_aspect("equal")
     plt.clim(minimum, maximum)
-    fig.show()
 
     return fig
