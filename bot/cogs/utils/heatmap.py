@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional, List
+from typing import List, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -37,8 +37,8 @@ GITHUB_CMAP = ListedColormap(
 )
 
 
-def plot_heatmap(series: pd.Series, cmap: Optional[str] = None) -> plt.Axes:
-    cmap = GITHUB_CMAP if cmap is None else plt.get_cmap(cmap)
+def plot_heatmap(series: pd.Series, cmap: Optional[str] = "GitHub") -> plt.Axes:
+    cmap = GITHUB_CMAP if cmap == "GitHub" else plt.get_cmap(cmap)
 
     num_weeks = len(series) // 7 + 1
     heatmap = np.zeros((7, num_weeks))

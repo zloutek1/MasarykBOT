@@ -879,7 +879,7 @@ class Tags(Table):
 
 class Activity(Table):
     @withConn
-    async def select(self, conn, guild_id, author_id: Optional[int], from_date: datetime, to_date: datetime):
+    async def select(self, conn, guild_id, channel_id: Optional[int], author_id: Optional[int], from_date: datetime, to_date: datetime):
         return await conn.fetch("""
            SELECT
                 date_trunc('day', m.created_at) as "day",
@@ -888,12 +888,13 @@ class Activity(Table):
             INNER JOIN server.channels AS ch
                ON m.channel_id = ch.id
             WHERE guild_id = $1
-              AND (author_id = $2 OR $2 IS NULL)
-              AND $3 <= m.created_at AND m.created_at <= $4
+              AND (channel_id = $2 OR $2 IS NULL)
+              AND (author_id = $3 OR $3 IS NULL)
+              AND $4 <= m.created_at AND m.created_at <= $5
               AND m.deleted_at IS NULL
             GROUP BY 1
             ORDER BY 1
-        """, guild_id, author_id, from_date, to_date)
+        """, guild_id, channel_id, author_id, from_date, to_date)
 
 
 
