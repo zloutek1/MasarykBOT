@@ -3,6 +3,7 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from collections import Counter
+from datetime import datetime
 from functools import wraps
 from typing import Generic, List, Optional, TypeVar, Union
 
@@ -819,7 +820,7 @@ class Tags(Table):
         return await conn.fetchrow("""
             SELECT * FROM cogs.tags
             WHERE guild_id = $1
-              AND (author_id = $2 OR $2 IS NULL)
+              AND (author_id = $2 OR (author_id IS NULL AND $2 IS NULL))
               AND name = $3
               AND deleted_at IS NULL
         """, guild_id, author_id, name)
@@ -838,7 +839,7 @@ class Tags(Table):
         return await conn.fetch("""
             SELECT * FROM cogs.tags
             WHERE guild_id = $1
-              AND (author_id = $2 OR $2 IS NULL)
+              AND (author_id = $2 OR (author_id IS NULL AND $2 IS NULL))
               AND name LIKE $3
               AND deleted_at IS NULL
         """, guild_id, author_id, query)
@@ -873,6 +874,27 @@ class Tags(Table):
                     edited_at = NOW()
                 WHERE t.content <> excluded.content;
         """, guild_id, author_id, new_author_id, name)
+
+
+
+class Activity(Table):
+    @withConn
+    async def select(self, conn, guild_id, author_id: Optional[int], from_date: datetime, to_date: datetime):
+        return await conn.fetch("""
+           SELECT
+                date_trunc('day', m.created_at) as "day",
+                count(*) as "messages_sent"
+            FROM server.messages AS m
+            INNER JOIN server.channels AS ch
+               ON m.channel_id = ch.id
+            WHERE guild_id = $1
+              AND (author_id = $2 OR $2 IS NULL)
+              AND $3 <= m.created_at AND m.created_at <= $4
+              AND m.deleted_at IS NULL
+            GROUP BY 1
+            ORDER BY 1
+        """, guild_id, author_id, from_date, to_date)
+
 
 
 class DBBase:
@@ -915,3 +937,4 @@ class Database(DBBase):
         self.seasons = Seasons(self.pool)
         self.markov = Markov(self.pool)
         self.tags = Tags(self.pool)
+        self.activity = Activity(self.pool)

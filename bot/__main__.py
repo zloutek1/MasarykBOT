@@ -19,6 +19,7 @@ initail_cogs = [
     "bot.cogs.bookmark",
     "bot.cogs.rolemenu",
     "bot.cogs.seasonal",
+    "bot.cogs.activity",
     "bot.cogs.subject",
     "bot.cogs.errors",
     "bot.cogs.logger",
