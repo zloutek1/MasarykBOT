@@ -1,10 +1,10 @@
 import json
-import aiohttp
 from io import StringIO
-from asyncio import TimeoutError
 
+import aiohttp
 from discord import File
 from discord.ext import commands
+
 
 def get_cmds():
     cmds = {

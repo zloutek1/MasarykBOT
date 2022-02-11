@@ -1,4 +1,3 @@
-from ast import alias
 from typing import Optional
 
 from discord import Color, Member

@@ -1,5 +1,4 @@
 import os
-from datetime import datetime
 from io import BytesIO
 from random import choice, shuffle
 from urllib.parse import urlparse

@@ -3,9 +3,9 @@ import functools
 import logging
 import random
 from enum import Enum
-from typing import Callable, Coroutine, List, Tuple, cast
+from typing import Callable, Coroutine, List, Tuple
 
-from discord.ext import commands, tasks
+from discord.ext import commands
 from discord.ext.commands import has_permissions
 from discord.utils import escape_mentions
 from redis.commands.json.path import Path

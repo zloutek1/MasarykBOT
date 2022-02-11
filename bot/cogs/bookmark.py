@@ -1,7 +1,6 @@
 from discord import Embed, Member
 from discord.errors import NotFound
 from discord.ext import commands
-from discord.utils import find
 
 
 class Bookmark(commands.Cog):

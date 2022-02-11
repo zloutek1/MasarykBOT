@@ -3,12 +3,10 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from collections import Counter
-from datetime import datetime, timezone
 from functools import wraps
-from typing import Generic, List, Optional, Tuple, TypeVar, Union
+from typing import Generic, List, Optional, TypeVar, Union
 
 import asyncpg
-from asyncpg.exceptions import UniqueViolationError
 from discord import (Attachment, CategoryChannel, Emoji, Guild, Member,
                      Message, PartialEmoji, Reaction, Role, TextChannel)
 from emoji import demojize, get_emoji_regexp
