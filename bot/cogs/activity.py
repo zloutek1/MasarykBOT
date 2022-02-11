@@ -39,7 +39,7 @@ class Activity(commands.Cog):
         with BytesIO() as buffer:
             fig.savefig(buffer, format="PNG", bbox_inches="tight", dpi=400)
             buffer.seek(0)
-            await ctx.send(file=File(buffer, filename=f"{member_id}_activity.png"))
+            await ctx.reply(file=File(buffer, filename=f"{member_id}_activity.png"))
 
 
     @staticmethod
