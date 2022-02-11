@@ -14,6 +14,7 @@ class Activity(commands.Cog):
 
 
     @commands.command()
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def activity(self, ctx, member: Optional[Member] = None, past_days: int = 365):
         """
         Show frequency of messages sent
