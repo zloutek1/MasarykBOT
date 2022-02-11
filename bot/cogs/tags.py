@@ -76,15 +76,17 @@ class Tags(commands.Cog):
 
         member_id = member.id if member else None
         results = await self.bot.db.tags.search(ctx.guild.id, member_id, f"%{query}%")
-        if results:
-            try:
-                pages = TagPages(ctx, entries=results, per_page=20)
-            except Exception as err:
-                await ctx.send(err)
-            else:
-                await pages.paginate()
+        if not results:
+            results = await self.bot.db.tags.search(ctx.guild.id, None, f"%{query}%")
+        if not results:
+            return await ctx.send(f'No tags containing `{query}` found.')
+
+        try:
+            pages = TagPages(ctx, entries=results, per_page=20)
+        except Exception as err:
+            await ctx.send(err)
         else:
-            await ctx.send(f'No tags containing `{query}` found.')
+            await pages.paginate()
 
     @tag.command(aliases=["add", "edit"])
     async def create(self, ctx, name: TagName(lower=True), *, content: commands.clean_content):
@@ -133,6 +135,7 @@ class Tags(commands.Cog):
         await ctx.invoke(self.tag_public, name=name)
 
     @tag.command()
+    @commands.has_role("Admin")
     async def publish(self, ctx, member: Member, *, name: TagName(lower=True)):
         await self.bot.db.tags.copy(ctx.guild.id, member.id, None, name)
         await ctx.send(f'Tag {name} successfully published/updated.')
@@ -149,6 +152,7 @@ class Tags(commands.Cog):
         await ctx.safe_send(first_step.replace('<', '\\<'))
 
     @tag_public.command(name="remove", aliases=["delete"])
+    @commands.has_role("Admin")
     async def public_remove(self, ctx, *, name: TagName(lower=True)):
         tag = await self.bot.db.tags.find(ctx.guild.id, None, name)
         if tag is None:
