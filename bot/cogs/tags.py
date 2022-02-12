@@ -65,6 +65,10 @@ class Tags(commands.Cog):
         if tag is None:
             return await ctx.send_error(f"Tag not `{name}` found")
 
+        if len(tag.get('content')) > 1024:
+            await ctx.send_error("Content too large. We can send only 1024 characters.")
+            return
+
         await ctx.send_embed(tag.get('content'),
                         name=tag.get('name') + "\n​",
                         color=Color.blurple())
@@ -90,6 +94,14 @@ class Tags(commands.Cog):
 
     @tag.command(aliases=["add", "edit"])
     async def create(self, ctx, name: TagName(lower=True), *, content: commands.clean_content):
+        if len(name) > 100:
+            await ctx.send_error("Name can't be longer then 100")
+            return
+
+        if len(content) > 1024:
+            await ctx.send_error("Content too large. We can send only 1024 characters.")
+            return
+
         await self.bot.db.tags.insert(ctx.guild.id, ctx.author.id, name, content)
         await ctx.send(f'Tag {name} successfully created/updated.')
         await ctx.invoke(self.tag, name=name)
