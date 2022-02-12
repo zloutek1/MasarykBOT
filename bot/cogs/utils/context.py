@@ -103,6 +103,8 @@ class Context(commands.Context):
             await message.add_reaction('\N{WASTEBASKET}')
             asyncio.get_event_loop().create_task(self._wait_for_reaction_or_clear(message))
 
+        return message
+
     async def reply(self, *args, **kwargs):
         try:
             return await super().reply(*args, **kwargs)
