@@ -30,18 +30,16 @@ class Activity(commands.Cog):
         member_id = member.id if member else None
         channel_id = channel.id if channel else None
 
-        print(color_map, member, past_days)
-
         past_days = max(1, min(abs(past_days), 365))
         past_days = 7 * round(past_days / 7)
 
-        tomorrow = (datetime.now()
-                        .replace(hour=0, minute=0, second=0, microsecond=0)
-                + timedelta(days=1))
+        today = (datetime.now()
+                        .replace(hour=0, minute=0, second=0, microsecond=0))
+        tomorrow = today + timedelta(days=1)
         past = tomorrow - timedelta(days=past_days + tomorrow.weekday())
 
         rows = await self.bot.db.activity.select(ctx.guild.id, channel_id, member_id, past, tomorrow)
-        series = self.prepare_data(rows, from_date=past, to_date=tomorrow)
+        series = self.prepare_data(rows, from_date=past, to_date=today)
 
         fig = heatmap.generate_heatmap(series, color_map)
 
