@@ -1,11 +1,9 @@
 import logging
 import traceback
 
+from bot.constants import Config
 from discord.ext import commands
 from discord.utils import get
-
-from bot.constants import Config
-
 
 log = logging.getLogger(__name__)
 
@@ -16,11 +14,11 @@ class Errors(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        for ignore_error in [commands.BadArgument, commands.MissingRequiredArgument, commands.MissingRole, commands.errors.BadUnionArgument]:
-            if isinstance(error, ignore_error):
-                return
-
         if hasattr(ctx.command, "on_error"):
+            return
+
+        if isinstance(error, (commands.BadArgument, commands.MissingRequiredArgument, commands.MissingRole, commands.errors.BadUnionArgument)):
+            await ctx.send_error(str(error))
             return
 
         if isinstance(error, commands.CommandOnCooldown):
