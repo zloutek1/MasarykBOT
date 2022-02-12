@@ -103,9 +103,9 @@ class Context(commands.Context):
             await message.add_reaction('\N{WASTEBASKET}')
             asyncio.get_event_loop().create_task(self._wait_for_reaction_or_clear(message))
 
-    async def reply(self, *args, **kwargs):
+    async def reply(self, *args, mention_author=False, **kwargs):
         try:
-            return await super().reply(*args, **kwargs)
+            return await super().reply(*args, mention_author=mention_author, **kwargs)
         except HTTPException:
             return await self.send(*args, **kwargs)
 
