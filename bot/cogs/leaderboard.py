@@ -115,7 +115,7 @@ class Leaderboard(commands.Cog):
             )
 
         time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        embed.set_footer(text=f"{str(ctx.author)} at {time_now}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(text=f"{str(ctx.author)} at {time_now}", icon_url=ctx.author.avatar.url)
         return embed
 
     def template_row(self, i, row, data, get_value):
@@ -189,7 +189,7 @@ class Leaderboard(commands.Cog):
             value=value or "Empty result")
 
         time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        embed.set_footer(text=f"{str(ctx.author)} at {time_now}", icon_url=ctx.author.avatar_url)
+        embed.set_footer(text=f"{str(ctx.author)} at {time_now}", icon_url=ctx.author.avatar.url)
         return embed
 
 
