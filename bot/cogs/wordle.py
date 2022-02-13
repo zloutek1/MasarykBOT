@@ -6,13 +6,12 @@ from datetime import datetime
 from enum import Enum
 
 import disnake as discord
+from bot.constants import Config
 from disnake import ButtonStyle, ui
 from disnake.ext import commands, tasks
 from english_words import english_words_lower_alpha_set
 from PIL import Image, ImageDraw, ImageFont
 
-today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-random.seed(0b01110111011011110111001001100100011011000110010100001010 + today.day + today.month * 31)
 WORDS = list(map(str.upper, english_words_lower_alpha_set))
 
 class LetterStatus(Enum):
@@ -22,8 +21,9 @@ class LetterStatus(Enum):
     CORRECT = (59, 165, 93)
 
 class GameInstance:
-    def __init__(self, ctx):
+    def __init__(self, ctx, nth: int=0):
         self.ctx = ctx
+        self.nth = nth
 
         self.attempts = []
         self.current_attempt = []
@@ -35,7 +35,7 @@ class GameInstance:
         self.WORDS = [word for word in WORDS
                       if len(word) == self.word_length and
                          'Q' not in word and 'V' not in word]
-        self.word = list(random.choice(self.WORDS))
+        self.word = list(self.WORDS[nth % len(self.WORDS)])
 
         self.message = None
         self.controls = ControlsView(self)
@@ -51,10 +51,17 @@ class GameInstance:
         await self.display()
 
     async def submit(self):
-        if len(self.current_attempt) == self.word_length:
-            self.validate()
-            self.attempts.append(self.current_attempt)
-            self.current_attempt = []
+        if len(self.current_attempt) != self.word_length:
+            return
+
+        word = ''.join(letter[0] for letter in self.current_attempt)
+        if word not in self.WORDS:
+            await self.ctx.send(f"*{word}* is not a word", ephemeral=True)
+            return
+
+        self.validate()
+        self.attempts.append(self.current_attempt)
+        self.current_attempt = []
 
         if self.did_win():
             await self.ctx.send(self.to_text())
@@ -105,7 +112,7 @@ class GameInstance:
             self.controls.validate_letter(letter, status)
 
     def did_win(self, input=None):
-        input = input or self.current_attempt or self.attempts[-1]
+        input = input or self.current_attempt or (self.attempts and self.attempts[-1])
         word = self.word[:]
 
         if len(input) < self.word_length:
@@ -191,7 +198,7 @@ class GameInstance:
 
         today = self.created_at.replace(hour=0, minute=0, second=0, microsecond=0)
 
-        output = f"{today.day} / {today.month}\n\n"
+        output = f"{today.day} / {today.month} +{self.nth}\n\n"
         for i in range(self.max_attempts):
             for j in range(self.word_length):
                 if i <= len(self.attempts):
@@ -200,7 +207,6 @@ class GameInstance:
                         output += status_map[attempts[i][j][1]]
             output += "\n"
         return output
-
 
     async def display(self):
         if not self.message:
@@ -280,18 +286,30 @@ class Wordle(commands.Cog):
 
         self.reset_wordle.start()
 
-    @commands.slash_command(guild_ids=[573528762843660299], description="Play wordle on Discord")
+    @commands.slash_command(guild_ids=[guild.id for guild in Config.guilds], description="Play wordle on Discord")
     async def wordle(self, ctx):
-        self.games[ctx.author.id] = GameInstance(ctx)
-        game = self.games[ctx.author.id]
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
+        if (ctx.author.id in self.games and
+            not self.games[ctx.author.id].did_win() and
+            not self.games[ctx.author.id].controls.is_finished()):
+
+            game = self.games[ctx.author.id]
+            await ctx.send("A game is already running", embed=game.to_embed(), ephemeral=True)
+            return
+
+        if ctx.author.id in self.games and self.games[ctx.author.id].did_win():
+            self.scores[(today, ctx.user.id)] += 1
+
+        self.games[ctx.author.id] = GameInstance(ctx, nth=self.scores.get((today, ctx.author.id), 0))
+        game = self.games[ctx.author.id]
         await game.start()
 
     @tasks.loop(hours=24)
     async def reset_wordle(self):
-        global today
-        today = datetime.today().replace(hour=0, minute=0, second=0, microsecond=0)
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         random.seed(0b01110111011011110111001001100100011011000110010100001010 + today.day + today.month * 31)
+        random.shuffle(WORDS)
 
         self.scores = {}
         for (user, game) in self.games.items():
