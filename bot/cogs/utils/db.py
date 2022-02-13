@@ -3,11 +3,12 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import datetime, timezone, tzinfo
 from functools import wraps
 from typing import Generic, List, Optional, TypeVar, Union
 
 import asyncpg
+from asyncpg.exceptions import CharacterNotInRepertoireError
 from disnake import (Attachment, CategoryChannel, Emoji, Guild, Member,
                      Message, PartialEmoji, Reaction, Role, TextChannel)
 from emoji import demojize, get_emoji_regexp
@@ -307,17 +308,20 @@ class Messages(Table, Mapper[Message]):
 
     @withConn
     async def insert(self, conn, messages):
-        await conn.executemany("""
-            INSERT INTO server.messages AS m (channel_id, author_id, id, content, created_at)
-            VALUES ($1, $2, $3, $4, $5)
-            ON CONFLICT (id) DO UPDATE
-                SET content=$4,
-                    created_at=$5,
-                    edited_at=NOW()
-                WHERE m.content<>excluded.content OR
-                        m.created_at<>excluded.created_at OR
-                        m.edited_at<>excluded.edited_at
-        """, messages)
+        try:
+            await conn.executemany("""
+                INSERT INTO server.messages AS m (channel_id, author_id, id, content, created_at)
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT (id) DO UPDATE
+                    SET content=$4,
+                        created_at=$5,
+                        edited_at=NOW()
+                    WHERE m.content<>excluded.content OR
+                            m.created_at<>excluded.created_at OR
+                            m.edited_at<>excluded.edited_at
+            """, messages)
+        except CharacterNotInRepertoireError as e:
+            log.error(e.message)
 
     @withConn
     async def update(self, conn, messages):
@@ -542,8 +546,20 @@ class Logger(Table):
             await conn.execute("UPDATE cogs.logger SET finished_at = NOW() WHERE channel_id = $1 AND finished_at IS NULL", channel_id)
         else:
             async with conn.transaction():
-                await conn.execute("DELETE FROM cogs.logger WHERE channel_id = $1 AND from_date = $2 AND to_date = $3", channel_id, from_date, to_date)
-                await conn.execute("UPDATE cogs.logger SET to_date = $3, finished_at = NOW() WHERE channel_id = $1 AND to_date = $2 AND finished_at IS NOT NULL", channel_id, from_date, to_date)
+                await conn.execute("""
+                    DELETE FROM cogs.logger
+                    WHERE channel_id = $1 AND
+                          from_date = $2 AND
+                          to_date = $3
+                    """, channel_id, from_date, to_date)
+                await conn.execute("""
+                    UPDATE cogs.logger
+                    SET to_date = $3,
+                        finished_at = NOW()
+                    WHERE channel_id = $1 AND
+                          to_date = $2 AND
+                          finished_at IS NOT NULL
+                          """, channel_id, from_date, to_date)
 
     def process(self, channel_id, from_date, to_date, is_first_week=False, conn=None):
         return self.Process(self, channel_id, from_date, to_date, is_first_week, conn)

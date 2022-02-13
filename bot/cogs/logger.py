@@ -177,8 +177,11 @@ class BackupUntilPresent(GetCollectables):
         else:
             from_date, to_date = process.get("to_date"), process.get("to_date") + timedelta(weeks=1)
 
-        if from_date > datetime.now():
-            from_date, to_date = datetime.now() - timedelta(days=1), datetime.now() + timedelta(weeks=1)
+        from_date, to_date = from_date.replace(tzinfo=None), to_date.replace(tzinfo=None)
+
+        now = datetime.now()
+        if from_date > now:
+            from_date, to_date = now - timedelta(days=1), now + timedelta(weeks=1)
 
         return from_date, to_date
 
@@ -393,7 +396,7 @@ class BackupOnEvents(GetCollectables):
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
-        if before.avatar_url != after.avatar_url:
+        if before.avatar != after.avatar:
             log.info("member %s updated his avatar_url (%s)", before, before.guild)
         elif before.name != after.name:
             log.info("member %s (%s) updated his name to %s (%s)", before, before.nick, after, before.guild)
