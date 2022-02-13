@@ -130,7 +130,7 @@ class Starboard(commands.Cog):
     async def get_embed(self, message):
         def format_reaction(react):
             emoji = react.emoji
-            if react.custom_emoji:
+            if react.is_custom_emoji():
                 return f"{react.count} <:{emoji.name}:{emoji.id}>"
             else:
                 return f"{react.count} {react}"
