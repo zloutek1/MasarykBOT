@@ -199,7 +199,8 @@ class GameInstance:
 
         today = self.created_at.replace(hour=0, minute=0, second=0, microsecond=0)
 
-        output = f"{today.day} / {today.month} +{self.nth}\n\n"
+        output = f"{self.ctx.author.mention}\n"
+        output += f"{today.day} / {today.month} +{self.nth}\n\n"
         for i in range(self.max_attempts):
             for j in range(self.word_length):
                 if i <= len(self.attempts):
