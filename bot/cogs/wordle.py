@@ -140,7 +140,7 @@ class GameInstance:
         embed.title = "Worlde"
 
         self.render()
-        image = discord.File(f'{self.ctx.author.id}_wordle.jpeg', filename='wordle.jpeg')
+        image = discord.File(f'/tmp/{self.ctx.author.id}_wordle.jpeg', filename='wordle.jpeg')
         embed.set_image(file=image)
 
         embed.set_footer(
@@ -184,7 +184,7 @@ class GameInstance:
             x = padding
             y += self.square_size + padding
 
-        img.save(f'{self.ctx.author.id}_wordle.jpeg', format="JPEG")
+        img.save(f'/tmp/{self.ctx.author.id}_wordle.jpeg', format="JPEG")
 
     def to_text(self):
         attempts = self.attempts + [self.current_attempt]
@@ -213,8 +213,8 @@ class GameInstance:
         if not self.message:
             return
         await self.message.edit(embed=self.to_embed(), view=self.controls)
-        if os.path.exists(f'{self.ctx.author.id}_wordle.jpeg'):
-            os.remove(f'{self.ctx.author.id}_wordle.jpeg')
+        if os.path.exists(f'/tmp/{self.ctx.author.id}_wordle.jpeg'):
+            os.remove(f'/tmp/{self.ctx.author.id}_wordle.jpeg')
 
 class LetterButton(ui.Button):
     def __init__(self, game, *args, **kwargs):
