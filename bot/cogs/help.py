@@ -181,7 +181,7 @@ class PaginatedHelpCommand(commands.HelpCommand):
 
     async def on_help_command_error(self, ctx, error):
         if isinstance(error, commands.CommandInvokeError):
-            await ctx.send(str(error.original))
+            await ctx.send_error(str(error.original))
 
     def get_command_signature(self, command):
         parent = command.full_parent_name

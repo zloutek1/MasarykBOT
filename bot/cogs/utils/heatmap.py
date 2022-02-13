@@ -1,5 +1,5 @@
 import datetime
-from typing import Optional, List
+from typing import List, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -23,19 +23,22 @@ MONTHS: List[str] = [
     "Dec",
 ]
 DAYS: List[str] = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+COLORS = [
+    [0.09, 0.11, 0.13, 1],
+    [0.05, 0.27, 0.16, 1],
+    [0.00, 0.43, 0.20, 1],
+    [0.15, 0.65, 0.25, 1],
+    [0.22, 0.83, 0.33, 1],
+]
 GITHUB_CMAP = ListedColormap(
-    [
-        [0.09, 0.11, 0.13, 1],
-        [0.05, 0.27, 0.16, 1],
-        [0.22, 0.83, 0.33, 1],
-        [0.15, 0.65, 0.25, 1],
-        [0.22, 0.83, 0.33, 1],
-    ]
+    np.concatenate([
+        np.linspace(x, y, 64) for x, y in zip(COLORS, COLORS[1:])
+    ])
 )
 
 
-def plot_heatmap(series: pd.Series, cmap: Optional[str] = None) -> plt.Axes:
-    cmap = GITHUB_CMAP if cmap is None else plt.get_cmap(cmap)
+def plot_heatmap(series: pd.Series, cmap: Optional[str] = "GitHub") -> plt.Axes:
+    cmap = GITHUB_CMAP if cmap == "GitHub" else plt.get_cmap(cmap)
 
     num_weeks = len(series) // 7 + 1
     heatmap = np.zeros((7, num_weeks))
@@ -66,14 +69,14 @@ def plot_heatmap(series: pd.Series, cmap: Optional[str] = None) -> plt.Axes:
 
     ax.set_xticks(list(ticks.keys()))
     ax.set_xticklabels(list(ticks.values()))
-    ax.tick_params(axis="x", colors="white")
     ax.xaxis.tick_top()
 
     ax.set_yticks(range(len(DAYS)))
     ax.set_yticklabels(reversed(DAYS))
-    ax.tick_params(axis="y", colors="white")
     for label in ax.yaxis.get_ticklabels()[::2]:
         label.set_visible(False)
+
+    plt.rcParams.update({"ytick.color": "white", "xtick.color": "white"})
 
     plt.sca(ax)
     plt.sci(mesh)
@@ -103,6 +106,5 @@ def generate_heatmap(series: pd.Series, cmap: Optional[str] = None) -> plt.Figur
     # force cells to be squares
     ax.set_aspect("equal")
     plt.clim(minimum, maximum)
-    fig.show()
 
     return fig

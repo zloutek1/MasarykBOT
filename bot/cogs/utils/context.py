@@ -105,9 +105,9 @@ class Context(commands.Context):
 
         return message
 
-    async def reply(self, *args, **kwargs):
+    async def reply(self, *args, mention_author=False, **kwargs):
         try:
-            return await super().reply(*args, **kwargs)
+            return await super().reply(*args, mention_author=mention_author, **kwargs)
         except HTTPException:
             return await self.send(*args, **kwargs)
 
