@@ -137,14 +137,14 @@ class GameInstance:
     def to_embed(self):
         embed = discord.Embed(colour=discord.Colour.green())
         embed.clear_fields()
-        embed.title = "Worlde"
+        embed.title = "Wordle"
 
         self.render()
         image = discord.File(f'/tmp/{self.ctx.author.id}_wordle.jpeg', filename='wordle.jpeg')
         embed.set_image(file=image)
 
         embed.set_footer(
-            text=f'Use "/worlde command" to play as well.')
+            text=f'Use "/wordle command" to play as well.')
         return embed
 
 
