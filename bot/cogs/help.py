@@ -110,6 +110,9 @@ class HelpPaginator:
         return await self.show_page(self.current_page)
 
     async def show_page(self, page, first=False):
+        if not (1 <= page and page <= len(self.entries)):
+            return
+
         self.current_page = page
 
         cmds = self.get_page(page)
