@@ -1,9 +1,11 @@
 import io
 import os
 import random
+from collections import defaultdict
 from ctypes.wintypes import WORD
 from datetime import datetime
 from enum import Enum
+from typing import List
 
 import disnake as discord
 from bot.constants import Config
@@ -12,7 +14,6 @@ from disnake.ext import commands, tasks
 from english_words import english_words_lower_alpha_set
 from PIL import Image, ImageDraw, ImageFont
 
-WORDS = list(map(str.upper, english_words_lower_alpha_set))
 
 class LetterStatus(Enum):
     UNSUBMITTED = (49, 51, 57)
@@ -21,7 +22,7 @@ class LetterStatus(Enum):
     CORRECT = (59, 165, 93)
 
 class GameInstance:
-    def __init__(self, ctx, nth: int=0):
+    def __init__(self, ctx, words: List[str], nth: int=0):
         self.ctx = ctx
         self.nth = nth
 
@@ -32,7 +33,7 @@ class GameInstance:
         self.word_length = 5
         self.square_size = 30
 
-        self.WORDS = [word for word in WORDS
+        self.WORDS = [word for word in words
                       if len(word) == self.word_length and
                          'Q' not in word and 'V' not in word]
         self.word = list(self.WORDS[nth % len(self.WORDS)])
@@ -153,7 +154,7 @@ class GameInstance:
         height = (self.square_size + padding) * self.max_attempts + padding
 
         img = Image.new('RGB', (width, height), color=(49, 51, 57))
-        fnt = ImageFont.truetype("bot/cogs/utils/fonts/arial.ttf", self.square_size - 6)
+        fnt = ImageFont.truetype("bot/cogs/assets/fonts/arial.ttf", self.square_size - 6)
         draw = ImageDraw.Draw(img)
 
         attempts = self.attempts + [self.current_attempt]
@@ -279,17 +280,18 @@ class ControlsView(ui.View):
 
 
 class Wordle(commands.Cog):
+    WORDS = sorted(map(str.upper, english_words_lower_alpha_set))
+
     def __init__(self, bot):
         self.bot = bot
         self.games = {}
-        self.scores = {}
+        self.scores = defaultdict(int)
 
         self.reset_wordle.start()
+        self.today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
     @commands.slash_command(guild_ids=[guild.id for guild in Config.guilds], description="Play wordle on Discord")
     async def wordle(self, ctx):
-        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-
         if (ctx.author.id in self.games and
             not self.games[ctx.author.id].did_win() and
             not self.games[ctx.author.id].controls.is_finished()):
@@ -299,23 +301,29 @@ class Wordle(commands.Cog):
             return
 
         if ctx.author.id in self.games and self.games[ctx.author.id].did_win():
-            self.scores[(today, ctx.user.id)] += 1
+            self.scores[( self.today, ctx.user.id)] += 1
 
-        self.games[ctx.author.id] = GameInstance(ctx, nth=self.scores.get((today, ctx.author.id), 0))
+        self.games[ctx.author.id] = GameInstance(ctx,
+                                                 words=self.WORDS,
+                                                 nth=self.scores.get((self.today, ctx.author.id), 0))
         game = self.games[ctx.author.id]
         await game.start()
 
-    @tasks.loop(hours=24)
+    @tasks.loop(minutes=30)
     async def reset_wordle(self):
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        random.seed(0b01110111011011110111001001100100011011000110010100001010 + today.day + today.month * 31)
-        random.shuffle(WORDS)
+        if today == self.today:
+            return
+
+        self.today = today
+
+        seed = 0b01110111011011110111001001100100011011000110010100001010 + today.day + today.month * 31
+        random.seed(seed)
+        random.shuffle(self.WORDS)
 
         self.scores = {}
         for (user, game) in self.games.items():
             if game.did_win():
-                if (today, user) not in self.scores:
-                    self.scores[(today, user)] = 0
                 self.scores[(today, user)] += 1
 
 def setup(bot):
