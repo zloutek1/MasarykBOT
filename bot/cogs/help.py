@@ -1,11 +1,17 @@
 import asyncio
 import itertools
 from collections import Counter
+from inspect import signature
+from operator import index
 
 import disnake as discord
 from disnake import ButtonStyle
 from disnake.ext import commands
+from urllib3 import Retry
 
+
+def map_range(x: int, in_min: int, in_max: int, out_min: int, out_max: int):
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
 class NavigationButton(discord.ui.Button):
     def __init__(self, paginator, to=None, by=None, *args, **kwargs):
@@ -60,14 +66,25 @@ class HelpDropdown(discord.ui.Select):
     def prepare(self, entries):
         entries = Counter([entry[0] for entry in entries])
 
+        # Dropdown allows maximum of 25 entries
+        indexes = set(
+            round(map_range(i, 0, len(entries), 0, min(len(entries), 25))) for i in range(len(entries))
+        )
+
         options = []
-        for entry, count in entries.items():
-            if count == 1:
-                options.append(entry)
+        offset = 1
+        for i, (entry, count) in enumerate(entries.items()):
+            if i not in indexes:
                 continue
 
-            for i in range(count):
-                options.append(f"{entry} {i+1}/{count}")
+            if count == 1:
+                options.append(f"{i + offset}. {entry}")
+                continue
+
+            for j in range(count):
+                if j != 0:
+                    offset += 1
+                options.append(f"{i + offset}. {entry} {j+1}/{count}")
 
         return options
 
@@ -132,12 +149,26 @@ class HelpPaginator:
 
         cmds = ""
         for entry in entries:
-            signature = f'**» {entry.qualified_name} {entry.signature}**\n'
+            if isinstance(entry, commands.Command):
+                signature = self.format_command(entry)
+            else:
+                signature = self.format_slash_command(entry)
             cmds += signature
         self.embed.description = cmds
 
         self.embed.set_author(
             name=f'Page {page}/{len(self.entries)}')
+
+
+    def format_command(self, cmd):
+        return f'**» {cmd.qualified_name} {cmd.signature}**\n'
+
+    def format_slash_command(self, cmd):
+        def format_arg(arg):
+            return arg.name if arg.required else f"[{arg.name}]"
+
+        signature = ' '.join(format_arg(arg) for arg in cmd.body.options)
+        return f'**/ {cmd.name} {signature}**\n'
 
     async def paginate(self):
         await self.show_page(1, first=True)
@@ -169,7 +200,7 @@ class PaginatedHelpCommand(commands.HelpCommand):
             return cmd.cog_name or '\u200bNo Category'
 
         bot = self.context.bot
-        entries = await self.filter_commands(bot.commands, sort=True, key=key)
+        entries = await self.filter_commands(bot.commands, sort=True, key=key) + sorted(bot.slash_commands, key=key)
         nested_pages = []
         per_page = 9
         total = 0
