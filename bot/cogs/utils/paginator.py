@@ -1,6 +1,7 @@
 import asyncio
-import discord
-from discord.ext.commands import Paginator as CommandPaginator
+
+import disnake as discord
+from disnake.ext.commands import Paginator as CommandPaginator
 
 
 class CannotPaginate(Exception):

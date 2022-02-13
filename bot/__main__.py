@@ -2,9 +2,9 @@ import logging
 import os
 import time
 
-import discord
+import disnake as discord
 import redis
-from discord.ext import commands
+from disnake.ext import commands
 from dotenv import load_dotenv
 
 from bot.bot import MasarykBOT
@@ -24,6 +24,7 @@ initail_cogs = [
     "bot.cogs.errors",
     "bot.cogs.logger",
     "bot.cogs.markov",
+    "bot.cogs.wordle",
     "bot.cogs.rules",
     "bot.cogs.admin",
     "bot.cogs.eval",

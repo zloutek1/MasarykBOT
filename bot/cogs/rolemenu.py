@@ -3,10 +3,10 @@ import re
 from typing import Union
 
 from bot.constants import Config
-from discord import Emoji, Member, PartialEmoji, PermissionOverwrite, User
-from discord.errors import Forbidden, HTTPException
-from discord.ext import commands
-from discord.utils import find, get
+from disnake import Emoji, Member, PartialEmoji, PermissionOverwrite, User
+from disnake.errors import Forbidden, HTTPException
+from disnake.ext import commands
+from disnake.utils import find, get
 
 log = logging.getLogger(__name__)
 

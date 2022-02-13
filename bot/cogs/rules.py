@@ -1,8 +1,8 @@
 from textwrap import dedent
 
-from discord import Color, Embed, Member
-from discord.ext import commands
-from discord.utils import get
+from disnake import Color, Embed, Member
+from disnake.ext import commands
+from disnake.utils import get
 
 
 class Rules(commands.Cog):

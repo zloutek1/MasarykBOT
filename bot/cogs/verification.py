@@ -1,12 +1,10 @@
 import logging
 
-import discord
-from discord.ext import tasks, commands
-from discord.utils import get, find
-from discord.errors import Forbidden
-
+import disnake as discord
 from bot.constants import Config
-
+from disnake.errors import Forbidden
+from disnake.ext import commands, tasks
+from disnake.utils import find, get
 
 log = logging.getLogger(__name__)
 E_MISSING_PERMISSIONS = 50013

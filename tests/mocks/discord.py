@@ -7,14 +7,16 @@ import itertools
 import logging
 import unittest.mock
 from asyncio import AbstractEventLoop
-from typing import Iterable, Optional, Dict, Any
+from typing import Any, Dict, Iterable, Optional
 
-import discord
+import disnake as discord
+from bot.bot import MasarykBOT
+from bot.cogs.utils.context import Context
+from tests.mocks._autospec import \
+    autospec  # noqa: F401 other modules import it via this module
+
 #from discord.ext.commands import Context
 
-from bot.cogs.utils.context import Context
-from bot.bot import MasarykBOT
-from tests.mocks._autospec import autospec  # noqa: F401 other modules import it via this module
 
 
 for logger in logging.Logger.manager.loggerDict.values():

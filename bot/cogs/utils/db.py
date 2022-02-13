@@ -3,12 +3,13 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timezone, tzinfo
 from functools import wraps
 from typing import Generic, List, Optional, TypeVar, Union
 
 import asyncpg
-from discord import (Attachment, CategoryChannel, Emoji, Guild, Member,
+from asyncpg.exceptions import CharacterNotInRepertoireError
+from disnake import (Attachment, CategoryChannel, Emoji, Guild, Member,
                      Message, PartialEmoji, Reaction, Role, TextChannel)
 from emoji import demojize, get_emoji_regexp
 
@@ -75,7 +76,9 @@ class FromMessageMapper(ABC):
 class Guilds(Table, Mapper[Guild]):
     @staticmethod
     async def prepare_one(guild: Guild):
-        return (guild.id, guild.name, str(guild.icon_url), guild.created_at)
+        icon_url = str(guild.icon.url) if guild.icon else None
+        created_at = guild.created_at.replace(tzinfo=None)
+        return (guild.id, guild.name, icon_url, created_at)
 
     async def prepare(self, guilds: List[Guild]):
         return [await self.prepare_one(guild) for guild in guilds]
@@ -114,7 +117,8 @@ class Guilds(Table, Mapper[Guild]):
 class Categories(Table, Mapper[CategoryChannel]):
     @staticmethod
     async def prepare_one(category: CategoryChannel):
-        return (category.guild.id, category.id, category.name, category.position, category.created_at)
+        created_at = category.created_at.replace(tzinfo=None)
+        return (category.guild.id, category.id, category.name, category.position, created_at)
 
     async def prepare(self, categories: List[CategoryChannel]):
         return [await self.prepare_one(category) for category in categories]
@@ -153,7 +157,8 @@ class Categories(Table, Mapper[CategoryChannel]):
 class Roles(Table, Mapper[Role]):
     @staticmethod
     async def prepare_one(role: Role):
-        return (role.guild.id, role.id, role.name, hex(role.color.value), role.created_at)
+        created_at = role.created_at.replace(tzinfo=None)
+        return (role.guild.id, role.id, role.name, hex(role.color.value), created_at)
 
     async def prepare(self, roles: List[Role]):
         return [await self.prepare_one(role) for role in roles]
@@ -192,7 +197,9 @@ class Roles(Table, Mapper[Role]):
 class Members(Table, Mapper[Member], FromMessageMapper):
     @staticmethod
     async def prepare_one(member: Member):
-        return (member.id, member.name, str(member.avatar_url), member.bot, member.created_at)
+        avatar_url = str(member.avatar.url) if member.avatar else None
+        created_at = member.created_at.replace(tzinfo=None)
+        return (member.id, member.name, avatar_url, member.bot, created_at)
 
     async def prepare(self, members: List[Member]):
         return [await self.prepare_one(member) for member in members]
@@ -240,7 +247,8 @@ class Channels(Table, Mapper[TextChannel]):
     @staticmethod
     async def prepare_one(channel: TextChannel):
         category_id = channel.category.id if channel.category is not None else None
-        return (channel.guild.id, category_id, channel.id, channel.name, channel.position, channel.created_at)
+        created_at = channel.created_at.replace(tzinfo=None)
+        return (channel.guild.id, category_id, channel.id, channel.name, channel.position, created_at)
 
     async def prepare(self, channels: List[TextChannel]):
         return [await self.prepare_one(channel) for channel in channels]
@@ -279,7 +287,8 @@ class Channels(Table, Mapper[TextChannel]):
 class Messages(Table, Mapper[Message]):
     @staticmethod
     async def prepare_one(message: Message):
-        return (message.channel.id, message.author.id, message.id, message.content, message.created_at)
+        created_at = message.created_at.replace(tzinfo=None)
+        return (message.channel.id, message.author.id, message.id, message.content, created_at)
 
     async def prepare(self, messages: List[Message]):
         return [await self.prepare_one(message) for message in messages]
@@ -299,17 +308,20 @@ class Messages(Table, Mapper[Message]):
 
     @withConn
     async def insert(self, conn, messages):
-        await conn.executemany("""
-            INSERT INTO server.messages AS m (channel_id, author_id, id, content, created_at)
-            VALUES ($1, $2, $3, $4, $5)
-            ON CONFLICT (id) DO UPDATE
-                SET content=$4,
-                    created_at=$5,
-                    edited_at=NOW()
-                WHERE m.content<>excluded.content OR
-                        m.created_at<>excluded.created_at OR
-                        m.edited_at<>excluded.edited_at
-        """, messages)
+        try:
+            await conn.executemany("""
+                INSERT INTO server.messages AS m (channel_id, author_id, id, content, created_at)
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT (id) DO UPDATE
+                    SET content=$4,
+                        created_at=$5,
+                        edited_at=NOW()
+                    WHERE m.content<>excluded.content OR
+                            m.created_at<>excluded.created_at OR
+                            m.edited_at<>excluded.edited_at
+            """, messages)
+        except CharacterNotInRepertoireError as e:
+            log.error(e.message)
 
     @withConn
     async def update(self, conn, messages):
@@ -478,8 +490,9 @@ class Reactions(Table, Mapper[Reaction], FromMessageMapper):
         emoji_id = (emote.id
                     if isinstance(emote := reaction.emoji, (Emoji, PartialEmoji)) else
                     sum(map(ord, emote)))
+        created_at = reaction.message.created_at.replace(tzinfo=None)
 
-        return (reaction.message.id, emoji_id, user_ids, reaction.message.created_at)
+        return (reaction.message.id, emoji_id, user_ids, created_at)
 
     async def prepare(self, reactions: List[Reaction]):
         return [await self.prepare_one(reaction) for reaction in reactions]
@@ -533,8 +546,20 @@ class Logger(Table):
             await conn.execute("UPDATE cogs.logger SET finished_at = NOW() WHERE channel_id = $1 AND finished_at IS NULL", channel_id)
         else:
             async with conn.transaction():
-                await conn.execute("DELETE FROM cogs.logger WHERE channel_id = $1 AND from_date = $2 AND to_date = $3", channel_id, from_date, to_date)
-                await conn.execute("UPDATE cogs.logger SET to_date = $3, finished_at = NOW() WHERE channel_id = $1 AND to_date = $2 AND finished_at IS NOT NULL", channel_id, from_date, to_date)
+                await conn.execute("""
+                    DELETE FROM cogs.logger
+                    WHERE channel_id = $1 AND
+                          from_date = $2 AND
+                          to_date = $3
+                    """, channel_id, from_date, to_date)
+                await conn.execute("""
+                    UPDATE cogs.logger
+                    SET to_date = $3,
+                        finished_at = NOW()
+                    WHERE channel_id = $1 AND
+                          to_date = $2 AND
+                          finished_at IS NOT NULL
+                          """, channel_id, from_date, to_date)
 
     def process(self, channel_id, from_date, to_date, is_first_week=False, conn=None):
         return self.Process(self, channel_id, from_date, to_date, is_first_week, conn)

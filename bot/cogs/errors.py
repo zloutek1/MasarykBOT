@@ -2,8 +2,8 @@ import logging
 import traceback
 
 from bot.constants import Config
-from discord.ext import commands
-from discord.utils import get
+from disnake.ext import commands
+from disnake.utils import get
 
 log = logging.getLogger(__name__)
 

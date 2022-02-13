@@ -3,10 +3,10 @@ import os
 from contextlib import suppress
 from datetime import datetime
 
-import discord
-from discord.errors import NotFound
-from discord.ext import commands
-from discord.ext.commands import has_permissions
+import disnake as discord
+from disnake.errors import NotFound
+from disnake.ext import commands
+from disnake.ext.commands import has_permissions
 
 log = logging.getLogger(__name__)
 

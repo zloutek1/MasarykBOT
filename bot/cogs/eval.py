@@ -2,8 +2,8 @@ import json
 from io import StringIO
 
 import aiohttp
-from discord import File
-from discord.ext import commands
+from disnake import File
+from disnake.ext import commands
 
 
 def get_cmds():
