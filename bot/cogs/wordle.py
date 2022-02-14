@@ -312,9 +312,7 @@ class Wordle(commands.Cog):
 
     @commands.command(name="wordle")
     async def wordle_help(self, ctx):
-        embed = discord.Embed(colour=discord.Colour.green())
-        embed.title = "Wordle"
-        embed.description = """
+        """
         Guess the **WORDLE** in six tries.
 
         Each guess must be a valid five-letter word. Hit the submit button to validate the word.
@@ -328,7 +326,7 @@ class Wordle(commands.Cog):
         Play the game using `/wordle`
         """
 
-        await ctx.send(embed=embed)
+        await ctx.reply("👉 /wordle")
 
     @tasks.loop(minutes=30)
     async def reset_wordle(self):
