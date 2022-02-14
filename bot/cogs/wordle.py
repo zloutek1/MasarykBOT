@@ -5,7 +5,7 @@ from collections import defaultdict
 from ctypes.wintypes import WORD
 from datetime import datetime
 from enum import Enum
-from typing import List
+from typing import List, Optional
 
 import disnake as discord
 from bot.constants import Config
@@ -293,7 +293,7 @@ class Wordle(commands.Cog):
         self.today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
     @commands.slash_command(guild_ids=[guild.id for guild in Config.guilds], description="Play wordle on Discord")
-    async def wordle(self, ctx, offset: int = 0):
+    async def wordle(self, ctx, nth: Optional[int] = None):
         if (ctx.author.id in self.games and
             not self.games[ctx.author.id].did_win() and
             not self.games[ctx.author.id].controls.is_finished()):
@@ -307,7 +307,7 @@ class Wordle(commands.Cog):
 
         self.games[ctx.author.id] = GameInstance(ctx,
                                                  words=self.WORDS,
-                                                 nth=self.scores.get((self.today, ctx.author.id), 0) + offset)
+                                                 nth=nth or self.scores.get((self.today, ctx.author.id), 0))
         game = self.games[ctx.author.id]
         await game.start()
 
