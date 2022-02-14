@@ -166,7 +166,7 @@ class Starboard(commands.Cog):
             color=0xFFDF00)
 
         embed.set_author(name=message.author.display_name,
-                         icon_url=message.author.avatar_url_as(format='png'))
+                         icon_url=message.author.avatar.with_format('png').url)
 
         CEST = timezone(offset=timedelta(hours=+2))
         embed.set_footer(text=message.created_at.astimezone(CEST).strftime("%d.%m.%Y %H:%M"))
