@@ -310,6 +310,26 @@ class Wordle(commands.Cog):
         game = self.games[ctx.author.id]
         await game.start()
 
+    @commands.command(name="wordle")
+    async def wordle_help(self, ctx):
+        embed = discord.Embed(colour=discord.Colour.green())
+        embed.title = "Wordle"
+        embed.description = """
+        Guess the **WORDLE** in six tries.
+
+        Each guess must be a valid five-letter word. Hit the submit button to validate the word.
+
+        After each guess, the color of the tiles will change to show how close your guess was to the word.
+
+        🟩 - the letter is at the correct place
+        🟥 - the letter is not in the word
+        🟨 - the letter is in the word, but at the wrong place
+
+        Play the game using `/wordle`
+        """
+
+        await ctx.send(embed=embed)
+
     @tasks.loop(minutes=30)
     async def reset_wordle(self):
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
