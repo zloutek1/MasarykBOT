@@ -288,6 +288,7 @@ class Wordle(commands.Cog):
         self.games = {}
         self.scores = defaultdict(int)
 
+        self.shuffle()
         self.reset_wordle.start()
         self.today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
@@ -328,12 +329,19 @@ class Wordle(commands.Cog):
 
         await ctx.reply("👉 /wordle")
 
+    def shuffle(self):
+        today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        seed = 0b01110111011011110111001001100100011011000110010100001010 + today.day + today.month * 31
+        random.seed(seed)
+        random.shuffle(self.WORDS)
+
     @tasks.loop(minutes=30)
     async def reset_wordle(self):
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         if today == self.today:
             return
 
+        self.shuffle()
         self.today = today
 
         seed = 0b01110111011011110111001001100100011011000110010100001010 + today.day + today.month * 31
