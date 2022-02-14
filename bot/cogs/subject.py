@@ -24,6 +24,7 @@ SUBJECT_MESSAGE = {
 
         :warning: tento bot není nijak napojen na IS.MUNI
         :warning: předmět si můžeš zapsat/zrušit každých 5 sekund
+        :information_source: lze zapsat až 10 předmetů najednou
 
         příkazem !subject add/remove <faculty>:<subject_code>
         např.
@@ -39,10 +40,12 @@ SUBJECT_MESSAGE = {
         !subject find IB000
         !subject find IB0%
         ```
+        pro odregistrování všech předmětů lze použít `!subject remove all`
+
         Podporované fakulty:
         informatika (FI), filozofická (FF), sociálních studií (FSS), Sportovních studií (FSpS), Přírodovědecká (PřF), Právnická (PrF)
         """).strip(),
-    "footer": ":point_down: Zapiš si své předměty zde :point_down:"""
+    "footer": "👇 Zapiš si své předměty zde 👇"""
 }
 
 
