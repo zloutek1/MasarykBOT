@@ -1,3 +1,5 @@
+from typing import Any, Collection, Dict, List, Union
+
 import yaml
 
 with open('config.yml', encoding="UTF-8") as f:
@@ -23,8 +25,8 @@ class YAMLGetter(type):
         {prefix: "!"}
     """
 
-    def __getattr__(cls, key):
-        val = _CONFIG_YAML.get(key)
+    def __getattr__(cls, key: str) -> Any:
+        val: Any = _CONFIG_YAML.get(key)
         if isinstance(val, (list, dict)):
             return cls(val) # initiate subclass
         return val
@@ -35,12 +37,12 @@ class YAMLIterator:
     cls instance around the iterated collection
     """
 
-    def __init__(self, cls, iterable):
+    def __init__(self, cls: YAMLGetter, iterable: Union[Dict, List]) -> None:
         self.cls = cls
         self.iterable = iterable
         self.index = 0
 
-    def __next__(self):
+    def __next__(self) -> Any:
         if self.index < len(self.iterable):
             val = self.iterable[self.index]
             self.index += 1
@@ -66,10 +68,10 @@ class Config(metaclass=YAMLGetter):
         "!"
     """
 
-    def __init__(self, config):
+    def __init__(self, config: Union[Dict, List]) -> None:
         self.config = config
 
-    def __getattr__(self, key):
+    def __getattr__(self, key: str) -> Union["Config", Any]:
         if isinstance(self.config, dict):
             val = self.config.get(key)
             if isinstance(val, (list, dict)):
@@ -82,9 +84,10 @@ class Config(metaclass=YAMLGetter):
                     return Config(val)
                 if val:
                     return val
+        raise NotImplemented
 
-    def __iter__(self):
+    def __iter__(self) -> YAMLIterator:
         return YAMLIterator(self.__class__, self.config)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Config({self.config})"
