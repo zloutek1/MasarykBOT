@@ -1,16 +1,21 @@
+import asyncio
 import logging
 import os
 import time
+from typing import List, Optional
 
+import asyncpg
 import disnake as discord
+import inject
 import redis
 from disnake.ext import commands
 from dotenv import load_dotenv
 
 from bot.bot import MasarykBOT
-from bot.cogs.utils.db import Database
 from bot.cogs.utils.logging import setup_logging
+from bot.db.utils import Pool, Url
 
+"""
 initail_cogs = [
     "bot.cogs.verification",
     "bot.cogs.cog_manager",
@@ -33,6 +38,51 @@ initail_cogs = [
     "bot.cogs.tags",
     "bot.cogs.fun"
 ]
+"""
+
+initail_cogs: List[str] = []
+
+
+def connect_db(url: Url) -> Optional[Pool]:
+    try:
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(asyncpg.create_pool(url, command_timeout=1280))
+
+    except OSError as e:
+        import re
+        redacted_url = re.sub(r'\:(?!\/\/)[^\@]+', ":******", url)
+        log.error("Failed to connect to database (%s)", redacted_url)
+        return None
+
+def connect_redis(url: Url) -> Optional[redis.Redis]:
+    while True:
+        try:
+            host, port_str = url.split(":")
+            port = int(port_str)
+
+            redis_client = redis.Redis(host=host, port=port, db=0,
+                                        decode_responses=True,
+                                        health_check_interval=30,
+                                        retry_on_timeout=True)
+
+            redis_client.get("--test--")
+            return redis_client
+        except redis.exceptions.BusyLoadingError:
+            log.warning("redis is loading, sleeping for 10 seconds...")
+            time.sleep(10)
+        except redis.exceptions.ConnectionError:
+            log.exception("redis connection failed, giving up...")
+            return None
+
+def inject_coniguration(binder: inject.Binder) -> None:
+    postgres_url = os.getenv("POSTGRES")
+    if postgres_url:
+        binder.bind(Pool, connect_db(postgres_url))
+
+    redis_url = os.getenv("REDIS")
+    if redis_url:
+        binder.bind(redis.Redis, connect_redis(redis_url))
+
 
 if __name__ == "__main__":
     load_dotenv()
@@ -40,32 +90,11 @@ if __name__ == "__main__":
 
     log = logging.getLogger()
 
-    if os.getenv("POSTGRES") is None:
-        log.exception("postgresql connection is required to run the bot, exiting...")
-        exit(1)
-
     if os.getenv("TOKEN") is None:
         log.exception("discord bot token is required to run the bot, exiting...")
         exit(1)
 
-    redis_client = None
-    if os.getenv("REDIS"):
-        while True:
-            try:
-                host, port = os.getenv("REDIS").split(":")
-                redis_client = redis.Redis(host=host, port=port, db=0,
-                                           decode_responses=True,
-                                           health_check_interval=30,
-                                           retry_on_timeout=True)
-                redis_client.get("--test--")
-                break
-            except redis.exceptions.BusyLoadingError:
-                log.warning("redis is loading, sleeping for 10 seconds...")
-                time.sleep(10)
-            except redis.exceptions.ConnectionError:
-                log.exception("redis connection failed, exiting...")
-                exit(1)
-
+    inject.configure_once(inject_coniguration)
 
     intents = discord.Intents(
         guilds=True,
@@ -76,11 +105,15 @@ if __name__ == "__main__":
         guild_reactions=True,
         dm_reactions=True)
 
-    bot = MasarykBOT(db=Database.connect(os.getenv("POSTGRES")),
-                     redis=redis_client,
-                     command_prefix=commands.when_mentioned_or("!"),
-                     intents=intents,
-                     allowed_mentions=discord.AllowedMentions(roles=False, everyone=False, users=True),)
+    bot = MasarykBOT(
+        command_prefix=commands.when_mentioned_or("!"),
+        intents=intents,
+        allowed_mentions=discord.AllowedMentions(
+           roles=False,
+           everyone=False,
+           users=True
+        ),
+    )
 
     for extension in initail_cogs:
         try:

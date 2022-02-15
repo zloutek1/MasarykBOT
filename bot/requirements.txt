@@ -1,5 +1,5 @@
 # core dependenices
-disnake==2.3.2
+disnake==2.4.0
 
 # configs
 python-dotenv==0.15.0
@@ -7,24 +7,26 @@ pyyaml==5.4.1
 
 # database access
 aiohttp==3.7.4
-asyncpg==0.22.0
+asyncpg==0.25.0
+git+https://github.com/bryanforbes/asyncpg-stubs.git@dependabot/pip/asyncpg-0.25.0 # asyncpg-stubs
+inject==4.3.1
 
 # cogs
-# markov
-redis==4.1.0
+    # markov
+    redis==4.1.0
 
-# activity
-numpy==1.22.2
-matplotlib==3.5.1
-pandas==1.4.0
+    # activity
+    numpy==1.22.2
+    matplotlib==3.5.1
+    pandas==1.4.0
 
-# fun
-unicodeit==0.7.2
-emoji==1.2.0
-requests==2.25.1
+    # fun
+    unicodeit==0.7.2
+    emoji==1.2.0
+    requests==2.25.1
 
-# wordle
-english-words==1.1.0
+    # wordle
+    english-words==1.1.0
 
 # testing library
 pytest==6.2.2
