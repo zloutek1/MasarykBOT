@@ -6,6 +6,7 @@ from typing import (Any, Awaitable, Callable, Coroutine, Generic, List,
 
 import asyncpg
 import disnake as discord
+import inject
 
 T = TypeVar('T')
 R = TypeVar('R')
@@ -28,8 +29,7 @@ class WrappedCallable(Generic[R]):
 
 
 class Table:
-    def __init__(self, pool: Pool):
-        self.pool = pool
+    pool = inject.attr(Pool)
 
 
 class Crud(ABC, Generic[C]):
@@ -125,15 +125,15 @@ def withConn(
 
     @wraps(func)
     async def wrapper_one_arg(self: S, data: T) -> R:
-        func = cast(Callable[[S, DBConnection, T], Awaitable[R]], func)
+        func_ = cast(Callable[[S, DBConnection, T], Awaitable[R]], func)
         async with self.pool.acquire() as conn:
-            return await func(self, conn, data)
+            return await func_(self, conn, data)
 
     @wraps(func)
     async def wrapper_no_args(self: S) -> R:
-        func = cast(Callable[[S, DBConnection], Awaitable[R]], func)
+        func_ = cast(Callable[[S, DBConnection], Awaitable[R]], func)
         async with self.pool.acquire() as conn:
-            return await func(self, conn)
+            return await func_(self, conn)
 
     argc = len(signature(func).parameters)
     if argc == 2:
