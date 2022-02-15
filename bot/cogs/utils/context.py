@@ -1,12 +1,20 @@
 import asyncio
 import io
 from contextlib import suppress
+from typing import Any, Optional, Union, cast
 
 import disnake as discord
 from disnake.errors import HTTPException, NotFound
 from disnake.ext import commands
 from disnake.utils import get
 
+GuildChannel = Union[
+    discord.channel.VoiceChannel,
+    discord.channel.StageChannel,
+    discord.channel.TextChannel,
+    discord.channel.CategoryChannel,
+    discord.channel.StoreChannel
+]
 
 class Context(commands.Context):
     """
@@ -14,36 +22,36 @@ class Context(commands.Context):
     in your commands. provides some useful getter shortcuts
     """
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.db = self.bot.db
-
-    def get_category(self, name=None, **kwargs):
+    def get_category(self, name: Optional[str] = None, **kwargs: Any) -> Optional[discord.CategoryChannel]:
+        assert self.guild, "this method can only be run for guild events"
         if name is not None:
             kwargs.update({"name": name})
         return get(self.guild.categories, **kwargs)
 
-    def get_channel(self, name=None, **kwargs):
+    def get_channel(self, name: Optional[str] = None, **kwargs: Any) -> Optional[GuildChannel]:
+        assert self.guild, "this method can only be run for guild events"
         if name is not None:
             kwargs.update({"name": name})
         return get(self.guild.channels, **kwargs)
 
-    def get_role(self, name=None, **kwargs):
+    def get_role(self, name: Optional[str] = None, **kwargs: Any) -> Optional[discord.Role]:
+        assert self.guild, "this method can only be run for guild events"
         if name is not None:
             kwargs.update({"name": name})
         return get(self.guild.roles, **kwargs)
 
-    def get_emoji(self, name=None, **kwargs):
+    def get_emoji(self, name: Optional[str] = None, **kwargs: Any) -> Optional[discord.Emoji]:
         if name is not None:
             kwargs.update({"name": name})
         return get(self.bot.emojis, **kwargs)
 
-    def get_user(self, name=None, **kwargs):
+    def get_member(self, name: Optional[str] = None, **kwargs: Any) -> Optional[discord.Member]:
+        assert self.guild, "this method can only be run for guild events"
         if name is not None:
             kwargs.update({"name": name})
         return get(self.guild.members, **kwargs)
 
-    def channel_name(self, text):
+    def channel_name(self, text: str) -> str:
         words = (text.lower()
                      .replace("-", "–")
                      .split())
@@ -58,11 +66,18 @@ class Context(commands.Context):
                    .replace(")", "")
                    .replace(":", "꞉"))
 
-    async def safe_delete(self, **kwargs):
+    async def safe_delete(self, **kwargs: Any) -> None:
         with suppress(NotFound):
             await self.message.delete(**kwargs)
 
-    async def safe_send(self, content, *, escape_mentions=True, **kwargs):
+    async def safe_send(
+        self,
+        content: str,
+        *,
+        escape_mentions: bool = True,
+        **kwargs: Any
+    ) -> discord.Message:
+
         if escape_mentions:
             content = discord.utils.escape_mentions(content)
 
@@ -73,7 +88,14 @@ class Context(commands.Context):
         else:
             return await self.send(content)
 
-    async def send_embed(self, content, name="Message", delete_after=None, **kwargs):
+    async def send_embed(
+        self,
+        content: str,
+        name: str = "Message",
+        delete_after: Optional[int] = None,
+        **kwargs: Any
+    ) -> discord.Message:
+
         from datetime import datetime, timedelta, timezone
         CEST = timezone(offset=timedelta(hours=+2))
         now = datetime.now(CEST).strftime("%d.%m.%Y %H:%M:%S")
@@ -82,21 +104,35 @@ class Context(commands.Context):
         embed.add_field(name=name, value=content)
         embed.set_footer(text=now)
 
-        await self.send(embed=embed, delete_after=delete_after)
+        return await self.send(embed=embed, delete_after=delete_after)
 
-    async def send_success(self, content, delete_after=None):
-        await self.send_embed(content,
-                              name="Success",
-                              delete_after=delete_after,
-                              color=discord.Color.green())
+    async def send_success(
+        self,
+        content: str,
+        delete_after: Optional[int] = None
+    ) -> discord.Message:
 
-    async def send_error(self, content, delete_after=None):
-        await self.send_embed(content,
-                              name="Error",
-                              delete_after=delete_after,
-                              color=discord.Color.red())
+        return await self.send_embed(
+            content,
+            name="Success",
+            delete_after=delete_after,
+            color=discord.Color.green()
+        )
 
-    async def send(self, *args, **kwargs):
+    async def send_error(
+        self,
+        content: str,
+        delete_after: Optional[int] = None
+    ) -> discord.Message:
+
+        return await self.send_embed(
+            content,
+            name="Error",
+            delete_after=delete_after,
+            color=discord.Color.red()
+        )
+
+    async def send(self, *args: Any, **kwargs: Any) -> discord.Message:
         message = await super().send(*args, **kwargs)
 
         with suppress(NotFound):
@@ -105,14 +141,18 @@ class Context(commands.Context):
 
         return message
 
-    async def reply(self, *args, mention_author=False, **kwargs):
+    async def reply(self, *args: Any, mention_author: bool = False, **kwargs: Any) -> discord.Message:
         try:
             return await super().reply(*args, mention_author=mention_author, **kwargs)
         except HTTPException:
             return await self.send(*args, **kwargs)
 
-    async def _wait_for_reaction_or_clear(self, message):
-        def react_check(reaction, user):
+    async def _wait_for_reaction_or_clear(self, message: discord.Message) -> None:
+        def react_check(
+            reaction: discord.Reaction,
+            user: Union[discord.User, discord.Member]
+        ) -> bool:
+
             if user is None or user.id != self.author.id:
                 return False
 
