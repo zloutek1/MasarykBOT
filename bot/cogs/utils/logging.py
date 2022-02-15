@@ -7,14 +7,14 @@ from pathlib import Path
 from rich.logging import RichHandler
 
 
-def my_namer(default_name):
+def my_namer(default_name: str) -> str:
     # This will be called when doing the log rotation
     # default_name is the default filename that would be assigned, e.g. Rotate_Test.txt.YYYY-MM-DD
     # Do any manipulations to that name here, for example this changes the name to Rotate_Test.YYYY-MM-DD.txt
     base_filename, _, ext, date = default_name.split(".")
     return f"{base_filename}.{date}.{ext}"
 
-def setup_logging():
+def setup_logging() -> None:
     """
     sets up custom logging into self.log variable
 
