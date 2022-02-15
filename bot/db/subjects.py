@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple
 from .utils import DBConnection, Id, Record, Table, withConn
 
 
-class Subjects(Table):
+class SubjectDao(Table):
     @withConn
     async def find(self, conn: DBConnection, data: Tuple[str, str]) -> List[Record]:
         faculty, code = data

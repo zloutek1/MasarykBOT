@@ -7,7 +7,7 @@ from disnake import CategoryChannel
 
 Columns = Tuple[Id, Id, str, int, datetime]
 
-class Categories(Table, Crud[Columns], Mapper[CategoryChannel, Columns]):
+class CategoryDao(Table, Crud[Columns], Mapper[CategoryChannel, Columns]):
     @staticmethod
     async def prepare_one(category: CategoryChannel) -> Columns:
         created_at = category.created_at.replace(tzinfo=None)

@@ -11,11 +11,11 @@ from disnake import Emoji, Message, PartialEmoji, Reaction
 log = logging.getLogger(__name__)
 Columns = Tuple[Id, Id, List[Id], datetime]
 
-class Reactions(Table, Crud[Columns], Mapper[Reaction, Columns], FromMessageMapper[Columns]):
+class ReactionDao(Table, Crud[Columns], Mapper[Reaction, Columns], FromMessageMapper[Columns]):
     @staticmethod
     async def prepare_one(reaction: Reaction) -> Columns:
-        user_ids = await Reactions.get_user_ids(reaction)
-        emoji_id = Reactions.get_emoji_id(reaction)
+        user_ids = await ReactionDao.get_user_ids(reaction)
+        emoji_id = ReactionDao.get_emoji_id(reaction)
         created_at = reaction.message.created_at.replace(tzinfo=None)
 
         return (reaction.message.id, emoji_id, user_ids, created_at)

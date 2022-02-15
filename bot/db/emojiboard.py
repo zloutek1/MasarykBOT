@@ -3,7 +3,7 @@ from typing import List, Optional, Tuple
 from .utils import DBConnection, Id, Record, Table, withConn
 
 
-class Emojiboard(Table):
+class EmojiboardDao(Table):
     @withConn
     async def select(
         self,

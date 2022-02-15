@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 Columns = Tuple[Id, Id, Id, str, datetime]
 
 
-class Messages(Table, Crud[Columns], Mapper[Message, Columns]):
+class MessageDao(Table, Crud[Columns], Mapper[Message, Columns]):
     @staticmethod
     async def prepare_one(message: Message) -> Columns:
         created_at = message.created_at.replace(tzinfo=None)

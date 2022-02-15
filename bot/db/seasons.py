@@ -6,7 +6,7 @@ from bot.db.utils import (Crud, DBConnection, Id, Record, Table, Url,
 
 Columns = Tuple[Id, str, datetime, datetime, Url, Url]
 
-class Seasons(Table, Crud[Columns]):
+class SeasonDao(Table, Crud[Columns]):
     @withConn
     async def load_events(self, conn: DBConnection, guild_id: Id) -> List[Record]:
 

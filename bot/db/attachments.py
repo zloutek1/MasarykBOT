@@ -7,7 +7,7 @@ from disnake import Attachment, Message
 
 Columns = Tuple[Optional[Id], Id, str, Url]
 
-class Attachments(Table, Crud[Columns], Mapper[Attachment, Columns], FromMessageMapper[Columns]):
+class AttachmentDao(Table, Crud[Columns], Mapper[Attachment, Columns], FromMessageMapper[Columns]):
     @staticmethod
     async def prepare_one(attachment: Attachment) -> Columns:
         return (None, attachment.id, attachment.filename, attachment.url)

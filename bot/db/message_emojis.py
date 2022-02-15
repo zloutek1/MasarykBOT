@@ -2,17 +2,17 @@ from collections import Counter
 from datetime import datetime
 from typing import List, Optional, Tuple, cast
 
-from bot.db.emojis import Emojis
+from bot.db.emojis import EmojiDao
 from bot.db.utils import (Crud, DBConnection, FromMessageMapper, Id, Mapper,
                           Pool, Record, Table, WrappedCallable, withConn)
 from disnake import Message
 
 Columns = Tuple[Id, Id, int]
 
-class MessageEmojis(Table, Crud[Columns], FromMessageMapper[Columns]):
+class MessageEmojiDao(Table, Crud[Columns], FromMessageMapper[Columns]):
     def __init__(self, pool: Pool):
         super().__init__(pool)
-        self.emojis = Emojis(self.pool)
+        self.emojis = EmojiDao(self.pool)
 
     async def prepare_from_message(self, message: Message) -> List[Columns]:
         emojis = await self.emojis._prepare_from_message_content(message)

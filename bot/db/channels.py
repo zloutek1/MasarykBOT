@@ -7,7 +7,7 @@ from disnake import TextChannel
 
 Columns = Tuple[Id, Optional[Id], Id, str, int, datetime]
 
-class Channels(Table, Crud[Columns], Mapper[TextChannel, Columns]):
+class ChannelDao(Table, Crud[Columns], Mapper[TextChannel, Columns]):
     @staticmethod
     async def prepare_one(channel: TextChannel) -> Columns:
         category_id = channel.category.id if channel.category is not None else None

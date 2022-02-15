@@ -7,7 +7,7 @@ from disnake import Role
 
 Columns = Tuple[Id, Id, str, str, datetime]
 
-class Roles(Table, Crud[Columns], Mapper[Role, Columns]):
+class RoleDao(Table, Crud[Columns], Mapper[Role, Columns]):
     @staticmethod
     async def prepare_one(role: Role) -> Columns:
         created_at = role.created_at.replace(tzinfo=None)

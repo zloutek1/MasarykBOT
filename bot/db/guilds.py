@@ -9,7 +9,7 @@ from .utils import (Crud, DBConnection, Id, Mapper, Record, Table, Url,
 
 Columns = Tuple[Id, str, Optional[Url], datetime]
 
-class Guilds(Table, Crud[Columns], Mapper[Guild, Columns]):
+class GuildDao(Table, Crud[Columns], Mapper[Guild, Columns]):
     @staticmethod
     async def prepare_one(guild: Guild) -> Columns:
         icon_url = str(guild.icon.url) if guild.icon else None

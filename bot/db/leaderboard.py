@@ -3,7 +3,7 @@ from typing import List, Optional, Tuple
 from .utils import DBConnection, Id, Record, Table, withConn
 
 
-class Leaderboard(Table):
+class LeaderboardDao(Table):
     @withConn
     async def preselect(
         self,

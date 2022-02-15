@@ -5,7 +5,7 @@ from typing import List, Optional, Tuple, Type, cast
 from .utils import DBConnection, Id, Record, Table, WrappedCallable, withConn
 
 
-class Logger(Table):
+class LoggerDao(Table):
     @withConn
     async def select(self, conn: DBConnection, channel_id: Id) -> List[Record]:
         return await conn.fetch("""
@@ -71,7 +71,7 @@ class Logger(Table):
                 to_date: datetime,
                 is_first_week: bool=False,
                 conn: Optional[DBConnection]=None
-    ) -> "Logger.Process":
+    ) -> "LoggerDao.Process":
         return self.Process(
             self,
             channel_id,
@@ -83,7 +83,7 @@ class Logger(Table):
     class Process:
         def __init__(
             self,
-            cls: "Logger",
+            cls: "LoggerDao",
             channel_id: Id,
             from_date: datetime,
             to_date: datetime,

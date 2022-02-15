@@ -5,7 +5,7 @@ from typing import List, Optional, Tuple
 from bot.db.utils import DBConnection, Id, Record, Table, withConn
 
 
-class Activity(Table):
+class ActivityDao(Table):
     @withConn
     async def select(
         self,

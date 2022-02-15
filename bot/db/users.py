@@ -7,7 +7,7 @@ from disnake import Member, Message, User
 
 Columns = Tuple[Id, str, Optional[Url], bool, datetime]
 
-class Users(Table, Crud[Columns], Mapper[Union[User, Member], Columns], FromMessageMapper[Columns]):
+class UserDao(Table, Crud[Columns], Mapper[Union[User, Member], Columns], FromMessageMapper[Columns]):
     @staticmethod
     async def prepare_one(user: Union[User, Member]) -> Columns:
         avatar_url = str(user.avatar.url) if user.avatar else None

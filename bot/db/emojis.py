@@ -11,7 +11,7 @@ from numpy import delete
 AnyEmote = Union[Emoji, PartialEmoji, str]
 Columns = Tuple[Id, str, Url, bool]
 
-class Emojis(Table, Crud[Columns], Mapper[AnyEmote, Columns], FromMessageMapper[Columns]):
+class EmojiDao(Table, Crud[Columns], Mapper[AnyEmote, Columns], FromMessageMapper[Columns]):
     HAS_EMOTE = r":[\w~]+:"
     REGULAR_REGEX = r"<:([\w~]+):(\d+)>"
     ANIMATED_REGEX = r"<a:([\w~]+):(\d+)>"
@@ -19,7 +19,7 @@ class Emojis(Table, Crud[Columns], Mapper[AnyEmote, Columns], FromMessageMapper[
     @staticmethod
     async def prepare_one(emoji: AnyEmote) -> Columns:
         if isinstance(emoji, str):
-            return await Emojis.prepare_unicode_emoji(emoji)
+            return await EmojiDao.prepare_unicode_emoji(emoji)
 
         assert emoji.id is not None, "Emoji has to have an id"
         return (emoji.id, emoji.name, str(emoji.url), emoji.animated)
@@ -89,7 +89,7 @@ class Emojis(Table, Crud[Columns], Mapper[AnyEmote, Columns], FromMessageMapper[
 
         regular_emojis = await self._prepare_emojis_from_message(message, self.REGULAR_REGEX, is_animated=False)
         animated_emojis = await self._prepare_emojis_from_message(message, self.ANIMATED_REGEX, is_animated=True)
-        unicode_emojis = [await Emojis.prepare_unicode_emoji(emoji)
+        unicode_emojis = [await EmojiDao.prepare_unicode_emoji(emoji)
                           for emoji in get_emoji_regexp().findall(message.content)]
 
         return regular_emojis + animated_emojis + unicode_emojis
