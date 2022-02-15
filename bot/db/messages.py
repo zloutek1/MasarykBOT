@@ -28,7 +28,7 @@ class Messages(Table, Crud[Columns], Mapper[Message, Columns]):
         """, message_id)
 
     @withConn
-    async def select_all_long(self, conn: DBConnection, data: List[Columns] = []) -> List[Record]:
+    async def select_all_long(self, conn: DBConnection) -> List[Record]:
         return await conn.fetch("""
             SELECT * FROM server.messages
             WHERE LENGTH(content) > 50

@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from functools import wraps
+from inspect import signature
 from typing import (Any, Awaitable, Callable, Coroutine, Generic, List,
-                    Optional, Tuple, TypeVar, cast)
+                    Optional, Tuple, TypeVar, Union, cast, overload)
 
 import asyncpg
 import disnake as discord
@@ -72,9 +73,73 @@ class FromMessageMapper(ABC, Generic[C]):
 
 S = TypeVar('S', bound=Table)
 
-def withConn(func: Callable[[S, DBConnection, T], Awaitable[R]]) -> Callable[[S, T], Coroutine[Any, Any, R]]:
+@overload
+def withConn(
+    func: Callable[[S, DBConnection], Awaitable[R]]
+) -> Callable[[S], Coroutine[Any, Any, R]]:
+    ...
+
+@overload
+def withConn(
+    func: Callable[[S, DBConnection, T], Awaitable[R]]
+) -> Callable[[S, T], Coroutine[Any, Any, R]]:
+    ...
+
+def withConn(
+    func: Union[
+        Callable[[S, DBConnection], Awaitable[R]],
+        Callable[[S, DBConnection, T], Awaitable[R]]
+    ]
+) -> Union[
+    Callable[[S], Coroutine[Any, Any, R]],
+    Callable[[S, T], Coroutine[Any, Any, R]]
+]:
+    """
+    This function is a decorator
+    that acquires and injects a database connection
+    into a function
+
+    Ex.
+    ```py
+    @withConn
+    async def select(self, conn: DBConnection, data: Tuple[Id]) -> List[Record]:
+        ...
+    ```
+
+    The example above will abstract the connection from the user and
+    transform the select function into
+
+    ```py
+    async def select(self, data: Tuple[Id]) -> List[Record]:
+        ...
+    ```
+
+    The original function can still be accesses using
+
+    ```py
+    w_select = cast(WrappedCallable, select)
+    w_select.__warpped__(conn, data)
+    ```
+
+    """
+
     @wraps(func)
-    async def wrapper(self: S, data: T) -> R:
+    async def wrapper_one_arg(self: S, data: T) -> R:
+        func = cast(Callable[[S, DBConnection, T], Awaitable[R]], func)
         async with self.pool.acquire() as conn:
             return await func(self, conn, data)
-    return wrapper
+
+    @wraps(func)
+    async def wrapper_no_args(self: S) -> R:
+        func = cast(Callable[[S, DBConnection], Awaitable[R]], func)
+        async with self.pool.acquire() as conn:
+            return await func(self, conn)
+
+    argc = len(signature(func).parameters)
+    if argc == 2:
+        return wrapper_no_args
+    elif argc == 3:
+        return wrapper_one_arg
+    else:
+        raise NotImplementedError
+
