@@ -14,7 +14,7 @@ Id = int
 Url = str
 Pool = asyncpg.Pool
 Record = asyncpg.Record
-DBConnection = asyncpg.pool.PoolConnectionProxy[Record]
+DBConnection = asyncpg.pool.PoolConnectionProxy
 
 
 class WrappedCallable(Generic[R]):
