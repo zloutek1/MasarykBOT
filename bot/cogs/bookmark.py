@@ -39,7 +39,7 @@ class Bookmark(commands.Cog):
             color=0xFFDF00)
 
         embed.set_author(name=message.author.display_name,
-                         icon_url=message.avatar.with_format('png').url)
+                         icon_url=message.author.avatar and message.author.avatar.with_format('png').url)
 
         if message.embeds:
             data = message.embeds[0]
