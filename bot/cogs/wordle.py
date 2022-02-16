@@ -303,7 +303,7 @@ class Wordle(commands.Cog):
             return
 
         if ctx.author.id in self.games and self.games[ctx.author.id].did_win():
-            self.scores[( self.today, ctx.user.id)] += 1
+            self.scores[(self.today, ctx.user.id)] += 1
 
         self.games[ctx.author.id] = GameInstance(ctx,
                                                  words=self.WORDS,
@@ -348,7 +348,6 @@ class Wordle(commands.Cog):
         random.seed(seed)
         random.shuffle(self.WORDS)
 
-        self.scores = {}
         for (user, game) in self.games.items():
             if game.did_win():
                 self.scores[(today, user)] += 1
