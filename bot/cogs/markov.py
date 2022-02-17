@@ -68,6 +68,14 @@ class Markov(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        await self.load()
+
+    @markov.command(name="load")
+    @has_permissions(administrator=True)
+    async def _load(self):
+        await self.load()
+
+    async def load(self):
         messages = await self.bot.db.messages.select_all_long()
         self.possible_starts = [
             (SOF, message.get('content').split(maxsplit=1)[0])
