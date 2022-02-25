@@ -5,15 +5,17 @@ from collections import defaultdict
 from ctypes.wintypes import WORD
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import Any, Dict, Generic, List, Optional, Tuple, Type, TypeVar
 
 import disnake as discord
+from bot.cogs.utils.context import Context
 from bot.constants import Config
-from disnake import ButtonStyle, ui
+from disnake import ButtonStyle, InteractionMessage, MessageInteraction, ui
 from disnake.ext import commands, tasks
 from english_words import english_words_lower_alpha_set
 from PIL import Image, ImageDraw, ImageFont
 
+Id = int
 
 class LetterStatus(Enum):
     UNSUBMITTED = (49, 51, 57)
@@ -22,12 +24,12 @@ class LetterStatus(Enum):
     CORRECT = (59, 165, 93)
 
 class GameInstance:
-    def __init__(self, ctx, words: List[str], nth: int=0):
+    def __init__(self, ctx: MessageInteraction, words: List[str], nth: int=0) -> None:
         self.ctx = ctx
         self.nth = nth
 
-        self.attempts = []
-        self.current_attempt = []
+        self.attempts: List[List[Tuple[str, LetterStatus]]] = []
+        self.current_attempt: List[Tuple[str, LetterStatus]] = []
 
         self.max_attempts = 6
         self.word_length = 5
@@ -38,20 +40,21 @@ class GameInstance:
                          'Q' not in word and 'V' not in word]
         self.word = list(self.WORDS[nth % len(self.WORDS)])
 
-        self.message = None
+        self.message: Optional[InteractionMessage] = None
         self.controls = ControlsView(self)
         self.fp = io.BytesIO()
 
         self.created_at = datetime.now()
 
-    async def input(self, letter):
+    async def input(self, letter: str) -> None:
+        assert len(letter) == 1, "ERROR: expected char got str"
         if len(self.current_attempt) >= self.word_length:
             return
 
         self.current_attempt.append((letter, LetterStatus.UNSUBMITTED))
         await self.display()
 
-    async def submit(self):
+    async def submit(self) -> None:
         if len(self.current_attempt) != self.word_length:
             return
 
@@ -76,13 +79,13 @@ class GameInstance:
 
         await self.display()
 
-    async def backspace(self):
+    async def backspace(self) -> None:
         if len(self.current_attempt) == 0:
             return
         self.current_attempt.pop()
         await self.display()
 
-    def validate(self):
+    def validate(self) -> None:
         input = self.current_attempt
         word = self.word[:]
 
@@ -112,29 +115,36 @@ class GameInstance:
         for (letter, status) in input:
             self.controls.validate_letter(letter, status)
 
-    def did_win(self, input=None):
-        input = input or self.current_attempt or (self.attempts and self.attempts[-1])
+    def did_win(self, input: Optional[List[Tuple[str, LetterStatus]]] = None) -> bool:
+        attempt = (input                if input is not None else
+                   self.current_attempt if len(self.current_attempt) != 0 else
+                   self.attempts[-1]    if len(self.attempts) > 0 else
+                   [])
+
+        if not attempt:
+            return False
+
         word = self.word[:]
 
-        if len(input) < self.word_length:
+        if len(attempt) < self.word_length:
             return False
 
         for i in range(self.word_length):
-            if input[i][0] != word[i]:
+            if attempt[i][0] != word[i]:
                 return False
         return True
 
-    def did_lose(self):
+    def did_lose(self) -> bool:
         return len(self.attempts) >= self.max_attempts
 
 
-    async def start(self):
+    async def start(self) -> None:
         await self.ctx.send(embed=self.to_embed(),
                             view=self.controls,
                             ephemeral=True)
         self.message = await self.ctx.original_message()
 
-    def to_embed(self):
+    def to_embed(self) -> discord.Embed:
         embed = discord.Embed(colour=discord.Colour.green())
         embed.clear_fields()
         embed.title = "Wordle"
@@ -148,7 +158,12 @@ class GameInstance:
         return embed
 
 
-    def render(self):
+    def render(self) -> None:
+        """
+        Take the current game state and produce a
+        JPEG image at path /tmp/user_id_wordle.jpeg
+        """
+
         padding = 5
         width = (self.square_size + padding) * self.word_length + padding
         height = (self.square_size + padding) * self.max_attempts + padding
@@ -186,7 +201,12 @@ class GameInstance:
 
         img.save(f'/tmp/{self.ctx.author.id}_wordle.jpeg', format="JPEG")
 
-    def to_text(self):
+    def to_text(self) -> str:
+        """
+        Take the current game state and produce a
+        string representation of the state
+        """
+
         attempts = self.attempts + [self.current_attempt]
 
         assert len(LetterStatus) == 4
@@ -210,7 +230,10 @@ class GameInstance:
             output += "\n"
         return output
 
-    async def display(self):
+    async def display(self) -> None:
+        """
+        update the message to show the current state of the game
+        """
         if not self.message:
             return
         await self.message.edit(embed=self.to_embed(), view=self.controls)
@@ -218,13 +241,33 @@ class GameInstance:
             os.remove(f'/tmp/{self.ctx.author.id}_wordle.jpeg')
 
 class LetterButton(ui.Button):
-    def __init__(self, game, *args, **kwargs):
+    def __init__(self, game: GameInstance, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         self.game = game
 
-    async def callback(self, ctx):
+    async def callback(self, ctx: MessageInteraction) -> None:
+        if not self.label:
+            return
         await ctx.response.defer()
         await self.game.input(self.label)
+
+class BackspaceButton(ui.Button):
+    def __init__(self, game: GameInstance, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.game = game
+
+    async def callback(self, ctx: MessageInteraction) -> None:
+        await ctx.response.defer()
+        await self.game.backspace()
+
+class SubmitButton(ui.Button):
+    def __init__(self, game: GameInstance, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.game = game
+
+    async def callback(self, ctx: MessageInteraction) -> None:
+        await ctx.response.defer()
+        await self.game.submit()
 
 class ControlsView(ui.View):
     LETTERS = ['A', 'B', 'C', 'D', 'E',
@@ -233,7 +276,7 @@ class ControlsView(ui.View):
                'P', 'R', 'S', 'T', 'U',
                'W', 'Y', 'Z']
 
-    def __init__(self, game):
+    def __init__(self, game: GameInstance) -> None:
         super().__init__()
         self.game = game
 
@@ -244,27 +287,19 @@ class ControlsView(ui.View):
 
         self.display()
 
-    def display(self):
+    def display(self) -> None:
         self.clear_items()
 
         for button in self.letter_buttons.values():
             self.add_item(button)
 
-        async def backspace(ctx):
-            await ctx.response.defer()
-            await self.game.backspace()
-        button = ui.Button(label="<<<", style=ButtonStyle.red)
-        button.callback = backspace
-        self.add_item(button)
+        button1 = BackspaceButton(self.game, label="<<<", style=ButtonStyle.red)
+        self.add_item(button1)
 
-        async def submit(ctx):
-            await ctx.response.defer()
-            await self.game.submit()
-        button = ui.Button(label="Enter", style=ButtonStyle.green)
-        button.callback = submit
-        self.add_item(button)
+        button2 = SubmitButton(self.game, label="Enter", style=ButtonStyle.green)
+        self.add_item(button2)
 
-    def validate_letter(self, letter, status):
+    def validate_letter(self, letter: str, status: LetterStatus) -> None:
         assert len(LetterStatus) == 4
         status_map = {
             LetterStatus.WRONG: ButtonStyle.red,
@@ -283,17 +318,17 @@ class ControlsView(ui.View):
 class Wordle(commands.Cog):
     WORDS = sorted(map(str.upper, english_words_lower_alpha_set))
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-        self.games = {}
-        self.scores = defaultdict(int)
+        self.games: Dict[Id, GameInstance] = {}
+        self.scores: defaultdict[Tuple[datetime, Id], int] = defaultdict(int)
 
         self.shuffle()
         self.reset_wordle.start()
         self.today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
     @commands.slash_command(guild_ids=[guild.id for guild in Config.guilds], description="Play wordle on Discord")
-    async def wordle(self, ctx, nth: Optional[int] = None):
+    async def wordle(self, ctx: MessageInteraction, nth: Optional[int] = None) -> None:
         if (ctx.author.id in self.games and
             not self.games[ctx.author.id].did_win() and
             not self.games[ctx.author.id].controls.is_finished()):
@@ -303,16 +338,20 @@ class Wordle(commands.Cog):
             return
 
         if ctx.author.id in self.games and self.games[ctx.author.id].did_win():
-            self.scores[( self.today, ctx.user.id)] += 1
+            self.scores[(self.today, ctx.user.id)] += 1
 
-        self.games[ctx.author.id] = GameInstance(ctx,
-                                                 words=self.WORDS,
-                                                 nth=nth or self.scores.get((self.today, ctx.author.id), 0))
+        self.games[ctx.author.id] = GameInstance(
+            ctx,
+            words=self.WORDS,
+            nth=(nth if nth is not None else
+                 self.scores.get((self.today, ctx.author.id), 0))
+        )
+
         game = self.games[ctx.author.id]
         await game.start()
 
     @commands.command(name="wordle")
-    async def wordle_help(self, ctx):
+    async def wordle_help(self, ctx: Context) -> None:
         """
         Guess the **WORDLE** in six tries.
 
@@ -329,14 +368,14 @@ class Wordle(commands.Cog):
 
         await ctx.reply("👉 /wordle")
 
-    def shuffle(self):
+    def shuffle(self) -> None:
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         seed = 0b01110111011011110111001001100100011011000110010100001010 + today.day + today.month * 31
         random.seed(seed)
         random.shuffle(self.WORDS)
 
     @tasks.loop(minutes=30)
-    async def reset_wordle(self):
+    async def reset_wordle(self) -> None:
         today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         if today == self.today:
             return
@@ -348,10 +387,9 @@ class Wordle(commands.Cog):
         random.seed(seed)
         random.shuffle(self.WORDS)
 
-        self.scores = {}
         for (user, game) in self.games.items():
             if game.did_win():
                 self.scores[(today, user)] += 1
 
-def setup(bot):
+def setup(bot: commands.Bot) -> None:
     bot.add_cog(Wordle(bot))
