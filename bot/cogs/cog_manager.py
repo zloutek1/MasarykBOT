@@ -1,15 +1,18 @@
+from typing import Optional
+
+from bot.cogs.utils.context import Context
 from disnake.ext import commands
 
 
 class CogManager(commands.Cog):
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-        self.last_reloaded = None
+        self.last_reloaded: Optional[str] = None
 
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def load(self, ctx, *, module):
+    async def load(self, ctx: Context, *, module: str) -> None:
         """Loads a module."""
         await ctx.message.delete(delay=5.0)
         try:
@@ -23,7 +26,7 @@ class CogManager(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(administrator=True)
-    async def unload(self, ctx, *, module):
+    async def unload(self, ctx: Context, *, module: str) -> None:
         """Unloads a module."""
         await ctx.message.delete(delay=5.0)
         try:
@@ -37,7 +40,7 @@ class CogManager(commands.Cog):
 
     @commands.group(name='reload', invoke_without_command=True)
     @commands.has_permissions(administrator=True)
-    async def _reload(self, ctx, *, module=None):
+    async def _reload(self, ctx: Context, *, module: Optional[str] = None) -> None:
         """Reloads a module."""
 
         if module is None:
@@ -58,7 +61,7 @@ class CogManager(commands.Cog):
 
     @_reload.command(name='all', hidden=True)
     @commands.has_permissions(administrator=True)
-    async def _reload_all(self, ctx):
+    async def _reload_all(self, ctx: Context) -> None:
         """Reloads all modules"""
         output = ""
 
@@ -76,13 +79,13 @@ class CogManager(commands.Cog):
         await ctx.send_embed(output, delete_after=5.0)
 
     @commands.command()
-    async def cogs(self, ctx):
+    async def cogs(self, ctx: Context) -> None:
         await ctx.send_embed(" **»** " + "\n **»** ".join(self.bot.cogs))
 
     @commands.command(aliases=["extentions"])
-    async def extensions(self, ctx):
+    async def extensions(self, ctx: Context) -> None:
         await ctx.send_embed(" **»** " + "\n **»** ".join(self.bot.extensions))
 
 
-def setup(bot):
+def setup(bot: commands.Bot) -> None:
     bot.add_cog(CogManager(bot))

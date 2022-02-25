@@ -92,7 +92,7 @@ class Context(commands.Context):
         self,
         content: str,
         name: str = "Message",
-        delete_after: Optional[int] = None,
+        delete_after: Optional[float] = None,
         **kwargs: Any
     ) -> discord.Message:
 
@@ -109,7 +109,7 @@ class Context(commands.Context):
     async def send_success(
         self,
         content: str,
-        delete_after: Optional[int] = None
+        delete_after: Optional[float] = None
     ) -> discord.Message:
 
         return await self.send_embed(
@@ -122,7 +122,7 @@ class Context(commands.Context):
     async def send_error(
         self,
         content: str,
-        delete_after: Optional[int] = None
+        delete_after: Optional[float] = None
     ) -> discord.Message:
 
         return await self.send_embed(
