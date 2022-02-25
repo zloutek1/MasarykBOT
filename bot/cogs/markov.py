@@ -82,8 +82,7 @@ class Markov(commands.Cog):
 
         self.possible_starts = []
         for message in messages:
-            assert message.get('content') is not None, "ERROR: inconstant database"
-            next = cast(str, message.get('content')).split(maxsplit=1)[0]
+            next = cast(str, message['content']).split(maxsplit=1)[0]
             self.possible_starts.append((SOF, next))
 
         self.state = MarkovState.READY
@@ -122,13 +121,10 @@ class Markov(commands.Cog):
             if int((i) / len(messages) * 100) < percentage:
                 log.info(f"Training at {percentage}%")
 
-            assert message.get('content') is not None, "ERROR: inconstant database"
-            content = cast(str, message.get('content'))
-
-            if len(content.strip()) == 0:
+            if len(message['content'].strip()) == 0:
                 continue
 
-            line = f"{SOF} {content} {EOF}"
+            line = f"{SOF} {message['content']} {EOF}"
             await self.markov_train_line(message, line)
 
         log.info("Markov training finished")
@@ -151,9 +147,7 @@ class Markov(commands.Cog):
             self.redis.json().set("markov." + SEP.join(ngram), Path.rootPath(), options)
 
     def filter_word(self, message: Record, word: str) -> bool:
-        assert message.get('author_id') is not None, "ERROR: inconstant database"
-
-        author = self.bot.get_user(cast(int, message.get('author_id')))
+        author = self.bot.get_user(message['author_id'])
         return not (
             any(word.startswith(prefix) for prefix in ['!', 'pls']) or
             word.startswith("@") or
