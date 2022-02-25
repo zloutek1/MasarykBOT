@@ -42,7 +42,6 @@ class GameInstance:
 
         self.message: Optional[InteractionMessage] = None
         self.controls = ControlsView(self)
-        self.fp = io.BytesIO()
 
         self.created_at = datetime.now()
 
