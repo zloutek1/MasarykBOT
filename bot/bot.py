@@ -15,9 +15,6 @@ class MasarykBOT(commands.Bot):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
-        self.uptime: Optional[datetime] = None
-
-
 
     async def process_commands(self, message: Message) -> None:
         ctx = await self.get_context(message, cls=context.Context)
@@ -40,12 +37,7 @@ class MasarykBOT(commands.Bot):
             log.info("user %s used markov by mention: %s", ctx.message.author, ctx.message.content)
             await markov(ctx)
 
-
-
     async def on_ready(self) -> None:
-        if self.uptime is None:
-            self.uptime = datetime.utcnow()
-
         log.info("Bot is now all ready to go")
         self.intorduce()
 
