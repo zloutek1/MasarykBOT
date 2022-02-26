@@ -56,9 +56,9 @@ class Seasonal(commands.Cog):
 
 
 
-    @commands.group(aliases=['seasonal', 'seasons'])
+    @commands.group(aliases=['seasonal', 'seasons'], invoke_without_command=True)
     async def season(self, ctx: Context) -> None:
-        pass
+        await ctx.send_help("season")
 
     @season.command()
     async def current(self, ctx: Context) -> None:
@@ -126,10 +126,10 @@ class Seasonal(commands.Cog):
         await ctx.send_embed(f"added event {name}", name=f"seasonal events")
 
 
-    @season.group(name="set")
+    @season.group(name="set", invoke_without_command=True)
     @has_permissions(administrator=True)
     async def season_set(self, ctx: Context) -> None:
-        pass
+        await ctx.send_help("season set")
 
     @season_set.command(name="default")
     async def set_default_season(

@@ -11,10 +11,10 @@ class Rules(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-    @commands.group(name="rules")
+    @commands.group(name="rules", invoke_without_command=True)
     @commands.has_permissions(administrator=True)
     async def rules(self, ctx: Context) -> None:
-        pass
+        await ctx.send_help("rules")
 
     @rules.command(name="setup")
     async def setup_rules(self,
