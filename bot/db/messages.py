@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime
-from typing import List, Optional, Tuple, cast
+from typing import List, Optional, Sequence, Tuple, cast
 
 from asyncpg import CharacterNotInRepertoireError
 from bot.db.utils import (Crud, DBConnection, Id, Mapper, Record, Table,
@@ -18,7 +18,7 @@ class MessageDao(Table, Crud[Columns], Mapper[Message, Columns]):
         created_at = message.created_at.replace(tzinfo=None)
         return (message.channel.id, message.author.id, message.id, message.content, created_at)
 
-    async def prepare(self, messages: List[Message]) -> List[Columns]:
+    async def prepare(self, messages: Sequence[Message]) -> List[Columns]:
         return [await self.prepare_one(message) for message in messages]
 
     @withConn

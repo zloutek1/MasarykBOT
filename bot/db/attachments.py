@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional, Tuple, cast
+from typing import List, Optional, Sequence, Tuple, cast
 
 from bot.db.utils import (Crud, DBConnection, FromMessageMapper, Id, Mapper,
                           Record, Table, Url, WrappedCallable, withConn)
@@ -12,7 +12,7 @@ class AttachmentDao(Table, Crud[Columns], Mapper[Attachment, Columns], FromMessa
     async def prepare_one(attachment: Attachment) -> Columns:
         return (None, attachment.id, attachment.filename, attachment.url)
 
-    async def prepare(self, attachments: List[Attachment]) -> List[Columns]:
+    async def prepare(self, attachments: Sequence[Attachment]) -> List[Columns]:
         return [await self.prepare_one(attachment) for attachment in attachments]
 
     async def prepare_from_message(self, message: Message) -> List[Columns]:

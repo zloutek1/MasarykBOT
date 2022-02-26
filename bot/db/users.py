@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional, Tuple, Union, cast, overload
+from typing import List, Optional, Sequence, Tuple, Union, cast, overload
 
 from bot.db.utils import (Crud, DBConnection, FromMessageMapper, Id, Mapper,
                           Record, Table, Url, WrappedCallable, withConn)
@@ -14,7 +14,7 @@ class UserDao(Table, Crud[Columns], Mapper[Union[User, Member], Columns], FromMe
         created_at = user.created_at.replace(tzinfo=None)
         return (user.id, user.name, avatar_url, user.bot, created_at)
 
-    async def prepare(self, members: List[Union[User, Member]]) -> List[Columns]:
+    async def prepare(self, members: Sequence[Union[User, Member]]) -> List[Columns]:
         return [await self.prepare_one(member) for member in members]
 
     async def prepare_from_message(self, message: Message) -> List[Columns]:

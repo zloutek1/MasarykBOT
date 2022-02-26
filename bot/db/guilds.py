@@ -1,6 +1,6 @@
 
 from datetime import datetime
-from typing import List, Optional, Tuple, cast
+from typing import List, Optional, Sequence, Tuple, cast
 
 from disnake import Guild
 
@@ -16,7 +16,7 @@ class GuildDao(Table, Crud[Columns], Mapper[Guild, Columns]):
         created_at = guild.created_at.replace(tzinfo=None)
         return (guild.id, guild.name, icon_url, created_at)
 
-    async def prepare(self, guilds: List[Guild]) -> List[Columns]:
+    async def prepare(self, guilds: Sequence[Guild]) -> List[Columns]:
         return [await self.prepare_one(guild) for guild in guilds]
 
     @withConn

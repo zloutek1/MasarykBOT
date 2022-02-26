@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional, Tuple, cast
+from typing import List, Optional, Sequence, Tuple, cast
 
 from bot.db.utils import (Crud, DBConnection, Id, Mapper, Record, Table,
                           WrappedCallable, withConn)
@@ -14,7 +14,7 @@ class ChannelDao(Table, Crud[Columns], Mapper[TextChannel, Columns]):
         created_at = channel.created_at.replace(tzinfo=None)
         return (channel.guild.id, category_id, channel.id, channel.name, channel.position, created_at)
 
-    async def prepare(self, channels: List[TextChannel]) -> List[Columns]:
+    async def prepare(self, channels: Sequence[TextChannel]) -> List[Columns]:
         return [await self.prepare_one(channel) for channel in channels]
 
     @withConn

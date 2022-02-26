@@ -1,6 +1,6 @@
 import re
 from datetime import datetime
-from typing import List, Optional, Tuple, Union, cast
+from typing import List, Optional, Sequence, Tuple, Union, cast
 
 from bot.db.utils import (Crud, DBConnection, FromMessageMapper, Id, Mapper,
                           Record, Table, Url, WrappedCallable, withConn)
@@ -24,7 +24,7 @@ class EmojiDao(Table, Crud[Columns], Mapper[AnyEmote, Columns], FromMessageMappe
         assert emoji.id is not None, "Emoji has to have an id"
         return (emoji.id, emoji.name, str(emoji.url), emoji.animated)
 
-    async def prepare(self, emojis: List[AnyEmote]) -> List[Columns]:
+    async def prepare(self, emojis: Sequence[AnyEmote]) -> List[Columns]:
         return [await self.prepare_one(emoji) for emoji in emojis]
 
     async def prepare_from_message(self, message: Message) -> List[Columns]:

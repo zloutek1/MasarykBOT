@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Tuple, cast
+from typing import List, Sequence, Tuple, cast
 
 from bot.db.utils import (Crud, DBConnection, Id, Mapper, Record, Table,
                           WrappedCallable, withConn)
@@ -13,7 +13,7 @@ class RoleDao(Table, Crud[Columns], Mapper[Role, Columns]):
         created_at = role.created_at.replace(tzinfo=None)
         return (role.guild.id, role.id, role.name, hex(role.color.value), created_at)
 
-    async def prepare(self, roles: List[Role]) -> List[Columns]:
+    async def prepare(self, roles: Sequence[Role]) -> List[Columns]:
         return [await self.prepare_one(role) for role in roles]
 
     @withConn

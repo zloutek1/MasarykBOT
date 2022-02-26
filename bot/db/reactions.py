@@ -2,7 +2,7 @@ import asyncio
 import logging
 from collections import Counter
 from datetime import datetime
-from typing import List, Optional, Tuple, cast
+from typing import List, Optional, Sequence, Tuple, cast
 
 from bot.db.utils import (Crud, DBConnection, FromMessageMapper, Id, Mapper,
                           Pool, Record, Table, WrappedCallable, withConn)
@@ -20,7 +20,7 @@ class ReactionDao(Table, Crud[Columns], Mapper[Reaction, Columns], FromMessageMa
 
         return (reaction.message.id, emoji_id, user_ids, created_at)
 
-    async def prepare(self, reactions: List[Reaction]) -> List[Columns]:
+    async def prepare(self, reactions: Sequence[Reaction]) -> List[Columns]:
         return [await self.prepare_one(reaction) for reaction in reactions]
 
     async def prepare_from_message(self, message: Message) -> List[Columns]:

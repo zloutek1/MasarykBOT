@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from functools import wraps
 from inspect import signature
 from typing import (Any, Awaitable, Callable, Coroutine, Generic, List,
-                    Optional, Tuple, TypeVar, Union, cast, overload)
+                    Optional, Sequence, Tuple, TypeVar, Union, cast, overload)
 
 import asyncpg
 import disnake as discord
@@ -59,7 +59,7 @@ class Mapper(ABC, Generic[T, C]):
             "prepare_one form object not implemented for this table")
 
     @abstractmethod
-    async def prepare(self, objs: List[T]) -> List[C]:
+    async def prepare(self, objs: Sequence[T]) -> List[C]:
         raise NotImplementedError(
             "prepare form objects not implemented for this table")
 
