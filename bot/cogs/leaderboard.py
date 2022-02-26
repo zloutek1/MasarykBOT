@@ -94,7 +94,7 @@ class Leaderboard(commands.Cog):
 
         await self.leaderboardDao.preselect((ctx.guild.id, bot_ids, channel_id))
         top10 = await self.leaderboardDao.get_top10()
-        around = await self.leaderboardDao.get_around(member.id)
+        around = await self.leaderboardDao.get_around((member.id,))
 
         embed = await self.display_leaderboard(ctx, top10, around, member)
         await ctx.send(embed=embed)
@@ -222,7 +222,9 @@ class Leaderboard(commands.Cog):
             discord_emoji = emojis[0] if emojis else None
             demojized_emoji = emojize(':' + row["name"] + ':')
 
-            return str(discord_emoji) or demojized_emoji or row["name"]
+            return (str(discord_emoji) if discord_emoji is not None else
+                    demojized_emoji    if demojized_emoji is not None else
+                    row["name"])
 
         embed = Embed(color=0x53acf2)
 
