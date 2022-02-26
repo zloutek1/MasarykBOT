@@ -51,19 +51,17 @@ class Fun(commands.Cog):
         os.remove(filename)
 
     @commands.command(aliases=['icon_url'])
-    async def logo_url(self, ctx: Context, format: str = "png") -> None:
+    async def logo_url(self, ctx: Context, format: Optional[IMG_EXTS] = None) -> None:
         assert ctx.guild is not None, "ERROR: command can only be invoked inside a guild"
         if ctx.guild.icon is None:
             await ctx.send("No icon")
             return
 
-        FORMATS = ('webp', 'jpeg', 'jpg', 'png', 'gif')
-        if format not in FORMATS:
-            await ctx.send(f"invalid format, only {FORMATS} is supported")
-            return
+        logo = ctx.guild.icon
+        url = (logo.url if format is None else
+               logo.with_format(format).url)
 
-        format = cast(IMG_EXTS, format)
-        await ctx.send(f"`{ctx.guild.icon.with_format(format).url}`")
+        await ctx.send(f"`{url}`")
 
     @commands.command(aliases=['icon'])
     async def logo(self, ctx: Context) -> None:
@@ -75,19 +73,17 @@ class Fun(commands.Cog):
         await self.send_asset(ctx, ctx.guild.icon.url)
 
     @commands.command()
-    async def banner_url(self, ctx: Context, format: str = "png") -> None:
+    async def banner_url(self, ctx: Context, format: Optional[IMG_EXTS] = None) -> None:
         assert ctx.guild is not None, "ERROR: command can only be invoked inside a guild"
         if ctx.guild.banner is None:
             await ctx.send("No banner")
             return
 
-        FORMATS = ('webp', 'jpeg', 'jpg', 'png', 'gif')
-        if format not in FORMATS:
-            await ctx.send(f"invalid format, only {FORMATS} is supported")
-            return
+        banner = ctx.guild.banner
+        url = (banner.url if format is None else
+               banner.with_format(format).url)
 
-        format = cast(IMG_EXTS, format)
-        await ctx.send(f"`{ctx.guild.banner.with_format(format).url}`")
+        await ctx.send(f"`{url}`")
 
     @commands.command()
     async def banner(self, ctx: Context) -> None:
@@ -99,18 +95,16 @@ class Fun(commands.Cog):
         await self.send_asset(ctx, ctx.guild.banner.url)
 
     @commands.command()
-    async def avatar_url(self, ctx: Context, format: str = "png") -> None:
+    async def avatar_url(self, ctx: Context, format: Optional[IMG_EXTS] = None) -> None:
         if ctx.author.avatar is None:
             await ctx.send("No avatar")
             return
 
-        FORMATS = ('webp', 'jpeg', 'jpg', 'png', 'gif')
-        if format not in FORMATS:
-            await ctx.send(f"invalid format, only {FORMATS} is supported")
-            return
+        avatar = ctx.author.avatar
+        url = (avatar.url if format is None else
+               avatar.with_format(format).url)
 
-        format = cast(IMG_EXTS, format)
-        await ctx.send(f"`{ctx.author.avatar.with_format(format).url}`")
+        await ctx.send(f"`{url}`")
 
     @commands.command()
     async def avatar(self, ctx: Context, member: Optional[Union[User, Member]] = None) -> None:
