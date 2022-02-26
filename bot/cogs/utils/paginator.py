@@ -1,7 +1,10 @@
 import asyncio
+from typing import List, Tuple, Union, cast
 
 import disnake as discord
 from disnake.ext.commands import Paginator as CommandPaginator
+
+from .context import Context
 
 
 class CannotPaginate(Exception):
@@ -16,29 +19,21 @@ class Pages:
 
     If the user does not reply within 2 minutes then the pagination
     interface exits automatically.
-
-    Parameters
-    ------------
-    ctx: Context
-        The context of the command.
-    entries: List[str]
-        A list of entries to paginate.
-    per_page: int
-        How many entries show up per page.
-    show_entry_count: bool
-        Whether to show an entry count in the footer.
-
-    Attributes
-    -----------
-    embed: discord.Embed
-        The embed object that is being used to send pagination info.
-        Feel free to modify this externally. Only the description,
-        footer fields, and colour are internally modified.
-    permissions: discord.Permissions
-        Our permissions for the channel.
     """
 
-    def __init__(self, ctx, *, entries, per_page=12, show_entry_count=True, title="", template="{index}. {entry}"):
+    def __init__(
+        self,
+        ctx: Context,
+        *,
+        entries: List[str],
+        per_page: int = 12,
+        show_entry_count: bool = True,
+        title: str = "",
+        template: str = "{index}. {entry}"
+    ) -> None:
+        assert isinstance(ctx.channel, (discord.TextChannel, discord.Thread)), \
+               "ERROR: cannot send messagees to the channel"
+
         self.bot = ctx.bot
         self.entries = entries
         self.message = ctx.message
@@ -89,18 +84,18 @@ class Pages:
                 raise CannotPaginate(
                     'Bot does not have Read Message History permission.')
 
-    def get_page(self, page):
+    def get_page(self, page: int) -> List[str]:
         base = (page - 1) * self.per_page
         return self.entries[base:base + self.per_page]
 
-    def get_content(self, entries, page, *, first=False):
-        return None
+    def get_content(self, entries: List[str], page: int, *, first: bool = False) -> str:
+        return ""
 
-    def get_embed(self, entries, page, *, first=False):
+    def get_embed(self, entries: List[str], page: int, *, first: bool = False) -> discord.Embed:
         self.prepare_embed(entries, page, first=first)
         return self.embed
 
-    def prepare_embed(self, entries, page, *, first=False):
+    def prepare_embed(self, entries: List[str], page: int, *, first: bool = False) -> None:
         p = []
         for index, entry in enumerate(entries, 1 + ((page - 1) * self.per_page)):
             p.append(self.template.format(index=index, entry=entry))
@@ -120,14 +115,15 @@ class Pages:
 
         self.embed.description = '\n'.join(p)
 
-    async def show_page(self, page, *, first=False):
+    async def show_page(self, page: int, *, first: bool = False) -> None:
         self.current_page = page
         entries = self.get_page(page)
         content = self.get_content(entries, page, first=first)
         embed = self.get_embed(entries, page, first=first)
 
         if not self.paginating:
-            return await self.channel.send(content=content, embed=embed)
+            await self.channel.send(content=content, embed=embed)
+            return
 
         if not first:
             await self.message.edit(content=content, embed=embed)
@@ -143,36 +139,36 @@ class Pages:
 
             await self.message.add_reaction(reaction)
 
-    async def checked_show_page(self, page):
+    async def checked_show_page(self, page: int) -> None:
         if page != 0 and page <= self.maximum_pages:
             await self.show_page(page)
 
-    async def first_page(self):
+    async def first_page(self) -> None:
         """goes to the first page"""
         await self.show_page(1)
 
-    async def last_page(self):
+    async def last_page(self) -> None:
         """goes to the last page"""
         await self.show_page(self.maximum_pages)
 
-    async def next_page(self):
+    async def next_page(self) -> None:
         """goes to the next page"""
         await self.checked_show_page(self.current_page + 1)
 
-    async def previous_page(self):
+    async def previous_page(self) -> None:
         """goes to the previous page"""
         await self.checked_show_page(self.current_page - 1)
 
-    async def show_current_page(self):
+    async def show_current_page(self) -> None:
         if self.paginating:
             await self.show_page(self.current_page)
 
-    async def numbered_page(self):
+    async def numbered_page(self) -> None:
         """lets you type a page number to go to"""
-        to_delete = []
+        to_delete: List[discord.Message] = []
         to_delete.append(await self.channel.send('What page do you want to go to?'))
 
-        def message_check(m):
+        def message_check(m: discord.Message) -> bool:
             return m.author == self.author and \
                 self.channel == m.channel and \
                 m.content.isdigit()
@@ -192,11 +188,12 @@ class Pages:
                 await asyncio.sleep(5)
 
         try:
-            await self.channel.delete_messages(to_delete)
+            snowflakes_to_delete = cast(List[discord.abc.Snowflake], to_delete)
+            await self.channel.delete_messages(snowflakes_to_delete)
         except Exception:
             pass
 
-    async def show_help(self):
+    async def show_help(self) -> None:
         """shows this message"""
         messages = ['Welcome to the interactive paginator!\n']
         messages.append('This interactively allows you to see pages of text by navigating with '
@@ -212,18 +209,18 @@ class Pages:
             text=f'We were on page {self.current_page} before this message.')
         await self.message.edit(content=None, embed=embed)
 
-        async def go_back_to_current_page():
+        async def go_back_to_current_page() -> None:
             await asyncio.sleep(60.0)
             await self.show_current_page()
 
         self.bot.loop.create_task(go_back_to_current_page())
 
-    async def stop_pages(self):
+    async def stop_pages(self) -> None:
         """stops the interactive pagination session"""
         await self.message.delete()
         self.paginating = False
 
-    def react_check(self, reaction, user):
+    def react_check(self, reaction: discord.Reaction, user: Union[discord.User, discord.Member]) -> bool:
         if user is None or user.id != self.author.id:
             return False
 
@@ -236,7 +233,7 @@ class Pages:
                 return True
         return False
 
-    async def paginate(self):
+    async def paginate(self) -> None:
         """Actually paginate the entries and run the interactive loop if necessary."""
         first_page = self.show_page(1, first=True)
         if not self.paginating:
@@ -263,47 +260,3 @@ class Pages:
                 pass  # can't remove it so don't bother doing so
 
             await self.match()
-
-
-class FieldPages(Pages):
-    """Similar to Pages except entries should be a list of
-    tuples having (key, value) to show as embed fields instead.
-    """
-
-    def prepare_embed(self, entries, page, *, first=False):
-        self.embed.clear_fields()
-        self.embed.description = discord.Embed.Empty
-
-        for key, value in entries:
-            self.embed.add_field(name=key, value=value, inline=False)
-
-        if self.maximum_pages > 1:
-            if self.show_entry_count:
-                text = f'Page {page}/{self.maximum_pages} ({len(self.entries)} entries)'
-            else:
-                text = f'Page {page}/{self.maximum_pages}'
-
-            self.embed.set_footer(text=text)
-
-
-class TextPages(Pages):
-    """Uses a commands.Paginator internally to paginate some text."""
-
-    def __init__(self, ctx, text, *, prefix='```', suffix='```', max_size=2000):
-        paginator = CommandPaginator(
-            prefix=prefix, suffix=suffix, max_size=max_size - 200)
-        for line in text.split('\n'):
-            paginator.add_line(line)
-
-        super().__init__(ctx, entries=paginator.pages, per_page=1, show_entry_count=False)
-
-    def get_page(self, page):
-        return self.entries[page - 1]
-
-    def get_embed(self, entries, page, *, first=False):
-        return None
-
-    def get_content(self, entry, page, *, first=False):
-        if self.maximum_pages > 1:
-            return f'{entry}\nPage {page}/{self.maximum_pages}'
-        return entry

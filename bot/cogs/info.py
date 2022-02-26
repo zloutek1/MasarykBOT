@@ -1,22 +1,34 @@
 import time
 from datetime import datetime
+from typing import Dict, Optional
 
+from bot.cogs.utils.context import Context
 from disnake import Color, Embed
 from disnake.ext import commands
 from disnake.utils import get
 
 
 class Info(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
+        self.uptime: Optional[datetime] = None
 
-    @commands.command()
-    async def uptime(self, ctx):
-        running_for = datetime.now() - self.bot.uptime
+    @commands.Cog.listener()
+    async def on_ready(self) -> None:
+        if self.uptime is None:
+            self.uptime = datetime.utcnow()
+
+    @commands.command(name="uptime")
+    async def _uptime(self, ctx: Context) -> None:
+        if self.uptime is None:
+            await ctx.send_embed(f"I am not running? o.O")
+            return
+
+        running_for = datetime.now() - self.uptime
         await ctx.send_embed(f"I have been running for {running_for}")
 
     @commands.command()
-    async def ping(self, ctx):
+    async def ping(self, ctx: Context) -> None:
         """Feeling lonely?"""
         before_typing = time.monotonic()
         await ctx.trigger_typing()
@@ -26,11 +38,11 @@ class Info(commands.Cog):
         await ctx.send(msg)
 
     @commands.command()
-    async def invite(self, ctx):
+    async def invite(self, ctx: Context) -> None:
         await ctx.send(f"https://discordapp.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions=268823632")
 
     @commands.command()
-    async def info(self, ctx):
+    async def info(self, ctx: Context) -> None:
         """
         send an embed containing info in format
         Server_id           Owner
@@ -44,7 +56,9 @@ class Info(commands.Cog):
         Total:
         """
 
-        status = {}
+        assert ctx.guild, "ERROR: this command can only be run inside a guild"
+
+        status: Dict[str, int] = {}
         for member in ctx.guild.members:
             status[member.status.name] = status.get(member.status.name, 0) + 1
 
@@ -95,9 +109,12 @@ class Info(commands.Cog):
 
         author = ctx.message.author
         time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        embed.set_footer(text=f"{str(author)} at {time_now}", icon_url=author.avatar_url)
+        embed.set_footer(
+            text=f"{str(author)} at {time_now}",
+            icon_url=author.avatar and author.avatar.with_format("png").url
+        )
         await ctx.send(embed=embed)
 
 
-def setup(bot):
+def setup(bot: commands.Bot) -> None:
     bot.add_cog(Info(bot))

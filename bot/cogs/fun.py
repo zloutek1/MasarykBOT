@@ -1,21 +1,31 @@
 import os
 from io import BytesIO
 from random import choice, shuffle
+from typing import Literal, Optional, Union, cast
 from urllib.parse import urlparse
 
 import requests
 import unicodeit
-from disnake import Embed, File, Member, PartialEmoji
+from bot.cogs.utils.context import Context
+from disnake import File, Member, PartialEmoji, User
 from disnake.ext import commands
 from PIL import Image
 
+IMG_EXTS = Union[
+    Literal['webp'],
+    Literal['jpeg'],
+    Literal['jpg'],
+    Literal['png'],
+    Literal['gif']
+]
 
 class Fun(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
     @commands.command()
-    async def emoji_list(self, ctx):
+    async def emoji_list(self, ctx: Context) -> None:
+        assert ctx.guild is not None, "ERROR: command can only be invoked inside a guild"
         await ctx.message.delete()
 
         emojis = sorted(ctx.guild.emojis, key=lambda emoji: emoji.name)
@@ -26,11 +36,11 @@ class Fun(commands.Cog):
             await ctx.send("This guild has no emojis")
 
     @commands.command()
-    async def emoji_url(self, ctx, emoji: PartialEmoji):
+    async def emoji_url(self, ctx: Context, emoji: PartialEmoji) -> None:
         await ctx.send(f"`{emoji.url}`")
 
     @commands.command(aliases=['emote'])
-    async def emoji(self, ctx, emoji: PartialEmoji):
+    async def emoji(self, ctx: Context, emoji: PartialEmoji) -> None:
         filename = '{name}.{ext}'.format(name = emoji.name,
                                          ext="png" if not emoji.animated else "gif")
 
@@ -41,49 +51,75 @@ class Fun(commands.Cog):
         os.remove(filename)
 
     @commands.command(aliases=['icon_url'])
-    async def logo_url(self, ctx):
-        await ctx.send(f"`{ctx.guild.icon_url}`")
+    async def logo_url(self, ctx: Context, format: Optional[IMG_EXTS] = None) -> None:
+        assert ctx.guild is not None, "ERROR: command can only be invoked inside a guild"
+        if ctx.guild.icon is None:
+            await ctx.send("No icon")
+            return
+
+        logo = ctx.guild.icon
+        url = (logo.url if format is None else
+               logo.with_format(format).url)
+
+        await ctx.send(f"`{url}`")
 
     @commands.command(aliases=['icon'])
-    async def logo(self, ctx):
+    async def logo(self, ctx: Context) -> None:
+        assert ctx.guild is not None, "ERROR: command can only be invoked inside a guild"
         if ctx.guild.icon is None:
             await ctx.send("this guild has no logo")
             return
 
-        await self.send_asset(ctx, ctx.guild.icon_url)
+        await self.send_asset(ctx, ctx.guild.icon.url)
 
     @commands.command()
-    async def banner_url(self, ctx):
-        await ctx.send(f"`{ctx.guild.banner_url}`")
+    async def banner_url(self, ctx: Context, format: Optional[IMG_EXTS] = None) -> None:
+        assert ctx.guild is not None, "ERROR: command can only be invoked inside a guild"
+        if ctx.guild.banner is None:
+            await ctx.send("No banner")
+            return
+
+        banner = ctx.guild.banner
+        url = (banner.url if format is None else
+               banner.with_format(format).url)
+
+        await ctx.send(f"`{url}`")
 
     @commands.command()
-    async def banner(self, ctx):
+    async def banner(self, ctx: Context) -> None:
+        assert ctx.guild is not None, "ERROR: command can only be invoked inside a guild"
         if ctx.guild.banner is None:
             await ctx.send("this guild has no banner")
             return
 
-        await self.send_asset(ctx, ctx.guild.banner_url)
+        await self.send_asset(ctx, ctx.guild.banner.url)
 
     @commands.command()
-    async def avatar_url(self, ctx):
-        await ctx.send(f"`{ctx.author.avatar_url}`")
+    async def avatar_url(self, ctx: Context, format: Optional[IMG_EXTS] = None) -> None:
+        if ctx.author.avatar is None:
+            await ctx.send("No avatar")
+            return
+
+        avatar = ctx.author.avatar
+        url = (avatar.url if format is None else
+               avatar.with_format(format).url)
+
+        await ctx.send(f"`{url}`")
 
     @commands.command()
-    async def avatar(self, ctx, member: Member = None):
+    async def avatar(self, ctx: Context, member: Optional[Union[User, Member]] = None) -> None:
         if member is None:
             member = ctx.author
 
-        if member is None:
+        if member.avatar is None:
             await ctx.send(f"{member} has no avatar")
             return
 
-        await self.send_asset(ctx, member.avatar_url)
+        await self.send_asset(ctx, member.avatar.url)
 
     @commands.command(aliases=['choice', 'pick'])
-    async def choose(self, ctx, *choices):
+    async def choose(self, ctx: Context, *choices: str) -> None:
         """Chooses between multiple choices."""
-        embed = Embed()
-
         if not choices:
             await ctx.send("no options to choose from")
             return
@@ -96,7 +132,7 @@ class Fun(commands.Cog):
         await ctx.send_embed(" / ".join(choices), name="I choose " + chosen)
 
     @commands.command()
-    async def hug(self, ctx, user: Member, intensity: int = 1):
+    async def hug(self, ctx: Context, user: Member, intensity: int = 1) -> None:
         """Because everyone likes hugs"""
 
         emojis = ["(っ˘̩╭╮˘̩)っ", "(っ´▽｀)っ", "╰(*´︶`*)╯",
@@ -127,20 +163,20 @@ class Fun(commands.Cog):
             await ctx.send(choice(emojis) + f" **{user}**")
 
     @commands.command()
-    async def answer(self, ctx, *, question):
+    async def answer(self, ctx: Context, *, question: str) -> None:
         await ctx.send_embed(question, name=choice(("Yes", "No")))
 
     @commands.command()
     @commands.cooldown(rate=1, per=600, type=commands.BucketType.guild)
-    async def nightsky(self, ctx):
+    async def nightsky(self, ctx: Context) -> None:
         await ctx.send("\n".join(['.\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000 ✦ \u3000\u3000\u3000\u3000\u2002\u2002 \u3000', '\u3000\u3000\u3000˚\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000*\u3000\u3000\u3000\u3000\u3000\u3000\u2008', '\u2008\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000.\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000.', '\u3000\u3000\u2008\u3000\u3000\u3000\u3000\u3000\u3000\u3000 ✦ \u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000 \u3000 \u200d \u200d \u200d \u200d \u3000\u3000\u3000\u3000 \u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000,\u3000\u3000\u2002\u2002\u2002\u3000', '', '.\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000.\u3000\u3000\u3000ﾟ\u3000\u2002\u2002\u3000\u3000\u3000.\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000.', '', '\u3000\u3000\u3000\u3000\u3000\u3000,\u3000\u3000\u3000\u3000\u3000\u3000\u3000.\u3000\u3000\u3000\u3000\u3000\u3000\u2008\u2008\u2008\u2008\u3000\u3000\u3000\u3000:alien: doot doot', '\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u2008\u2008', '\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000:sunny:\u3000\u3000\u2008\u2008\u200a\u200a\u3000\u2008\u2008\u2008\u2008\u2008\u200a\u3000\u3000\u3000\u3000\u3000\u2008\u2008\u200a\u200a\u2008\u2008\u200a\u200a\u3000\u3000\u3000\u3000*\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000.', '\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000.\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000.', '\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u200a\u200a\u200a\u2008\u2008\u200a\u200a\u3000\u2008\u2008\u2008\u3000\u3000\u3000\u3000', '\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u200a\u200a\u200a\u2008\u2008\u200a\u200a\u3000\u2008\u2008\u2008\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u200a\u200a\u200a\u2008\u2008\u200a\u200a\u3000\u2008\u2008\u2008 ✦', '\u3000\u2002\u2002\u2002\u3000\u3000\u3000,\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000*\u3000\u3000\u2008\u200a\u200a\u200a \u3000\u3000\u3000\u3000 \u3000\u3000,\u3000\u3000\u3000 \u200d \u200d \u200d \u200d \u3000 \u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000.\u3000\u3000\u3000\u3000\u3000\u2008\u3000\u3000', '\u3000\u3000\u3000.\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u2008\u3000\u200a\u200a\u2008\u2008\u2008\u2008\u2008\u2008\u2008\u200a\u200a\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000˚\u3000\u3000\u3000', '\u3000 \u2002\u2002\u3000\u3000\u3000\u3000,\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u200a\u200a\u200a\u200a\u200a\u200a\u200a\u3000\u200a\u2008\u2008\u2008:rocket:\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000.\u3000\u3000\u3000', '\u2008\u3000\u3000\u2002\u2002\u2002\u2002\u3000\u3000\u3000\u3000\u3000\u2008\u3000\u3000\u3000\u3000\u3000.\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000.\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000*', '\u3000\u3000 \u2002\u2002\u3000\u3000\u3000\u3000\u3000 ✦ \u3000\u3000\u3000\u3000\u3000\u3000\u3000\u200a\u200a\u200a\u200a\u200a\u200a\u200a\u200a\u200a\u3000\u2008\u2008\u2008\u2008\u2008\u2008\u2008\u2008\u3000\u3000\u3000\u3000', '\u3000\u3000\u2008\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u2008\u3000\u3000\u3000\u3000\u3000.\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000.\u3000\u3000\u3000\u3000\u3000\u2002\u2002\u2002\u2002\u3000\u3000.', '\u3000\u2008\u3000\u3000\u3000\u3000\u3000.\u3000\u3000\u3000\u3000 \u3000\u3000\u3000\u3000\u3000\u200a\u200a\u200a\u3000\u3000\u3000\u3000\u3000.\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000.\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u2002\u2002 \u3000', '', '\u3000˚\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000ﾟ\u3000\u3000\u3000\u3000\u3000.\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000.', '\u3000\u3000\u2008\u3000', '\u200d \u200d \u200d \u200d \u200d \u200d \u200d \u200d \u200d \u200d ,\u3000 \u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000*', '.\u3000\u3000\u3000\u3000\u3000\u2008\u3000\u3000\u3000\u3000:full_moon: \u3000\u3000\u3000\u3000\u3000\u3000\u3000:earth_americas: \u3000\u3000\u3000.\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000 ✦ \u3000\u3000\u3000\u3000\u2002\u2002 \u3000', '\u3000\u3000\u3000˚\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000*\u3000\u3000\u3000\u3000\u3000\u3000\u2008', '\u2008\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000.\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000.', '\u3000\u3000\u2008\u3000\u3000\u3000\u3000\u3000\u3000\u3000 ✦ \u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000 \u3000 \u200d \u200d \u200d \u200d \u3000\u3000\u3000\u3000 \u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000\u3000,', '']))
 
     @commands.command()
-    async def cat(self, ctx, http_err_code: int):
+    async def cat(self, ctx: Context, http_err_code: int) -> None:
         await self.send_asset(ctx, f"https://http.cat/{http_err_code}.jpg")
 
     @staticmethod
-    async def send_asset(ctx, url: str):
+    async def send_asset(ctx: Context, url: str) -> None:
         url = str(url)
         filename = os.path.basename(urlparse(url).path)
 
@@ -151,9 +187,26 @@ class Fun(commands.Cog):
         os.remove(filename)
 
     @commands.command()
-    async def asciify(self, ctx, emoji: PartialEmoji, treshold: int = 127, size: int = 60, inverted: bool = False):
-        if size < 0 or size > 300: return await ctx.send_error("Invalid image size")
-        if treshold < 0 or treshold > 255: return await ctx.send_error("Invalid treshold")
+    async def asciify(
+        self,
+        ctx: Context,
+        emoji: PartialEmoji,
+        treshold: int = 127,
+        size: int = 60,
+        inverted: bool = False
+    ) -> None:
+        """
+        Convert an emoji into an ascii version
+        and send it back to the user
+        """
+
+        if size < 0 or size > 300:
+            await ctx.send_error("Invalid image size")
+            return
+
+        if treshold < 0 or treshold > 255:
+            await ctx.send_error("Invalid treshold")
+            return
 
         response = requests.get(emoji.url)
         img = Image.open(BytesIO(response.content)).convert('L')
@@ -170,25 +223,30 @@ class Fun(commands.Cog):
                 line += c
             ascii += line+"\n"
 
-        if len(ascii) > 3800: return await ctx.send_error("output too large")
+        if len(ascii) > 3800:
+            await ctx.send_error("output too large")
+            return
 
         await ctx.send(ascii)
 
     @staticmethod
-    def chunk2braille( slice: Image, treshold = 127, inverted = False ):
+    def chunk2braille(slice: Image, treshold: int = 127, inverted: bool = False) -> str:
         """https://en.wikipedia.org/wiki/Braille_Patterns"""
         dots = [ (1 + int(inverted) + int(slice.getpixel((x, y)) < treshold)) % 2
                  for y in range(slice.height)
                  for x in range(slice.width)]
 
-        dots = [ dots[ 0 ], dots[ 2 ], dots[ 4 ], dots[ 1 ], dots[ 3 ], dots[ 5 ], dots[ 6 ], dots[ 7 ] ]
+        dots = [ dots[ 0 ], dots[ 2 ],
+                 dots[ 4 ], dots[ 1 ],
+                 dots[ 3 ], dots[ 5 ],
+                 dots[ 6 ], dots[ 7 ] ]
 
         return chr( 10240 + int( '0b' + ''.join(map(str, reversed(dots))), 2) )
 
     @commands.command()
-    async def unicode(self, ctx, latex: str):
+    async def unicode(self, ctx: Context, latex: str) -> None:
         """Convert latex into unicode: https://github.com/svenkreiss/unicodeit"""
         await ctx.send(unicodeit.replace(latex.strip('`')))
 
-def setup(bot):
+def setup(bot: commands.Bot) -> None:
     bot.add_cog(Fun(bot))

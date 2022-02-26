@@ -1,15 +1,17 @@
-from disnake import Embed, Member
+from threading import Thread
+
+from disnake import (ApplicationCommandInteraction, Embed, Member, Message,
+                     RawReactionActionEvent, TextChannel)
 from disnake.errors import NotFound
 from disnake.ext import commands
 
 
 class Bookmark(commands.Cog):
-
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
+    async def on_raw_reaction_add(self, payload: RawReactionActionEvent) -> None:
         if not payload.emoji.is_unicode_emoji():
             return
 
@@ -17,21 +19,27 @@ class Bookmark(commands.Cog):
             return
 
         channel = self.bot.get_channel(payload.channel_id)
+        if not isinstance(channel, (TextChannel, Thread)):
+            return
+
         user = await channel.guild.fetch_member(payload.user_id)
 
         try:
             message = await channel.fetch_message(payload.message_id)
         except NotFound as ex:
-            await user.reply(f"[Error]: {ex.message}")
-            return
-
-        if not isinstance(user, Member):
+            await channel.send(f"{user.mention} [Error]: {ex.text}")
             return
 
         embed = self.get_embed(message)
         await user.send(embed=embed)
 
-    def get_embed(self, message):
+
+    @commands.message_command(guild_ids=[486184376544002073, 573528762843660299])
+    async def bookmark(self, inter: ApplicationCommandInteraction, message: Message) -> None:
+        embed = self.get_embed(message)
+        await inter.author.send(embed=embed)
+
+    def get_embed(self, message: Message) -> Embed:
         embed = Embed(
             title=f"You have pinned a message in {message.guild}",
             description=f"{message.content}\n" +
@@ -39,11 +47,13 @@ class Bookmark(commands.Cog):
             color=0xFFDF00)
 
         embed.set_author(name=message.author.display_name,
-                         icon_url=message.author.avatar and message.author.avatar.with_format('png').url)
+                         icon_url=(message.author.avatar and
+                                   message.author.avatar.with_format('png').url))
+
 
         if message.embeds:
             data = message.embeds[0]
-            if data.type == 'image' and not self.is_url_spoiler(message.content, data.url):
+            if data.type == 'image':
                 embed.set_image(url=data.url)
 
         if message.attachments:
@@ -62,5 +72,5 @@ class Bookmark(commands.Cog):
 
         return embed
 
-def setup(bot):
+def setup(bot: commands.Bot) -> None:
     bot.add_cog(Bookmark(bot))

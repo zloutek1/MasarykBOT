@@ -4,25 +4,35 @@ import re
 from collections import deque
 from datetime import timedelta, timezone
 from textwrap import dedent
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from bot.constants import Config
-from disnake import Embed, Emoji, PartialEmoji, TextChannel
+from disnake import (Embed, Emoji, Guild, Message, PartialEmoji,
+                     RawReactionActionEvent, Reaction, TextChannel, Thread)
 from disnake.errors import NotFound
 from disnake.ext import commands
 from disnake.utils import find, get
 from emoji import demojize
 
+from .utils.context import Context
+
 log = logging.getLogger(__name__)
+Id = int
+
 
 class Starboard(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-        self.known_messages = {}
+        self.starred_messages: Dict[Id, deque[Id]] = {}
 
     @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload):
-        channel = self.bot.get_channel(payload.channel_id)
+    async def on_raw_reaction_add(self, payload: RawReactionActionEvent) -> None:
+        if (channel := self.bot.get_channel(payload.channel_id)) is None:
+            return
+
+        if not isinstance(channel, (TextChannel, Thread)):
+            return
 
         try:
             message = await channel.fetch_message(payload.message_id)
@@ -30,52 +40,66 @@ class Starboard(commands.Cog):
             log.warn(f"message with id {payload.message_id} in channel {channel} not found")
             return
 
-        reaction = find(lambda r: payload.emoji.name == (r.emoji if isinstance(r.emoji, str) else r.emoji.name), message.reactions)
-        if reaction:
+        if reaction := self.lookup_reaction(payload.emoji, message.reactions):
             await self.process_starboard(reaction)
 
-    async def process_starboard(self, reaction):
+    @staticmethod
+    def lookup_reaction(emoji: PartialEmoji, reactions: List[Reaction]) -> Optional[Reaction]:
+        def react_emoji_name(reaction: Reaction) -> str:
+            if isinstance(reaction.emoji, str):
+                return reaction.emoji
+            return reaction.emoji.name
+
+        return find(lambda r: emoji.name == react_emoji_name(r), reactions)
+
+    async def process_starboard(self, reaction: Reaction) -> None:
         message = reaction.message
         channel = message.channel
         guild = message.guild
 
-        self.known_messages.setdefault(guild.id, deque(maxlen=50))
-
-        if message.id in self.known_messages[guild.id]:
-            return
+        assert isinstance(channel, (TextChannel, Thread))
+        assert guild is not None, "Starboard can only run inside a guild"
 
         if (guild_config := get(Config.guilds, id=guild.id)) is None:
             return
-        if reaction.count < guild_config.STARBOARD_REACT_LIMIT:
+
+        if (self.is_already_in_starboard(message) or
+            message.author.id != self.bot.user.id or
+            channel.name == "starboard" or
+            message.channel.id in guild_config.channels or
+            reaction.count < guild_config.STARBOARD_REACT_LIMIT or
+            reaction.count < self.calculate_ignore_score(reaction)):
+
+            log.debug("message with %s(%s) reactions found (%s, %s, %s)",
+                      reaction.emoji, reaction.count, guild, channel, message.id)
             return
 
-        self.known_messages[guild.id].append(reaction.message.id)
+        log.info("adding message with %s reactions to starboard (%s, %s, %s)",
+                 reaction.count, guild, channel, message.id)
 
-        log.debug("message with %s(%s) reactions found (%s, %s, %s)", reaction.emoji, reaction.count, guild, channel, message.id)
-
-        if channel.name == "starboard" or channel.id == guild_config.channels.starboard:
-            return
-
-        if reaction.count < self.calculate_ignore_score(reaction):
-            return
-
-        if message.channel.id in [guild_config.channels.verification, guild_config.channels.about_you]:
-            return
-
-        for react in message.reactions:
-            if await react.users().get(id=self.bot.user.id) is not None:
-                return
-
-        if message.author.id != self.bot.user.id:
-            log.info("adding message with %s reactions to starboard (%s, %s, %s)", reaction.count, guild, channel, message.id)
+        self.starred_messages.setdefault(guild.id, deque(maxlen=50))
+        self.starred_messages[guild.id].append(message.id)
 
         await message.add_reaction(reaction.emoji)
 
-        starboard_channel = await self.get_or_create_channel(guild, *self.pick_target_starboard_channel(message, guild_config))
+        (channel_id, channel_name) = self.pick_target_starboard_channel(message, guild_config)
+        starboard_channel = await self.get_or_create_channel(guild, channel_id, channel_name)
 
         await starboard_channel.send(embed=await self.get_embed(message))
 
-    def pick_target_starboard_channel(self, message, guild_config):
+    async def is_already_in_starboard(self, message: Message) -> bool:
+        return (message.guild is not None and
+                message.id in self.starred_messages[message.guild.id] and
+                all(await react.users().get(id=self.bot.user.id) is None
+                    for react in message.reactions))
+
+    def pick_target_starboard_channel(
+        self,
+        message: Message,
+        guild_config: Any
+    ) -> Tuple[Id, str]:
+        assert isinstance(message.channel, (TextChannel, Thread))
+
         if message.channel.name == "memes":
             return (guild_config.channels.best_of_memes, "best-of-memes")
         elif message.author.id == self.bot.user.id:
@@ -84,22 +108,40 @@ class Starboard(commands.Cog):
             return (guild_config.channels.starboard, "starboard")
 
 
-    async def get_or_create_channel(self, guild, existing_id=None, name=None):
+    async def get_or_create_channel(
+        self,
+        guild: Guild,
+        existing_id: Optional[Id],
+        name: Optional[str]
+    ) -> TextChannel:
+
         channel = get(guild.text_channels, id=existing_id)
         if channel is None:
             channel = get(guild.text_channels, name=name)
         if channel is None:
+            assert name
             channel = await guild.create_text_channel(name)
         return channel
 
-    @staticmethod
-    def calculate_ignore_score(reaction):
-        channel = reaction.message.channel
-        emoji_name = emoji.name if isinstance(emoji := reaction.emoji, Emoji) or isinstance(emoji, PartialEmoji) else demojize(emoji)
-        msg_content = reaction.message.content
 
-        guild_config = get(Config.guilds, id=reaction.message.guild.id)
-        fame_limit = guild_config.STARBOARD_REACT_LIMIT
+    @staticmethod
+    def calculate_ignore_score(reaction: Reaction) -> float:
+        message = reaction.message
+        channel = message.channel
+        guild = message.guild
+
+        assert isinstance(channel, (TextChannel, Thread))
+        assert guild is not None, "Starboard can only run inside a guild"
+
+        emoji_name = (emoji.name
+                      if isinstance(emoji := reaction.emoji, (Emoji, PartialEmoji)) else
+                      demojize(emoji))
+        msg_content = message.content
+
+        guild_config = get(cast(List[Any], Config.guilds), id=guild.id)
+        assert guild_config is not None, f"ERROR: missing guild config for guild with id {guild.id}"
+
+        fame_limit = cast(int, guild_config.STARBOARD_REACT_LIMIT)
         if len(channel.members) > 100:
             fame_limit += 10
 
@@ -127,17 +169,18 @@ class Starboard(commands.Cog):
             return fame_limit - 5
         return fame_limit
 
-    async def get_embed(self, message):
-        def format_reaction(react):
+    async def get_embed(self, message: Message) -> Embed:
+        def format_reaction(react: Reaction) -> str:
             emoji = react.emoji
-            if react.is_custom_emoji():
+            if not isinstance(emoji, str):
                 return f"{react.count} <:{emoji.name}:{emoji.id}>"
             else:
                 return f"{react.count} {react}"
 
         reply_emoji = get(self.bot.emojis, name="reply")
-        async def get_reply_thread(message, depth=15):
-            if not message.reference:
+
+        async def get_reply_thread(message: Message, depth: int = 15) -> List[str]:
+            if not message.reference or not message.reference.message_id:
                 return []
             if depth <= 0:
                 return [f"{reply_emoji} [truncated]"]
@@ -158,10 +201,13 @@ class Starboard(commands.Cog):
             skipped += 1
         for _ in range(skipped):
             reply_thread.append(f"{reply_emoji} [Reply too long to render]")
-        reply_thread = '\n'.join(reply_thread)
 
+        replies = '\n'.join(reply_thread) + "\n"
+        replies += str(reply_emoji) if message.reference else ''
+
+        assert isinstance(message.channel, (TextChannel, Thread))
         embed = Embed(
-            description=f"{reply_thread}\n{f'{reply_emoji} ' if message.reference else ''}{message.content}\n{reactions}\n" +
+            description=f"{replies}{message.content}\n{reactions}\n" +
                         f"[Jump to original!]({message.jump_url}) in {message.channel.mention}",
             color=0xFFDF00)
 
@@ -173,6 +219,7 @@ class Starboard(commands.Cog):
 
         if message.embeds:
             data = message.embeds[0]
+            assert isinstance(data.url, str)
             if data.type == 'image' and not self.is_url_spoiler(message.content, data.url):
                 embed.set_image(url=data.url)
 
@@ -193,7 +240,7 @@ class Starboard(commands.Cog):
         return embed
 
     @staticmethod
-    def is_url_spoiler(text, url):
+    def is_url_spoiler(text: str, url: str) -> bool:
         spoiler_regex = re.compile(r'\|\|(.+?)\|\|')
         spoilers = spoiler_regex.findall(text)
         for spoiler in spoilers:
@@ -202,11 +249,12 @@ class Starboard(commands.Cog):
         return False
 
     @commands.command()
-    async def starboard(self, ctx, channel: TextChannel, message_id: int):
+    async def starboard(self, ctx: Context, channel: TextChannel, message_id: int) -> None:
         try:
             message = await channel.fetch_message(message_id)
         except NotFound :
-            return await ctx.send_error("Message not found")
+            await ctx.send_error("Message not found")
+            return
 
         starscore = '\n        '.join(
                         f"`{r.count} / {self.calculate_ignore_score(r)}` {r.emoji}" for r in message.reactions)
@@ -224,5 +272,5 @@ class Starboard(commands.Cog):
 
         await ctx.send(result)
 
-def setup(bot):
+def setup(bot: commands.Bot) -> None:
     bot.add_cog(Starboard(bot))

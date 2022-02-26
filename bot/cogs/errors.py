@@ -1,7 +1,9 @@
 import logging
 import traceback
 
+from bot.cogs.utils.context import Context
 from bot.constants import Config
+from disnake.abc import Messageable
 from disnake.ext import commands
 from disnake.utils import get
 
@@ -9,11 +11,11 @@ log = logging.getLogger(__name__)
 
 
 class Errors(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
     @commands.Cog.listener()
-    async def on_command_error(self, ctx, error):
+    async def on_command_error(self, ctx: Context, error: commands.CommandError) -> None:
         if hasattr(ctx.command, "on_error"):
             return
 
@@ -35,7 +37,7 @@ class Errors(commands.Cog):
 
         for just_printable in [commands.ArgumentParsingError, commands.BotMissingPermissions]:
             if isinstance(error, just_printable):
-                await ctx.send_error(error)
+                await ctx.send_error(str(error))
                 return
 
         if isinstance(error, commands.CommandInvokeError):
@@ -44,24 +46,33 @@ class Errors(commands.Cog):
 
         await self.log_error(ctx, error)
 
-    async def log_error(self, ctx, error):
+    async def log_error(self, ctx: Context, error: Exception) -> None:
+        if ctx.command is None:
+            return
+
         command_name = ctx.command.qualified_name
         trace = "".join(traceback.format_exception(type(error), error, error.__traceback__))
         msg = f'In {command_name}:\n{trace}'
 
         log.error(msg)
 
-        guild_config = get(Config.guilds, id=ctx.guild.id)
+        if ctx.guild is None:
+            return
+
+        if (guild_config := get(Config.guilds, id=ctx.guild.id)) is None:
+            return
+
         channel_id = guild_config.logs.errors
         if channel_id and (channel := self.bot.get_channel(channel_id)) is not None:
+            if not isinstance(channel, Messageable):
+                return
+
             part = ""
             for line in msg.split("\n"):
                 if len(part) + len(line) < 1900:
                     part += line + "\n"
                 elif len(line) >= 1900:
-                    await channel.send(f"```\n{part}\n```")
-                    for i in range(0, len(line), 1900):
-                        await channel.send(f"```\n{chunk}\n```")
+                    await channel.send(f"`Line too long to display`")
                     part = ""
                 else:
                     await channel.send(f"```\n{part}\n```")
@@ -69,5 +80,5 @@ class Errors(commands.Cog):
             if part:
                 await channel.send(f"```\n{part}\n```")
 
-def setup(bot):
+def setup(bot: commands.Bot) -> None:
     bot.add_cog(Errors(bot))

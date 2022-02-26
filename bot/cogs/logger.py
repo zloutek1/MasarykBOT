@@ -1,49 +1,81 @@
 import asyncio
 import logging
+from ast import Await
 from collections import defaultdict, deque
 from datetime import datetime, timedelta
-from typing import (Awaitable, Callable, Dict, Generic, List, Optional, Tuple,
-                    TypeVar)
+from typing import (Any, Awaitable, Callable, Coroutine, Dict, Generator,
+                    Generic, List, Optional, Sequence, Tuple, TypeVar)
 
 from bot.bot import MasarykBOT
-from bot.cogs.utils.context import Context
-from bot.cogs.utils.db import Record
-from disnake import CategoryChannel, Guild, Member, Role, TextChannel
+from bot.cogs.utils.context import Context, GuildChannel
+from bot.db.discord import (AttachmentDao, CategoryDao, ChannelDao, EmojiDao,
+                            GuildDao, MessageDao, MessageEmojiDao, ReactionDao,
+                            RoleDao, UserDao)
+from bot.db.logger import LoggerDao
+from bot.db.utils import Record
+from disnake import (CategoryChannel, Guild, Member, Message, Reaction, Role,
+                     TextChannel)
 from disnake.abc import PrivateChannel
 from disnake.errors import Forbidden, NotFound
 from disnake.ext import commands, tasks
 from disnake.ext.commands import has_permissions
 
 T = TypeVar('T')
+C = TypeVar('C')
 
 log = logging.getLogger(__name__)
 
-def partition(cond, lst):
-    return [[i for i in lst if cond(i)], [i for i in lst if not cond(i)]]
+def partition(cond: Callable[[T], bool], lst: List[T]) -> Tuple[List[T], List[T]]:
+    return ([i for i in lst if cond(i)], [i for i in lst if not cond(i)])
 
-def chunks(lst, n):
+def chunks(lst: List[T], n: int) -> Generator[List[T], None, None]:
     for i in range(0, len(lst), n):
         yield lst[i:i + n]
 
+class Collectable(Generic[T, C]):
+    def __init__(
+        self,
+        prepare_fn: Callable[[T], Awaitable[List[C]]],
+        insert_fn: Callable[..., Awaitable[None]]
+    ) -> None:
+        self.content: List[C] = []
+        self.prepare_fn = prepare_fn
+        self.insert_fn = insert_fn
+
+    async def add(self, item: T) -> None:
+        self.content.extend(await self.prepare_fn(item))
+
+    async def db_insert(self) -> None:
+        for batch in chunks(self.content, 550):
+            await self.insert_fn(batch)
+
+    def __repr__(self) -> str:
+        return f"<Collectable prepare_fn={self.prepare_fn.__qualname__} insert_fn={self.insert_fn.__qualname__}>"
+
 class GetCollectables:
-    @staticmethod
-    def get_collectables(bot):
+    attachmentDao = AttachmentDao()
+    emojiDao = EmojiDao()
+    reactionDao = ReactionDao()
+    messageEmojiDao = MessageEmojiDao()
+
+    @classmethod
+    def get_collectables(cls) -> List[Collectable]:
         return [
             Collectable(
-                prepare_fn=bot.db.attachments.prepare_from_message,
-                insert_fn=bot.db.attachments.insert
+                prepare_fn=cls.attachmentDao.prepare_from_message,
+                insert_fn=cls.attachmentDao.insert
             ),
             Collectable(
-                prepare_fn=bot.db.emojis.prepare_from_message,
-                insert_fn=bot.db.emojis.insert
+                prepare_fn=cls.emojiDao.prepare_from_message,
+                insert_fn=cls.emojiDao.insert
             ),
             Collectable(
-                prepare_fn=bot.db.reactions.prepare_from_message,
-                insert_fn=bot.db.reactions.insert
+                prepare_fn=cls.reactionDao.prepare_from_message,
+                insert_fn=cls.reactionDao.insert
             ),
             Collectable(
-                prepare_fn=bot.db.message_emojis.prepare_from_message,
-                insert_fn=bot.db.message_emojis.insert
+                prepare_fn=cls.messageEmojiDao.prepare_from_message,
+                insert_fn=cls.messageEmojiDao.insert
             )
         ]
 
@@ -51,7 +83,18 @@ class BackupInProgressException(Exception):
     pass
 
 class BackupUntilPresent(GetCollectables):
-    def __init__(self, bot: MasarykBOT):
+    guildDao = GuildDao()
+    categoryDao = CategoryDao()
+    roleDao = RoleDao()
+    userDao = UserDao()
+    channelDao = ChannelDao()
+    messageDao = MessageDao()
+    emojiDao = EmojiDao()
+    reactionDao = ReactionDao()
+
+    loggerDao = LoggerDao()
+
+    def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.backup_in_progress = False
 
@@ -85,33 +128,33 @@ class BackupUntilPresent(GetCollectables):
 
     async def backup_guilds(self, guilds: List[Guild]) -> None:
         log.info(f"backing up {len(guilds)} guilds")
-        data = await self.bot.db.guilds.prepare(guilds)
-        await self.bot.db.guilds.insert(data)
+        data = await self.guildDao.prepare(guilds)
+        await self.guildDao.insert(data)
 
     async def backup_categories(self, categories: List[CategoryChannel]) -> None:
         log.info(f"backing up {len(categories)} categories")
-        data = await self.bot.db.categories.prepare(categories)
-        await self.bot.db.categories.insert(data)
+        data = await self.categoryDao.prepare(categories)
+        await self.categoryDao.insert(data)
 
     async def backup_roles(self, roles: List[Role]) -> None:
         log.info(f"backing up {len(roles)} roles")
-        data = await self.bot.db.roles.prepare(roles)
-        await self.bot.db.roles.insert(data)
+        data = await self.roleDao.prepare(roles)
+        await self.roleDao.insert(data)
 
     async def backup_members(self, members: List[Member]) -> None:
         log.info(f"backing up {len(members)} members")
         for chunk in chunks(members, 550):
-            data = await self.bot.db.members.prepare(chunk)
-            await self.bot.db.members.insert(data)
+            data = await self.userDao.prepare(chunk)
+            await self.userDao.insert(data)
 
     async def backup_channels(self, text_channels: List[TextChannel]) -> None:
         log.info(f"backing up {len(text_channels)} channels")
-        data = await self.bot.db.channels.prepare(text_channels)
-        await self.bot.db.channels.insert(data)
+        data = await self.channelDao.prepare(text_channels)
+        await self.channelDao.insert(data)
 
     async def backup_messages(self, channel: TextChannel) -> bool:
         past = {record.get('channel_id'): record.get('id')
-                for record in await self.bot.db.logger.select_latest_backup_message_ids()}
+                for record in await self.loggerDao.select_latest_backup_message_ids()}
 
         if channel.last_message_id is None:
             log.info("skipping messages in empty channel %s (%s)", channel, channel.guild)
@@ -135,11 +178,11 @@ class BackupUntilPresent(GetCollectables):
         return changed
 
     async def backup_failed_week(self, channel: TextChannel) -> bool:
-        rows = await self.bot.db.logger.select(channel.id)
-        failed_rows = [row for row in rows if row.get("finished_at") is None]
+        rows = await self.loggerDao.select(channel.id)
+        failed_rows = [row for row in rows if row["finished_at"] is None]
 
         for failed_row in failed_rows:
-            await self.try_to_backup_in_range(channel, failed_row.get("from_date"), failed_row.get("to_date"))
+            await self.try_to_backup_in_range(channel, failed_row["from_date"], failed_row["to_date"])
 
         return len(failed_rows) != 0
 
@@ -159,14 +202,14 @@ class BackupUntilPresent(GetCollectables):
 
         return to_date < datetime.now()
 
-    async def get_latest_finished_process(self, channel: TextChannel) -> Record:
-        finished_processes = await self.bot.db.logger.select(channel.id)
+    async def get_latest_finished_process(self, channel: TextChannel) -> Optional[Record]:
+        finished_processes = await self.loggerDao.select(channel.id)
         if not finished_processes:
             return None
 
-        def compare(proc: Record):
+        def compare(proc: Record) -> Tuple[datetime, datetime]:
             # sort by highest finish date, then by to_date
-            return (proc.get("finished_at") or datetime.min, proc.get("to_date"))
+            return (proc["finished_at"] or datetime.min, proc["to_date"])
 
         return max(finished_processes, key=compare)
 
@@ -175,7 +218,7 @@ class BackupUntilPresent(GetCollectables):
         if process is None:
             from_date, to_date = channel.created_at, channel.created_at + timedelta(weeks=1)
         else:
-            from_date, to_date = process.get("to_date"), process.get("to_date") + timedelta(weeks=1)
+            from_date, to_date = process["to_date"], process["to_date"] + timedelta(weeks=1)
 
         from_date, to_date = from_date.replace(tzinfo=None), to_date.replace(tzinfo=None)
 
@@ -197,40 +240,47 @@ class BackupUntilPresent(GetCollectables):
             log.warn("backup in %s between %s-%s timed out", channel, from_date, to_date)
 
     async def backup_in_range(self, channel: TextChannel, from_date: datetime, to_date: datetime, is_first_week: bool) -> None:
-        async with self.bot.db.logger.process(channel.id, from_date, to_date, is_first_week):
+        async with self.loggerDao.process(channel.id, from_date, to_date, is_first_week):
             log.info("backing up messages {%s} - {%s} in %s (%s)", from_date.strftime('%d.%m.%Y'), to_date.strftime('%d.%m.%Y'), channel, channel.guild)
 
             members = []
             messages = []
-            collectables = self.get_collectables(self.bot)
+            collectables = self.get_collectables()
             async for message in channel.history(after=from_date, before=to_date, limit=1_000_000, oldest_first=True):
-                members.append(await self.bot.db.members.prepare_one(message.author))
-                messages.append(await self.bot.db.messages.prepare_one(message))
+                members.append(await self.userDao.prepare_one(message.author))
+                messages.append(await self.messageDao.prepare_one(message))
                 for collectable in collectables:
                     await collectable.add(message)
 
             else:
-                for batch in chunks(members, 550):
-                    await self.bot.db.members.insert(batch)
+                for user_batch in chunks(members, 550):
+                    await self.userDao.insert(user_batch)
 
-                for batch in chunks(messages, 550):
-                    await self.bot.db.messages.insert(batch)
+                for msg_batch in chunks(messages, 550):
+                    await self.messageDao.insert(msg_batch)
 
                 for collectable in collectables:
                     await collectable.db_insert()
 
 
 class BackupOnEvents(GetCollectables):
-    def __init__(self, bot):
+    guildDao = GuildDao()
+    categoryDao = CategoryDao()
+    roleDao = RoleDao()
+    userDao = UserDao()
+    channelDao = ChannelDao()
+    messageDao = MessageDao()
+
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-        self.insert_queues: Dict[Callable[[List[Tuple]], Awaitable[None]], deque[Tuple]] = defaultdict(deque)
-        self.update_queues: Dict[Callable[[List[Tuple]], Awaitable[None]], deque[Tuple]] = defaultdict(deque)
-        self.delete_queues: Dict[Callable[[List[Tuple]], Awaitable[None]], deque[Tuple]] = defaultdict(deque)
+        self.insert_queues: Dict[Callable[..., Awaitable[None]], deque[Tuple]] = defaultdict(deque)
+        self.update_queues: Dict[Callable[..., Awaitable[None]], deque[Tuple]] = defaultdict(deque)
+        self.delete_queues: Dict[Callable[..., Awaitable[None]], deque[Tuple]] = defaultdict(deque)
 
         self.task_put_queues_to_database.start()
 
-    def cog_unload(self):
+    def cog_unload(self) -> None:
         self.task_put_queues_to_database.cancel()
 
     ###
@@ -240,22 +290,22 @@ class BackupOnEvents(GetCollectables):
     ###
 
     @commands.Cog.listener()
-    async def on_guild_join(self, guild):
+    async def on_guild_join(self, guild: Guild) -> None:
         log.info("joined guild %s", guild)
-        data = await self.bot.db.guilds.prepare_one(guild)
-        self.insert_queues[self.bot.db.guilds.insert].append(data)
+        data = await self.guildDao.prepare_one(guild)
+        self.insert_queues[self.guildDao.insert].append(data)
 
     @commands.Cog.listener()
-    async def on_guild_update(self, before, after):
+    async def on_guild_update(self, before: Guild, after: Guild) -> None:
         log.info("updated guild from %s to %s", before, after)
-        data = await self.bot.db.guilds.prepare_one(after)
-        self.update_queues[self.bot.db.guilds.update].append(data)
+        data = await self.guildDao.prepare_one(after)
+        self.update_queues[self.guildDao.update].append(data)
 
     @commands.Cog.listener()
-    async def on_guild_remove(self, guild):
+    async def on_guild_remove(self, guild: Guild) -> None:
         log.info("left guild %s", guild)
         data = (guild.id,)
-        self.delete_queues[self.bot.db.guilds.soft_delete].append(data)
+        self.delete_queues[self.guildDao.soft_delete].append(data)
 
     ###
     #
@@ -264,7 +314,7 @@ class BackupOnEvents(GetCollectables):
     ###
 
     @commands.Cog.listener()
-    async def on_guild_channel_create(self, channel):
+    async def on_guild_channel_create(self, channel: GuildChannel) -> None:
         log.info("created channel %s (%s)", channel, channel.guild)
 
         if isinstance(channel, TextChannel):
@@ -273,34 +323,34 @@ class BackupOnEvents(GetCollectables):
         elif isinstance(channel, CategoryChannel):
             await self.on_category_create(channel)
 
-    async def on_textchannel_create(self, channel):
-        data = await self.bot.db.channels.prepare_one(channel)
-        self.insert_queues[self.bot.db.channels.insert].append(data)
+    async def on_textchannel_create(self, channel: TextChannel) -> None:
+        data = await self.channelDao.prepare_one(channel)
+        self.insert_queues[self.channelDao.insert].append(data)
 
-    async def on_category_create(self, channel):
-        data = await self.bot.db.categories.prepare_one(channel)
-        self.insert_queues[self.bot.db.categories.insert].append(data)
+    async def on_category_create(self, channel: CategoryChannel) -> None:
+        data = await self.categoryDao.prepare_one(channel)
+        self.insert_queues[self.categoryDao.insert].append(data)
 
     @commands.Cog.listener()
-    async def on_guild_channel_update(self, before, after):
+    async def on_guild_channel_update(self, before: GuildChannel, after: GuildChannel) -> None:
         log.info("updated channel %s (%s)", before, before.guild)
 
-        if isinstance(after, TextChannel):
+        if isinstance(before, TextChannel) and isinstance(after, TextChannel):
             await self.on_textchannel_update(before, after)
 
-        elif isinstance(after, CategoryChannel):
+        elif isinstance(before, CategoryChannel) and isinstance(after, CategoryChannel):
             await self.on_category_update(before, after)
 
-    async def on_textchannel_update(self, _before, after):
-        data = await self.bot.db.channels.prepare_one(after)
-        self.update_queues[self.bot.db.channels.update].append(data)
+    async def on_textchannel_update(self, _before: TextChannel, after: TextChannel) -> None:
+        data = await self.channelDao.prepare_one(after)
+        self.update_queues[self.channelDao.update].append(data)
 
-    async def on_category_update(self, _before, after):
-        data = await self.bot.db.categories.prepare_one(after)
-        self.update_queues[self.bot.db.categories.update].append(data)
+    async def on_category_update(self, _before: CategoryChannel, after: CategoryChannel) -> None:
+        data = await self.categoryDao.prepare_one(after)
+        self.update_queues[self.categoryDao.update].append(data)
 
     @commands.Cog.listener()
-    async def on_guild_channel_delete(self, channel):
+    async def on_guild_channel_delete(self, channel: GuildChannel) -> None:
         log.info("deleted channel %s (%s)", channel, channel.guild)
 
         if isinstance(channel, TextChannel):
@@ -309,13 +359,13 @@ class BackupOnEvents(GetCollectables):
         elif isinstance(channel, CategoryChannel):
             await self.on_category_delete(channel)
 
-    async def on_textchannel_delete(self, channel):
+    async def on_textchannel_delete(self, channel: TextChannel) -> None:
         data = (channel.id,)
-        self.delete_queues[self.bot.db.channels.soft_delete].append(data)
+        self.delete_queues[self.channelDao.soft_delete].append(data)
 
-    async def on_category_delete(self, channel):
+    async def on_category_delete(self, channel: CategoryChannel) -> None:
         data = (channel.id,)
-        self.delete_queues[self.bot.db.categories.soft_delete].append(data)
+        self.delete_queues[self.categoryDao.soft_delete].append(data)
 
 
     ###
@@ -325,41 +375,41 @@ class BackupOnEvents(GetCollectables):
     ###
 
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: Message) -> None:
         if isinstance(message.channel, PrivateChannel):
             return
 
         if not isinstance(message.author, Member):
             return
 
-        data = await self.bot.db.messages.prepare_one(message)
-        self.insert_queues[self.bot.db.messages.insert].append(data)
+        msg_data = await self.messageDao.prepare_one(message)
+        self.insert_queues[self.messageDao.insert].append(msg_data)
 
-        colleactables = self.get_collectables(self.bot)
+        colleactables = self.get_collectables()
         for collectable in colleactables:
             data = await collectable.prepare_fn(message)
             self.insert_queues[collectable.insert_fn].extend(data)
 
     @commands.Cog.listener()
-    async def on_message_edit(self, before, after):
+    async def on_message_edit(self, before: Message, after: Message) -> None:
         if isinstance(before.channel, PrivateChannel):
             return
 
-        data = await self.bot.db.messages.prepare_one(after)
-        self.update_queues[self.bot.db.messages.update].append(data)
+        msg_data = await self.messageDao.prepare_one(after)
+        self.update_queues[self.messageDao.update].append(msg_data)
 
-        colleactables = self.get_collectables(self.bot)
+        colleactables = self.get_collectables()
         for collectable in colleactables:
             data = await collectable.prepare_fn(after)
             self.update_queues[collectable.insert_fn].extend(data)
 
     @commands.Cog.listener()
-    async def on_message_delete(self, message):
+    async def on_message_delete(self, message: Message) -> None:
         if isinstance(message.channel, PrivateChannel):
             return
 
         data = (message.id,)
-        self.delete_queues[self.bot.db.messages.soft_delete].append(data)
+        self.delete_queues[self.messageDao.soft_delete].append(data)
 
     ###
     #
@@ -368,18 +418,18 @@ class BackupOnEvents(GetCollectables):
     ###
 
     @commands.Cog.listener()
-    async def on_reaction_add(self, reaction, user):
-        data = await self.bot.db.messages.prepare_one(reaction.message)
-        self.insert_queues[self.bot.db.messages.insert].append(data)
+    async def on_reaction_add(self, reaction: Reaction, user: Member) -> None:
+        msg_data = await self.messageDao.prepare_one(reaction.message)
+        self.insert_queues[self.messageDao.insert].append(msg_data)
 
-        data = await self.bot.db.members.prepare_one(user)
-        self.insert_queues[self.bot.db.members.insert].append(data)
+        user_data = await self.userDao.prepare_one(user)
+        self.insert_queues[self.userDao.insert].append(user_data)
 
-        data = await self.bot.db.emojis.prepare_one(reaction.emoji)
-        self.insert_queues[self.bot.db.emojis.insert].append(data)
+        emoji_data = await self.emojiDao.prepare_one(reaction.emoji)
+        self.insert_queues[self.emojiDao.insert].append(emoji_data)
 
-        data = await self.bot.db.reactions.prepare_one(reaction)
-        self.insert_queues[self.bot.db.reactions.insert].append(data)
+        react_data = await self.reactionDao.prepare_one(reaction)
+        self.insert_queues[self.reactionDao.insert].append(react_data)
 
     ###
     #
@@ -388,14 +438,14 @@ class BackupOnEvents(GetCollectables):
     ###
 
     @commands.Cog.listener()
-    async def on_member_join(self, member):
+    async def on_member_join(self, member: Member) -> None:
         log.info("member %s joined (%s)", member, member.guild)
 
-        data = await self.bot.db.members.prepare_one(member)
-        self.insert_queues[self.bot.db.members.insert].append(data)
+        data = await self.userDao.prepare_one(member)
+        self.insert_queues[self.userDao.insert].append(data)
 
     @commands.Cog.listener()
-    async def on_member_update(self, before, after):
+    async def on_member_update(self, before: Member, after: Member) -> None:
         if before.avatar != after.avatar:
             log.info("member %s updated his avatar_url (%s)", before, before.guild)
         elif before.name != after.name:
@@ -405,16 +455,16 @@ class BackupOnEvents(GetCollectables):
         else:
             return
 
-        data = await self.bot.db.members.prepare_one(after)
-        self.update_queues[self.bot.db.members.update].append(data)
+        data = await self.userDao.prepare_one(after)
+        self.update_queues[self.userDao.update].append(data)
 
     @commands.Cog.listener()
-    async def on_member_remove(self, member):
+    async def on_member_remove(self, member: Member) -> None:
         log.info("member %s left (%s)", member, member.guild)
 
         data = (member.id,)
-        await self.bot.db.members.soft_delete([])
-        self.delete_queues[self.bot.db.members.soft_delete].append(data)
+        await self.userDao.soft_delete([])
+        self.delete_queues[self.userDao.soft_delete].append(data)
 
     ###
     #
@@ -423,25 +473,25 @@ class BackupOnEvents(GetCollectables):
     ###
 
     @commands.Cog.listener()
-    async def on_guild_role_create(self, role):
+    async def on_guild_role_create(self, role: Role) -> None:
         log.info("added role %s (%s)", role, role.guild)
 
-        data = await self.bot.db.roles.prepare_one(role)
-        self.insert_queues[self.bot.db.roles.insert].append(data)
+        data = await self.roleDao.prepare_one(role)
+        self.insert_queues[self.roleDao.insert].append(data)
 
     @commands.Cog.listener()
-    async def on_guild_role_update(self, before, after):
+    async def on_guild_role_update(self, before: Role, after: Role) -> None:
         log.info("updated role from %s to %s (%s)", before, after, before.guild)
 
-        data = await self.bot.db.roles.prepare_one(after)
-        self.update_queues[self.bot.db.roles.update].append(data)
+        data = await self.roleDao.prepare_one(after)
+        self.update_queues[self.roleDao.update].append(data)
 
     @commands.Cog.listener()
-    async def on_guild_role_remove(self, role):
+    async def on_guild_role_remove(self, role: Role) -> None:
         log.info("removed role %s (%s)", role, role.guild)
 
         data = (role.id,)
-        self.delete_queues[self.bot.db.roles.soft_delete].append(data)
+        self.delete_queues[self.roleDao.soft_delete].append(data)
 
     ###
     #
@@ -450,11 +500,11 @@ class BackupOnEvents(GetCollectables):
     ###
 
     @tasks.loop(minutes=5)
-    async def task_put_queues_to_database(self):
-        def total(queue):
+    async def task_put_queues_to_database(self) -> None:
+        def total(queue: Dict[Callable, deque[Tuple]]) -> int:
             return sum(len(v) for v in queue.values())
 
-        async def do():
+        async def do() -> None:
             log.info("putting queues to database (ins %s, upd %s, del %s)", inserts, updates, deletes)
             await self.put_queues_to_database(self.insert_queues, limit=2_000)
             await self.put_queues_to_database(self.update_queues, limit=1_000)
@@ -476,11 +526,22 @@ class BackupOnEvents(GetCollectables):
             updates = total(self.update_queues)
             deletes = total(self.delete_queues)
 
-    async def put_queues_to_database(self, queues: Dict[Callable[[List[Tuple]], Awaitable[None]], deque[Tuple]], *, limit=1000):
+    async def put_queues_to_database(
+        self,
+        queues: Dict[Callable[[List[Tuple]], Awaitable[None]], deque[Tuple]],
+        *,
+        limit: int = 1000
+    ) -> None:
         for (put_fn, queue) in queues.items():
             await self.put_queue_to_database(put_fn, queue, limit=limit)
 
-    async def put_queue_to_database(self, put_fn: Callable[[List[Tuple]], Awaitable[None]], queue: deque[Tuple], *, limit=1000):
+    async def put_queue_to_database(
+        self,
+        put_fn: Callable[[List[Tuple]], Awaitable[None]],
+        queue: deque[Tuple],
+        *,
+        limit: int = 1000
+    ) -> None:
         if len(queue) == 0:
             return
 
@@ -490,45 +551,29 @@ class BackupOnEvents(GetCollectables):
 
         await put_fn(elements)
 
-class Collectable(Generic[T]):
-    def __init__(self, prepare_fn: Callable[[T], List[Tuple]], insert_fn: Callable[[List[Tuple]], None]):
-        self.content: List[Tuple] = []
-        self.prepare_fn = prepare_fn
-        self.insert_fn = insert_fn
-
-    async def add(self, item):
-        self.content.extend(await self.prepare_fn(item))
-
-    async def db_insert(self):
-        for batch in chunks(self.content, 550):
-            await self.insert_fn(batch)
-
-    def __repr__(self):
-        return f"<Collectable prepare_fn={self.prepare_fn.__qualname__} insert_fn={self.insert_fn.__qualname__}>"
-
 class Logger(commands.Cog, BackupUntilPresent, BackupOnEvents):
-    def __init__(self, bot: MasarykBOT):
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
         BackupUntilPresent.__init__(self, bot)
         BackupOnEvents.__init__(self, bot)
 
     @commands.Cog.listener()
-    async def on_ready(self):
+    async def on_ready(self) -> None:
         await self.backup()
 
     @tasks.loop(hours=168)  # 168 hours == 1 week
-    async def _repeat_backup(self):
+    async def _repeat_backup(self) -> None:
         await self.backup()
 
     @commands.command(name="backup")
     @has_permissions(administrator=True)
-    async def _backup(self, ctx: Context):
+    async def _backup(self, ctx: Context) -> None:
         if self.backup_in_progress:
             await ctx.send_error("Backup is already running")
             return
 
         await self.backup()
 
-def setup(bot):
+def setup(bot: commands.Bot) -> None:
     bot.add_cog(Logger(bot))

@@ -1,21 +1,26 @@
 from textwrap import dedent
+from typing import Dict, Union
 
-from disnake import Color, Embed, Member
+from bot.cogs.utils.context import Context, GuildChannel
+from disnake import Color, Embed, Emoji, Member, TextChannel
 from disnake.ext import commands
 from disnake.utils import get
 
 
 class Rules(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-    @commands.group(name="rules")
+    @commands.group(name="rules", invoke_without_command=True)
     @commands.has_permissions(administrator=True)
-    async def rules(self, ctx):
-        pass
+    async def rules(self, ctx: Context) -> None:
+        await ctx.send_help("rules")
 
     @rules.command(name="setup")
-    async def setup_rules(self, ctx, channel_name="pravidla"):
+    async def setup_rules(self,
+        ctx: Context,
+        channel_name: str = "pravidla"
+    ) -> None:
         rules_channel = await self._get_channel(ctx, channel_name)
         await self._set_permissions(ctx, rules_channel)
 
@@ -35,32 +40,39 @@ class Rules(commands.Cog):
             msg_to_react_to = await rules_channel.send(embed=embeds[list(embeds.keys())[-1]])
 
             verify_emoji = get(self.bot.emojis, name="Verification")
+            if verify_emoji is None:
+                return
+
             await msg_to_react_to.add_reaction(verify_emoji)
 
         await ctx.message.delete()
 
-    async def _get_channel(self, ctx, name):
-        rules_channel = get(ctx.guild.channels, name=name)
-        if not rules_channel:
+    async def _get_channel(self, ctx: Context, name: str) -> TextChannel:
+        assert ctx.guild, "ERROR: command can only run in guild"
+
+        rules_channel = get(ctx.guild.text_channels, name=name)
+        if rules_channel is None:
             rules_channel = await ctx.guild.create_text_channel(name)
         return rules_channel
 
-    async def _set_permissions(self, ctx, channel):
-        await channel.set_permissions(self.bot.user,
+    async def _set_permissions(self, ctx: Context, channel: TextChannel) -> None:
+        assert ctx.guild, "ERROR: command can only run in guild"
+
+        await channel.set_permissions(ctx.guild.me,
                                       add_reactions=True, send_messages=True, read_messages=True)
         await channel.set_permissions(ctx.guild.default_role,
                                       add_reactions=False, send_messages=False, read_messages=True)
 
-    async def _get_rules(self, ctx):
-        def role(name):
+    async def _get_rules(self, ctx: Context) -> Dict[int, Embed]:
+        def role(name: str) -> str:
             obj = ctx.get_role(name)
             return "@" + name if obj is None else obj.mention
 
-        def channel(name):
+        def channel(name: str) -> str:
             obj = ctx.get_channel(name)
             return "#" + name if obj is None else obj.mention
 
-        embeds = {}
+        embeds: Dict[int, Embed] = {}
 
         embeds[0] = Embed(color=Color.blurple())
         embeds[0].set_image(
@@ -132,16 +144,16 @@ class Rules(commands.Cog):
         return embeds
 
     @commands.Cog.listener()
-    async def on_member_join(self, member: Member):
+    async def on_member_join(self, member: Member) -> None:
         """
         Send a welcome message to DM of the new member
         with the information what to do when they join
         the server
         """
 
-        def emoji(name):
+        def emoji(name: str) -> Union[Emoji, str]:
             obj = get(self.bot.emojis, name=name)
-            return ":" + name + ":" if obj is None else obj
+            return f":{name}:" if obj is None else obj
 
         await member.send(dedent(f"""
             **Vítej na discordu Fakulty Informatiky Masarykovy Univerzity v Brně**
@@ -152,5 +164,5 @@ class Rules(commands.Cog):
             """))
 
 
-def setup(bot):
+def setup(bot: commands.Bot) -> None:
     bot.add_cog(Rules(bot))

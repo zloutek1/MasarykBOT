@@ -1,39 +1,22 @@
 import logging
-import os
-from collections import Counter
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import datetime
+from typing import Any, Optional, cast
 
+from disnake import Message, User
 from disnake.ext import commands
-from redis import Redis
 
 from bot.cogs.utils import context
-from bot.cogs.utils.db import Database
 from bot.constants import Config
-
-DESCRIPTION = """
-$ Hello
-"""
 
 log = logging.getLogger(__name__)
 
 
 class MasarykBOT(commands.Bot):
-    def __init__(self, db: Database, *args, redis: Optional[Redis] = None, description=DESCRIPTION, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
 
-        self.db: Database = db
-        self.redis: Optional[Redis] = redis
-        self.uptime: Optional[datetime] = None
 
-    async def on_ready(self):
-        if self.uptime is None:
-            self.uptime = datetime.utcnow()
-
-        log.info("Bot is now all ready to go")
-        self.intorduce()
-
-    async def process_commands(self, message):
+    async def process_commands(self, message: Message) -> None:
         ctx = await self.get_context(message, cls=context.Context)
 
         if ctx.command is None:
@@ -48,28 +31,42 @@ class MasarykBOT(commands.Bot):
             log.info("User initiated power off, closing")
             await self.close()
 
-    async def reply_markov(self, ctx):
+    async def reply_markov(self, ctx: context.Context) -> None:
         markov = self.get_command("markov")
         if markov is not None and await markov.can_run(ctx):
             log.info("user %s used markov by mention: %s", ctx.message.author, ctx.message.content)
             await markov(ctx)
 
-    async def on_message(self, message):
+    async def on_ready(self) -> None:
+        log.info("Bot is now all ready to go")
+        self.intorduce()
+
+    async def on_message(self, message: Message) -> None:
         if message.author.bot:
             return
-        if Config.bot.DEBUG and not message.author.guild_permissions.administrator:
+        if isinstance(message.author, User):
+            return
+        if cast(bool, Config.bot.DEBUG) and not message.author.guild_permissions.administrator:
             return
         await self.process_commands(message)
 
-    def add_cog(self, cog: commands.Cog) -> None:
+    async def on_error(self, event_method: str, *args: Any, **kwargs: Any) -> None:
+        """ reimplement on_error method to print to a log file instead of sys.stderr"""
+        log.error(f'Ignoring exception in %s' % (event_method,), exc_info=True)
+
+
+
+    def add_cog(self, cog: commands.Cog, *, override: bool = False) -> None:
         log.info("loading cog: %s", cog.qualified_name)
-        super().add_cog(cog)
+        super().add_cog(cog, override=override)
 
     def remove_cog(self, name: str) -> None:
         log.info("unloading cog: %s", name)
         super().remove_cog(name)
 
-    def intorduce(self):
+
+
+    def intorduce(self) -> None:
         bot_name = self.user.name.encode(errors='replace').decode()
         print("\n\n\n")
         print("""               .,***,.
@@ -94,8 +91,4 @@ class MasarykBOT(commands.Bot):
               %% %   #&&&&.
                *&&, ,&&,
                  /&&&.                 \n""")
-        print("     [BOT] {0} ready to serve! \n\n\n".format(bot_name))
-
-    async def on_error(self, event_method, *args, **kwargs):
-        """ reimplement on_error method to print to a log file instead of sys.stderr"""
-        log.error(f'Ignoring exception in {event_method}', exc_info=True)
+        print(f"     [BOT] {bot_name} ready to serve! \n\n\n")
