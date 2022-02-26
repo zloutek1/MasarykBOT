@@ -10,12 +10,10 @@ from disnake import Message
 Columns = Tuple[Id, Id, int]
 
 class MessageEmojiDao(Table, Crud[Columns], FromMessageMapper[Columns]):
-    def __init__(self, pool: Pool):
-        super().__init__(pool)
-        self.emojis = EmojiDao(self.pool)
+    emojiDao = EmojiDao()
 
     async def prepare_from_message(self, message: Message) -> List[Columns]:
-        emojis = await self.emojis._prepare_from_message_content(message)
+        emojis = await self.emojiDao._prepare_from_message_content(message)
         emoji_ids = [emoji[0] for emoji in emojis]
         return [(message.id, emoji_id, count)
                 for (emoji_id, count) in Counter(emoji_ids).items()]
@@ -41,3 +39,7 @@ class MessageEmojiDao(Table, Crud[Columns], FromMessageMapper[Columns]):
     async def update(self, conn: DBConnection, data: List[Columns]) -> None:
         insert = cast(WrappedCallable, self.insert)
         await insert.__wrapped__(self, conn, data)
+
+    # TODO: soft_delete not implemented
+    async def soft_delete(self, data: List[Tuple[Id]]) -> None:
+        return await super().soft_delete(data)

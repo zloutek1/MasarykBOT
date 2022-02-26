@@ -42,3 +42,7 @@ class AttachmentDao(Table, Crud[Columns], Mapper[Attachment, Columns], FromMessa
     async def update(self, conn: DBConnection, data: List[Columns]) -> None:
         insert = cast(WrappedCallable, self.insert)
         await insert.__wrapped__(self, conn, data)
+
+    # TODO: soft_delete not implemented
+    async def soft_delete(self, data: List[Tuple[Id]]) -> None:
+        return await super().soft_delete(data)
