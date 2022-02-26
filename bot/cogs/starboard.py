@@ -139,7 +139,7 @@ class Starboard(commands.Cog):
         msg_content = message.content
 
         guild_config = get(cast(List[Any], Config.guilds), id=guild.id)
-        assert guild_config
+        assert guild_config is not None, f"ERROR: missing guild config for guild with id {guild.id}"
 
         fame_limit = cast(int, guild_config.STARBOARD_REACT_LIMIT)
         if len(channel.members) > 100:

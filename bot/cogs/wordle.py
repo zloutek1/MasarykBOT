@@ -25,7 +25,7 @@ class LetterStatus(Enum):
     CORRECT = (59, 165, 93)
 
 class GameInstance:
-    def __init__(self, ctx: MessageInteraction, words: List[str], nth: int=0) -> None:
+    def __init__(self, ctx: CommandInteraction, words: List[str], nth: int=0) -> None:
         self.ctx = ctx
         self.nth = nth
 

@@ -54,7 +54,7 @@ class Activity(commands.Cog):
         fig = heatmap.generate_heatmap(series, color_map)
 
         with BytesIO() as buffer:
-            fig.savefig(buffer, format="PNG", bbox_inches="tight", dpi=400)
+            fig.savefig(buffer, format="png", bbox_inches="tight", dpi=400)
             buffer.seek(0)
             await ctx.reply(file=File(buffer, filename=f"{member_id}_activity.png"))
 
