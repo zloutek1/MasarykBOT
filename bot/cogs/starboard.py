@@ -63,8 +63,8 @@ class Starboard(commands.Cog):
         if (guild_config := get(Config.guilds, id=guild.id)) is None:
             return
 
-        if (await self.is_already_in_starboard(message) or
-            message.author.id != self.bot.user.id or
+        if (self.is_recently_starred(message) or
+            await self.is_already_in_starboard(message) or
             channel.name == "starboard" or
             message.channel.id in guild_config.channels or
             reaction.count < guild_config.STARBOARD_REACT_LIMIT or
@@ -87,12 +87,16 @@ class Starboard(commands.Cog):
 
         await starboard_channel.send(embed=await self.get_embed(message))
 
-    async def is_already_in_starboard(self, message: Message) -> bool:
+    def is_recently_starred(self, message: Message) -> bool:
         return (message.guild is not None and
                 message.guild.id in self.starred_messages and
-                message.id in self.starred_messages[message.guild.id] and
-                all(await react.users().get(id=self.bot.user.id) is None
-                    for react in message.reactions))
+                message.id in self.starred_messages[message.guild.id])
+
+    async def is_already_in_starboard(self, message: Message) -> bool:
+        for react in message.reactions:
+            if await react.users().get(id=self.bot.user.id) is None:
+                return False
+        return True
 
     def pick_target_starboard_channel(
         self,

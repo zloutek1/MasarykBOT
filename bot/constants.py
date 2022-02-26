@@ -39,7 +39,8 @@ class YAMLIterator:
 
     def __init__(self, cls: YAMLGetter, iterable: Union[Dict, List]) -> None:
         self.cls = cls
-        self.iterable = iterable
+        self.iterable = list(iterable.keys()) if isinstance(iterable, Dict) else \
+                        iterable
         self.index = 0
 
     def __next__(self) -> Any:
