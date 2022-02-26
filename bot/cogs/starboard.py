@@ -64,7 +64,6 @@ class Starboard(commands.Cog):
             return
 
         if (self.is_recently_starred(message) or
-            await self.is_already_in_starboard(message) or
             channel.name == "starboard" or
             message.channel.id in guild_config.channels or
             reaction.count < guild_config.STARBOARD_REACT_LIMIT or
@@ -74,11 +73,15 @@ class Starboard(commands.Cog):
                       reaction.emoji, reaction.count, guild, channel, message.id)
             return
 
-        log.info("adding message with %s reactions to starboard (%s, %s, %s)",
-                 reaction.count, guild, channel, message.id)
-
         self.starred_messages.setdefault(guild.id, deque(maxlen=50))
         self.starred_messages[guild.id].append(message.id)
+
+        if await self.is_already_in_starboard(message):
+            self.starred_messages[guild.id].remove(message.id)
+            return
+
+        log.info("adding message with %s reactions to starboard (%s, %s, %s)",
+                 reaction.count, guild, channel, message.id)
 
         await message.add_reaction(reaction.emoji)
 
