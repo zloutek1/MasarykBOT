@@ -96,10 +96,13 @@ class Starboard(commands.Cog):
                 message.id in self.starred_messages[message.guild.id])
 
     async def is_already_in_starboard(self, message: Message) -> bool:
-        for react in message.reactions:
-            if await react.users().get(id=self.bot.user.id) is not None:
-                return True
-        return False
+        try:
+            for react in message.reactions:
+                if await react.users().get(id=self.bot.user.id) is not None:
+                    return True
+            return False
+        except NotFound:
+            return True
 
     def pick_target_starboard_channel(
         self,

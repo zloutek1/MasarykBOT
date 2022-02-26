@@ -6,7 +6,7 @@ from typing import List, Optional, Sequence, Tuple, cast
 
 from bot.db.utils import (Crud, DBConnection, FromMessageMapper, Id, Mapper,
                           Pool, Record, Table, WrappedCallable, withConn)
-from disnake import Emoji, Message, PartialEmoji, Reaction
+from disnake import Emoji, Message, NotFound, PartialEmoji, Reaction
 
 log = logging.getLogger(__name__)
 Columns = Tuple[Id, Id, List[Id], datetime]
@@ -67,6 +67,10 @@ class ReactionDao(Table, Crud[Columns], Mapper[Reaction, Columns], FromMessageMa
                      reaction.emoji,
                      reaction.message.channel,
                      reaction.message.id)
+            return []
+        except NotFound as e:
+            log.warn("fetching users from reaction %s failed (%s)",
+                     reaction.emoji, e.text)
             return []
 
     @staticmethod
