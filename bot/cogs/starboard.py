@@ -63,7 +63,7 @@ class Starboard(commands.Cog):
         if (guild_config := get(Config.guilds, id=guild.id)) is None:
             return
 
-        if (self.is_already_in_starboard(message) or
+        if (await self.is_already_in_starboard(message) or
             message.author.id != self.bot.user.id or
             channel.name == "starboard" or
             message.channel.id in guild_config.channels or
