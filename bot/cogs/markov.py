@@ -37,7 +37,7 @@ def to_thread(func: Callable[..., Any]) -> Callable[..., Any]:
 
 class Markov(commands.Cog):
     messageDao = MessageDao()
-    redis = cast(Redis[str], inject.attr('redis'))
+    redis = cast(Redis, inject.attr('redis'))
 
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot

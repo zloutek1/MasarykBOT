@@ -10,7 +10,8 @@ from typing import Any, Dict, Generic, List, Optional, Tuple, Type, TypeVar
 import disnake as discord
 from bot.cogs.utils.context import Context
 from bot.constants import Config
-from disnake import ButtonStyle, InteractionMessage, MessageInteraction, ui
+from disnake import (ButtonStyle, CommandInteraction, InteractionMessage,
+                     MessageInteraction, ui)
 from disnake.ext import commands, tasks
 from english_words import english_words_lower_alpha_set
 from PIL import Image, ImageDraw, ImageFont
@@ -327,7 +328,7 @@ class Wordle(commands.Cog):
         self.today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
     @commands.slash_command(guild_ids=[guild.id for guild in Config.guilds], description="Play wordle on Discord")
-    async def wordle(self, ctx: MessageInteraction, nth: Optional[int] = None) -> None:
+    async def wordle(self, ctx: CommandInteraction, nth: Optional[int] = None) -> None:
         if (ctx.author.id in self.games and
             not self.games[ctx.author.id].did_win() and
             not self.games[ctx.author.id].controls.is_finished()):

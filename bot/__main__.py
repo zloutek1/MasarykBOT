@@ -15,7 +15,6 @@ from bot.bot import MasarykBOT
 from bot.cogs.utils.logging import setup_logging
 from bot.db.utils import Pool, Url
 
-"""
 initail_cogs = [
     "bot.cogs.verification",
     "bot.cogs.cog_manager",
@@ -38,9 +37,6 @@ initail_cogs = [
     "bot.cogs.tags",
     "bot.cogs.fun"
 ]
-"""
-
-initail_cogs: List[str] = []
 
 
 def connect_db(url: Url) -> Optional[Pool]:
