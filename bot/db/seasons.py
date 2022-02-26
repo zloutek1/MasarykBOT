@@ -1,10 +1,10 @@
 from datetime import date, datetime
 from typing import List, Optional, Tuple, cast
 
-from bot.db.utils import (Crud, DBConnection, Id, Record, Table, Url,
+from bot.db.utils import (Crud, DBConnection, Id, Record, Table,
                           WrappedCallable, withConn)
 
-Columns = Tuple[Id, str, datetime, datetime, Url, Url]
+Columns = Tuple[Id, str, Optional[datetime], Optional[datetime], Optional[bytes], Optional[bytes]]
 
 class SeasonDao(Table, Crud[Columns]):
     @withConn
@@ -72,3 +72,7 @@ class SeasonDao(Table, Crud[Columns]):
             DELETE FROM cogs.seasons
             WHERE id = $1
         """, data)
+
+    @withConn
+    async def soft_delete(self, conn: DBConnection, data: List[Tuple[Id]]) -> None:
+        await self.delete(data)
