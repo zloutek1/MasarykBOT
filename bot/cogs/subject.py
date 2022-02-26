@@ -6,11 +6,11 @@ from typing import (Any, Dict, List, NoReturn, Optional, Text, Tuple, Union,
                     cast)
 
 from bot.cogs.utils.context import Context
-from bot.cogs.utils.db import Record
 from bot.constants import Config
 from bot.db.categories import CategoryDao
 from bot.db.channels import ChannelDao
 from bot.db.subjects import SubjectDao
+from bot.db.utils import Record
 from disnake import (CategoryChannel, Color, Embed, HTTPException, Member,
                      Message, PermissionOverwrite, Role, TextChannel)
 from disnake.errors import NotFound
