@@ -77,7 +77,15 @@ class Markov(commands.Cog):
         await ctx.reply("[Markov] Finished training")
 
     @commands.Cog.listener()
-    async def on_ready(self) -> None:
+    async def on_ready(self):
+        await self.load()
+
+    @markov.command(name="load")
+    @has_permissions(administrator=True)
+    async def _load(self):
+        await self.load()
+
+    async def load(self):
         messages = await self.messageDao.select_all_long()
 
         self.possible_starts = []

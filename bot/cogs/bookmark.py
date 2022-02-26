@@ -50,6 +50,7 @@ class Bookmark(commands.Cog):
                          icon_url=(message.author.avatar and
                                    message.author.avatar.with_format('png').url))
 
+
         if message.embeds:
             data = message.embeds[0]
             if data.type == 'image':
