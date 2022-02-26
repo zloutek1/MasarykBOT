@@ -4,7 +4,7 @@ from bot.db.utils import DBConnection, Id, Record, Table, withConn
 
 Columns = Tuple[Id, Optional[Id], str, str]
 
-class TagsDao(Table):
+class TagDao(Table):
     @withConn
     async def find(
         self,
