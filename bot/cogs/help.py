@@ -192,6 +192,7 @@ class PaginatedHelpCommand(commands.HelpCommand):
 
     async def on_help_command_error(self, ctx: Context, error: commands.CommandError) -> None:
         if isinstance(error, commands.CommandInvokeError):
+            print(error.with_traceback())
             await ctx.send_error(str(error.original))
 
     def get_command_signature(self, command: commands.Command) -> str:
@@ -276,10 +277,13 @@ class PaginatedHelpCommand(commands.HelpCommand):
             await self.send_command_help(group)
             return
 
-        entries = await self.filter_commands(subcommands, sort=True)
+        filtered_subcommands = await self.filter_commands(subcommands, sort=True)
+        entries = [(group.name, group.description, filtered_subcommands)]
+
         pages = HelpPaginator(self, self.context, entries)
         self.common_command_formatting(pages, group)
 
+        await pages.paginate()
 
 
 class Help(commands.Cog):
