@@ -89,6 +89,7 @@ class Starboard(commands.Cog):
 
     async def is_already_in_starboard(self, message: Message) -> bool:
         return (message.guild is not None and
+                message.guild.id in self.starred_messages and
                 message.id in self.starred_messages[message.guild.id] and
                 all(await react.users().get(id=self.bot.user.id) is None
                     for react in message.reactions))
