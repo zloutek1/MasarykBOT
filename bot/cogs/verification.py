@@ -30,7 +30,7 @@ class Verification(commands.Cog):
     async def on_ready(self) -> None:
         log.info("found %d verification channels", len(self.verification_channels))
 
-        await self._synchronize()
+        # await self._synchronize()
 
     @tasks.loop(hours = 168)  # 168 hours == 1 week
     async def _repeat_synchronize(self) -> None:
