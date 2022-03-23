@@ -39,12 +39,11 @@ class TagName(commands.clean_content):
         super().__init__()
 
     async def convert(self, ctx: AnyContext, argument: str) -> str:
-        converted = await super().convert(ctx, argument)
-        lower = converted.lower().strip()
+        lower = argument.lower().strip()
 
         if lower == "":
             if self.allow_empty:
-                return converted if not self.lower else lower
+                return argument if not self.lower else lower
             raise commands.BadArgument('Missing tag name.')
 
         if len(lower) > 100:
@@ -59,7 +58,7 @@ class TagName(commands.clean_content):
         if first_word in root.all_commands:
             raise commands.BadArgument('This tag name starts with a reserved word.')
 
-        return converted if not self.lower else lower
+        return argument if not self.lower else lower
 
 
 class Tags(commands.Cog):
