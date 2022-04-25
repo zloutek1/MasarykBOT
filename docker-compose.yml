@@ -24,6 +24,12 @@ services:
     volumes:
       - redis:/data                           # persist data even if container shuts down
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 1G
 
   bot:
     container_name: bot

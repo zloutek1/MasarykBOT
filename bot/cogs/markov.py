@@ -51,11 +51,15 @@ class Markov(commands.Cog):
             await ctx.send_error(f"markov is not ready, current state is {self.state}")
             return
 
+        if not self.possible_starts:
+            await ctx.send_error("no possiboe starts")
+            return
+            
         i = 0
         while i < 100:
             state = self.simulate()
             if len(state) <= 2:
-                i += 2
+                i += 1
             else:
                 break
         else:
@@ -86,14 +90,16 @@ class Markov(commands.Cog):
         await self.load()
 
     async def load(self):
+        log.info("loading markov messages")
         messages = await self.messageDao.select_all_long()
-
+        
         self.possible_starts = []
         for message in messages:
             next = cast(str, message['content']).split(maxsplit=1)[0]
             self.possible_starts.append((SOF, next))
 
         self.state = MarkovState.READY
+        log.info(f"loaded {len(self.possible_starts)} markov starts")
 
     def to_message(self, parts: List[str]) -> str:
         assert parts[0] == SOF, f"message parts must start with SOF, but was {parts}"
