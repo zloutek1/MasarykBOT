@@ -79,24 +79,25 @@ class Markov(commands.Cog):
             return
 
         await ctx.reply("[Markov] Finished training")
+        await self.load()
 
     @commands.Cog.listener()
-    async def on_ready(self):
+    async def on_ready(self) -> None:
         await self.load()
 
     @markov.command(name="load")
     @has_permissions(administrator=True)
-    async def _load(self):
+    async def _load(self) -> None:
         await self.load()
 
-    async def load(self):
+    async def load(self) -> None:
         log.info("loading markov messages")
-        messages = await self.messageDao.select_all_long()
+        messages = await self.messageDao.select_all_long_starts()
         
         self.possible_starts = []
         for message in messages:
-            next = cast(str, message['content']).split(maxsplit=1)[0]
-            self.possible_starts.append((SOF, next))
+            start = cast(str, message['start'])
+            self.possible_starts.append((SOF, start))
 
         self.state = MarkovState.READY
         log.info(f"loaded {len(self.possible_starts)} markov starts")
