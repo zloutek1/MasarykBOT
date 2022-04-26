@@ -131,10 +131,11 @@ class Markov(commands.Cog):
 
         self.state = MarkovState.TRAINING
         log.info("Markov training started")
+        self.training_progress = 0
 
         for key in self.redis.scan_iter("markov.*"):
             self.redis.delete(key)
-
+        
         messages = await self.messageDao.select_all_long()
         for i, message in enumerate(messages):
             percentage = int((i + 1) / len(messages) * 100)
