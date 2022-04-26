@@ -222,8 +222,11 @@ class Starboard(commands.Cog):
                         f"[Jump to original!]({message.jump_url}) in {message.channel.mention}",
             color=0xFFDF00)
 
-        embed.set_author(name=message.author.display_name,
-                         icon_url=message.author.avatar and message.author.avatar.url)
+        if message.author.avatar:
+            embed.set_author(name=message.author.display_name, 
+                             icon_url=message.author.avatar.url)
+        else:
+            embed.set_author(name=message.author.display_name)
 
         CEST = timezone(offset=timedelta(hours=+2))
         embed.set_footer(text=message.created_at.astimezone(CEST).strftime("%d.%m.%Y %H:%M"))
