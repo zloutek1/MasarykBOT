@@ -13,7 +13,7 @@ services:
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - ./database/sql:/docker-entrypoint-initdb.d/
-      - postgres:/var/lib/postgresql/data     # persist data even if container shuts down
+      - masarykbot_postgres:/var/lib/postgresql/data     # persist data even if container shuts down
     restart: unless-stopped
 
   redis:
@@ -22,7 +22,7 @@ services:
     ports:
       - 6379:6379
     volumes:
-      - redis:/data                           # persist data even if container shuts down
+      - masarykbot_redis:/data                           # persist data even if container shuts down
     restart: unless-stopped
     deploy:
       resources:
@@ -91,5 +91,5 @@ services:
       - ~/Documents/database/imports:/var/lib/pgadmin/storage
 
 volumes:
-  postgres:
-  redis:
+  masarykbot_postgres:
+  masarykbot_redis:
