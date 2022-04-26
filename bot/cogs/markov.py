@@ -43,12 +43,15 @@ class Markov(commands.Cog):
         self.bot = bot
         self.state = MarkovState.UNINITIALIZED
         self.possible_starts: List[NGram] = []
-
+        self.training_progress = 100
 
     @commands.group(invoke_without_command=True)
     async def markov(self, ctx: Context, *_anything: str) -> None:
         if self.state != MarkovState.READY:
-            await ctx.send_error(f"markov is not ready, current state is {self.state}")
+            if self.state == MarkovState.TRAINING:
+                await ctx.send_error(f"markov is not ready, current state is {self.state}. Current progress {self.training_progress}%")
+            else:
+                await ctx.send_error(f"markov is not ready, current state is {self.state}")
             return
 
         if not self.possible_starts:
@@ -138,6 +141,7 @@ class Markov(commands.Cog):
             percentage = int((i + 1) / len(messages) * 100)
             if int((i) / len(messages) * 100) < percentage:
                 log.info(f"Training at {percentage}%")
+                self.training_progress = percentage
 
             if len(message['content'].strip()) == 0:
                 continue
