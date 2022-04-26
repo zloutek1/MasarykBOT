@@ -55,7 +55,7 @@ class Markov(commands.Cog):
             return
 
         if not self.possible_starts:
-            await ctx.send_error("no possiboe starts")
+            await ctx.send_error("no possible starts")
             return
             
         i = 0
