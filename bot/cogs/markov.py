@@ -22,7 +22,7 @@ NGram = Tuple[str, str]
 
 SOF = "​SOF​"
 EOF = "​EOF​"
-SEP = "​,​"
+SEP = "​.​"
 
 class MarkovState(Enum):
     UNINITIALIZED = "UNINITIALIZED"
@@ -95,12 +95,11 @@ class Markov(commands.Cog):
 
     async def load(self) -> None:
         log.info("loading markov messages")
-        messages = await self.messageDao.select_all_long_starts()
         
         self.possible_starts = []
-        for message in messages:
-            start = cast(str, message['start'])
-            self.possible_starts.append((SOF, start))
+        for key in self.redis.scan_iter("markov." + SOF + SEP + "*"):
+            ngram = tuple(key.lstrip("markov.").split(SEP, 1))
+            self.possible_starts.append(ngram)
 
         self.state = MarkovState.READY
         log.info(f"loaded {len(self.possible_starts)} markov starts")
