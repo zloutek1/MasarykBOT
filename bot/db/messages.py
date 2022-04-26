@@ -28,15 +28,6 @@ class MessageDao(Table, Crud[Columns], Mapper[Message, Columns]):
         """, message_id)
 
     @withConn
-    async def select_all_long_starts(self, conn: DBConnection) -> List[Record]:
-        return await conn.fetch("""
-            SELECT author_id, SUBSTR(content, 1, POSITION(' ' IN content)) as start 
-            FROM server.messages
-            INNER JOIN server.users AS u ON (author_id = u.id)
-            WHERE NOT is_bot
-        """)
-
-    @withConn
     async def select_all_long(self, conn: DBConnection) -> List[Record]:
         return await conn.fetch("""
             SELECT author_id, content
