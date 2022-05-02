@@ -90,7 +90,7 @@ class Markov(commands.Cog):
 
     @markov.command(name="load")
     @has_permissions(administrator=True)
-    async def _load(self) -> None:
+    async def _load(self, ctx) -> None:
         await self.load()
 
     async def load(self) -> None:
