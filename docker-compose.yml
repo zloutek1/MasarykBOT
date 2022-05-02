@@ -18,7 +18,7 @@ services:
 
   redis:
     container_name: redis
-    image: redislabs/rejson:2.0.6
+    image: redislabs/rejson:2.0.8
     ports:
       - 6379:6379
     volumes:
