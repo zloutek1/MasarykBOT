@@ -10,7 +10,7 @@ types-PyYAML==6.0.4
 # database access
 aiohttp==3.7.4
 asyncpg==0.25.0
-git+https://github.com/bryanforbes/asyncpg-stubs.git@dependabot/pip/asyncpg-0.25.0 # asyncpg-stubs
+git+https://github.com/bryanforbes/asyncpg-stubs.git # asyncpg-stubs
 inject==4.3.1
 
 # cogs
