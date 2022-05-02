@@ -71,17 +71,17 @@ class Markov(commands.Cog):
 
         await ctx.reply(escape_mentions(self.to_message(state)))
 
-    @markov.command(aliases=['retrain'])
+    @markov.command(aliases=['retrain', 'grind'])
     @has_permissions(administrator=True)
     async def train(self, ctx: Context) -> None:
-        await ctx.send("[Markov] Training ...")
+        await ctx.send("[Markov] Grinding ...")
 
         success = await self._train()
         if not success:
             await ctx.send_error(f"markov is not ready, current state is {self.state}")
             return
 
-        await ctx.reply("[Markov] Finished training")
+        await ctx.reply("[Markov] Finished grinding")
         await self.load()
 
     @commands.Cog.listener()
