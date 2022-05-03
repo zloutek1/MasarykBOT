@@ -7,7 +7,7 @@ from typing import List, Optional
 import asyncpg
 import disnake as discord
 import inject
-import redis
+import aioredis
 from disnake.ext import commands
 from dotenv import load_dotenv
 
@@ -50,25 +50,12 @@ def connect_db(url: Url) -> Optional[Pool]:
         log.error("Failed to connect to database (%s)", redacted_url)
         return None
 
-def connect_redis(url: Url) -> Optional[redis.Redis]:
-    while True:
-        try:
-            host, port_str = url.split(":")
-            port = int(port_str)
-
-            redis_client = redis.Redis(host=host, port=port, db=0,
-                                        decode_responses=True,
-                                        health_check_interval=30,
-                                        retry_on_timeout=True)
-
-            redis_client.get("--test--")
-            return redis_client
-        except redis.exceptions.BusyLoadingError:
-            log.warning("redis is loading, sleeping for 10 seconds...")
-            time.sleep(10)
-        except redis.exceptions.ConnectionError:
-            log.exception("redis connection failed, giving up...")
-            return None
+def connect_redis(url: Url) -> Optional[aioredis.Redis]:
+    return aioredis.from_url(url, decode_responses=True)
+    
+def close_redis() -> None:
+    redis = inject.instance(aioredis.Redis)
+    asyncio.run(redis.close())
 
 def inject_coniguration(binder: inject.Binder) -> None:
     postgres_url = os.getenv("POSTGRES")
@@ -77,7 +64,7 @@ def inject_coniguration(binder: inject.Binder) -> None:
 
     redis_url = os.getenv("REDIS")
     if redis_url:
-        binder.bind(redis.Redis, connect_redis(redis_url))
+        binder.bind(aioredis.Redis, connect_redis(redis_url))
 
 
 if __name__ == "__main__":
@@ -118,3 +105,5 @@ if __name__ == "__main__":
             log.error('Failed to load extension %s.', extension, exc_info=True)
 
     bot.run(os.getenv("TOKEN"), reconnect=True)
+
+    close_redis()
