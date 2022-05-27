@@ -22,14 +22,9 @@ services:
     ports:
       - 6379:6379
     volumes:
-      - redis:/data                           # persist data even if container shuts down
+      - redis:/data                    
     restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 8G
-        reservations:
-          memory: 1G
+    command: bash -c "redis-server --appendonly yes --requirepass redis_pass --maxmemory-policy noeviction"
 
   bot:
     container_name: bot

@@ -71,6 +71,10 @@ class Markov(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self) -> None:
         await self.load()
+        if len(self.possible_starts) == 0:
+            log.info("no possible starts found, re-training")
+            await self.train()
+            await self.load()
 
     @markov.command(name="load")
     @has_permissions(administrator=True)
