@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 from typing import Any, Optional, cast
 
-from disnake import Message, User
+from disnake import Message, User, Activity, ActivityType
 from disnake.ext import commands
 
 from bot.cogs.utils import context
@@ -14,6 +14,7 @@ log = logging.getLogger(__name__)
 class MasarykBOT(commands.Bot):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
+        self.activity = self.activity or Activity(type=ActivityType.listening, name="!help")
 
 
     async def process_commands(self, message: Message) -> None:
