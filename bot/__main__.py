@@ -30,6 +30,7 @@ initail_cogs = [
     "bot.cogs.markov",
     "bot.cogs.wordle",
     "bot.cogs.rules",
+    "bot.cogs.latex",
     "bot.cogs.admin",
     "bot.cogs.eval",
     "bot.cogs.help",

@@ -32,6 +32,9 @@ inject==4.3.1
     # wordle
     english-words==1.1.0
 
+    # math
+    sympy==1.10.1
+
 # testing library
 pytest==7.0.1
 pytest-cov==3.0.0
