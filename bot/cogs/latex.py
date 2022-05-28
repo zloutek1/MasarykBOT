@@ -22,6 +22,16 @@ class LaTeX(commands.Cog):
         if ctx.command is not None:
             return
 
+        await ctx.invoke(self.bot.get_command('discorred_latex'), message)
+
+    @commands.command()
+    async def latex(self, ctx, *, equation: str) -> None:
+        path = self.render(f"${equation}$", ctx.author.id)
+        await ctx.send(file=File(path, filename="latex.png"))
+        os.remove(path)
+
+    @commands.command()
+    async def discorred_latex(self, ctx, message: Message) -> None:
         count = message.content.count('$')
         if count % 2 != 0 or count == 0 or len(message.content.replace('$', '').strip()) == 0:
             return
@@ -29,19 +39,13 @@ class LaTeX(commands.Cog):
         try:
             path = self.render(message.content, message.author.id) 
         except Exception as ex:
-            await Errors(self.bot).log_error(ctx, ex)
+            err_msg = str(ex)
+            await ctx.send_error(err_msg if len(err_msg) < 1900 else "..." + err_msg[1900:])
             return
         
         wrapped_path = await self.wrap_with_discord_profile(path, message.author)       
-        await message.channel.send(file=File(wrapped_path, filename="latex.png"))
+        await ctx.send(file=File(wrapped_path, filename="latex.png"))
         os.remove(wrapped_path)
-        os.remove(path)
-
-
-    @commands.command()
-    async def latex(self, ctx, *, equation: str) -> None:
-        path = self.render(f"${equation}$", ctx.author.id)
-        await ctx.send(file=File(path, filename="latex.png"))
         os.remove(path)
 
     @staticmethod
