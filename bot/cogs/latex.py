@@ -78,7 +78,7 @@ class LaTeX(commands.Cog):
         NAME_HEIGHT = self.FONT_SIZE + self.PADDING
         WIDTH = max(self.PADDING + img.width + self.ICON_SIZE + 2 * self.PADDING + self.PADDING, self.ICON_SIZE + 2 * self.PADDING + len(user.display_name) * self.FONT_SIZE)
         HEIGHT = max(self.PADDING + img.height + NAME_HEIGHT + 2 * self.PADDING, self.ICON_SIZE + 2 * self.PADDING)
-        result = Image.new('RGBA', (WIDTH, HEIGHT), color = '#2C2F33')
+        result = Image.new('RGBA', (WIDTH, HEIGHT), color = '#36393F')
         result.paste(img, (self.ICON_SIZE + 2 * self.PADDING, self.FONT_SIZE + 2 * self.PADDING), img)
 
         # paste user profile pic
