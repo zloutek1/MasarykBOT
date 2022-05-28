@@ -46,11 +46,9 @@ class Errors(commands.Cog):
 
         await self.log_error(ctx, error)
 
-    async def log_error(self, ctx: Context, error: Exception) -> None:
-        if ctx.command is None:
-            return
 
-        command_name = ctx.command.qualified_name
+    async def log_error(self, ctx: Context, error: Exception) -> None:
+        command_name = ctx.command.qualified_name if ctx.command else "event"
         trace = "".join(traceback.format_exception(type(error), error, error.__traceback__))
         msg = f'In {command_name}:\n{trace}'
 
@@ -71,12 +69,11 @@ class Errors(commands.Cog):
             for line in msg.split("\n"):
                 if len(part) + len(line) < 1900:
                     part += line + "\n"
-                elif len(line) >= 1900:
-                    await channel.send(f"`Line too long to display`")
-                    part = ""
                 else:
-                    await channel.send(f"```\n{part}\n```")
-                    part = line
+                    part += line
+                    while len(part) >= 1900:
+                        await channel.send(f"```\n{part[:1900]}\n```")
+                        part = part[1900:]
             if part:
                 await channel.send(f"```\n{part}\n```")
 
