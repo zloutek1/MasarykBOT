@@ -27,6 +27,10 @@ class LaTeX(commands.Cog):
         if ctx.command is not None:
             return
 
+        count = message.content.count('$')
+        if count % 2 != 0 or count == 0 or len(message.content.replace('$', '').strip()) == 0:
+            return
+
         log.info("user %s used latex by $$: %s", ctx.message.author, ctx.message.content)
             
         await ctx.invoke(self.bot.get_command('discorred_latex'), message)
