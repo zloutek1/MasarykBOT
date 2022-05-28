@@ -1,12 +1,17 @@
-from disnake import Message, File, User
-from disnake.ext import commands
-
+import logging
 import os
 from sympy import preview
 from PIL import Image, ImageDraw, ImageFont
-from bot.cogs.errors import Errors
 
+from disnake import Message, File, User
+from disnake.ext import commands
+
+from bot.cogs.errors import Errors
 from bot.cogs.utils import context
+
+
+log = logging.getLogger(__name__)
+
 
 class LaTeX(commands.Cog):
     PADDING = 10
@@ -22,6 +27,8 @@ class LaTeX(commands.Cog):
         if ctx.command is not None:
             return
 
+        log.info("user %s used latex by $$: %s", ctx.message.author, ctx.message.content)
+            
         await ctx.invoke(self.bot.get_command('discorred_latex'), message)
 
     @commands.command()
