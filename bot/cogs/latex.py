@@ -61,7 +61,8 @@ class LaTeX(commands.Cog):
         result.paste(img, (self.ICON_SIZE + 2 * self.PADDING, self.FONT_SIZE + 2 * self.PADDING), img)
 
         # paste user profile pic
-        await user.avatar.with_format("png").save(f"{user.id}_avatar.png")
+        avatar = user.avatar or user.default_avatar
+        await avatar.with_format("png").save(f"{user.id}_avatar.png")
         user_image = Image.open(f"{user.id}_avatar.png")
         user_image.thumbnail((self.ICON_SIZE, self.ICON_SIZE))
         mask = Image.new("L", user_image.size, 0)
@@ -69,7 +70,7 @@ class LaTeX(commands.Cog):
         d.ellipse((0, 0, user_image.width, user_image.height), fill=255)
         result.paste(user_image, (self.PADDING, self.PADDING), mask)
         os.remove(f"{user.id}_avatar.png")
-
+        
         fnt = ImageFont.truetype("bot/assets/fonts/arial.ttf", self.FONT_SIZE)
         d = ImageDraw.Draw(result)
         d.text((self.ICON_SIZE + 2 * self.PADDING, self.PADDING), user.display_name, font=fnt, fill=(255, 255, 255, 255))
