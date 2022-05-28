@@ -4,13 +4,14 @@ from disnake.ext import commands
 import os
 from sympy import preview
 from PIL import Image, ImageDraw, ImageFont
+from bot.cogs.errors import Errors
 
 from bot.cogs.utils import context
 
 class LaTeX(commands.Cog):
-    PADDING = 5
-    ICON_SIZE = 40
-    FONT_SIZE = 16
+    PADDING = 10
+    ICON_SIZE = 60
+    FONT_SIZE = 24
 
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
@@ -25,7 +26,12 @@ class LaTeX(commands.Cog):
         if count % 2 != 0 or count == 0 or len(message.content.replace('$', '').strip()) == 0:
             return
 
-        path = self.render(message.content, message.author.id) 
+        try:
+            path = self.render(message.content, message.author.id) 
+        except Exception as ex:
+            await Errors(self.bot).log_error(ctx, ex)
+            return
+        
         wrapped_path = await self.wrap_with_discord_profile(path, message.author)       
         await message.channel.send(file=File(wrapped_path, filename="latex.png"))
         os.remove(wrapped_path)
@@ -46,7 +52,7 @@ class LaTeX(commands.Cog):
             viewer='file', 
             filename=filename, 
             euler=False,
-            dvioptions=["-bg", "Transparent", "-fg", "rgb 1.0 1.0 1.0"]
+            dvioptions=["-bg", "Transparent", "-fg", "rgb 1.0 1.0 1.0", '-D','200']
         )
         return filename
 
