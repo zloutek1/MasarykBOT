@@ -22,7 +22,7 @@ class LaTeX(commands.Cog):
             return
 
         count = message.content.count('$')
-        if count % 2 != 0 or count == 0:
+        if count % 2 != 0 or count == 0 or len(message.content.replace('$', '').strip()) == 0:
             return
 
         path = self.render(message.content, message.author.id) 
@@ -51,24 +51,24 @@ class LaTeX(commands.Cog):
         return filename
 
     async def wrap_with_discord_profile(self, text_path: str, user: User) -> None:
-        await user.avatar.with_format("png").save(f"{user.id}_avatar.png")
-        
         img = Image.open(text_path)
 
         # extend image
         NAME_HEIGHT = self.FONT_SIZE + self.PADDING
-        WIDTH = self.PADDING + img.width + self.ICON_SIZE + self.PADDING * 2 + self.PADDING
-        HEIGHT = self.PADDING + img.height + NAME_HEIGHT + self.PADDING
+        WIDTH = max(self.PADDING + img.width + self.ICON_SIZE + 2 * self.PADDING + self.PADDING, self.ICON_SIZE + 2 * self.PADDING + len(user.display_name) * self.FONT_SIZE)
+        HEIGHT = max(self.PADDING + img.height + NAME_HEIGHT + 2 * self.PADDING, self.ICON_SIZE + 2 * self.PADDING)
         result = Image.new('RGBA', (WIDTH, HEIGHT), color = '#2C2F33')
         result.paste(img, (self.ICON_SIZE + 2 * self.PADDING, self.FONT_SIZE + 2 * self.PADDING), img)
 
         # paste user profile pic
+        await user.avatar.with_format("png").save(f"{user.id}_avatar.png")
         user_image = Image.open(f"{user.id}_avatar.png")
         user_image.thumbnail((self.ICON_SIZE, self.ICON_SIZE))
         mask = Image.new("L", user_image.size, 0)
         d = ImageDraw.Draw(mask)
         d.ellipse((0, 0, user_image.width, user_image.height), fill=255)
         result.paste(user_image, (self.PADDING, self.PADDING), mask)
+        os.remove(f"{user.id}_avatar.png")
 
         fnt = ImageFont.truetype("bot/assets/fonts/arial.ttf", self.FONT_SIZE)
         d = ImageDraw.Draw(result)
