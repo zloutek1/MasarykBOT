@@ -65,6 +65,7 @@ class LaTeX(commands.Cog):
         preview(
             text, 
             viewer='file', 
+            packages=('braket',),
             filename=filename, 
             euler=False,
             dvioptions=["-bg", "Transparent", "-fg", "rgb 1.0 1.0 1.0", '-D','200']
