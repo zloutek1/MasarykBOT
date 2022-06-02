@@ -23,6 +23,7 @@ log = logging.getLogger(__name__)
 Id = int
 
 
+CATEGORY_LIMIT = 50
 ERR_EMBED_BODY_TOO_LONG = 50035
 SUBJECT_MESSAGE = {
     "body": dedent("""
@@ -55,6 +56,7 @@ SUBJECT_MESSAGE = {
 }
 
 
+
 class ChannelNotFound(Exception):
     def __init__(self, subject: str, searched: str, potential: Optional[TextChannel], *args: Any) -> None:
         super().__init__(self, *args)
@@ -67,17 +69,65 @@ class ChannelNotFound(Exception):
                 f"looked for {self.searched}. Did you mean {self.potential}?")
 
 
+
+class Trie:
+    def __init__(self):
+        self.items = 0
+        self.children = {}
+        self.is_word = False
+    
+    def __repr__(self):
+        return repr(self.children)
+
+    def insert(self, word):
+        letter, *rest = word
+        word = ''.join(rest)
+
+        self.children[letter] = self.children.get(letter, Trie())
+
+        if word == "":
+            self.children[letter].is_word = True
+        else:
+            self.children[letter].insert(word)
+
+        self.items += 1
+
+
+    def generate_categories(self, limit, *, prefix=""):
+        if self.items < limit:
+            return [prefix]
+
+        categories = []
+        for letter, subtree in self.children.items():
+            categories += subtree.generate_categories(limit, prefix=prefix + letter)
+        return categories
+
+    def find_category_for(self, word, limit, *, prefix="", i=0):
+        if self.items < limit:
+            return prefix
+
+        for letter, subtree in self.children.items():
+            if word[i] == letter:
+                return subtree.find_category_for(word, limit, prefix=prefix + letter, i=i+1)
+    
+
+
 class Subject(commands.Cog):
     subjectDao = SubjectDao()
     channelDao = ChannelDao()
     categoryDao = CategoryDao()
 
+
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
+
+
 
     @commands.group(name="subject", aliases=["subjects"], invoke_without_command=True)
     async def subject(self, ctx: Context) -> None:
         await ctx.send_help(ctx.command)
+
+
 
     @subject.command(name="add")
     @commands.bot_has_permissions(manage_channels=True)
@@ -99,6 +149,8 @@ class Subject(commands.Cog):
         for subject_code in subject_codes:
             await self.add_subject(ctx, subject_code)
 
+
+    
     async def add_subject(self, ctx: Context, code_pattern: str) -> None:
         assert ctx.guild is not None, "ERROR: this method can only be run inside a guild"
 
@@ -116,12 +168,15 @@ class Subject(commands.Cog):
         await self.subjectDao.sign_user((ctx.guild.id, subject["faculty"], subject["code"], ctx.author.id))
         await self.try_to_sign_user_to_channel(ctx, subject)
 
+
+
     @staticmethod
     def pattern_to_faculty_code(subject_code: str) -> Tuple[str, str]:
         if ":" in subject_code:
             faculty, code = subject_code.split(":", 1)
             return faculty, code
         return "FI", subject_code
+
 
 
     @staticmethod
@@ -131,6 +186,7 @@ class Subject(commands.Cog):
                              delete_after=10)
 
 
+    
     async def _in_subject_channel(self, ctx: Context) -> bool:
         assert ctx.guild is not None, "ERROR: method can only run inside a guild"
 
@@ -145,6 +201,8 @@ class Subject(commands.Cog):
                 await ctx.send_error("You can't add subjects on this server", delete_after=5)
             return False
         return True
+
+
 
     @subject.command(name="remove")
     @commands.bot_has_permissions(manage_channels=True)
@@ -167,6 +225,8 @@ class Subject(commands.Cog):
         for subject_code in subject_codes:
             await self.remove_subject(ctx, subject_code)
 
+    
+
     async def remove_subject(self, ctx: Context, code_pattern: str) -> None:
         assert ctx.guild is not None, "ERROR: method can only run inside a guild"
 
@@ -186,6 +246,8 @@ class Subject(commands.Cog):
         await self.subjectDao.unsign_user((ctx.guild.id, subject["faculty"], subject["code"], ctx.author.id))
         await self.try_to_unsign_user_from_channel(ctx, subject)
 
+
+    
     async def remove_all_subjects(self, ctx: Context) -> None:
         assert ctx.guild is not None, "ERROR: method can only run inside a guild"
 
@@ -207,13 +269,16 @@ class Subject(commands.Cog):
         await self.send_subject_embed(ctx, "unsigned from all subjects: " + ", ".join(subject_names))
 
 
-    @subject.command(aliases=["search", "lookup"])
+
+    @subject.command(aliases=["search", "lookup"])    
     async def find(self, ctx: Context, subject_code: str) -> None:
         faculty, code = self.pattern_to_faculty_code(subject_code)
 
         subjects = await self.subjectDao.find((faculty, code))
         grouped_by_term = self.group_by_term(subjects)
         await self.display_list_of_subjects(ctx, grouped_by_term)
+
+
 
     @subject.command()
     async def status(self, ctx: Context, subject_code: str) -> None:
@@ -229,8 +294,9 @@ class Subject(commands.Cog):
         await ctx.send_embed(f"Subject {subject['faculty']}:{subject['code']} has {num_registeres} registered")
 
 
+
     @subject.command()
-    @has_permissions(administrator=True)
+    @has_permissions(administrator=True)    
     async def resend_subject_message(self, ctx: Context, channel_id: int) -> None:
         assert ctx.guild is not None, "ERROR: this method can only be run inside a guild"
 
@@ -254,6 +320,7 @@ class Subject(commands.Cog):
         embed = Embed(description=SUBJECT_MESSAGE['body'], color=Color(0xFFD800))
         embed.set_footer(text=SUBJECT_MESSAGE['footer'])
         await menu_text_channel.send(embed=embed)
+
 
     @subject.command()
     @has_permissions(administrator=True)
@@ -281,6 +348,8 @@ class Subject(commands.Cog):
                     await self.subjectDao.sign_user((ctx.guild.id, faculty, code, member_id))
         log.info("database recovery finished")
 
+
+
     @subject.command()
     @has_permissions(administrator=True)
     async def reorder(self, ctx: Context) -> None:
@@ -307,6 +376,8 @@ class Subject(commands.Cog):
             if old_category is not None and len(old_category.channels) == 0:
                 await old_category.delete()
 
+    
+
     async def reorder_channels(self) -> None:
         for guild in self.bot.guilds:
             for category in guild.categories:
@@ -320,6 +391,8 @@ class Subject(commands.Cog):
                 for i, channel in enumerate(ordered):
                     await channel.edit(position=i)
 
+
+    
     async def get_subject_from_channel(self, channel: TextChannel) -> Optional[Record]:
         if "-" not in channel.name:
             return None
@@ -329,12 +402,16 @@ class Subject(commands.Cog):
 
         return await self.find_subject(code, faculty)
 
+
+    
     async def find_subject(self, code: str, faculty: str="FI") -> Optional[Record]:
         subjects = await self.subjectDao.find((faculty, code))
         if len(subjects) != 1:
             return None
         return subjects[0]
 
+
+    
     async def try_to_sign_user_to_channel(self, ctx: Context, subject: Record) -> None:
         assert ctx.guild is not None, "ERROR: this method can only be run inside a guild"
         assert isinstance(ctx.author, Member), "ERROR: user must part of a guild"
@@ -351,6 +428,8 @@ class Subject(commands.Cog):
         await self.send_subject_embed(ctx, f"Signed to subject {channel_name} successfully")
         log.info("Signed user %s to channel %s", str(ctx.author), channel_name)
 
+
+    
     async def try_to_unsign_user_from_channel(self, ctx: Context, subject: Record) -> None:
         assert isinstance(ctx.author, Member), "ERROR: user must part of a guild"
 
@@ -364,12 +443,16 @@ class Subject(commands.Cog):
             if err.potential is not None:
                 raise err from None
 
+    
+
     async def create_or_get_existing_channel(self, ctx: Context, subject: Record) -> TextChannel:
         if (channel := await self.try_to_get_existing_channel(ctx, subject)) is not None:
             return channel
 
         return await self.create_channel(ctx, subject)
 
+
+    
     async def try_to_get_existing_channel(self, ctx: Context, subject: Record) -> Optional[TextChannel]:
         def is_subject_channel(channel: TextChannel) -> bool:
             faculty, code = subject["faculty"].lower(), subject["code"].lower()
@@ -383,6 +466,8 @@ class Subject(commands.Cog):
             await self.subjectDao.set_channel((ctx.guild.id, subject["faculty"], subject["code"], channel.id))
         return channel
 
+
+    
     async def check_if_engough_users_signed(self, guild_id: int, subject: Record) -> bool:
         registers = await self.subjectDao.find_registered((guild_id, subject["faculty"], subject["code"]))
         if registers is None:
@@ -395,6 +480,8 @@ class Subject(commands.Cog):
 
         return len(registers["member_ids"]) >= cast(Id, guild_config.NEEDED_REACTIONS)
 
+
+    
     async def lookup_channel_or_err(self, ctx: Context, subject: Record) -> TextChannel:
         def is_subject_channel(channel: TextChannel) -> bool:
             faculty, code = subject["faculty"].lower(), subject["code"].lower()
@@ -409,6 +496,8 @@ class Subject(commands.Cog):
 
         return channel
 
+
+
     def throw_not_found(self, ctx: Context, subject: Record) -> NoReturn:
         assert ctx.guild is not None, "ERROR: this method can only be run inside a guild"
 
@@ -417,6 +506,8 @@ class Subject(commands.Cog):
         channel_name = self.subject_to_channel_name(ctx, subject)
         potential = find(lambda channel: channel.name.lower().startswith(code.lower()), ctx.guild.text_channels)
         raise ChannelNotFound(subject=f"{faculty}:{code}", searched=channel_name, potential=potential)
+
+
 
     @staticmethod
     def subject_to_channel_name(ctx: Context, subject: Record) -> str:
@@ -427,6 +518,8 @@ class Subject(commands.Cog):
             return ctx.channel_name(f'{code} {name}')
         return ctx.channel_name(f'{faculty}:{code} {name}')
 
+
+    
     async def create_channel(self, ctx: Context, subject: Record) -> TextChannel:
         assert ctx.guild is not None, "ERROR: this method can only be run inside a guild"
 
@@ -434,13 +527,14 @@ class Subject(commands.Cog):
         assert guild_config is not None, "ERROR: config for guild missing"
 
         channel_name = self.subject_to_channel_name(ctx, subject)
-        category = await self.create_or_get_category(ctx, subject)
+        category = await self.assign_category(ctx, subject)
         overwrites = self.get_overwrites_for_new_channel(ctx, guild_config)
 
         channel = await ctx.guild.create_text_channel(
             name=channel_name,
             category=category,
-            overwrites=overwrites
+            overwrites=overwrites,
+            topic="Místnost pro předmět " + subject["name"]
         )
 
         data = await self.channelDao.prepare_one(channel)
@@ -451,6 +545,8 @@ class Subject(commands.Cog):
             await self.subjectDao.set_category((ctx.guild.id, subject["faculty"], subject["code"], category.id))
 
         return channel
+
+
 
     def get_overwrites_for_new_channel(self, ctx: Context, guild_config: Config) -> Dict[Union[Member, Role], PermissionOverwrite]:
         assert ctx.guild is not None, "ERROR: this method can only be run inside a guild"
@@ -470,43 +566,74 @@ class Subject(commands.Cog):
 
         return overwrites
 
-    async def create_or_get_category(self, ctx: Context, subject: Record) -> CategoryChannel:
+
+    """
+    VVV
+    VVV
+    VVV
+    """
+    async def assign_category(self, ctx: Context, subject: Record) -> CategoryChannel:
         assert ctx.guild is not None, "ERROR: this method can only be run inside a guild"
 
-        row = await self.subjectDao.get_category((ctx.guild.id, subject["faculty"], subject["code"]))
-        if row:
-            return await self.create_or_get_named_category(ctx, row)
-        else:
-            return await self.create_or_get_unnamed_category(ctx, subject)
+        def text_to_category_name(text):
+            return f"{subject['faculty']}:{text:X<5}".upper()
 
-    async def create_or_get_named_category(self, ctx: Context, row: Record) -> CategoryChannel:
+        faculty_categories = [category for category in ctx.guild.categories 
+                              if category.name.startswith(subject['faculty'])]
+        
+        if len(faculty_categories) == 0:
+            return await self.create_or_get_category(ctx, subject['faculty'])
+
+        if len(faculty_categories) == 1 and len(faculty_categories[0].channels) < CATEGORY_LIMIT:
+            return await self.create_or_get_category(ctx, subject['faculty'])
+
+        trie = Trie()
+
+        for category in faculty_categories:
+            for channel in category.text_channels:
+                trie.insert(channel.name)
+        trie.insert(self.subject_to_channel_name(ctx, subject))
+
+        new_categories = []
+        for category_name in trie.generate_categories(CATEGORY_LIMIT):
+            category_name = text_to_category_name(category_name)
+            category = await self.create_or_get_category(ctx, category_name)
+            new_categories.append(category)
+
+        faculty_categories = [category for category in ctx.guild.categories 
+                              if category.name.startswith(subject['faculty'])]
+
+        print(faculty_categories)
+        print(new_categories)
+        
+        categories_to_remove = set(faculty_categories) - set(new_categories)
+        print(categories_to_remove)
+        for category in categories_to_remove:
+            for channel in category.text_channels:
+                category_name = trie.find_category_for(channel.name, CATEGORY_LIMIT)
+                category_to_assign = get(new_categories, name=text_to_category_name(category_name))
+                await channel.edit(category=category_to_assign)
+            await category.delete()
+
+        category_name = trie.find_category_for(self.subject_to_channel_name(ctx, subject), CATEGORY_LIMIT)
+        return get(new_categories, name=text_to_category_name(category_name))
+
+    """
+    ^^^
+    ^^^
+    ^^^
+    """
+    
+    async def create_or_get_category(self, ctx: Context, name: str) -> CategoryChannel:
         assert ctx.guild is not None, "ERROR: this method can only be run inside a guild"
 
-        category_name = row["category_name"]
-        if category := get(ctx.guild.categories, name=category_name):
+        if category := get(ctx.guild.categories, name=name):
             return category
 
-        category = await ctx.guild.create_category(category_name)
-        await self.categoryDao.insert(await self.categoryDao.prepare([category]))
-
-        return category
-
-    async def create_or_get_unnamed_category(self, ctx: Context, subject: Record) -> CategoryChannel:
-        assert ctx.guild is not None, "ERROR: this method can only be run inside a guild"
-
-        i = 0
-        while True:
-            category_name = "{faculty} {i}".format(faculty=subject["faculty"], i = i if i != 0 else '').strip()
-            if category := get(ctx.guild.categories, name=category_name):
-                if len(category.channels) < 50:
-                    return category
-                i += 1
-            else:
-                category = await ctx.guild.create_category(category_name)
-                break
-
+        category = await ctx.guild.create_category(name)
         await self.categoryDao.insert(await self.categoryDao.prepare([category]))
         return category
+
 
 
     @staticmethod
@@ -516,6 +643,8 @@ class Subject(commands.Cog):
             for term in subject["terms"]:
                 grouped_by_term[term].append(subject)
         return grouped_by_term
+
+    
 
     async def display_list_of_subjects(self, ctx: Context, grouped_by_term: Dict[str, List[Record]]) -> None:
         def prepare(subject: Record) -> str:
@@ -551,6 +680,7 @@ class Subject(commands.Cog):
             raise err
 
 
+
     @commands.Cog.listener()
     async def on_message(self, message: Message) -> None:
         if message.guild is None:
@@ -575,7 +705,9 @@ class Subject(commands.Cog):
         with suppress(NotFound):
             await message.delete(delay=0.2)
 
-    async def delete_messages_in_subject_channel(self, channel: TextChannel) -> None:
+
+    
+    async def delete_messages_in_subject_channel(self, channel: TextChannel) -> None:        
         async for message in channel.history():
             if message.author.id == self.bot.user.id and message.embeds:
                 if message.embeds[0].description == SUBJECT_MESSAGE['body']:
@@ -583,6 +715,8 @@ class Subject(commands.Cog):
 
             await message.delete()
 
+
+    
     async def delete_messages_in_subject_channels(self) -> None:
         subject_registrations = [guild.channels.subject_registration for guild in Config.guilds]
         for channel_id in subject_registrations:
@@ -594,10 +728,13 @@ class Subject(commands.Cog):
 
             await self.delete_messages_in_subject_channel(channel)
 
+
     @commands.Cog.listener()
     async def on_ready(self) -> None:
         await self.delete_messages_in_subject_channels()
         await self.reorder_channels()
+
+
 
 def setup(bot: commands.Bot) -> None:
     bot.add_cog(Subject(bot))
