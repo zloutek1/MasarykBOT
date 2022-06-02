@@ -1,6 +1,7 @@
 import logging
 from collections import defaultdict
 from contextlib import suppress
+from re import sub
 from textwrap import dedent
 from typing import (Any, Dict, List, NoReturn, Optional, Text, Tuple, Union,
                     cast)
@@ -566,17 +567,13 @@ class Subject(commands.Cog):
 
         return overwrites
 
+    @staticmethod
+    def subject_to_category_name(faculty: str, text: str):
+        return f"{faculty}:{text:X<5}".upper()
 
-    """
-    VVV
-    VVV
-    VVV
-    """
+
     async def assign_category(self, ctx: Context, subject: Record) -> CategoryChannel:
         assert ctx.guild is not None, "ERROR: this method can only be run inside a guild"
-
-        def text_to_category_name(text):
-            return f"{subject['faculty']}:{text:X<5}".upper()
 
         faculty_categories = [category for category in ctx.guild.categories 
                               if category.name.startswith(subject['faculty'])]
@@ -587,6 +584,15 @@ class Subject(commands.Cog):
         if len(faculty_categories) == 1 and len(faculty_categories[0].channels) < CATEGORY_LIMIT:
             return await self.create_or_get_category(ctx, subject['faculty'])
 
+        trie = await self._balance_categories(ctx, subject)
+
+        faculty_categories = [category for category in ctx.guild.categories 
+                              if category.name.startswith(subject['faculty'])]
+
+        category_name = trie.find_category_for(self.subject_to_channel_name(ctx, subject), CATEGORY_LIMIT)
+        return get(faculty_categories, name=self.subject_to_category_name(subject['faculty'], category_name))
+
+    async def _balance_categories(self, ctx: Context, subject: Record) -> Trie:
         trie = Trie()
 
         for category in faculty_categories:
@@ -596,33 +602,23 @@ class Subject(commands.Cog):
 
         new_categories = []
         for category_name in trie.generate_categories(CATEGORY_LIMIT):
-            category_name = text_to_category_name(category_name)
+            category_name = self.subject_to_category_name(subject['faculty'], category_name)
             category = await self.create_or_get_category(ctx, category_name)
             new_categories.append(category)
 
         faculty_categories = [category for category in ctx.guild.categories 
                               if category.name.startswith(subject['faculty'])]
 
-        print(faculty_categories)
-        print(new_categories)
-        
         categories_to_remove = set(faculty_categories) - set(new_categories)
-        print(categories_to_remove)
         for category in categories_to_remove:
             for channel in category.text_channels:
                 category_name = trie.find_category_for(channel.name, CATEGORY_LIMIT)
-                category_to_assign = get(new_categories, name=text_to_category_name(category_name))
+                category_to_assign = get(new_categories, name=self.subject_to_category_name(subject['faculty'], category_name))
                 await channel.edit(category=category_to_assign)
             await category.delete()
+        
+        return trie
 
-        category_name = trie.find_category_for(self.subject_to_channel_name(ctx, subject), CATEGORY_LIMIT)
-        return get(new_categories, name=text_to_category_name(category_name))
-
-    """
-    ^^^
-    ^^^
-    ^^^
-    """
     
     async def create_or_get_category(self, ctx: Context, name: str) -> CategoryChannel:
         assert ctx.guild is not None, "ERROR: this method can only be run inside a guild"
