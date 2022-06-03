@@ -93,6 +93,16 @@ class Trie:
 
         self.items += 1
 
+    def find(self, word):
+        if word == "":
+            return self.is_word
+
+        if word[0] not in self.children:
+            return False
+
+        letter, *rest = word
+        word = ''.join(rest)
+        return self.children[letter].find(word)
 
     def generate_categories(self, limit, *, prefix=""):
         if self.items < limit:
@@ -103,13 +113,18 @@ class Trie:
             categories += subtree.generate_categories(limit, prefix=prefix + letter)
         return categories
 
-    def find_category_for(self, word, limit, *, prefix="", i=0):
+    def find_category_for(self, word, limit):
+        if not self.find(word):
+            return None
+        return self._find_category_for(word, limit)
+
+    def _find_category_for(self, word, limit, *, prefix="", i=0):
         if self.items < limit:
             return prefix
 
         for letter, subtree in self.children.items():
             if word[i] == letter:
-                return subtree.find_category_for(word, limit, prefix=prefix + letter, i=i+1)
+                return subtree._find_category_for(word, limit, prefix=prefix + letter, i=i+1)
     
 
 
@@ -356,26 +371,41 @@ class Subject(commands.Cog):
     async def reorder(self, ctx: Context) -> None:
         assert ctx.guild is not None, "ERROR: this method can only be run inside a guild"
 
+        tries: Dict[str, Trie] = {}
+        subject_categories = set()
+        subject_channels = []
         for channel in ctx.guild.text_channels:
-            if not (subject := await self.get_subject_from_channel(channel)):
-                continue
+            if (subject := await self.get_subject_from_channel(channel)) is not None:
+                faculty = subject['faculty']
+                tries.setdefault(faculty, Trie())
+                tries[faculty].insert(channel.name)
 
-            faculty = subject["faculty"]
-            code = subject["code"]
-            if not (row := await self.subjectDao.get_category((ctx.guild.id, faculty, code))):
-                continue
+                subject_channels.append(channel)
+                if channel.category is not None:
+                    subject_categories.add(channel.category)
+        
+        new_categories = []
+        for faculty, trie in tries.items():
+            for category_name in trie.generate_categories(CATEGORY_LIMIT):
+                category_name = self.subject_to_category_name(faculty, category_name)
+                category = await self.create_or_get_category(ctx, category_name)
+                new_categories.append(category)
 
-            old_category = channel.category
-            new_category_name = row["category_name"]
-            new_category = get(ctx.guild.categories, name=new_category_name)
-            if not new_category:
-                new_category = await ctx.guild.create_category(new_category_name)
+        for i, channel in enumerate(sorted(subject_channels, key=lambda channel: channel.name)):
+            for faculty, trie in tries.items():
+                category_name = trie.find_category_for(channel.name, CATEGORY_LIMIT)
+                if category_name is None:
+                    continue
+                category_to_assign = get(new_categories, name=self.subject_to_category_name(faculty, category_name))
+                if channel.category != category_to_assign or channel.position != i:
+                    await channel.edit(category=category_to_assign, position=i)
+                
+        categories_to_remove = set(subject_categories) - set(new_categories)
+        for category in categories_to_remove:
+            await category.delete()
 
-            if new_category != old_category:
-                await channel.edit(category=new_category)
-
-            if old_category is not None and len(old_category.channels) == 0:
-                await old_category.delete()
+        log.info("reordering finished")
+        await ctx.reply("reorder finished")
 
     
 
@@ -592,6 +622,8 @@ class Subject(commands.Cog):
         category_name = trie.find_category_for(self.subject_to_channel_name(ctx, subject), CATEGORY_LIMIT)
         return get(faculty_categories, name=self.subject_to_category_name(subject['faculty'], category_name))
 
+
+
     async def _balance_categories(self, ctx: Context, subject: Record) -> Trie:
         trie = Trie()
 
@@ -600,7 +632,7 @@ class Subject(commands.Cog):
                 trie.insert(channel.name)
         trie.insert(self.subject_to_channel_name(ctx, subject))
 
-        new_categories = []
+        new_categories: List[CategoryChannel] = []
         for category_name in trie.generate_categories(CATEGORY_LIMIT):
             category_name = self.subject_to_category_name(subject['faculty'], category_name)
             category = await self.create_or_get_category(ctx, category_name)
@@ -620,6 +652,7 @@ class Subject(commands.Cog):
         return trie
 
     
+
     async def create_or_get_category(self, ctx: Context, name: str) -> CategoryChannel:
         assert ctx.guild is not None, "ERROR: this method can only be run inside a guild"
 
@@ -728,8 +761,7 @@ class Subject(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self) -> None:
         await self.delete_messages_in_subject_channels()
-        await self.reorder_channels()
-
+        
 
 
 def setup(bot: commands.Bot) -> None:

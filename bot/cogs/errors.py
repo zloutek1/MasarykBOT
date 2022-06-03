@@ -60,6 +60,9 @@ class Errors(commands.Cog):
         if (guild_config := get(Config.guilds, id=ctx.guild.id)) is None:
             return
 
+        if guild_config.logs is None:
+            return
+
         channel_id = guild_config.logs.errors
         if channel_id and (channel := self.bot.get_channel(channel_id)) is not None:
             if not isinstance(channel, Messageable):
