@@ -392,6 +392,10 @@ class Subject(commands.Cog):
         for category in categories_to_remove:
             await category.delete()
 
+        for category in new_categories:
+            if len(category.channels) == 0:
+                await category.delete()
+
         log.info("reordering finished")
         await ctx.reply("reorder finished")
 
