@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 from collections import defaultdict
 from contextlib import suppress
@@ -24,7 +25,7 @@ log = logging.getLogger(__name__)
 Id = int
 
 
-CATEGORY_LIMIT = 50
+DISCORD_CATEGORY_LIMIT = 50
 ERR_EMBED_BODY_TOO_LONG = 50035
 SUBJECT_MESSAGE = {
     "body": dedent("""
@@ -105,6 +106,9 @@ class Trie:
         return self.children[letter].find(word)
 
     def generate_categories(self, limit, *, prefix=""):
+        if self.items == 0:
+            return []
+            
         if self.items < limit:
             return [prefix]
 
@@ -371,41 +375,65 @@ class Subject(commands.Cog):
     async def reorder(self, ctx: Context) -> None:
         assert ctx.guild is not None, "ERROR: this method can only be run inside a guild"
 
-        tries: Dict[str, Trie] = {}
-        subject_categories = set()
-        subject_channels = []
-        for channel in ctx.guild.text_channels:
-            if (subject := await self.get_subject_from_channel(channel)) is not None:
-                faculty = subject['faculty']
-                tries.setdefault(faculty, Trie())
-                tries[faculty].insert(channel.name)
-
-                subject_channels.append(channel)
-                if channel.category is not None:
-                    subject_categories.add(channel.category)
-        
-        new_categories = []
-        for faculty, trie in tries.items():
-            for category_name in trie.generate_categories(CATEGORY_LIMIT):
-                category_name = self.subject_to_category_name(faculty, category_name)
-                category = await self.create_or_get_category(ctx, category_name)
-                new_categories.append(category)
+        subject_channels, subject_categories = await self._get_subject_channels_and_categories(ctx)
+        tries = await self._build_category_tries(ctx)        
+        new_categories = await self._create_categories_from_tries(ctx, tries)
 
         for i, channel in enumerate(sorted(subject_channels, key=lambda channel: channel.name)):
             for faculty, trie in tries.items():
-                category_name = trie.find_category_for(channel.name, CATEGORY_LIMIT)
+                category_name = trie.find_category_for(channel.name, DISCORD_CATEGORY_LIMIT)
                 if category_name is None:
                     continue
                 category_to_assign = get(new_categories, name=self.subject_to_category_name(faculty, category_name))
                 if channel.category != category_to_assign or channel.position != i:
                     await channel.edit(category=category_to_assign, position=i)
-                
+
         categories_to_remove = set(subject_categories) - set(new_categories)
         for category in categories_to_remove:
             await category.delete()
 
         log.info("reordering finished")
         await ctx.reply("reorder finished")
+
+
+
+    async def _get_subject_channels_and_categories(self, ctx: Context) -> Tuple[List[TextChannel], List[CategoryChannel]]:
+        subject_channels = []
+        subject_categories = set()
+        for channel in ctx.guild.text_channels:
+            if (await self.get_subject_from_channel(channel)) is not None:
+                subject_channels.append(channel)
+                subject_categories.add(channel.category)
+        return (subject_channels, subject_categories)
+
+
+
+    async def _build_category_tries(self, ctx: Context) -> Dict[str, Trie]:
+        tries: Dict[str, Trie] = {}
+        
+        for subject in await self.subjectDao.find_all_recent_for_faculty(("FI", datetime.now())):
+            faculty = subject['faculty']
+            tries.setdefault(faculty, Trie())
+            tries[faculty].insert(self.subject_to_channel_name(ctx, subject))
+            
+        for channel in ctx.guild.text_channels:
+            if (subject := await self.get_subject_from_channel(channel)) is not None:
+                faculty = subject['faculty']
+                tries.setdefault(faculty, Trie())
+                tries[faculty].insert(channel.name)
+        
+        return tries
+
+
+
+    async def _create_categories_from_tries(self, ctx: Context, tries: Dict[str, Trie]) -> List[CategoryChannel]:
+        new_categories: List[CategoryChannel] = []
+        for faculty, trie in tries.items():
+            for category_name in trie.generate_categories(DISCORD_CATEGORY_LIMIT):
+                category_name = self.subject_to_category_name(faculty, category_name)
+                category = await self.create_or_get_category(ctx, category_name)
+                new_categories.append(category)
+        return new_categories
 
     
 
@@ -611,7 +639,7 @@ class Subject(commands.Cog):
         if len(faculty_categories) == 0:
             return await self.create_or_get_category(ctx, subject['faculty'])
 
-        if len(faculty_categories) == 1 and len(faculty_categories[0].channels) < CATEGORY_LIMIT:
+        if len(faculty_categories) == 1 and len(faculty_categories[0].channels) < DISCORD_CATEGORY_LIMIT:
             return await self.create_or_get_category(ctx, subject['faculty'])
 
         trie = await self._balance_categories(ctx, subject)
@@ -619,7 +647,7 @@ class Subject(commands.Cog):
         faculty_categories = [category for category in ctx.guild.categories 
                               if category.name.startswith(subject['faculty'])]
 
-        category_name = trie.find_category_for(self.subject_to_channel_name(ctx, subject), CATEGORY_LIMIT)
+        category_name = trie.find_category_for(self.subject_to_channel_name(ctx, subject), DISCORD_CATEGORY_LIMIT)
         return get(faculty_categories, name=self.subject_to_category_name(subject['faculty'], category_name))
 
 
@@ -633,7 +661,7 @@ class Subject(commands.Cog):
         trie.insert(self.subject_to_channel_name(ctx, subject))
 
         new_categories: List[CategoryChannel] = []
-        for category_name in trie.generate_categories(CATEGORY_LIMIT):
+        for category_name in trie.generate_categories(DISCORD_CATEGORY_LIMIT):
             category_name = self.subject_to_category_name(subject['faculty'], category_name)
             category = await self.create_or_get_category(ctx, category_name)
             new_categories.append(category)
@@ -644,7 +672,7 @@ class Subject(commands.Cog):
         categories_to_remove = set(faculty_categories) - set(new_categories)
         for category in categories_to_remove:
             for channel in category.text_channels:
-                category_name = trie.find_category_for(channel.name, CATEGORY_LIMIT)
+                category_name = trie.find_category_for(channel.name, DISCORD_CATEGORY_LIMIT)
                 category_to_assign = get(new_categories, name=self.subject_to_category_name(subject['faculty'], category_name))
                 await channel.edit(category=category_to_assign)
             await category.delete()

@@ -1,8 +1,11 @@
 
+from datetime import datetime
 from typing import List, Optional, Tuple
 
 from .utils import DBConnection, Id, Record, Table, withConn
 
+def get_term(date: datetime):
+    return f"jaro {date.year}" if 3 <= date.month < 9 else f"podzim {date.year}"
 
 class SubjectDao(Table):
     @withConn
@@ -14,6 +17,16 @@ class SubjectDao(Table):
             WHERE LOWER(faculty) = LOWER($1) AND
                   LOWER(code) LIKE LOWER($2)
         """, faculty, code)
+
+    @withConn
+    async def find_all_recent_for_faculty(self, conn: DBConnection, data: Tuple[str, datetime]) -> List[Record]:
+        faculty, date = data
+        return await conn.fetch("""
+            SELECT faculty, code, name
+            FROM muni.subjects
+            WHERE LOWER(faculty) = LOWER($1) AND
+                  $2 = ANY(terms)
+        """, faculty, get_term(date))
 
     @withConn
     async def find_registered(
