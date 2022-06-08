@@ -13,7 +13,7 @@ from bot.db.categories import CategoryDao
 from bot.db.channels import ChannelDao
 from bot.db.subjects import SubjectDao
 from bot.db.utils import Record
-from disnake import (CategoryChannel, Color, Embed, HTTPException, Member,
+from disnake import (CategoryChannel, Color, Embed, Forbidden, HTTPException, Member,
                      Message, PermissionOverwrite, Role, TextChannel)
 from disnake.errors import NotFound
 from disnake.ext import commands
@@ -379,14 +379,18 @@ class Subject(commands.Cog):
         tries = await self._build_category_tries(ctx)        
         new_categories = await self._create_categories_from_tries(ctx, tries)
 
-        for i, channel in enumerate(sorted(subject_channels, key=lambda channel: channel.name)):
+        for channel in subject_channels:
             for faculty, trie in tries.items():
                 category_name = trie.find_category_for(channel.name, DISCORD_CATEGORY_LIMIT)
                 if category_name is None:
                     continue
                 category_to_assign = get(new_categories, name=self.subject_to_category_name(faculty, category_name))
-                if channel.category != category_to_assign or channel.position != i:
-                    await channel.edit(category=category_to_assign, position=i)
+                if channel.category != category_to_assign:
+                    try:
+                        await channel.edit(category=category_to_assign)
+                    except Forbidden as ex:
+                        log.warn("Forbidden: {}", ex)
+                        continue
 
         categories_to_remove = set(subject_categories) - set(new_categories)
         for category in categories_to_remove:
@@ -395,9 +399,24 @@ class Subject(commands.Cog):
         for category in new_categories:
             if len(category.channels) == 0:
                 await category.delete()
+            else:
+                await self._sort_category(category)
 
         log.info("reordering finished")
         await ctx.reply("reorder finished")
+
+
+
+    async def _sort_category(self, category: CategoryChannel) -> None:
+        channels = sorted(category.channels, key=lambda channel: channel.name)
+        for i, channel in enumerate(channels):
+            if channel.position == i:
+                continue
+            try:
+                await channel.edit(position=i)
+            except Forbidden as ex:
+                log.warn("Forbidden: {}", ex)
+                continue
 
 
 
@@ -600,6 +619,8 @@ class Subject(commands.Cog):
             topic="Místnost pro předmět " + subject["name"]
         )
 
+        await self._sort_category(category)
+        
         data = await self.channelDao.prepare_one(channel)
         await self.channelDao.insert([data])
 
@@ -629,59 +650,26 @@ class Subject(commands.Cog):
 
         return overwrites
 
+
+
     @staticmethod
     def subject_to_category_name(faculty: str, text: str):
         return f"{faculty}:{text:X<5}".upper()
 
 
+
     async def assign_category(self, ctx: Context, subject: Record) -> CategoryChannel:
         assert ctx.guild is not None, "ERROR: this method can only be run inside a guild"
 
-        faculty_categories = [category for category in ctx.guild.categories 
-                              if category.name.startswith(subject['faculty'])]
-        
-        if len(faculty_categories) == 0:
-            return await self.create_or_get_category(ctx, subject['faculty'])
-
-        if len(faculty_categories) == 1 and len(faculty_categories[0].channels) < DISCORD_CATEGORY_LIMIT:
-            return await self.create_or_get_category(ctx, subject['faculty'])
-
-        trie = await self._balance_categories(ctx, subject)
+        tries = await self._build_category_tries(ctx)
+        faculty_trie = tries[subject['faculty']]
 
         faculty_categories = [category for category in ctx.guild.categories 
                               if category.name.startswith(subject['faculty'])]
 
-        category_name = trie.find_category_for(self.subject_to_channel_name(ctx, subject), DISCORD_CATEGORY_LIMIT)
+        channel_name = self.subject_to_channel_name(ctx, subject)
+        category_name = faculty_trie.find_category_for(channel_name, DISCORD_CATEGORY_LIMIT)
         return get(faculty_categories, name=self.subject_to_category_name(subject['faculty'], category_name))
-
-
-
-    async def _balance_categories(self, ctx: Context, subject: Record) -> Trie:
-        trie = Trie()
-
-        for category in faculty_categories:
-            for channel in category.text_channels:
-                trie.insert(channel.name)
-        trie.insert(self.subject_to_channel_name(ctx, subject))
-
-        new_categories: List[CategoryChannel] = []
-        for category_name in trie.generate_categories(DISCORD_CATEGORY_LIMIT):
-            category_name = self.subject_to_category_name(subject['faculty'], category_name)
-            category = await self.create_or_get_category(ctx, category_name)
-            new_categories.append(category)
-
-        faculty_categories = [category for category in ctx.guild.categories 
-                              if category.name.startswith(subject['faculty'])]
-
-        categories_to_remove = set(faculty_categories) - set(new_categories)
-        for category in categories_to_remove:
-            for channel in category.text_channels:
-                category_name = trie.find_category_for(channel.name, DISCORD_CATEGORY_LIMIT)
-                category_to_assign = get(new_categories, name=self.subject_to_category_name(subject['faculty'], category_name))
-                await channel.edit(category=category_to_assign)
-            await category.delete()
-        
-        return trie
 
     
 
