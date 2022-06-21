@@ -17,6 +17,7 @@ from bot.db.utils import Pool, Url
 
 initail_cogs = [
     "bot.cogs.verification",
+    "bot.cogs.auto_thread",
     "bot.cogs.cog_manager",
     "bot.cogs.leaderboard",
     "bot.cogs.starboard",

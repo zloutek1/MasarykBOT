@@ -16,6 +16,8 @@ guilds:
       starboard:            761552082159271936
       best_of_memes:        836224046030520410
       best_of_masaryk:      930957842356244530
+      threaded:
+        - 988839106656215041
 
     logs:
       errors:               609413180137144331
@@ -44,6 +46,8 @@ guilds:
       starboard:            751062312781217792
       best_of_memes:        null
       best_of_masaryk:      930952840703262744
+      threaded:
+        - 988918829570744350
 
     logs:
       errors:               731435433564569632
@@ -58,6 +62,19 @@ guilds:
       admin:                573595915302993920
       show_all:             760093273871613993
 
+  - id: 983522320981299272
+    name: "test"
+
+    NEEDED_REACTIONS: 1
+    STARBOARD_REACT_LIMIT: 1
+    DEBUG: False
+
+    channels:
+      subject_registration: 983522321442701313
+    
+    roles:
+      show_all:             983522320981299277
+      
 emoji:
   Verification: 617745093889359872
 

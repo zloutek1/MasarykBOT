@@ -87,6 +87,9 @@ class Config(metaclass=YAMLGetter):
                     return val
         raise NotImplemented
 
+    def __contains__(self, item: Any) -> bool:
+        return item in self.config
+        
     def __iter__(self) -> YAMLIterator:
         return YAMLIterator(self.__class__, self.config)
 
