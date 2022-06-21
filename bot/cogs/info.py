@@ -42,6 +42,11 @@ class Info(commands.Cog):
         await ctx.send(f"https://discordapp.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions=268823632")
 
     @commands.command()
+    async def categories(self, ctx: Context) -> None:
+        categories = (category.name for category in ctx.guild.categories)
+        await ctx.send(f"`{', '.join(categories)}`")
+
+    @commands.command()
     async def info(self, ctx: Context) -> None:
         """
         send an embed containing info in format
