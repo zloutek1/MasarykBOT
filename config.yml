@@ -18,6 +18,12 @@ guilds:
       best_of_masaryk:      930957842356244530
       threaded:
         - 988839106656215041
+      starboard_igone:
+        - 988839106656215041 # project-and-tools
+        - 625263765100953612 # hall-of-game
+        - 621718588478324736 # newcomers
+        - 504953215385600011 # fetish-room
+        - 609086101511995422 # cutentess-overload
 
     logs:
       errors:               609413180137144331
@@ -48,6 +54,8 @@ guilds:
       best_of_masaryk:      930952840703262744
       threaded:
         - 988918829570744350
+      starboard_igone:
+        - 988918829570744350 # threader
 
     logs:
       errors:               731435433564569632

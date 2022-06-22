@@ -156,8 +156,10 @@ class Starboard(commands.Cog):
         if len(channel.members) > 100:
             fame_limit += 10
 
-        ignored_rooms = ['cute', 'fame', 'best-of-memes', 'newcomers', 'fetish']
-        if any(map(lambda ignored_pattern: ignored_pattern in channel.name.lower(), ignored_rooms)):
+        if channel.id in guild_config.channels.starboard_igone:
+            return math.inf
+
+        if isinstance(message.channel, Thread) and message.channel.parent_id in guild_config.channels.starboard_igone:
             return math.inf
 
         common_rooms = ['memes']
