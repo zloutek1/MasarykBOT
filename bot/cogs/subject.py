@@ -426,7 +426,8 @@ class Subject(commands.Cog):
         for channel in ctx.guild.text_channels:
             if (await self.get_subject_from_channel(channel)) is not None:
                 subject_channels.append(channel)
-                subject_categories.add(channel.category)
+                if channel.category is not None:
+                    subject_categories.add(channel.category)
         return (subject_channels, subject_categories)
 
 
