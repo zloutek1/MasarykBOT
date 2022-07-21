@@ -36,7 +36,7 @@ inject==4.3.1
     sympy==1.10.1
 
     # auto_thread
-    lxml==4.9.0
+    lxml==4.9.1
 
 # testing library
 pytest==7.0.1
