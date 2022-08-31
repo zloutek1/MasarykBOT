@@ -31,6 +31,10 @@ class WrappedCallable(Generic[R]):
 class Table:
     pool = inject.attr(Pool)
 
+    def __init__(self):
+        if self.pool is None:
+            raise Exception("database connection is required")
+
 
 class Crud(ABC, Generic[C]):
     @abstractmethod

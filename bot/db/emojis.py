@@ -5,7 +5,7 @@ from emoji import demojize, get_emoji_regexp
 from numpy import delete
 
 
-from bot.db.tables imoprt EMOJIS
+from bot.db.tables import EMOJIS
 from bot.db.utils import (Crud, DBConnection, FromMessageMapper, Id, Mapper,
                           Record, Table, Url, WrappedCallable, withConn)
 from disnake import Emoji, Message, PartialEmoji

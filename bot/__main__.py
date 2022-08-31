@@ -41,7 +41,9 @@ initail_cogs = [
 ]
 
 
-def connect_db(url: Url) -> Optional[Pool]:
+def connect_db(url: Optional[Url]) -> Optional[Pool]:
+    if url is None:
+        return None
     pool = None
     loop = asyncio.get_event_loop()
     try:
@@ -50,7 +52,7 @@ def connect_db(url: Url) -> Optional[Pool]:
             log.error("Failed to connect to database, reconnecting in 5 seconds...")
             time.sleep(5)
 
-    except OSError as e:
+    except (OSError, TimeoutError) as e:
         import re
         redacted_url = re.sub(r'\:(?!\/\/)[^\@]+', ":******", url)
         log.error("Failed to connect to database (%s)", redacted_url)
@@ -59,22 +61,23 @@ def connect_db(url: Url) -> Optional[Pool]:
     log.info("Connected to database successfully")
     return pool
 
-def connect_redis(url: Url) -> Optional[aioredis.Redis]:
+def connect_redis(url: Optional[Url]) -> Optional[aioredis.Redis]:
+    if url is None:
+        return None
     return aioredis.from_url(url, decode_responses=True)
     
 def close_redis() -> None:
     redis = inject.instance(aioredis.Redis)
+    if not redis:
+        return
     asyncio.run(redis.close())
 
 def inject_coniguration(binder: inject.Binder) -> None:
     postgres_url = os.getenv("POSTGRES")
-    if postgres_url:
-        binder.bind(Pool, connect_db(postgres_url))
+    binder.bind(Pool, connect_db(postgres_url))
 
     redis_url = os.getenv("REDIS")
-    if redis_url:
-        binder.bind(aioredis.Redis, connect_redis(redis_url))
-
+    binder.bind(aioredis.Redis, connect_redis(redis_url))
 
 if __name__ == "__main__":
     load_dotenv()

@@ -38,6 +38,9 @@ class Markov(commands.Cog):
         self.possible_starts: List[NGram] = []
         self.training_progress = 100
 
+        if self.redis is None:
+            raise Exception("redis connection is required")
+
     @commands.group(invoke_without_command=True)
     async def markov(self, ctx: Context, *_anything: str) -> None:
         if self.state != MarkovState.READY:
