@@ -7,6 +7,7 @@ from typing import List, Optional, Sequence, Tuple, cast
 from bot.db.utils import (Crud, DBConnection, FromMessageMapper, Id, Mapper,
                           Pool, Record, Table, WrappedCallable, withConn)
 from disnake import Emoji, Message, NotFound, PartialEmoji, Reaction
+from .tables import REACTIONS
 
 log = logging.getLogger(__name__)
 Columns = Tuple[Id, Id, List[Id], datetime]
@@ -28,14 +29,14 @@ class ReactionDao(Table, Crud[Columns], Mapper[Reaction, Columns], FromMessageMa
 
     @withConn
     async def select(self, conn: DBConnection, data: Tuple[Id, Id]) -> List[Record]:
-        return await conn.fetch("""
-            SELECT * FROM server.reactions WHERE message_id=$1 AND emoji_id=$2
+        return await conn.fetch(f"""
+            SELECT * FROM {REACTIONS} WHERE message_id=$1 AND emoji_id=$2
         """, data)
 
     @withConn
     async def insert(self, conn: DBConnection, data: List[Columns]) -> None:
-        await conn.executemany("""
-            INSERT INTO server.reactions AS r (message_id, emoji_id, member_ids, created_at)
+        await conn.executemany(f"""
+            INSERT INTO {REACTIONS} AS r (message_id, emoji_id, member_ids, created_at)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (message_id, emoji_id) DO UPDATE
                 SET member_ids=$3,
@@ -52,8 +53,8 @@ class ReactionDao(Table, Crud[Columns], Mapper[Reaction, Columns], FromMessageMa
 
     @withConn
     async def soft_delete(self, conn: DBConnection, ids: List[Tuple[Id]]) -> None:
-        await conn.executemany("""
-            UPDATE server.reactions
+        await conn.executemany(f"""
+            UPDATE {REACTIONS}
             SET deleted_at=NOW()
             WHERE message_id = $1 AND emoji_id=$2;
         """, ids)

@@ -6,6 +6,7 @@ from asyncpg import CharacterNotInRepertoireError
 from bot.db.utils import (Crud, DBConnection, Id, Mapper, Record, Table,
                           WrappedCallable, withConn)
 from disnake import Message
+from .tables import MESSAGES
 
 log = logging.getLogger(__name__)
 
@@ -23,15 +24,15 @@ class MessageDao(Table, Crud[Columns], Mapper[Message, Columns]):
 
     @withConn
     async def select(self, conn: DBConnection, message_id: Id) -> List[Record]:
-        return await conn.fetch("""
-            SELECT * FROM server.messages WHERE id=$1
+        return await conn.fetch(f"""
+            SELECT * FROM {MESSAGES} WHERE id=$1
         """, message_id)
 
     @withConn
     async def select_all_long(self, conn: DBConnection) -> List[Record]:
-        return await conn.fetch("""
+        return await conn.fetch(f"""
             SELECT author_id, content
-            FROM server.messages
+            FROM {MESSAGES}
             INNER JOIN server.users AS u ON (author_id = u.id)
             WHERE LENGTH(content) > 50 AND 
                   NOT is_bot
@@ -41,8 +42,8 @@ class MessageDao(Table, Crud[Columns], Mapper[Message, Columns]):
     @withConn
     async def insert(self, conn: DBConnection, data: List[Columns]) -> None:
         try:
-            await conn.executemany("""
-                INSERT INTO server.messages AS m (channel_id, author_id, id, content, created_at)
+            await conn.executemany(f"""
+                INSERT INTO {MESSAGES} AS m (channel_id, author_id, id, content, created_at)
                 VALUES ($1, $2, $3, $4, $5)
                 ON CONFLICT (id) DO UPDATE
                     SET content=$4,
@@ -62,8 +63,8 @@ class MessageDao(Table, Crud[Columns], Mapper[Message, Columns]):
 
     @withConn
     async def soft_delete(self, conn: DBConnection, ids: List[Tuple[Id]]) -> None:
-        await conn.executemany("""
-            UPDATE server.messages
+        await conn.executemany(f"""
+            UPDATE {MESSAGES}
             SET deleted_at=NOW()
             WHERE id = $1;
         """, ids)

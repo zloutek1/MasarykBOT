@@ -1,7 +1,7 @@
 from typing import List, Optional, Tuple
 
 from .utils import DBConnection, Id, Record, Table, withConn
-
+from .tables import EMOJIBOARD, CHANNELS, EMOJIS
 
 class EmojiboardDao(Table):
     @withConn
@@ -12,14 +12,14 @@ class EmojiboardDao(Table):
     ) -> List[Record]:
         guild_id, ignored_users, channel_id, author_id, emoji_id = data
 
-        return await conn.fetch("""
+        return await conn.fetch(f"""
             SELECT
                 emoji.name,
                 SUM(count) AS sent_total
-            FROM cogs.emojiboard
-            INNER JOIN server.channels AS channel
+            FROM {EMOJIBOARD}
+            INNER JOIN {CHANNELS} AS channel
                 ON channel_id = channel.id
-            INNER JOIN server.emojis AS emoji
+            INNER JOIN {EMOJIS} AS emoji
                 ON emoji_id = emoji.id
             WHERE guild_id = $1::bigint AND
                     author_id<>ALL($2::bigint[]) AND

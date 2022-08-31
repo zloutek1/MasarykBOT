@@ -1,12 +1,14 @@
 import re
 from datetime import datetime
 from typing import List, Optional, Sequence, Tuple, Union, cast
+from emoji import demojize, get_emoji_regexp
+from numpy import delete
 
+
+from bot.db.tables imoprt EMOJIS
 from bot.db.utils import (Crud, DBConnection, FromMessageMapper, Id, Mapper,
                           Record, Table, Url, WrappedCallable, withConn)
 from disnake import Emoji, Message, PartialEmoji
-from emoji import demojize, get_emoji_regexp
-from numpy import delete
 
 AnyEmote = Union[Emoji, PartialEmoji, str]
 Columns = Tuple[Id, str, Url, bool]
@@ -33,14 +35,14 @@ class EmojiDao(Table, Crud[Columns], Mapper[AnyEmote, Columns], FromMessageMappe
 
     @withConn
     async def select(self, conn: DBConnection, emoji_id: Id) -> List[Record]:
-        return await conn.fetch("""
-            SELECT * FROM server.emojis WHERE id=$1
+        return await conn.fetch(f"""
+            SELECT * FROM {EMOJIS} WHERE id=$1
         """, emoji_id)
 
     @withConn
     async def insert(self, conn: DBConnection, data: List[Columns]) -> None:
-        await conn.executemany("""
-            INSERT INTO server.emojis AS e (id, name, url, animated)
+        await conn.executemany(f"""
+            INSERT INTO {EMOJIS} AS e (id, name, url, animated)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (id) DO UPDATE
                 SET name=$2,
@@ -59,8 +61,8 @@ class EmojiDao(Table, Crud[Columns], Mapper[AnyEmote, Columns], FromMessageMappe
 
     @withConn
     async def soft_delete(self, conn: DBConnection, ids: List[Tuple[Id]]) -> None:
-        await conn.executemany("""
-            UPDATE server.emojis
+        await conn.executemany(f"""
+            UPDATE {EMOJIS}
             SET deleted_at=NOW()
             WHERE id = $1;
         """, ids)

@@ -4,6 +4,7 @@ from typing import List, Optional, Sequence, Tuple, Union, cast, overload
 from bot.db.utils import (Crud, DBConnection, FromMessageMapper, Id, Mapper,
                           Record, Table, Url, WrappedCallable, withConn)
 from disnake import Member, Message, User
+from bot.db.tables import USERS
 
 Columns = Tuple[Id, str, Optional[Url], bool, datetime]
 
@@ -22,14 +23,14 @@ class UserDao(Table, Crud[Columns], Mapper[Union[User, Member], Columns], FromMe
 
     @withConn
     async def select(self, conn: DBConnection, user_id: Id) -> List[Record]:
-        return await conn.fetch("""
-            SELECT * FROM server.users WHERE id=$1
+        return await conn.fetch(f"""
+            SELECT * FROM {USERS} WHERE id=$1
         """, user_id)
 
     @withConn
     async def insert(self, conn: DBConnection, data: List[Columns]) -> None:
-        await conn.executemany("""
-            INSERT INTO server.users AS u (id, names, avatar_url, is_bot, created_at)
+        await conn.executemany(f"""
+            INSERT INTO {USERS} AS u (id, names, avatar_url, is_bot, created_at)
             VALUES ($1, ARRAY[$2], $3, $4, $5)
             ON CONFLICT (id) DO UPDATE
                 SET names=ARRAY(
@@ -53,8 +54,8 @@ class UserDao(Table, Crud[Columns], Mapper[Union[User, Member], Columns], FromMe
 
     @withConn
     async def soft_delete(self, conn: DBConnection, ids: List[Tuple[Id]]) -> None:
-        await conn.executemany("""
-            UPDATE server.users
+        await conn.executemany(f"""
+            UPDATE {USERS}
             SET deleted_at=NOW()
             WHERE id = $1;
         """, ids)

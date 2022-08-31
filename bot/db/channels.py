@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List, Optional, Sequence, Tuple, cast
 
+from bot.db.tables import CHANNELS
 from bot.db.utils import (Crud, DBConnection, Id, Mapper, Record, Table,
                           WrappedCallable, withConn)
 from disnake import TextChannel
@@ -19,14 +20,14 @@ class ChannelDao(Table, Crud[Columns], Mapper[TextChannel, Columns]):
 
     @withConn
     async def select(self, conn: DBConnection, channel_id: Id) -> List[Record]:
-        return await conn.fetch("""
-            SELECT * FROM server.channels WHERE id=$1
+        return await conn.fetch(f"""
+            SELECT * FROM {CHANNELS} WHERE id=$1
         """, channel_id)
 
     @withConn
     async def insert(self, conn: DBConnection, data: List[Columns]) -> None:
-        await conn.executemany("""
-            INSERT INTO server.channels AS ch (guild_id, category_id, id, name, position, created_at)
+        await conn.executemany(f"""
+            INSERT INTO {CHANNELS} AS ch (guild_id, category_id, id, name, position, created_at)
             VALUES ($1, $2, $3, $4, $5, $6)
             ON CONFLICT (id) DO UPDATE
                 SET name=$4,
@@ -45,8 +46,8 @@ class ChannelDao(Table, Crud[Columns], Mapper[TextChannel, Columns]):
 
     @withConn
     async def soft_delete(self, conn: DBConnection, ids: List[Tuple[Id]]) -> None:
-        await conn.executemany("""
-            UPDATE server.channels
+        await conn.executemany(f"""
+            UPDATE {CHANNELS}
             SET deleted_at=NOW()
             WHERE id = $1;
         """, ids)

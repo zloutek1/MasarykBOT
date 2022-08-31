@@ -4,6 +4,7 @@ from typing import List, Sequence, Tuple, cast
 from bot.db.utils import (Crud, DBConnection, Id, Mapper, Record, Table,
                           WrappedCallable, withConn)
 from disnake import Role
+from bot.db.tables import ROLES
 
 Columns = Tuple[Id, Id, str, str, datetime]
 
@@ -18,14 +19,14 @@ class RoleDao(Table, Crud[Columns], Mapper[Role, Columns]):
 
     @withConn
     async def select(self, conn: DBConnection, role_id: Id) -> List[Record]:
-        return await conn.fetch("""
-            SELECT * FROM server.roles WHERE id=$1
+        return await conn.fetch(f"""
+            SELECT * FROM {ROLES} WHERE id=$1
         """, role_id)
 
     @withConn
     async def insert(self, conn: DBConnection, data: List[Columns]) -> None:
-        await conn.executemany("""
-            INSERT INTO server.roles AS r (guild_id, id, name, color, created_at)
+        await conn.executemany(f"""
+            INSERT INTO {ROLES} AS r (guild_id, id, name, color, created_at)
             VALUES ($1, $2, $3, $4, $5)
             ON CONFLICT (id) DO UPDATE
                 SET name=$3,
@@ -44,4 +45,4 @@ class RoleDao(Table, Crud[Columns], Mapper[Role, Columns]):
 
     @withConn
     async def soft_delete(self, conn: DBConnection, ids: List[Tuple[Id]]) -> None:
-        await conn.executemany("UPDATE server.roles SET deleted_at=NOW() WHERE id = $1;", ids)
+        await conn.executemany(f"UPDATE {ROLES} SET deleted_at=NOW() WHERE id = $1;", ids)

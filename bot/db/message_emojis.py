@@ -5,6 +5,7 @@ from typing import List, Optional, Tuple, cast
 from bot.db.emojis import EmojiDao
 from bot.db.utils import (Crud, DBConnection, FromMessageMapper, Id, Mapper,
                           Pool, Record, Table, WrappedCallable, withConn)
+from bot.db.tables import MESSAGE_EMOJIS
 from disnake import Message
 
 Columns = Tuple[Id, Id, int]
@@ -20,14 +21,14 @@ class MessageEmojiDao(Table, Crud[Columns], FromMessageMapper[Columns]):
 
     @withConn
     async def select(self, conn: DBConnection, emoji_id: Id) -> List[Record]:
-        return await conn.fetch("""
-            SELECT * FROM server.message_emojis WHERE message_id=$1 AND emoji_id=$2
+        return await conn.fetch(f"""
+            SELECT * FROM {MESSAGE_EMOJIS} WHERE message_id=$1 AND emoji_id=$2
         """, emoji_id)
 
     @withConn
     async def insert(self, conn: DBConnection, data: List[Columns]) -> None:
-        await conn.executemany("""
-            INSERT INTO server.message_emojis AS me (message_id, emoji_id, count)
+        await conn.executemany(f"""
+            INSERT INTO {MESSAGE_EMOJIS} AS me (message_id, emoji_id, count)
             VALUES ($1, $2, $3)
             ON CONFLICT (message_id, emoji_id) DO UPDATE
                 SET count=$3,

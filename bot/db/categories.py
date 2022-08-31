@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List, Sequence, Tuple, cast
 
+from bot.db.tables import CATEGORIES
 from bot.db.utils import (Crud, DBConnection, Id, Mapper, Record, Table,
                           WrappedCallable, withConn)
 from disnake import CategoryChannel
@@ -18,14 +19,14 @@ class CategoryDao(Table, Crud[Columns], Mapper[CategoryChannel, Columns]):
 
     @withConn
     async def select(self, conn: DBConnection, category_id: Id) -> List[Record]:
-        return await conn.fetch("""
-            SELECT * FROM server.categories WHERE id=$1
+        return await conn.fetch(f"""
+            SELECT * FROM {CATEGORIES} WHERE id=$1
         """, category_id)
 
     @withConn
     async def insert(self, conn: DBConnection, data: List[Columns]) -> None:
-        await conn.executemany("""
-            INSERT INTO server.categories AS c (guild_id, id, name, position, created_at)
+        await conn.executemany(f"""
+            INSERT INTO {CATEGORIES} AS c (guild_id, id, name, position, created_at)
             VALUES ($1, $2, $3, $4, $5)
             ON CONFLICT (id) DO UPDATE
                 SET name=$3,
@@ -44,8 +45,8 @@ class CategoryDao(Table, Crud[Columns], Mapper[CategoryChannel, Columns]):
 
     @withConn
     async def soft_delete(self, conn: DBConnection, ids: List[Tuple[Id]]) -> None:
-        await conn.executemany("""
-            UPDATE server.categories
+        await conn.executemany(f"""
+            UPDATE {CATEGORIES}
             SET deleted_at=NOW()
             WHERE id = $1;
         """, ids)

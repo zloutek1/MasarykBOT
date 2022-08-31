@@ -3,22 +3,22 @@ from types import TracebackType
 from typing import List, Optional, Tuple, Type, cast
 
 from .utils import DBConnection, Id, Record, Table, WrappedCallable, withConn
-
+from .tables import LOGGER, MESSAGES
 
 class LoggerDao(Table):
     @withConn
     async def select(self, conn: DBConnection, channel_id: Id) -> List[Record]:
-        return await conn.fetch("""
+        return await conn.fetch(f"""
             SELECT *
-            FROM cogs.logger
+            FROM {LOGGER}
             WHERE channel_id = $1
         """, channel_id)
 
     @withConn
     async def select_latest_backup_message_ids(self, conn: DBConnection) -> List[Record]:
-        return await conn.fetch("""
+        return await conn.fetch(f"""
             SELECT channel_id, MAX(id) as id
-            FROM server.messages
+            FROM {MESSAGES}
             GROUP BY channel_id;
         """)
 
@@ -29,8 +29,8 @@ class LoggerDao(Table):
         data: Tuple[Id, datetime, datetime]
     ) -> None:
         channel_id, from_date, to_date = data
-        await conn.execute("""
-            INSERT INTO cogs.logger VALUES ($1, $2, $3, NULL)
+        await conn.execute(f"""
+            INSERT INTO {LOGGER} VALUES ($1, $2, $3, NULL)
             ON CONFLICT (channel_id, from_date) DO NOTHING
         """, channel_id, from_date, to_date)
 
@@ -42,22 +42,22 @@ class LoggerDao(Table):
     ) -> None:
         channel_id, from_date, to_date, is_first_week = data
         if is_first_week:
-            await conn.execute("""
-                UPDATE cogs.logger
+            await conn.execute(f"""
+                UPDATE {LOGGER}
                 SET finished_at = NOW()
                 WHERE channel_id = $1 AND
                       finished_at IS NULL
             """, channel_id)
         else:
             async with conn.transaction():
-                await conn.execute("""
-                    DELETE FROM cogs.logger
+                await conn.execute(f"""
+                    DELETE FROM {LOGGER}
                     WHERE channel_id = $1 AND
                           from_date = $2 AND
                           to_date = $3
                     """, channel_id, from_date, to_date)
-                await conn.execute("""
-                    UPDATE cogs.logger
+                await conn.execute(f"""
+                    UPDATE {LOGGER}
                     SET to_date = $3,
                         finished_at = NOW()
                     WHERE channel_id = $1 AND

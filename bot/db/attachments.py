@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List, Optional, Sequence, Tuple, cast
 
+from bot.db.tables import ATTACHMENTS
 from bot.db.utils import (Crud, DBConnection, FromMessageMapper, Id, Mapper,
                           Record, Table, Url, WrappedCallable, withConn)
 from disnake import Attachment, Message
@@ -22,14 +23,14 @@ class AttachmentDao(Table, Crud[Columns], Mapper[Attachment, Columns], FromMessa
 
     @withConn
     async def select(self, conn: DBConnection, attachment_id: Id) -> List[Record]:
-        return await conn.fetch("""
-            SELECT * FROM server.attachments WHERE id=$1
+        return await conn.fetch(f"""
+            SELECT * FROM {ATTACHMENTS} WHERE id=$1
         """, attachment_id)
 
     @withConn
     async def insert(self, conn: DBConnection, data: List[Columns]) -> None:
-        await conn.executemany("""
-            INSERT INTO server.attachments AS a (message_id, id, filename, url)
+        await conn.executemany(f"""
+            INSERT INTO {ATTACHMENTS} AS a (message_id, id, filename, url)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (id) DO UPDATE
                 SET filename=$3,

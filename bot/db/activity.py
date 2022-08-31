@@ -3,7 +3,7 @@ from datetime import date, datetime
 from typing import List, Optional, Tuple
 
 from bot.db.utils import DBConnection, Id, Record, Table, withConn
-
+from bot.db.tables import MESSAGES, CHANNELS
 
 class ActivityDao(Table):
     @withConn
@@ -14,12 +14,12 @@ class ActivityDao(Table):
     ) -> List[Record]:
 
         guild_id, channel_id, author_id, from_date, to_date = data
-        return await conn.fetch("""
+        return await conn.fetch(f"""
            SELECT
                 date_trunc('day', m.created_at) as "day",
                 count(*) as "messages_sent"
-            FROM server.messages AS m
-            INNER JOIN server.channels AS ch
+            FROM {MESSAGES} AS m
+            INNER JOIN {CHANNELS} AS ch
                ON m.channel_id = ch.id
             WHERE guild_id = $1 AND
                   (channel_id = $2 OR $2 IS NULL) AND

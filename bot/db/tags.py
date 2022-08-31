@@ -1,6 +1,7 @@
 from typing import List, Optional, Tuple
 
 from bot.db.utils import DBConnection, Id, Record, Table, withConn
+from bot.db.tables import TAGS
 
 Columns = Tuple[Id, Optional[Id], str, str]
 
@@ -13,8 +14,8 @@ class TagDao(Table):
     ) -> Optional[Record]:
 
         guild_id, author_id, name = data
-        return await conn.fetchrow("""
-            SELECT * FROM cogs.tags
+        return await conn.fetchrow(f"""
+            SELECT * FROM {TAGS}
             WHERE guild_id = $1
               AND (author_id = $2 OR (author_id IS NULL AND $2 IS NULL))
               AND name = $3
@@ -29,8 +30,8 @@ class TagDao(Table):
     ) -> List[Record]:
 
         guild_id, author_id = data
-        return await conn.fetch("""
-            SELECT * FROM cogs.tags
+        return await conn.fetch(f"""
+            SELECT * FROM {TAGS}
             WHERE guild_id = $1
               AND (author_id = $2 OR (author_id IS NULL AND $2 IS NULL))
               AND deleted_at IS NULL
@@ -44,8 +45,8 @@ class TagDao(Table):
     ) -> List[Record]:
 
         guild_id, author_id, query = data
-        return await conn.fetch("""
-            SELECT * FROM cogs.tags
+        return await conn.fetch(f"""
+            SELECT * FROM {TAGS}
             WHERE guild_id = $1
               AND (author_id = $2 OR (author_id IS NULL AND $2 IS NULL))
               AND name LIKE $3
@@ -59,8 +60,8 @@ class TagDao(Table):
         data: List[Columns]
     ) -> None:
 
-        await conn.executemany("""
-            INSERT INTO cogs.tags AS t (guild_id, author_id, name, content)
+        await conn.executemany(f"""
+            INSERT INTO {TAGS} AS t (guild_id, author_id, name, content)
                     VALUES ($1, $2, $3, $4)
             ON CONFLICT (guild_id, author_id, name) DO UPDATE
                 SET content = excluded.content,
@@ -76,8 +77,8 @@ class TagDao(Table):
     ) -> None:
 
         guild_id, author_id, name = data
-        await conn.execute("""
-            UPDATE cogs.tags
+        await conn.execute(f"""
+            UPDATE {TAGS}
             SET deleted_at = NOW()
             WHERE guild_id = $1 AND (author_id = $2 OR $2 IS NULL) AND name = $3
         """, guild_id, author_id, name)
@@ -90,9 +91,9 @@ class TagDao(Table):
     ) -> None:
 
         guild_id, author_id, new_author_id, name = data
-        await conn.execute("""
-            INSERT INTO cogs.tags AS t (guild_id, author_id, name, content)
-                SELECT guild_id, $3, name, content FROM cogs.tags
+        await conn.execute(f"""
+            INSERT INTO {TAGS} AS t (guild_id, author_id, name, content)
+                SELECT guild_id, $3, name, content FROM {TAGS}
                 WHERE guild_id = $1 AND author_id = $2 AND name = $4
             ON CONFLICT (guild_id, author_id, name) DO UPDATE
                 SET content = excluded.content,

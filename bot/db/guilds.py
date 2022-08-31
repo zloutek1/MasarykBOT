@@ -4,6 +4,7 @@ from typing import List, Optional, Sequence, Tuple, cast
 
 from disnake import Guild
 
+from .tables import GUILDS
 from .utils import (Crud, DBConnection, Id, Mapper, Record, Table, Url,
                     WrappedCallable, withConn)
 
@@ -21,14 +22,14 @@ class GuildDao(Table, Crud[Columns], Mapper[Guild, Columns]):
 
     @withConn
     async def select(self, conn: DBConnection, guild_id: Id) -> List[Record]:
-        return await conn.fetch("""
-            SELECT * FROM server.guilds WHERE id=$1
+        return await conn.fetch(f"""
+            SELECT * FROM {GUILDS} WHERE id=$1
         """, guild_id)
 
     @withConn
     async def insert(self, conn: DBConnection, data: List[Columns]) -> None:
-        await conn.executemany("""
-            INSERT INTO server.guilds AS g (id, name, icon_url, created_at)
+        await conn.executemany(f"""
+            INSERT INTO {GUILDS} AS g (id, name, icon_url, created_at)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (id) DO UPDATE
                 SET name=$2,
@@ -47,8 +48,8 @@ class GuildDao(Table, Crud[Columns], Mapper[Guild, Columns]):
 
     @withConn
     async def soft_delete(self, conn: DBConnection, ids: List[Tuple[Id]]) -> None:
-        await conn.executemany("""
-            UPDATE server.guilds
+        await conn.executemany(f"""
+            UPDATE {GUILDS}
             SET deleted_at=NOW()
             WHERE id = $1;
         """, ids)

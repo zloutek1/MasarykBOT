@@ -3,6 +3,7 @@ from typing import List, Optional, Tuple, cast
 
 from bot.db.utils import (Crud, DBConnection, Id, Record, Table,
                           WrappedCallable, withConn)
+from bot.db.tables import SEASONS
 
 Columns = Tuple[Id, str, Optional[datetime], Optional[datetime], Optional[bytes], Optional[bytes]]
 
@@ -10,8 +11,8 @@ class SeasonDao(Table, Crud[Columns]):
     @withConn
     async def load_events(self, conn: DBConnection, guild_id: Id) -> List[Record]:
 
-        return await conn.fetch("""
-            SELECT * FROM cogs.seasons
+        return await conn.fetch(f"""
+            SELECT * FROM {SEASONS}
             WHERE guild_id = $1 AND
                   from_date IS NOT NULL AND
                   to_date IS NOT NULL
@@ -22,8 +23,8 @@ class SeasonDao(Table, Crud[Columns]):
     async def find(self, conn: DBConnection, data: Tuple[Id, Id]) -> Optional[Record]:
 
         guild_id, id = data
-        return await conn.fetchrow("""
-            SELECT * FROM cogs.seasons
+        return await conn.fetchrow(f"""
+            SELECT * FROM {SEASONS}
             WHERE guild_id = $1 AND
                   id = $2 AND
                   from_date IS NOT NULL AND
@@ -34,8 +35,8 @@ class SeasonDao(Table, Crud[Columns]):
     @withConn
     async def load_current_event(self, conn: DBConnection, guild_id: Id) -> Optional[Record]:
 
-        return await conn.fetchrow("""
-            SELECT * FROM cogs.seasons
+        return await conn.fetchrow(f"""
+            SELECT * FROM {SEASONS}
             WHERE guild_id = $1 AND
                   from_date < NOW() AND
                   NOW() < to_date
@@ -44,16 +45,16 @@ class SeasonDao(Table, Crud[Columns]):
 
     @withConn
     async def load_default_event(self, conn: DBConnection, guild_id: Id) -> Optional[Record]:
-        return await conn.fetchrow("""
-            SELECT * FROM cogs.seasons
+        return await conn.fetchrow(f"""
+            SELECT * FROM {SEASONS}
             WHERE guild_id = $1 AND
                   name = 'default'
         """, guild_id)
 
     @withConn
     async def insert(self, conn: DBConnection, data: List[Columns]) -> None:
-        await conn.executemany("""
-            INSERT INTO cogs.seasons AS s (guild_id, name, from_date, to_date, icon, banner)
+        await conn.executemany(f"""
+            INSERT INTO {SEASONS} AS s (guild_id, name, from_date, to_date, icon, banner)
             VALUES ($1, $2, $3, $4, $5, $6)
             ON CONFLICT (guild_id, name) DO UPDATE
                 SET icon = excluded.icon,
@@ -68,8 +69,8 @@ class SeasonDao(Table, Crud[Columns]):
     # TODO: rework the seasons cog to use soft deletes
     @withConn
     async def delete(self, conn: DBConnection, data: List[Tuple[Id]]) -> None:
-        await conn.executemany("""
-            DELETE FROM cogs.seasons
+        await conn.executemany(f"""
+            DELETE FROM {SEASONS}
             WHERE id = $1
         """, data)
 

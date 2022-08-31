@@ -1,7 +1,7 @@
 from typing import List, Optional, Tuple
 
 from .utils import DBConnection, Id, Record, Table, withConn
-
+from .tables import LEADERBOARD, USERS, CHANNELS
 
 class LeaderboardDao(Table):
     @withConn
@@ -13,7 +13,7 @@ class LeaderboardDao(Table):
         guild_id, ignored_users, channel_id = data
 
         await conn.execute("DROP TABLE IF EXISTS ldb_lookup")
-        await conn.execute("""
+        await conn.execute(f"""
             CREATE TEMPORARY TABLE IF NOT EXISTS ldb_lookup AS
                 SELECT
                     ROW_NUMBER() OVER (ORDER BY sent_total DESC), *
@@ -22,10 +22,10 @@ class LeaderboardDao(Table):
                         author_id,
                         author.names[1] AS author,
                         SUM(messages_sent) AS sent_total
-                    FROM cogs.leaderboard
-                    INNER JOIN server.users AS author
+                    FROM {LEADERBOARD}
+                    INNER JOIN {USERS} AS author
                         ON author_id = author.id
-                    INNER JOIN server.channels AS channel
+                    INNER JOIN {CHANNELS} AS channel
                         ON channel_id = channel.id
                     WHERE guild_id = $1::bigint AND
                             author_id<>ALL($2::bigint[]) AND
