@@ -669,7 +669,7 @@ class Subject(commands.Cog):
                               if category.name.startswith(subject['faculty'])]
 
         channel_name = self.subject_to_channel_name(ctx, subject)
-        category_name = faculty_trie.find_category_for(channel_name, DISCORD_CATEGORY_LIMIT)
+        category_name = faculty_trie.find_category_for(channel_name, DISCORD_CATEGORY_LIMIT) or 'XXXXX'
         return get(faculty_categories, name=self.subject_to_category_name(subject['faculty'], category_name))
 
     
