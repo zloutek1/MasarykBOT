@@ -7,7 +7,7 @@ from textwrap import dedent
 from typing import (Any, Dict, List, NoReturn, Optional, Text, Tuple, Union,
                     cast)
 
-from bot.cogs.utils.context import Context
+from bot.cogs.utils.context import Context, GuildChannel
 from bot.constants import Config
 from bot.db.categories import CategoryDao
 from bot.db.channels import ChannelDao
@@ -27,6 +27,7 @@ Id = int
 
 DISCORD_CATEGORY_LIMIT = 50
 ERR_EMBED_BODY_TOO_LONG = 50035
+MAX_CHANNEL_OVERWRITES = 500
 SUBJECT_MESSAGE = {
     "body": dedent("""
         zde si můžete "zapsat" (zobrazit) místnost na tomto discordu pro daný předmět
@@ -507,18 +508,50 @@ class Subject(commands.Cog):
             return
 
         channel = await self.create_or_get_existing_channel(ctx, subject)
-        await channel.set_permissions(ctx.author, overwrite=PermissionOverwrite(read_messages=True))
+        if role := get(channel.guild.roles, name=f"📖{subject.get('code')}"):
+            log.info("adding role %s to %s", str(role), ctx.author)
+            await ctx.author.add_roles(role)
+        
+        elif len(channel.overwrites) < MAX_CHANNEL_OVERWRITES:
+            log.info("adding permission overwrite to %s in %s", ctx.author, channel)
+            await channel.set_permissions(ctx.author, overwrite=PermissionOverwrite(read_messages=True))
+        
+        else:
+            await self._migrate_from_overwrites_to_role(subject, channel, ctx.author)
+
         await self.send_subject_embed(ctx, f"Signed to subject {channel_name} successfully")
         log.info("Signed user %s to channel %s", str(ctx.author), channel_name)
 
-
+    async def _migrate_from_overwrites_to_role(self, subject, channel: GuildChannel, user: Member):
+        log.info("creating role instead of permission overwrite")
+        role = await channel.guild.create_role(name=f"📖{subject.get('code')}")
+            
+        once = True    
+        for key, overwrite in channel.overwrites.items():
+            if not isinstance(key, Member) or overwrite != PermissionOverwrite(read_messages=True):
+                continue
+            
+            await key.add_roles(role)
+            await channel.set_permissions(key, overwrite=None)
+                 
+            if once:
+                await channel.set_permissions(role, overwrite=PermissionOverwrite(read_messages=True))
+                await user.add_roles(role)
+                once = False
     
     async def try_to_unsign_user_from_channel(self, ctx: Context, subject: Record) -> None:
         assert isinstance(ctx.author, Member), "ERROR: user must part of a guild"
 
         try:
             channel = await self.lookup_channel_or_err(ctx, subject)
-            await channel.set_permissions(ctx.author, overwrite=None)
+            
+            if role := get(channel.guild.roles, name=f"📖{subject.get('code')}"):
+                log.info("removing role %s to %s", str(role), ctx.author)
+                await ctx.author.remove_roles(role)
+            else:
+                log.info("removing permission overwrite from %s in %s", ctx.author, channel)
+                await channel.set_permissions(ctx.author, overwrite=None)
+            
             await self.send_subject_embed(ctx, f"Unsigned from subject {self.subject_to_channel_name(ctx, subject)} successfully")
 
         except ChannelNotFound as err:
