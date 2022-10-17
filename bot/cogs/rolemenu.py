@@ -121,14 +121,19 @@ class Rolemenu(commands.Cog):
         if not (role := get(channel.guild.roles, name=f"📁{channel.name}")):
             log.info("creating role instead of permission overwrite")
             role = await channel.guild.create_role(name=f"📁{channel.name}")
-            
+
+        once = True    
         for key, overwrite in channel.overwrites.items():
-            if isinstance(key, Member) and overwrite == PermissionOverwrite(read_messages=True):
-                await key.add_roles(role)
-                await channel.set_permissions(key, overwrite=None)
+            if not isinstance(key, Member) or overwrite != PermissionOverwrite(read_messages=True):
+                continue
+            
+            await key.add_roles(role)
+            await channel.set_permissions(key, overwrite=None)
                  
-        await channel.set_permissions(role, overwrite=PermissionOverwrite(read_messages=True))
-        await user.add_roles(role)
+            if once:
+                await channel.set_permissions(role, overwrite=PermissionOverwrite(read_messages=True))
+                await user.add_roles(role)
+                once = False
 
     async def _reaction_remove(self, guild: Guild, author: Member, desc: str) -> None:
         """
