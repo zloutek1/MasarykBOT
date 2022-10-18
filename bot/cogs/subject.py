@@ -526,18 +526,21 @@ class Subject(commands.Cog):
         log.info("creating role instead of permission overwrite")
         role = await channel.guild.create_role(name=f"📖{subject.get('code')}")
             
-        once = True    
-        for key, overwrite in channel.overwrites.items():
+        for i, (key, overwrite) in enumerate(channel.overwrites.items()):
             if not isinstance(key, Member) or overwrite != PermissionOverwrite(read_messages=True):
                 continue
             
             await key.add_roles(role)
             await channel.set_permissions(key, overwrite=None)
-                 
-            if once:
+
+            if i == 10 or len(channel.overwrites) <= max(0, MAX_CHANNEL_OVERWRITES - 10):
+                log.info('showing role')
                 await channel.set_permissions(role, overwrite=PermissionOverwrite(read_messages=True))
                 await user.add_roles(role)
-                once = False
+        
+        log.info('adding role overwrite')
+        await channel.set_permissions(role, overwrite=PermissionOverwrite(read_messages=True))
+        await user.add_roles(role)
     
     async def try_to_unsign_user_from_channel(self, ctx: Context, subject: Record) -> None:
         assert isinstance(ctx.author, Member), "ERROR: user must part of a guild"

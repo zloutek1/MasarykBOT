@@ -122,19 +122,22 @@ class Rolemenu(commands.Cog):
             log.info("creating role instead of permission overwrite")
             role = await channel.guild.create_role(name=f"📁{channel.name}")
 
-        once = True    
-        for key, overwrite in channel.overwrites.items():
+        for i, (key, overwrite) in enumerate(channel.overwrites.items()):
             if not isinstance(key, Member) or overwrite != PermissionOverwrite(read_messages=True):
                 continue
             
             await key.add_roles(role)
             await channel.set_permissions(key, overwrite=None)
-                 
-            if once:
+            
+            if i == 10 or len(channel.overwrites) <= max(0, MAX_CHANNEL_OVERWRITES - 10):
+                log.info('showing role')
                 await channel.set_permissions(role, overwrite=PermissionOverwrite(read_messages=True))
                 await user.add_roles(role)
-                once = False
-
+        
+        log.info('adding role overwrite')
+        await channel.set_permissions(role, overwrite=PermissionOverwrite(read_messages=True))
+        await user.add_roles(role)
+            
     async def _reaction_remove(self, guild: Guild, author: Member, desc: str) -> None:
         """
         Remove role or hide channel from a user
