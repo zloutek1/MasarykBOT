@@ -4,7 +4,6 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
 WORKDIR /MasarykBOT
-COPY . /MasarykBOT
 
 RUN apt-get update && \
     apt-get install -y git build-essential && \
