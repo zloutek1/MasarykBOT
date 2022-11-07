@@ -2,8 +2,8 @@ import logging
 from datetime import datetime
 from typing import Any, Optional, cast
 
-from disnake import Message, User, Activity, ActivityType
-from disnake.ext import commands
+from discord import Message, User, Activity, ActivityType
+from discord.ext import commands
 
 from bot.cogs.utils import context
 from bot.constants import Config
@@ -19,6 +19,7 @@ class MasarykBOT(commands.Bot):
 
     async def process_commands(self, message: Message) -> None:
         ctx = await self.get_context(message, cls=context.Context)
+        assert self.user
 
         if ctx.command is None:
             if self.user.id in ctx.message.raw_mentions:
