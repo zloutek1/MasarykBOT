@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import time
 from typing import Optional
 
 import asyncpg
@@ -22,7 +21,6 @@ initail_cogs = [
     "bot.cogs.markov",
 ]
 
-
 intents = discord.Intents(
         guilds=True,
         guild_messages=True,
@@ -30,7 +28,8 @@ intents = discord.Intents(
         presences = True,
         emojis=True,
         guild_reactions=True,
-        dm_reactions=True
+        dm_reactions=True,
+        message_content=True
 )
 bot = MasarykBOT(
     command_prefix=commands.when_mentioned_or("!"),
@@ -42,57 +41,32 @@ bot = MasarykBOT(
     ),
 )
 
+log = logging.getLogger()
 
-def connect_db(url: Optional[Url]) -> Optional[Pool]:
-    if url is None:
-        return None
-    
+
+async def connect_db(url: Url) -> Pool:
     pool = None
-    loop = asyncio.get_event_loop()
-    
-    try:
-        while pool is None:
-            pool = loop.run_until_complete(asyncpg.create_pool(url, command_timeout=1280))
-            log.error("Failed to connect to database, reconnecting in 5 seconds...")
-            time.sleep(5)
-
-    except (OSError, TimeoutError):
-        import re
-        redacted_url = re.sub(r'\:(?!\/\/)[^\@]+', ":******", url)
-        log.error("Failed to connect to database (%s)", redacted_url)
-        return None
-    
-    log.info("Connected to database successfully")
+    while pool is None:
+        pool = await asyncpg.create_pool(postgres_url, command_timeout=1280)
     return pool
 
 
 
-def connect_redis(url: Optional[Url]) -> Optional[aioredis.Redis]:
-    if url is None:
-        return None
+def connect_redis(url: Url) -> aioredis.Redis:
     return aioredis.from_url(url, decode_responses=True)
-    
-
-
-def close_redis() -> None:
-    redis = inject.instance(aioredis.Redis)
-    if not redis:
-        return
-    asyncio.run(redis.close())
 
 
 
-def setup_injections(binder: inject.Binder) -> None:
-    postgres_url = os.getenv("POSTGRES")
-    binder.bind(Pool, connect_db(postgres_url))
-    binder.bind(MessageDao, MessageDao())
-
-    redis_url = os.getenv("REDIS")
-    binder.bind(aioredis.Redis, connect_redis(redis_url))
-
+def setup_injections(db_pool: Optional[Pool], redis: Optional[aioredis.Redis]):
+    def inner(binder: inject.Binder) -> None:
+        binder.bind(Pool, db_pool)
+        binder.bind(MessageDao, MessageDao())
+        binder.bind(aioredis.Redis, redis)
+    return inner
 
 
-async def load_extensions():
+
+async def load_extensions() -> None:
     for extension in initail_cogs:
         try:
             await bot.load_extension(extension)
@@ -100,22 +74,33 @@ async def load_extensions():
             log.error('Failed to load extension %s.', extension, exc_info=True)
 
 
-async def main():
+
+async def main() -> None:
+    if (token := os.getenv("TOKEN")) is None:
+        log.exception("discord bot token is required to run the bot, exiting...")
+        exit(1)
+
     async with bot:
         await load_extensions()
-        await bot.start(os.getenv("TOKEN"), reconnect=True)
+        await bot.start(token, reconnect=True)
+
 
 
 if __name__ == "__main__":
     load_dotenv()
     setup_logging()
+    
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    
+    pool = None
+    if postgres_url := os.getenv("POSTGRES"):
+        pool = loop.run_until_complete(connect_db(postgres_url))
 
-    log = logging.getLogger()
+    redis = None
+    if redis_url := os.getenv("REDIS"):
+        redis = connect_redis(redis_url)
 
-    if os.getenv("TOKEN") is None:
-        log.exception("discord bot token is required to run the bot, exiting...")
-        exit(1)
-
-    inject.configure_once(setup_injections)
-
+    inject.configure()
+    inject.configure_once(setup_injections(pool, redis))
     asyncio.run(main())
