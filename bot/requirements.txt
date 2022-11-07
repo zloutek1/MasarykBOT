@@ -1,5 +1,5 @@
 # core dependenices
-disnake==2.4.0
+discord.py==2.0.1
 
 # configs
 python-dotenv==0.15.0
@@ -9,8 +9,8 @@ types-PyYAML==6.0.4
 
 # database access
 aiohttp==3.7.4
-asyncpg==0.25.0
-# git+https://github.com/bryanforbes/asyncpg-stubs.git # asyncpg-stubs
+asyncpg==0.27.0
+asyncpg-stubs==0.27.0
 inject==4.3.1
 
 # cogs
