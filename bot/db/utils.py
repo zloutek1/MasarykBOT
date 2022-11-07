@@ -17,7 +17,6 @@ Pool = asyncpg.Pool[Record]
 DBConnection = asyncpg.pool.PoolConnectionProxy[Record]
 
 
-
 class Table:
     pool = inject.attr(Pool)
 

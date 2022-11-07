@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List, Sequence, Tuple
 
 from asyncpg import CharacterNotInRepertoireError
-from bot.db.utils import (Crud, DBConnection, Id, Mapper, Record)
+from bot.db.utils import (Crud, DBConnection, Id, Mapper, Record, Table)
 from discord import Message
 from .tables import MESSAGES
 
@@ -54,21 +54,37 @@ class MessageCrudDao(Crud[Columns]):
 
 
 
-class MessageDao(MessageMapper, MessageCrudDao):
-    def __init__(self) -> None:
-        super(MessageMapper).__init__()
-        super(MessageCrudDao).__init__()
+class MessageSelectDao(Table):
+    def __init__(self):
+        super(Table).__init__()
 
-    async def select(self, conn: DBConnection, message_id: Id) -> List[Record]:
+    async def select(self, message_id: Id) -> List[Record]:
+        async with self.pool.acquire() as conn:
+            return await self._select(conn, message_id)
+
+    async def _select(self, conn: DBConnection, message_id: Id) -> List[Record]:
         return await conn.fetch(f"""
             SELECT * FROM {MESSAGES} WHERE id=$1
         """, message_id)
 
-    async def select_longer_then(self, conn: DBConnection, length: int) -> List[Record]:
+
+    async def select_longer_then(self, length: int) -> List[Record]:
+        async with self.pool.acquire() as conn:
+            return await self._select_longer_then(conn, length)
+
+    async def _select_longer_then(self, conn: DBConnection, length: int) -> List[Record]:
         return await conn.fetch(f"""
             SELECT author_id, content
             FROM {MESSAGES}
             INNER JOIN server.users AS u ON (author_id = u.id)
-            WHERE LENGTH(content) > $1 AND 
+            WHERE LENGTH(TRIM(content)) > $1 AND 
                   NOT is_bot
         """, length)
+
+
+
+class MessageDao(MessageMapper, MessageCrudDao, MessageSelectDao):
+    def __init__(self) -> None:
+        super(MessageMapper).__init__()
+        super(MessageCrudDao).__init__()
+        super(MessageSelectDao).__init__()
