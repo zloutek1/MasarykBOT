@@ -1,11 +1,10 @@
 import logging
 from datetime import datetime
-from typing import List, Optional, Sequence, Tuple, cast
+from typing import List, Sequence, Tuple
 
 from asyncpg import CharacterNotInRepertoireError
-from bot.db.utils import (Crud, DBConnection, Id, Mapper, Record, Table,
-                          WrappedCallable, withConn)
-from disnake import Message
+from bot.db.utils import (Crud, DBConnection, Id, Mapper, Record)
+from discord import Message
 from .tables import MESSAGES
 
 log = logging.getLogger(__name__)
@@ -13,34 +12,24 @@ log = logging.getLogger(__name__)
 Columns = Tuple[Id, Id, Id, str, datetime]
 
 
-class MessageDao(Table, Crud[Columns], Mapper[Message, Columns]):
+
+class MessageMapper(Mapper[Message, Columns]):
     @staticmethod
-    async def prepare_one(message: Message) -> Columns:
+    async def prepare_one(obj: Message) -> Columns:
+        message = obj
         created_at = message.created_at.replace(tzinfo=None)
-        return (message.channel.id, message.author.id, message.id, message.content, created_at)
+        return (message.channel.id, message.author.id, message.id, 
+                message.content, created_at)
 
-    async def prepare(self, messages: Sequence[Message]) -> List[Columns]:
-        return [await self.prepare_one(message) for message in messages]
-
-    @withConn
-    async def select(self, conn: DBConnection, message_id: Id) -> List[Record]:
-        return await conn.fetch(f"""
-            SELECT * FROM {MESSAGES} WHERE id=$1
-        """, message_id)
-
-    @withConn
-    async def select_all_long(self, conn: DBConnection) -> List[Record]:
-        return await conn.fetch(f"""
-            SELECT author_id, content
-            FROM {MESSAGES}
-            INNER JOIN server.users AS u ON (author_id = u.id)
-            WHERE LENGTH(content) > 50 AND 
-                  NOT is_bot
-        """)
+    @staticmethod
+    async def prepare(objs: Sequence[Message]) -> List[Columns]:
+        messages = objs
+        return [await MessageMapper.prepare_one(message) for message in messages]
 
 
-    @withConn
-    async def insert(self, conn: DBConnection, data: List[Columns]) -> None:
+
+class MessageCrudDao(Crud[Columns]):
+    async def _insert(self, conn: DBConnection, data: List[Columns]) -> None:
         try:
             await conn.executemany(f"""
                 INSERT INTO {MESSAGES} AS m (channel_id, author_id, id, content, created_at)
@@ -56,15 +45,30 @@ class MessageDao(Table, Crud[Columns], Mapper[Message, Columns]):
         except CharacterNotInRepertoireError as e:
             log.warn(e.message)
 
-    @withConn
-    async def update(self, conn: DBConnection, data: List[Columns]) -> None:
-        insert = cast(WrappedCallable, self.insert)
-        await insert.__wrapped__(self, conn, data)
-
-    @withConn
-    async def soft_delete(self, conn: DBConnection, ids: List[Tuple[Id]]) -> None:
+    async def _soft_delete(self, conn: DBConnection, data: List[Tuple[Id]]) -> None:
         await conn.executemany(f"""
             UPDATE {MESSAGES}
             SET deleted_at=NOW()
             WHERE id = $1;
-        """, ids)
+        """, data)
+
+
+
+class MessageDao(MessageMapper, MessageCrudDao):
+    def __init__(self) -> None:
+        super(MessageMapper).__init__()
+        super(MessageCrudDao).__init__()
+
+    async def select(self, conn: DBConnection, message_id: Id) -> List[Record]:
+        return await conn.fetch(f"""
+            SELECT * FROM {MESSAGES} WHERE id=$1
+        """, message_id)
+
+    async def select_longer_then(self, conn: DBConnection, length: int) -> List[Record]:
+        return await conn.fetch(f"""
+            SELECT author_id, content
+            FROM {MESSAGES}
+            INNER JOIN server.users AS u ON (author_id = u.id)
+            WHERE LENGTH(content) > $1 AND 
+                  NOT is_bot
+        """, length)
