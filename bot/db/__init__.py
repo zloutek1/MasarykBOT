@@ -16,7 +16,7 @@ def connect_db(url: Url) -> Optional[Pool]:
         loop = asyncio.get_event_loop()
         return loop.run_until_complete(asyncpg.create_pool(url, command_timeout=1280))
 
-    except OSError as e:
+    except OSError:
         import re
         redacted_url = re.sub(r'\:(?!\/\/)[^\@]+', ":******", url)
         log.error("Failed to connect to database (%s)", redacted_url)
@@ -27,4 +27,4 @@ def inject_database(binder: inject.Binder) -> None:
     if not postgres_url:
         return
 
-    binder.bind(Pool, connect_db(postgres_url))
+    binder.bind(asyncpg.Pool, connect_db(postgres_url))

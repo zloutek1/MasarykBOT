@@ -55,8 +55,8 @@ class MessageCrudDao(Crud[Columns]):
 
 
 class MessageSelectDao(Table):
-    def __init__(self):
-        super(Table).__init__()
+    def __init__(self) -> None:
+        super(Table, self).__init__()
 
     async def select(self, message_id: Id) -> List[Record]:
         async with self.pool.acquire() as conn:
@@ -85,6 +85,6 @@ class MessageSelectDao(Table):
 
 class MessageDao(MessageMapper, MessageCrudDao, MessageSelectDao):
     def __init__(self) -> None:
-        super(MessageMapper).__init__()
-        super(MessageCrudDao).__init__()
-        super(MessageSelectDao).__init__()
+        super(MessageMapper, self).__init__()
+        super(MessageCrudDao, self).__init__()
+        super(MessageSelectDao, self).__init__()

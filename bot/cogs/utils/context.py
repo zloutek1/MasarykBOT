@@ -4,17 +4,19 @@ import io
 from contextlib import suppress
 from typing import Any, Optional
 from dateutil import tz
+from typing import TYPE_CHECKING
 
 import discord
 from discord.errors import HTTPException, NotFound
 from discord.ext import commands
 from discord.utils import get
 
-from bot.bot import MasarykBOT
+if TYPE_CHECKING:
+    from bot.bot import MasarykBOT
 
 
 
-class Context(commands.Context[MasarykBOT]):
+class Context(commands.Context["MasarykBOT"]):
     """
     custom Context object passed in every ctx variable
     in your commands. provides some useful getter shortcuts
@@ -57,7 +59,7 @@ class Context(commands.Context[MasarykBOT]):
     async def safe_delete(self, **kwargs: Any) -> None:
         with suppress(NotFound):
             await self.message.delete(**kwargs)
-            
+
 
     async def send(self, *args: Any, **kwargs: Any) -> discord.Message:
         message = await self._safe_send(*args, **kwargs)

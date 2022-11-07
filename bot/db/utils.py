@@ -1,34 +1,38 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import (Generic, List,
-                    Sequence, Tuple, TypeVar)
+from typing import (TYPE_CHECKING, Generic, List,
+                    Sequence, Tuple, TypeAlias, TypeVar)
 
 import asyncpg
 import discord
 import inject
 
 
-
 T = TypeVar('T')
 C = TypeVar('C')
 Id = int
 Url = str
-Record = asyncpg.Record
-Pool = asyncpg.Pool[Record]
-DBConnection = asyncpg.pool.PoolConnectionProxy[Record]
 
+Record = asyncpg.Record
+if TYPE_CHECKING:
+    Pool: TypeAlias = asyncpg.Pool[Record]
+    DBConnection: TypeAlias = asyncpg.pool.PoolConnectionProxy[Record]
+else:
+    Pool = asyncpg.Pool
+    DBConnection = asyncpg.pool.PoolConnectionProxy
 
 class Table:
-    pool = inject.attr(Pool)
+    pool: Pool = inject.attr(Pool)
 
-    def __init__(self):
+    def __init__(self) -> None:
         if self.pool is None:
             raise Exception("database connection is required")
 
 
 
 class Crud(Table, ABC, Generic[C]):
-    def __init__(self):
-        super(Table).__init__()
+    def __init__(self) -> None:
+        super(Table, self).__init__()
 
     async def insert(self, data: List[C]) -> None:
         async with self.pool.acquire() as conn:

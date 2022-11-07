@@ -1,13 +1,19 @@
 import logging
 from enum import Enum
-from typing import Dict, Tuple
-
+from typing import TYPE_CHECKING, Dict, Tuple
 import inject
-from bot.cogs.utils.context import Context
-from bot.db.messages import MessageDao
+
 from discord.ext import commands
 from discord.ext.commands import has_permissions
 from aioredis import Redis
+
+from bot.cogs.utils.context import Context
+from bot.db.messages import MessageDao
+
+if TYPE_CHECKING:
+    from bot.bot import MasarykBOT
+
+
 
 log = logging.getLogger(__name__)
 
@@ -27,6 +33,7 @@ class MarkovState(Enum):
 
 
 
+"""
 class MarkovTrainService:
     messageDao = inject.attr(MessageDao)
     redis = inject.attr(Redis)
@@ -68,7 +75,6 @@ class MarkovService(MarkovTrainService):
     def __init__(self) -> None:
         super(MarkovTrainService).__init__()
 
-    """
     async def generate_message(self) -> str:
         self._assert_can_generate_message()
         
@@ -94,16 +100,17 @@ class MarkovService(MarkovTrainService):
         assert parts[0] == SOF, f"message parts must start with SOF, but was {parts}"
         assert parts[-1] == EOF, f"message parts must end with EOF, but was {parts}"
         return " ".join(parts[1:-1])
-    """
+    
+"""
 
-
-class Markov(commands.Cog,):
-    service = MarkovService()
+class Markov(commands.Cog):
+    # service = MarkovService()
 
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
 
+    """
     @commands.group(invoke_without_command=True)
     async def markov(self, ctx: Context, *_anything: str) -> None:
         try:
@@ -121,7 +128,7 @@ class Markov(commands.Cog,):
         await self.service.train()
         
         await ctx.reply("[Markov] Finished grinding")
-
+    """
 
     """
     @commands.group(invoke_without_command=True)
@@ -202,5 +209,5 @@ class Markov(commands.Cog,):
     """
 
 
-async def setup(bot: commands.Bot) -> None:
+async def setup(bot: "MasarykBOT") -> None:
     await bot.add_cog(Markov(bot))
