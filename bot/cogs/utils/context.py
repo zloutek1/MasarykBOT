@@ -60,9 +60,12 @@ class Context(commands.Context["MasarykBOT"]):
         with suppress(NotFound):
             await self.message.delete(**kwargs)
 
-
-    async def send(self, *args: Any, **kwargs: Any) -> discord.Message:
-        message = await self._safe_send(*args, **kwargs)
+    async def send(
+        self, 
+        content: Optional[str] = None, *args: Any, 
+        escape_mentions: bool = True, **kwargs: Any
+    ) -> discord.Message:
+        message = await self._safe_send(content, *args, escape_mentions=escape_mentions, **kwargs)
 
         with suppress(NotFound):
             await message.add_reaction('\N{WASTEBASKET}')
@@ -71,7 +74,22 @@ class Context(commands.Context["MasarykBOT"]):
         return message
 
 
-    async def _safe_send(self, content: str, *, escape_mentions: bool = True, **kwargs: Any) -> discord.Message:
+    async def reply(self, *args: Any, mention_author: bool = False, **kwargs: Any) -> discord.Message:
+        try:
+            return await self.send(*args, reply=True, mention_author=mention_author, **kwargs)
+        except HTTPException:
+            return await self.send(*args, **kwargs)
+
+    async def _safe_send(
+        self,
+        content: Optional[str] = None, *args: Any, 
+        escape_mentions: bool = True, reply: bool = False, **kwargs: Any
+    ) -> discord.Message:
+        send = super().reply if reply else super().send
+        
+        if not content:
+            return await send(*args, **kwargs)
+        
         if escape_mentions:
             content = discord.utils.escape_mentions(content)
 
@@ -79,9 +97,9 @@ class Context(commands.Context["MasarykBOT"]):
             fp = io.BytesIO(content.encode())
             kwargs.pop('file', None)
             file=discord.File(fp, filename='message_too_long.txt')
-            return await super().send(file=file, **kwargs)
-        else:
-            return await super().send(content, **kwargs)
+            return await send(file=file, *args, **kwargs)
+        
+        return await send(content, *args, **kwargs)
 
 
     async def send_embed(
@@ -108,13 +126,6 @@ class Context(commands.Context["MasarykBOT"]):
 
     async def send_error(self, content: str, delete_after: Optional[float] = None) -> discord.Message:
         return await self.send_embed(content, name="Error", delete_after=delete_after, color=discord.Color.red())
-
-
-    async def reply(self, *args: Any, mention_author: bool = False, **kwargs: Any) -> discord.Message:
-        try:
-            return await super().reply(*args, mention_author=mention_author, **kwargs)
-        except HTTPException:
-            return await self.send(*args, **kwargs)
 
 
     async def _wait_for_reaction_or_clear(self, message: discord.Message) -> None:
