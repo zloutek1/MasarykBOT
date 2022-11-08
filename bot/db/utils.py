@@ -5,7 +5,6 @@ from typing import (TYPE_CHECKING, Generic, List,
 
 import asyncpg
 import discord
-import inject
 
 
 T = TypeVar('T')
@@ -21,12 +20,11 @@ else:
     Pool = asyncpg.Pool
     DBConnection = asyncpg.pool.PoolConnectionProxy
 
-class Table:
-    pool: Pool = inject.attr(Pool)
 
-    def __init__(self) -> None:
-        if self.pool is None:
-            raise Exception("database connection is required")
+
+class Table:
+    def __init__(self, pool: Pool) -> None:
+        self.pool = pool
 
 
 

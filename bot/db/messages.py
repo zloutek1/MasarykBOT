@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List, Sequence, Tuple
 
 from asyncpg import CharacterNotInRepertoireError
-from bot.db.utils import (Crud, DBConnection, Id, Mapper, Record, Table)
+from bot.db.utils import (Crud, DBConnection, Id, Mapper, Pool, Record, Table)
 from discord import Message
 from .tables import MESSAGES
 
@@ -84,7 +84,7 @@ class MessageSelectDao(Table):
 
 
 class MessageDao(MessageMapper, MessageCrudDao, MessageSelectDao):
-    def __init__(self) -> None:
+    def __init__(self, pool: Pool) -> None:
         super(MessageMapper, self).__init__()
         super(MessageCrudDao, self).__init__()
-        super(MessageSelectDao, self).__init__()
+        super(MessageSelectDao, self).__init__(pool)

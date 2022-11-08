@@ -47,21 +47,27 @@ log = logging.getLogger()
 async def connect_db(url: Url) -> Pool:
     pool = None
     while pool is None:
-        pool = await asyncpg.create_pool(postgres_url, command_timeout=1280)
+        pool = await asyncpg.create_pool(url, command_timeout=1280)
     return pool
 
 
 
-def connect_redis(url: Url) -> aioredis.Redis:
-    return aioredis.from_url(url, decode_responses=True)
+async def connect_redis(url: Url) -> aioredis.Redis:
+    redis = aioredis.from_url(url, decode_responses=True)
+    await redis.set('ping', 'pong')
+    assert 'pong' == await redis.get('ping')
+    return redis
 
 
 
 def setup_injections(db_pool: Optional[Pool], redis: Optional[aioredis.Redis]):
     def inner(binder: inject.Binder) -> None:
-        binder.bind(Pool, db_pool)
-        binder.bind(MessageDao, MessageDao())
-        binder.bind(aioredis.Redis, redis)
+        if db_pool:
+            binder.bind(Pool, db_pool)
+            binder.bind(MessageDao, MessageDao(db_pool))
+        
+        if redis:
+            binder.bind(aioredis.Redis, redis)
     return inner
 
 
@@ -76,9 +82,22 @@ async def load_extensions() -> None:
 
 
 async def main() -> None:
-    if (token := os.getenv("TOKEN")) is None:
+    if not (token := os.getenv("TOKEN")):
         log.exception("discord bot token is required to run the bot, exiting...")
         exit(1)
+
+    pool = None
+    if (postgres_url := os.getenv("POSTGRES")):
+        pool = await connect_db(postgres_url)
+
+    redis = None
+    if redis_url := os.getenv("REDIS"):
+        redis = await connect_redis(redis_url)
+    
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, lambda: 
+        inject.configure_once(setup_injections(pool, redis))
+    )
 
     async with bot:
         await load_extensions()
@@ -90,17 +109,10 @@ if __name__ == "__main__":
     load_dotenv()
     setup_logging()
     
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    
-    pool = None
-    if postgres_url := os.getenv("POSTGRES"):
-        pool = loop.run_until_complete(connect_db(postgres_url))
+    #loop = asyncio.new_event_loop()
+    #asyncio.set_event_loop(loop)
 
-    redis = None
-    if redis_url := os.getenv("REDIS"):
-        redis = connect_redis(redis_url)
-
-    inject.configure()
-    inject.configure_once(setup_injections(pool, redis))
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("exiting")

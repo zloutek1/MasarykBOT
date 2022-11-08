@@ -33,7 +33,6 @@ class MarkovState(Enum):
 
 
 
-"""
 class MarkovTrainService:
     messageDao = inject.attr(MessageDao)
     redis = inject.attr(Redis)
@@ -75,6 +74,7 @@ class MarkovService(MarkovTrainService):
     def __init__(self) -> None:
         super(MarkovTrainService).__init__()
 
+    """
     async def generate_message(self) -> str:
         self._assert_can_generate_message()
         
@@ -104,13 +104,12 @@ class MarkovService(MarkovTrainService):
 """
 
 class Markov(commands.Cog):
-    # service = MarkovService()
+    service = MarkovService()
 
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
 
-    """
     @commands.group(invoke_without_command=True)
     async def markov(self, ctx: Context, *_anything: str) -> None:
         try:
@@ -122,13 +121,12 @@ class Markov(commands.Cog):
 
     @markov.command(name='train', aliases=['retrain', 'grind'])
     @has_permissions(administrator=True)
-    async def _train(self, ctx: Context) -> None:
+    async def train(self, ctx: Context) -> None:
         await ctx.send("[Markov] Grinding ...")
 
         await self.service.train()
         
         await ctx.reply("[Markov] Finished grinding")
-    """
 
     """
     @commands.group(invoke_without_command=True)
