@@ -1,55 +1,68 @@
-from threading import Thread
-
-from disnake import (ApplicationCommandInteraction, Embed, Member, Message,
-                     RawReactionActionEvent, TextChannel)
-from disnake.errors import NotFound
-from disnake.ext import commands
+from discord import (Message, RawReactionActionEvent, PartialEmoji, Embed, DMChannel)
+from discord.abc import Messageable, GuildChannel
+from discord.ext import commands
 
 
-class Bookmark(commands.Cog):
+class BookmarkService:
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-    @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload: RawReactionActionEvent) -> None:
-        if not payload.emoji.is_unicode_emoji():
-            return
 
-        if payload.emoji.name not in ('🔖'):
-            return
-
-        channel = self.bot.get_channel(payload.channel_id)
-        if not isinstance(channel, (TextChannel, Thread)):
-            return
-
-        user = await channel.guild.fetch_member(payload.user_id)
-
-        try:
-            message = await channel.fetch_message(payload.message_id)
-        except NotFound as ex:
-            await channel.send(f"{user.mention} [Error]: {ex.text}")
-            return
-
-        embed = self.get_embed(message)
-        await user.send(embed=embed)
+    @staticmethod
+    def is_bookmark_emoji(emoji: PartialEmoji) -> bool:
+        if not emoji.is_unicode_emoji():
+            return False
+        return emoji.name in ('🔖')
 
 
-    @commands.message_command(guild_ids=[486184376544002073, 573528762843660299])
-    async def bookmark(self, inter: ApplicationCommandInteraction, message: Message) -> None:
-        embed = self.get_embed(message)
-        await inter.author.send(embed=embed)
+    @staticmethod
+    def is_delete_emoji(emoji: PartialEmoji) -> bool:
+        if not emoji.is_unicode_emoji():
+            return False
+        return emoji.name in ('🗑️')
 
-    def get_embed(self, message: Message) -> Embed:
+
+    @staticmethod
+    def is_bookmark_message(message: Message) -> bool:
+        if not isinstance(message.channel, DMChannel):
+            return False
+
+        if not message.author.bot or len(message.embeds) != 1:
+            return False
+
+        embed = message.embeds[0]
+        if not embed.title or not embed.title.startswith("You have pinned a message"):
+            return False
+        return True
+
+
+    async def fetch_message(self, payload: RawReactionActionEvent) -> Message:
+        channel = await self.bot.fetch_channel(payload.channel_id)
+        if not isinstance(channel, Messageable):
+            raise AssertionError(f"channel {channel} is not messageable")
+        return await channel.fetch_message(payload.message_id)
+
+
+    def to_embed(self, message: Message) -> Embed:
+        if not isinstance(message.channel, GuildChannel):
+            raise AssertionError(f"channel {message.channel} is not a guild channel")
+
         embed = Embed(
             title=f"You have pinned a message in {message.guild}",
-            description=f"{message.content}\n" +
-                        f"[Jump to original!]({message.jump_url}) in {message.channel}",
-            color=0xFFDF00)
+            description=f"{message.content}\n\n" +
+                        f"[Jump to original!]({message.jump_url}) in {message.channel.mention}",
+            color=0xFFDF00
+        )
 
-        embed.set_author(name=message.author.display_name,
-                         icon_url=(message.author.default_avatar.url if message.author.avatar is None else
-                                   message.author.avatar.with_format('png').url))
+        embed.set_author(
+            name=message.author.display_name,
+            icon_url=(message.author.default_avatar.url 
+                      if message.author.avatar is None else
+                      message.author.avatar.url))
 
+        embed.set_footer(
+            text="react on this  message with 🗑️ to delete"
+        )
 
         if message.embeds:
             data = message.embeds[0]
@@ -62,15 +75,52 @@ class Bookmark(commands.Cog):
             if not spoiler and file.url.lower().endswith(('png', 'jpeg', 'jpg', 'gif', 'webp')):
                 embed.set_image(url=file.url)
             elif spoiler:
-                embed.add_field(name='Attachment',
-                                value=f'||[{file.filename}]({file.url})||',
-                                inline=False)
+                embed.add_field(
+                    name='Attachment',
+                    value=f'||[{file.filename}]({file.url})||',
+                    inline=False
+                )
             else:
-                embed.add_field(name='Attachment',
-                                value=f'[{file.filename}]({file.url})',
-                                inline=False)
+                embed.add_field(
+                    name='Attachment',
+                    value=f'[{file.filename}]({file.url})',
+                    inline=False
+                )
 
         return embed
 
-def setup(bot: commands.Bot) -> None:
-    bot.add_cog(Bookmark(bot))
+
+
+class Bookmark(commands.Cog):
+    def __init__(self, bot: commands.Bot) -> None:
+        self.bot = bot
+        self.service = BookmarkService(bot)
+
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload: RawReactionActionEvent) -> None:
+        if self.service.is_bookmark_emoji(payload.emoji):
+            return await self.on_bookmark_reaction(payload)
+
+        if self.service.is_delete_emoji(payload.emoji):
+            return await self.on_delete_reaction(payload)
+
+    
+    async def on_bookmark_reaction(self, payload: RawReactionActionEvent) -> None:
+        message = await self.service.fetch_message(payload)
+        embed = self.service.to_embed(message)
+
+        user = await self.bot.fetch_user(payload.user_id)
+        await user.send(embed=embed)
+
+
+    async def on_delete_reaction(self, payload: RawReactionActionEvent) -> None:
+        message = await self.service.fetch_message(payload)
+        if not self.service.is_bookmark_message(message):
+            return
+        await message.delete()
+        
+
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(Bookmark(bot))
