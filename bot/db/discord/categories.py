@@ -11,15 +11,20 @@ from bot.db.utils import (Crud, DBConnection, Id, Mapper)
 Columns = Tuple[Id, Id, str, int, datetime]
 
 
+
 class CategoryMapper(Mapper[CategoryChannel, Columns]):
-    @staticmethod
-    async def map(obj: CategoryChannel) -> Columns:
+    async def map(self, obj: CategoryChannel) -> Columns:
         category = obj
         created_at = category.created_at.replace(tzinfo=None)
         return (category.guild.id, category.id, category.name, category.position, created_at)
 
 
-class CategoryCrudDao(Crud[Columns]):
+
+class CategoryDao(Crud[Columns]):
+    def __init__(self) -> None:
+        super().__init__(table_name=CATEGORIES)
+
+        
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
             INSERT INTO {self.table_name} AS c (guild_id, id, name, position, created_at)
@@ -33,16 +38,3 @@ class CategoryCrudDao(Crud[Columns]):
                         c.position<>excluded.position OR
                         c.created_at<>excluded.created_at
         """, data)
-
-    async def soft_delete(self, conn: DBConnection, data: Sequence[Tuple[Id]]) -> None:
-        await conn.executemany(f"""
-            UPDATE {self.table_name}
-            SET deleted_at=NOW()
-            WHERE id = $1;
-        """, data)
-
-
-
-class CategoryDao(CategoryCrudDao):
-    def __init__(self) -> None:
-        super().__init__(table_name=CATEGORIES)

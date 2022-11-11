@@ -6,7 +6,7 @@ import asyncpg
 
 
 TEntity = TypeVar('TEntity')
-TColumns = TypeVar('TColumns', bound=Tuple[Any, ...])
+TColumns = TypeVar('TColumns', bound=Tuple[Any, ...] | Sequence[Tuple[Any, ...]])
 Id = int
 Url = str
 
@@ -21,9 +21,8 @@ else:
 
 
 class Mapper(ABC, Generic[TEntity, TColumns]):    
-    @staticmethod
     @abstractmethod
-    async def map(obj: TEntity) -> TColumns:
+    async def map(self, obj: TEntity) -> TColumns:
         raise NotImplementedError
 
 
@@ -58,6 +57,9 @@ class Crud(ABC, Generic[TColumns], Table):
         return await self.insert(conn, data)
 
 
-    @abstractmethod
     async def soft_delete(self, conn: DBConnection, data: Sequence[Tuple[Id]]) -> None:
-        raise NotImplementedError
+        await conn.executemany(f"""
+            UPDATE {self.table_name}
+            SET deleted_at=NOW()
+            WHERE id = $1;
+        """, data)

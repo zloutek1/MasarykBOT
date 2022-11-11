@@ -4,8 +4,8 @@ from typing import List, Sequence, Tuple
 
 from discord import Message
 
-from bot.db.utils import (Crud, DBConnection, Id, Mapper, Record, Table)
-from .tables import MESSAGES
+from bot.db.utils import (Crud, DBConnection, Id, Mapper, Record)
+from bot.db.tables import MESSAGES
 
 
 
@@ -16,8 +16,7 @@ Columns = Tuple[Id, Id, Id, str, datetime]
 
 
 class MessageMapper(Mapper[Message, Columns]):
-    @staticmethod
-    async def map(obj: Message) -> Columns:
+    async def map(self, obj: Message) -> Columns:
         message = obj
         created_at = message.created_at.replace(tzinfo=None)
         return (message.channel.id, message.author.id, message.id, 
@@ -25,7 +24,11 @@ class MessageMapper(Mapper[Message, Columns]):
 
 
 
-class MessageCrudDao(Crud[Columns]):
+class MessageDao(Crud[Columns]):
+    def __init__(self) -> None:
+        super().__init__(table_name=MESSAGES)
+
+
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
             INSERT INTO {self.table_name} AS m (channel_id, author_id, id, content, created_at)
@@ -39,16 +42,7 @@ class MessageCrudDao(Crud[Columns]):
                         m.edited_at<>excluded.edited_at
         """, data)
 
-    async def soft_delete(self, conn: DBConnection, data: Sequence[Tuple[Id]]) -> None:
-        await conn.executemany(f"""
-            UPDATE {self.table_name}
-            SET deleted_at=NOW()
-            WHERE id = $1;
-        """, data)
 
-
-
-class MessageSelectDao(Table):
     async def find_all_longer_then(self, conn: DBConnection, length: int) -> List[Record]:
         return await conn.fetch(f"""
             SELECT author_id, content
@@ -57,9 +51,3 @@ class MessageSelectDao(Table):
             WHERE LENGTH(TRIM(content)) > $1 AND 
                   NOT is_bot
         """, length)
-
-
-
-class MessageDao(MessageCrudDao, MessageSelectDao):
-    def __init__(self) -> None:
-        super().__init__(MESSAGES)

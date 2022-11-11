@@ -2,7 +2,6 @@
 from typing import Callable, Generator, List, Tuple, TypeVar
 
 
-
 T = TypeVar('T')
 C = TypeVar('C')
 
