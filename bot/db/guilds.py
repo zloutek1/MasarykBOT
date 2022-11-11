@@ -1,33 +1,30 @@
 
 from datetime import datetime
-from typing import List, Optional, Sequence, Tuple, cast
+from typing import Optional, Sequence, Tuple
 
-from disnake import Guild
+from discord import Guild
 
 from .tables import GUILDS
-from .utils import (Crud, DBConnection, Id, Mapper, Record, Table, Url,
-                    WrappedCallable, withConn)
+from .utils import (Crud, DBConnection, Id, Mapper, Pool, Url)
+
+
 
 Columns = Tuple[Id, str, Optional[Url], datetime]
 
-class GuildDao(Table, Crud[Columns], Mapper[Guild, Columns]):
+
+
+class GuildMapper(Mapper[Guild, Columns]):
     @staticmethod
-    async def prepare_one(guild: Guild) -> Columns:
+    async def map(obj: Guild) -> Columns:
+        guild = obj
         icon_url = str(guild.icon.url) if guild.icon else None
         created_at = guild.created_at.replace(tzinfo=None)
         return (guild.id, guild.name, icon_url, created_at)
 
-    async def prepare(self, guilds: Sequence[Guild]) -> List[Columns]:
-        return [await self.prepare_one(guild) for guild in guilds]
 
-    @withConn
-    async def select(self, conn: DBConnection, guild_id: Id) -> List[Record]:
-        return await conn.fetch(f"""
-            SELECT * FROM {GUILDS} WHERE id=$1
-        """, guild_id)
 
-    @withConn
-    async def insert(self, conn: DBConnection, data: List[Columns]) -> None:
+class GuildCrudDao(Crud[Columns]):
+    async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
             INSERT INTO {GUILDS} AS g (id, name, icon_url, created_at)
             VALUES ($1, $2, $3, $4)
@@ -41,15 +38,16 @@ class GuildDao(Table, Crud[Columns], Mapper[Guild, Columns]):
                         g.created_at<>excluded.created_at
         """, data)
 
-    @withConn
-    async def update(self, conn: DBConnection, data: List[Columns]) -> None:
-        insert = cast(WrappedCallable, self.insert)
-        await insert.__wrapped__(self, conn, data)
-
-    @withConn
-    async def soft_delete(self, conn: DBConnection, ids: List[Tuple[Id]]) -> None:
+    
+    async def soft_delete(self, conn: DBConnection, data: Sequence[Tuple[Id]]) -> None:
         await conn.executemany(f"""
             UPDATE {GUILDS}
             SET deleted_at=NOW()
             WHERE id = $1;
-        """, ids)
+        """, data)
+
+
+
+class GuildDao(GuildCrudDao):
+    def __init__(self, pool: Pool, name: str) -> None:
+        super().__init__(pool, name)
