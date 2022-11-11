@@ -1,14 +1,10 @@
-import io
 import logging
 import os
-from contextlib import suppress
 from datetime import datetime
 from typing import NoReturn, Optional
 
-import disnake as discord
-from disnake.errors import NotFound
-from disnake.ext import commands
-from disnake.ext.commands import has_permissions
+import discord as discord
+from discord.ext import commands
 
 from .utils.context import Context
 
@@ -18,78 +14,53 @@ class Admin(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
+
     @commands.command()
-    @has_permissions(administrator=True)
+    @commands.has_permissions(administrator=True)
     async def say(self, ctx: Context, *, content: str) -> None:
         await ctx.send(content)
 
+
     @commands.command()
-    @has_permissions(administrator=True)
+    @commands.has_permissions(administrator=True)
     async def purge(self, ctx: Context, limit: int = 0) -> None:
         assert isinstance(ctx.channel, (discord.TextChannel, discord.Thread))
         await ctx.channel.purge(limit=limit + 1)
 
+
     @commands.command()
-    @has_permissions(administrator=True)
+    @commands.has_permissions(administrator=True)
     @commands.is_owner()
     async def shutdown(self, ctx: Context) -> None:
         log.info("Shutting down...")
-        with suppress(NotFound):
-            await ctx.message.delete()
+        await ctx.safe_delete()
         raise KeyboardInterrupt
 
+
     @commands.command()
-    @has_permissions(administrator=True)
+    @commands.has_permissions(administrator=True)
     @commands.is_owner()
     async def hide(self, ctx: Context) -> None:
-        await self.bot.change_presence(status=discord.Status.invisible)
         await ctx.safe_delete()
+        await self.bot.change_presence(status=discord.Status.invisible)
+
 
     @commands.command()
-    @has_permissions(administrator=True)
+    @commands.has_permissions(administrator=True)
     @commands.is_owner()
     async def show(self, ctx: Context) -> None:
-        await self.bot.change_presence(status=discord.Status.online)
         await ctx.safe_delete()
+        await self.bot.change_presence(status=discord.Status.online)
+
 
     @commands.command()
-    @has_permissions(administrator=True)
-    async def audit_to_csv(self, ctx: Context, limit: int = 100) -> None:
-        assert ctx.guild
-
-        log.info("gettings audit logs for guild %s", ctx.guild)
-
-        counter = 0
-        content = "created_at, user, action, target, id, reason\n"
-        async for entry in ctx.guild.audit_logs(limit=limit):
-            action = str(entry.action).replace("AuditLogAction.", "")
-            content += ", ".join(map(str, [
-                entry.created_at,
-                entry.user and entry.user.name,
-                action,
-                entry.target,
-                entry.id,
-                entry.reason
-            ])) + "\n"
-
-            if counter % 5_000 == 0:
-                log.info("got %s audit logs so far", counter)
-            counter += 1
-
-        else:
-            log.info("finished with %s audit logs", counter)
-            filename = f"audit_logs_{ctx.guild}.csv"
-            with open(filename, 'w') as file:
-                file.write(content)
-            await ctx.send(file=discord.File(filename))
-
-    @commands.command()
-    @has_permissions(administrator=True)
+    @commands.has_permissions(administrator=True)
     async def fail(self, ctx: Context) -> NoReturn:
         raise Exception("failing code for testing purposes")
 
+
     @commands.command()
-    @has_permissions(administrator=True)
+    @commands.has_permissions(administrator=True)
     async def logs(self, ctx: Context, filename: Optional[str] = None) -> None:
         await ctx.safe_delete()
 
@@ -107,5 +78,6 @@ class Admin(commands.Cog):
         await ctx.author.send(file=discord.File(filepath, filename))
 
 
-def setup(bot: commands.Bot) -> None:
-    bot.add_cog(Admin(bot))
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(Admin(bot))
