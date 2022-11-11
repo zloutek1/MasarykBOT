@@ -1,14 +1,12 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import (TYPE_CHECKING, Generic, List,
-                    Sequence, Tuple, TypeAlias, TypeVar)
+from typing import (TYPE_CHECKING, Any, Generic, List, Sequence, Tuple, TypeAlias, TypeVar)
 
 import asyncpg
-import discord
 
 
-T = TypeVar('T')
-C = TypeVar('C')
+TEntity = TypeVar('TEntity')
+TColumns = TypeVar('TColumns', bound=Tuple[Any, ...])
 Id = int
 Url = str
 
@@ -23,59 +21,50 @@ else:
 
 
 class Table:
-    def __init__(self, pool: Pool) -> None:
+    def __init__(self, pool: Pool, name: str) -> None:
         self.pool = pool
+        self.name = name
 
 
 
-class Crud(Table, ABC, Generic[C]):
-    def __init__(self) -> None:
-        super(Table, self).__init__()
-
-    async def insert(self, data: List[C]) -> None:
-        async with self.pool.acquire() as conn:
-            return await self._insert(conn, data)
-
-    @abstractmethod
-    async def _insert(self, conn: DBConnection, data: List[C]) -> None:
-        raise NotImplementedError("insert not implemented for this table")
-
-
-    async def update(self, data: List[C]) -> None:
-        async with self.pool.acquire() as conn:
-            return await self._update(conn, data)
-
-    async def _update(self, conn: DBConnection, data: List[C]) -> None:
-        return await self._insert(conn, data)
-
-    async def soft_delete(self, data: List[Tuple[Id]]) -> None:
-        async with self.pool.acquire() as conn:
-            return await self._soft_delete(conn, data)
-
-    @abstractmethod
-    async def _soft_delete(self, conn: DBConnection, data: List[Tuple[Id]]) -> None:
-        raise NotImplementedError(
-            "soft delete not implemented for this table, perhaps try hard delete?")
-
-
-
-class Mapper(ABC, Generic[T, C]):
+class Mapper(ABC, Generic[TEntity, TColumns]):    
     @staticmethod
     @abstractmethod
-    async def prepare_one(obj: T) -> C:
-        raise NotImplementedError(
-            "prepare_one form object not implemented for this table")
+    async def map(obj: TEntity) -> TColumns:
+        raise NotImplementedError
 
-    @staticmethod
+
+
+class Crud(Table, ABC, Generic[TColumns]):
+    def __init__(self, pool: Pool, name: str) -> None:
+        super(Crud, self).__init__(pool, name)
+
+
+    async def find_all(self, conn: DBConnection) -> List[Record]:
+        return await conn.fetch(f"""
+            SELECT * FROM {self.name}
+        """)
+
+
+    async def find_by_id(self, conn: DBConnection, id: Id) -> Record | None:
+        rows = await conn.fetch(f"""
+            SELECT * FROM {self.name} WHERE id=$1
+        """, id)
+
+        if rows:
+            return rows[0]
+        return None
+
+
     @abstractmethod
-    async def prepare(objs: Sequence[T]) -> List[C]:
-        raise NotImplementedError(
-            "prepare form objects not implemented for this table")
+    async def insert(self, conn: DBConnection, data: Sequence[TColumns]) -> None:
+        raise NotImplementedError
 
 
+    async def update(self, conn: DBConnection, data: Sequence[TColumns]) -> None:
+        return await self.insert(conn, data)
 
-class FromMessageMapper(ABC, Generic[C]):
+
     @abstractmethod
-    async def prepare_from_message(self, message: discord.Message) -> List[C]:
-        raise NotImplementedError(
-            "prepare_from_message form objects not implemented for this table")
+    async def soft_delete(self, conn: DBConnection, data: Sequence[Tuple[Id]]) -> None:
+        raise NotImplementedError
