@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import os
-from typing import Optional
+from typing import Callable, Optional
 
 import asyncpg
 import discord
@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 from bot.bot import MasarykBOT
 from bot.cogs.utils.logging import setup_logging
-from bot.db.messages import MessageDao
+from bot.db import setup_injections as setup_db_injections
 from bot.db.utils import Pool, Url
 
 
@@ -53,18 +53,19 @@ async def connect_db(url: Url) -> Pool:
 
 
 async def connect_redis(url: Url) -> aioredis.Redis:
-    redis = aioredis.from_url(url, decode_responses=True)
+    redis: aioredis.Redis = aioredis.from_url(url, decode_responses=True)
     await redis.set('ping', 'pong')
     assert 'pong' == await redis.get('ping')
     return redis
 
 
 
-def setup_injections(db_pool: Optional[Pool], redis: Optional[aioredis.Redis]):
+def setup_injections(db_pool: Optional[Pool], redis: Optional[aioredis.Redis]) -> Callable[..., None]:
     def inner(binder: inject.Binder) -> None:
+        binder.install(setup_db_injections)
+
         if db_pool:
             binder.bind(Pool, db_pool)
-            binder.bind(MessageDao, MessageDao(db_pool))
         
         if redis:
             binder.bind(aioredis.Redis, redis)
