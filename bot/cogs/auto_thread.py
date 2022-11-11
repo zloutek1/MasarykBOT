@@ -3,7 +3,7 @@ from urllib.request import urlopen
 from lxml.html import parse
 
 from discord import Message
-from discord.abc import MessageableChannel
+from discord.abc import Messageable, GuildChannel
 from discord.utils import get
 from discord.ext import commands
 
@@ -12,7 +12,10 @@ from bot.constants import CONFIG
 
 class AutoThreadService:
     @staticmethod
-    def is_threaded_channel(channel: MessageableChannel) -> bool:
+    def is_threaded_channel(channel: Messageable) -> bool:
+        if not isinstance(channel, GuildChannel):
+            return False
+
         if not (guild := channel.guild):
             return False
 
