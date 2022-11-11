@@ -63,9 +63,12 @@ class Context(commands.Context["MasarykBOT"]):
     async def send(
         self, 
         content: Optional[str] = None, *args: Any, 
-        escape_mentions: bool = True, **kwargs: Any
+        escape_mentions: bool = True, reply: bool = False, **kwargs: Any
     ) -> discord.Message:
-        message = await self._safe_send(content, *args, escape_mentions=escape_mentions, **kwargs)
+        if reply:
+            message = await self._safe_reply(content, *args, escape_mentions=escape_mentions, **kwargs)
+        else:
+            message = await self._safe_send(content, *args, escape_mentions=escape_mentions, **kwargs)
 
         with suppress(NotFound):
             await message.add_reaction('\N{WASTEBASKET}')
@@ -76,19 +79,18 @@ class Context(commands.Context["MasarykBOT"]):
 
     async def reply(self, *args: Any, mention_author: bool = False, **kwargs: Any) -> discord.Message:
         try:
-            return await self.send(*args, reply=True, mention_author=mention_author, **kwargs)
+            return await self.send(*args, mention_author=mention_author, reply=True, **kwargs)
         except HTTPException:
             return await self.send(*args, **kwargs)
+
 
     async def _safe_send(
         self,
         content: Optional[str] = None, *args: Any, 
-        escape_mentions: bool = True, reply: bool = False, **kwargs: Any
+        escape_mentions: bool = True, **kwargs: Any
     ) -> discord.Message:
-        send = super().reply if reply else super().send
-        
         if not content:
-            return await send(*args, **kwargs)
+            return await super().send(*args, **kwargs)
         
         if escape_mentions:
             content = discord.utils.escape_mentions(content)
@@ -97,9 +99,29 @@ class Context(commands.Context["MasarykBOT"]):
             fp = io.BytesIO(content.encode())
             kwargs.pop('file', None)
             file=discord.File(fp, filename='message_too_long.txt')
-            return await send(file=file, *args, **kwargs)
+            return await super().send(file=file, *args, **kwargs)
         
-        return await send(content, *args, **kwargs)
+        return await super().send(content, *args, **kwargs)
+
+    
+    async def _safe_reply(
+        self,
+        content: Optional[str] = None, *args: Any, 
+        escape_mentions: bool = True, **kwargs: Any
+    ) -> discord.Message:
+        if not content:
+            return await super().reply(*args, **kwargs)
+        
+        if escape_mentions:
+            content = discord.utils.escape_mentions(content)
+
+        if len(content) > 2000:
+            fp = io.BytesIO(content.encode())
+            kwargs.pop('file', None)
+            file=discord.File(fp, filename='message_too_long.txt')
+            return await super().reply(file=file, *args, **kwargs)
+        
+        return await super().reply(content, *args, **kwargs)
 
 
     async def send_embed(
