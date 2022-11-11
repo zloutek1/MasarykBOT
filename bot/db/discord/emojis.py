@@ -6,7 +6,7 @@ from emoji import demojize, get_emoji_regexp
 from discord import Emoji, Message, PartialEmoji
 
 from bot.db.tables import EMOJIS
-from bot.db.utils import (Crud, DBConnection, Id, Mapper, Url)
+from bot.db.utils import (Crud, DBConnection, Id, Mapper, Url, withConn)
 
 
 
@@ -78,6 +78,8 @@ class EmojiDao(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=EMOJIS)
 
+
+    @withConn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
             INSERT INTO {EMOJIS} AS e (id, name, url, animated)

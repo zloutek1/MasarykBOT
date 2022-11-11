@@ -6,7 +6,7 @@ from typing import List, Sequence, Tuple
 from discord import Reaction, Message
 
 from .emojis import emoji_hashcode
-from bot.db.utils import (Crud, DBConnection, Id, Mapper)
+from bot.db.utils import (Crud, DBConnection, Id, Mapper, withConn)
 from ..tables import REACTIONS
 
 
@@ -41,6 +41,7 @@ class ReactionDao(Crud[Columns]):
         super().__init__(table_name=REACTIONS)
 
 
+    @withConn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
             INSERT INTO {self.table_name} AS r (message_id, emoji_id, member_ids, created_at)
@@ -54,6 +55,7 @@ class ReactionDao(Crud[Columns]):
         """, data)
 
 
+    @withConn
     async def soft_delete(self, conn: DBConnection, data: Sequence[Tuple[Id]]) -> None:
         await conn.executemany(f"""
             UPDATE {self.table_name}

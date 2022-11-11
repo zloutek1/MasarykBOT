@@ -4,7 +4,7 @@ from typing import Sequence, Tuple
 from discord import CategoryChannel
 
 from bot.db.tables import CATEGORIES
-from bot.db.utils import (Crud, DBConnection, Id, Mapper)
+from bot.db.utils import (Crud, DBConnection, Id, Mapper, withConn)
 
 
 
@@ -24,7 +24,8 @@ class CategoryDao(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=CATEGORIES)
 
-        
+
+    @withConn        
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
             INSERT INTO {self.table_name} AS c (guild_id, id, name, position, created_at)

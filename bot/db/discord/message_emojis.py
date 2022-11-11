@@ -1,6 +1,6 @@
 from typing import Sequence, Tuple
 
-from bot.db.utils import (Crud, DBConnection, Id)
+from bot.db.utils import (Crud, DBConnection, Id, withConn)
 from bot.db.tables import MESSAGE_EMOJIS
 
 
@@ -14,6 +14,7 @@ class MessageEmojiDao(Crud[Columns]):
         super().__init__(table_name=MESSAGE_EMOJIS)
 
 
+    @withConn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
             INSERT INTO {self.table_name} AS me (message_id, emoji_id, count)
@@ -25,6 +26,7 @@ class MessageEmojiDao(Crud[Columns]):
         """, data)
 
 
+    @withConn
     async def soft_delete(self, conn: DBConnection, data: Sequence[Tuple[Id]]) -> None:
         # TODO: not implemented
         raise NotImplementedError

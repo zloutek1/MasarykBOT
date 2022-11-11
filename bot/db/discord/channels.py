@@ -4,7 +4,7 @@ from typing import Optional, Sequence, Tuple
 from discord import TextChannel
 
 from bot.db.tables import CHANNELS
-from bot.db.utils import (Crud, DBConnection, Id, Mapper)
+from bot.db.utils import (Crud, DBConnection, Id, Mapper, withConn)
 
 
 
@@ -26,6 +26,7 @@ class ChannelDao(Crud[Columns]):
         super().__init__(table_name=CHANNELS)
 
 
+    @withConn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
             INSERT INTO {CHANNELS} AS ch (guild_id, category_id, id, name, position, created_at)

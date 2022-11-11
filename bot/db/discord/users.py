@@ -3,7 +3,7 @@ from typing import Optional, Sequence, Tuple, Union
 
 from discord import Member, User
 
-from bot.db.utils import (Crud, DBConnection, Id, Mapper, Url)
+from bot.db.utils import (Crud, DBConnection, Id, Mapper, Url, withConn)
 from bot.db.tables import USERS
 
 
@@ -26,6 +26,7 @@ class UserDao(Crud[Columns]):
         super().__init__(table_name=USERS)
 
 
+    @withConn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
             INSERT INTO {self.table_name} AS u (id, names, avatar_url, is_bot, created_at)

@@ -4,7 +4,7 @@ from typing import List, Sequence, Tuple
 
 from discord import Message
 
-from bot.db.utils import (Crud, DBConnection, Id, Mapper, Record)
+from bot.db.utils import (Crud, DBConnection, Id, Mapper, Record, withConn)
 from bot.db.tables import MESSAGES
 
 
@@ -29,6 +29,7 @@ class MessageDao(Crud[Columns]):
         super().__init__(table_name=MESSAGES)
 
 
+    @withConn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
             INSERT INTO {self.table_name} AS m (channel_id, author_id, id, content, created_at)
@@ -43,6 +44,7 @@ class MessageDao(Crud[Columns]):
         """, data)
 
 
+    @withConn
     async def find_all_longer_then(self, conn: DBConnection, length: int) -> List[Record]:
         return await conn.fetch(f"""
             SELECT author_id, content

@@ -4,7 +4,7 @@ from typing import List, Optional, Sequence, Tuple
 from discord import Attachment, Message
 
 from bot.db.tables import ATTACHMENTS
-from bot.db.utils import (Crud, DBConnection, Id, Mapper, Url)
+from bot.db.utils import (Crud, DBConnection, Id, Mapper, Url, withConn)
 
 
 
@@ -37,6 +37,7 @@ class AttachmentDao(Crud[Columns]):
         super().__init__(table_name=ATTACHMENTS)
 
 
+    @withConn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
             INSERT INTO {self.table_name} AS a (message_id, id, filename, url)
@@ -49,6 +50,7 @@ class AttachmentDao(Crud[Columns]):
         """, data)
 
 
+    @withConn
     async def soft_delete(self, conn: DBConnection, data: Sequence[Tuple[Id]]) -> None:
         # TODO: soft_delete not implemented
         raise NotImplemented
