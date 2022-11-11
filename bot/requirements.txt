@@ -38,6 +38,7 @@ inject==4.3.1
 
     # auto_thread
     lxml==4.9.1
+    lxml-stubs==0.4.0
 
 # testing library
 pytest==7.0.1
