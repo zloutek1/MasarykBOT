@@ -1,97 +1,136 @@
-from typing import Any, Collection, Dict, List, Union
+# pyright: reportMissingImports=false, reportUntypedClassDecorator=false
+
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
 
 import yaml
+from enforce_typing import enforce_types 
+
+
+@enforce_types 
+@dataclass(frozen=True)
+class BotConfig(yaml.YAMLObject):
+    yaml_tag = u'!bots'
+
+    prefix: str
+    DEBUG: bool = False
+
+
+
+@enforce_types  
+@dataclass(frozen=True)
+class ChannelConfig(yaml.YAMLObject):
+    yaml_tag = u'!channels'
+
+    verification: Optional[int] = None
+    about_you: Optional[int] = None
+    subject_registration: Optional[int] = None
+    starboard: Optional[int] = None
+    best_of_memes: Optional[int] = None
+    best_of_masaryk: Optional[int] = None
+    threaded: List[int] = field(default_factory=list)
+    starboard_igone: List[int] = field(default_factory=list)
+
+
+
+@enforce_types 
+@dataclass(frozen=True)
+class LogsConfig(yaml.YAMLObject):
+    yaml_tag = u'!logs'
+
+    errors: Optional[int] = None
+    mute: Optional[int] = None
+    other: Optional[int] = None
+    webhook: Optional[str] = None
+
+
+
+@enforce_types 
+@dataclass(frozen=True)
+class RoleConfig(yaml.YAMLObject):
+    yaml_tag = u'!roles'
+
+    muted: Optional[int] = None
+    verified: Optional[int] = None
+    moderator: Optional[int] = None
+    admin: Optional[int] = None
+    show_all: Optional[int] = None
+
+
+
+@enforce_types 
+@dataclass(frozen=True)
+class GuildConfig(yaml.YAMLObject):
+    yaml_tag = u'!guilds'
+
+    id: int
+    name: str
+    channels: ChannelConfig
+    logs: LogsConfig
+    roles: RoleConfig
+    NEEDED_REACTIONS: Optional[int] = None
+    STARBOARD_REACT_LIMIT: Optional[int] = None
+
+
+
+@enforce_types 
+@dataclass(frozen=True)
+class EmojiConfig(yaml.YAMLObject):
+    yaml_tag = u'!emojis'
+
+    Verification: Optional[int] = None
+
+
+
+@enforce_types 
+@dataclass(frozen=True)
+class ColorConfig(yaml.YAMLObject):
+    yaml_tag = u'!colors'
+
+    MUNI_YELLOW: Optional[int] = None
+
+
+
+@enforce_types 
+@dataclass(frozen=True)
+class Config(yaml.YAMLObject):
+    yaml_tag = u'!Config'
+
+    bot: BotConfig
+    emoji: EmojiConfig
+    colors: ColorConfig
+    guilds: List[GuildConfig]
+
+
+
+T = TypeVar('T', bound=yaml.YAMLObject)
+
+
+
+def class_loader(clazz: Type[T]) -> Callable[[yaml.SafeLoader, yaml.nodes.MappingNode], T]:
+    def constructor(loader: yaml.SafeLoader, node: yaml.nodes.MappingNode) -> T:
+        mapping: Dict[str, Any] = loader.construct_mapping(node)
+        obj = object.__new__(clazz)
+        obj.__init__(**mapping) # type: ignore
+        return obj
+    return constructor
+
+
+
+def get_loader() -> Type[yaml.Loader]:
+  """Return a yaml loader."""
+  loader = yaml.Loader
+  loader.add_constructor("!bots", class_loader(BotConfig))
+  loader.add_constructor("!chnls", class_loader(ChannelConfig))
+  loader.add_constructor("!logs", class_loader(LogsConfig))
+  loader.add_constructor("!roles", class_loader(RoleConfig))
+  loader.add_constructor("!guilds", class_loader(GuildConfig))
+  loader.add_constructor("!emojis", class_loader(EmojiConfig))
+  loader.add_constructor("!colors", class_loader(ColorConfig))
+  loader.add_constructor("!Config", class_loader(Config))
+  return loader
+ 
 
 with open('config.yml', encoding="UTF-8") as f:
-    _CONFIG_YAML = yaml.safe_load(f)
-
-class YAMLGetter(type):
-    """
-    This is a metaclass that allows the subclass to access
-    the configuration data by class attributes.
-
-    Example usage:
-        # config.yml
-        bot:
-            prefix: "!"
-
-        # config.py
-        class Config(metaclass=YAMLGetter):
-            pass
-
-        # useage in python code
-        >> from config import Config
-        >> Config.bot
-        {prefix: "!"}
-    """
-
-    def __getattr__(cls, key: str) -> Any:
-        val: Any = _CONFIG_YAML.get(key)
-        if isinstance(val, (list, dict)):
-            return cls(val) # initiate subclass
-        return val
-
-class YAMLIterator:
-    """
-    This is an iterator class that returns that wraps a
-    cls instance around the iterated collection
-    """
-
-    def __init__(self, cls: YAMLGetter, iterable: Union[Dict, List]) -> None:
-        self.cls = cls
-        self.iterable = list(iterable.keys()) if isinstance(iterable, Dict) else \
-                        iterable
-        self.index = 0
-
-    def __next__(self) -> Any:
-        if self.index < len(self.iterable):
-            val = self.iterable[self.index]
-            self.index += 1
-            return self.cls(val)
-        raise StopIteration
-
-class Config(metaclass=YAMLGetter):
-    """
-    This is a class that allows access to
-    the configuration data by class attributes.
-
-    The initial getting of the attribute is handeled by the
-    metaclass.
-
-    Example usage:
-        # config.yml
-        bot:
-            prefix: "!"
-
-        # useage in python code
-        >> from config import Config
-        >> Config.bot.prefix
-        "!"
-    """
-
-    def __init__(self, config: Union[Dict, List]) -> None:
-        self.config = config
-
-    def __getattr__(self, key: str) -> Union["Config", Any]:
-        if isinstance(self.config, dict):
-            val = self.config.get(key)
-            if isinstance(val, (list, dict)):
-                return Config(val)
-            return val
-        elif isinstance(self.config, list):
-            for elem in self.config:
-                val = elem.get(key)
-                if isinstance(val, (list, dict)):
-                    return Config(val)
-                if val:
-                    return val
-        raise NotImplemented
-
-    def __contains__(self, item: Any) -> bool:
-        return item in self.config
-        
-    def __iter__(self) -> YAMLIterator:
-        return YAMLIterator(self.__class__, self.config)
-
-    def __repr__(self) -> str:
-        return f"Config({self.config})"
+    print("Loading Config")
+    CONFIG: Config = yaml.load(f.read(), get_loader())

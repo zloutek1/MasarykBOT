@@ -1,90 +1,109 @@
-bot:
-  prefix: "!"
+!Config
+bot: !bots
+    prefix: '!'
+    DEBUG: false
+
+emoji: !emojis
+    Verification: 617745093889359872
+
+colors: !colors
+    MUNI_YELLOW: 15387993
 
 guilds:
-  - id: 486184376544002073
-    name: "fi_muni"
+- !guilds
+    id: 486184376544002073
+    name: fi_muni
 
     NEEDED_REACTIONS: 10
     STARBOARD_REACT_LIMIT: 10
-    DEBUG: False
 
-    channels:
-      verification:         621365818034356224
-      about_you:            621365826372632606
-      subject_registration: 628684083345489950
-      starboard:            761552082159271936
-      best_of_memes:        836224046030520410
-      best_of_masaryk:      930957842356244530
-      threaded:
+    channels: !channels
+        verification: 621365818034356224
+        about_you: 621365826372632606
+        subject_registration: 628684083345489950
+        starboard: 761552082159271936
+        best_of_memes: 836224046030520410
+        best_of_masaryk: 930957842356244530
+        threaded:
         - 988839106656215041
-      starboard_igone:
-        - 988839106656215041 # project-and-tools
-        - 625263765100953612 # hall-of-game
-        - 621718588478324736 # newcomers
-        - 504953215385600011 # fetish-room
-        - 609086101511995422 # cutentess-overload
+        starboard_igone:
+        - 988839106656215041
+        - 625263765100953612
+        - 621718588478324736
+        - 504953215385600011
+        - 609086101511995422
 
-    logs:
-      errors:               609413180137144331
-      mute:                 null
-      other:                null
-      webhook:              null
+    logs: !logs
+        errors: 609413180137144331
+        mute: null
+        other: null
+        webhook: null
 
-    roles:
-      muted:                627901278365810698
-      verified:             621304939502632960
-      moderator:            null
-      admin:                504237720965480450
-      show_all:             628684833039712266
+    roles: !roles
+        muted: 627901278365810698
+        verified: 621304939502632960
+        moderator: null
+        admin: 504237720965480450
+        show_all: 628684833039712266
 
-  - id: 573528762843660299
-    name: "fi test"
+- !guilds
+    id: 573528762843660299
+    name: fi test
 
     NEEDED_REACTIONS: 1
     STARBOARD_REACT_LIMIT: 1
-    DEBUG: False
 
-    channels:
-      verification:         731525269214724116
-      about_you:            760211019405590540
-      subject_registration: 758267743119212576
-      starboard:            751062312781217792
-      best_of_memes:        null
-      best_of_masaryk:      930952840703262744
-      threaded:
+    channels: !channels
+        verification: 731525269214724116
+        about_you: 760211019405590540
+        subject_registration: 758267743119212576
+        starboard: 751062312781217792
+        best_of_memes: null
+        best_of_masaryk: 930952840703262744
+        threaded:
         - 988918829570744350
-      starboard_igone:
-        - 988918829570744350 # threader
+        starboard_igone:
+        - 988918829570744350
 
-    logs:
-      errors:               731435433564569632
-      mute:                 731435469472006156
-      other:                731435447787716680
-      webhook:              "https://discord.com/api/webhooks/816237455913123870/9H7BGuwt6nQi_jDa3wwGf9yZuqaUvQCXJQpM4iz_IEvKavH5hRIf_rP6ejmfqqJ6gXZS"
+    logs: !logs
+        errors: 731435433564569632
+        mute: 731435469472006156
+        other: 731435447787716680
+        webhook: https://discord.com/api/webhooks/816237455913123870/9H7BGuwt6nQi_jDa3wwGf9yZuqaUvQCXJQpM4iz_IEvKavH5hRIf_rP6ejmfqqJ6gXZS
 
-    roles:
-      muted:                null
-      verified:             740961005961609328
-      moderator:            627249759694094366
-      admin:                573595915302993920
-      show_all:             760093273871613993
+    roles: !roles
+        muted: null
+        verified: 740961005961609328
+        moderator: 627249759694094366
+        admin: 573595915302993920
+        show_all: 760093273871613993
 
-  - id: 983522320981299272
-    name: "test"
+- !guilds
+    id: 983522320981299272
+    name: test
 
     NEEDED_REACTIONS: 1
     STARBOARD_REACT_LIMIT: 1
-    DEBUG: False
-
-    channels:
-      subject_registration: 983522321442701313
     
-    roles:
-      show_all:             983522320981299277
-      
-emoji:
-  Verification: 617745093889359872
+    channels: !channels
+        verification: null
+        about_you: null
+        subject_registration: 983522321442701313
+        starboard: null
+        best_of_memes: null
+        best_of_masaryk: null
+        threaded: []
+        starboard_igone: []
 
-colors:
-  MUNI_YELLOW: 0xEACD59
+    logs: !logs
+        errors: null
+        mute: null
+        other: null
+        webhook: null
+
+    roles: !roles
+        muted: null
+        verified: null
+        moderator: null
+        admin: null
+        show_all: 983522320981299277
