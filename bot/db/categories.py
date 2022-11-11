@@ -22,7 +22,7 @@ class CategoryMapper(Mapper[CategoryChannel, Columns]):
 class CategoryCrudDao(Crud[Columns]):
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
-            INSERT INTO {CATEGORIES} AS c (guild_id, id, name, position, created_at)
+            INSERT INTO {self.table_name} AS c (guild_id, id, name, position, created_at)
             VALUES ($1, $2, $3, $4, $5)
             ON CONFLICT (id) DO UPDATE
                 SET name=$3,
@@ -36,7 +36,7 @@ class CategoryCrudDao(Crud[Columns]):
 
     async def soft_delete(self, conn: DBConnection, data: Sequence[Tuple[Id]]) -> None:
         await conn.executemany(f"""
-            UPDATE {CATEGORIES}
+            UPDATE {self.table_name}
             SET deleted_at=NOW()
             WHERE id = $1;
         """, data)
@@ -45,4 +45,4 @@ class CategoryCrudDao(Crud[Columns]):
 
 class CategoryDao(CategoryCrudDao):
     def __init__(self) -> None:
-        super().__init__(CATEGORIES)
+        super().__init__(table_name=CATEGORIES)

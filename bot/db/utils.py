@@ -27,12 +27,12 @@ class Mapper(ABC, Generic[TEntity, TColumns]):
         raise NotImplementedError
 
 
+class Table:
+    def __init__(self, table_name: str) -> None:
+        self.table_name = table_name
 
-class Crud(ABC, Generic[TColumns]):
-    def __init__(self, name: str) -> None:
-        self.table_name = name
 
-
+class Crud(ABC, Generic[TColumns], Table):
     async def find_all(self, conn: DBConnection) -> List[Record]:
         return await conn.fetch(f"""
             SELECT * FROM {self.table_name}

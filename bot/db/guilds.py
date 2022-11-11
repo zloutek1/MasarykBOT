@@ -26,7 +26,7 @@ class GuildMapper(Mapper[Guild, Columns]):
 class GuildCrudDao(Crud[Columns]):
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
-            INSERT INTO {GUILDS} AS g (id, name, icon_url, created_at)
+            INSERT INTO {self.table_name} AS g (id, name, icon_url, created_at)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (id) DO UPDATE
                 SET name=$2,
@@ -41,7 +41,7 @@ class GuildCrudDao(Crud[Columns]):
     
     async def soft_delete(self, conn: DBConnection, data: Sequence[Tuple[Id]]) -> None:
         await conn.executemany(f"""
-            UPDATE {GUILDS}
+            UPDATE {self.table_name}
             SET deleted_at=NOW()
             WHERE id = $1;
         """, data)
@@ -50,4 +50,4 @@ class GuildCrudDao(Crud[Columns]):
 
 class GuildDao(GuildCrudDao):
     def __init__(self) -> None:
-        super().__init__(GUILDS)
+        super().__init__(table_name=GUILDS)

@@ -4,7 +4,7 @@ from typing import List, Sequence, Tuple
 
 from discord import Message
 
-from bot.db.utils import (Crud, DBConnection, Id, Mapper, Record)
+from bot.db.utils import (Crud, DBConnection, Id, Mapper, Record, Table)
 from .tables import MESSAGES
 
 
@@ -28,7 +28,7 @@ class MessageMapper(Mapper[Message, Columns]):
 class MessageCrudDao(Crud[Columns]):
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
-            INSERT INTO {MESSAGES} AS m (channel_id, author_id, id, content, created_at)
+            INSERT INTO {self.table_name} AS m (channel_id, author_id, id, content, created_at)
             VALUES ($1, $2, $3, $4, $5)
             ON CONFLICT (id) DO UPDATE
                 SET content=$4,
@@ -41,18 +41,18 @@ class MessageCrudDao(Crud[Columns]):
 
     async def soft_delete(self, conn: DBConnection, data: Sequence[Tuple[Id]]) -> None:
         await conn.executemany(f"""
-            UPDATE {MESSAGES}
+            UPDATE {self.table_name}
             SET deleted_at=NOW()
             WHERE id = $1;
         """, data)
 
 
 
-class MessageSelectDao:
+class MessageSelectDao(Table):
     async def find_all_longer_then(self, conn: DBConnection, length: int) -> List[Record]:
         return await conn.fetch(f"""
             SELECT author_id, content
-            FROM {MESSAGES}
+            FROM {self.table_name}
             INNER JOIN server.users AS u ON (author_id = u.id)
             WHERE LENGTH(TRIM(content)) > $1 AND 
                   NOT is_bot
