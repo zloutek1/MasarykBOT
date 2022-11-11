@@ -41,7 +41,7 @@ class Crud(ABC, Generic[TColumns], Table):
     async def find_by_id(self, conn: DBConnection, id: Id) -> Record | None:
         rows = await conn.fetch(f"""
             SELECT * FROM {self.table_name} WHERE id=$1
-        """, id)
+        """, (id,))
 
         if rows:
             return rows[0]

@@ -21,6 +21,9 @@ class RoleMapper(Mapper[Role, Columns]):
 
 
 class RoleDao(Crud[Columns]):
+    def __init__(self) -> None:
+        super().__init__(table_name=ROLES)
+
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
             INSERT INTO {ROLES} AS r (guild_id, id, name, color, created_at)

@@ -75,6 +75,9 @@ class MessageEmojiMapper(Mapper[Message, Sequence[Columns]]):
     
 
 class EmojiDao(Crud[Columns]):
+    def __init__(self) -> None:
+        super().__init__(table_name=EMOJIS)
+
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
             INSERT INTO {EMOJIS} AS e (id, name, url, animated)
