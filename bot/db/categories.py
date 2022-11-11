@@ -1,30 +1,26 @@
 from datetime import datetime
-from typing import List, Sequence, Tuple, cast
+from typing import Sequence, Tuple
+
+from discord import CategoryChannel
 
 from bot.db.tables import CATEGORIES
-from bot.db.utils import (Crud, DBConnection, Id, Mapper, Record, Table,
-                          WrappedCallable, withConn)
-from disnake import CategoryChannel
+from bot.db.utils import (Crud, DBConnection, Id, Mapper)
+
+
 
 Columns = Tuple[Id, Id, str, int, datetime]
 
-class CategoryDao(Table, Crud[Columns], Mapper[CategoryChannel, Columns]):
+
+class CategoryMapper(Mapper[CategoryChannel, Columns]):
     @staticmethod
-    async def prepare_one(category: CategoryChannel) -> Columns:
+    async def map(obj: CategoryChannel) -> Columns:
+        category = obj
         created_at = category.created_at.replace(tzinfo=None)
         return (category.guild.id, category.id, category.name, category.position, created_at)
 
-    async def prepare(self, categories: Sequence[CategoryChannel]) -> List[Columns]:
-        return [await self.prepare_one(category) for category in categories]
 
-    @withConn
-    async def select(self, conn: DBConnection, category_id: Id) -> List[Record]:
-        return await conn.fetch(f"""
-            SELECT * FROM {CATEGORIES} WHERE id=$1
-        """, category_id)
-
-    @withConn
-    async def insert(self, conn: DBConnection, data: List[Columns]) -> None:
+class CategoryCrudDao(Crud[Columns]):
+    async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
             INSERT INTO {CATEGORIES} AS c (guild_id, id, name, position, created_at)
             VALUES ($1, $2, $3, $4, $5)
@@ -38,15 +34,15 @@ class CategoryDao(Table, Crud[Columns], Mapper[CategoryChannel, Columns]):
                         c.created_at<>excluded.created_at
         """, data)
 
-    @withConn
-    async def update(self, conn: DBConnection, data: List[Columns]) -> None:
-        insert = cast(WrappedCallable, self.insert)
-        await insert.__wrapped__(self, conn, data)
-
-    @withConn
-    async def soft_delete(self, conn: DBConnection, ids: List[Tuple[Id]]) -> None:
+    async def soft_delete(self, conn: DBConnection, data: Sequence[Tuple[Id]]) -> None:
         await conn.executemany(f"""
             UPDATE {CATEGORIES}
             SET deleted_at=NOW()
             WHERE id = $1;
-        """, ids)
+        """, data)
+
+
+
+class CategoryDao(CategoryCrudDao):
+    def __init__(self) -> None:
+        super().__init__(CATEGORIES)

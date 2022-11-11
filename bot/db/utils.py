@@ -20,13 +20,6 @@ else:
 
 
 
-class Table:
-    def __init__(self, pool: Pool, name: str) -> None:
-        self.pool = pool
-        self.name = name
-
-
-
 class Mapper(ABC, Generic[TEntity, TColumns]):    
     @staticmethod
     @abstractmethod
@@ -35,20 +28,20 @@ class Mapper(ABC, Generic[TEntity, TColumns]):
 
 
 
-class Crud(Table, ABC, Generic[TColumns]):
-    def __init__(self, pool: Pool, name: str) -> None:
-        super(Crud, self).__init__(pool, name)
+class Crud(ABC, Generic[TColumns]):
+    def __init__(self, name: str) -> None:
+        self.table_name = name
 
 
     async def find_all(self, conn: DBConnection) -> List[Record]:
         return await conn.fetch(f"""
-            SELECT * FROM {self.name}
+            SELECT * FROM {self.table_name}
         """)
 
 
     async def find_by_id(self, conn: DBConnection, id: Id) -> Record | None:
         rows = await conn.fetch(f"""
-            SELECT * FROM {self.name} WHERE id=$1
+            SELECT * FROM {self.table_name} WHERE id=$1
         """, id)
 
         if rows:

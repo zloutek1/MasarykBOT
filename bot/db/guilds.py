@@ -5,7 +5,7 @@ from typing import Optional, Sequence, Tuple
 from discord import Guild
 
 from .tables import GUILDS
-from .utils import (Crud, DBConnection, Id, Mapper, Pool, Url)
+from .utils import (Crud, DBConnection, Id, Mapper, Url)
 
 
 
@@ -49,5 +49,5 @@ class GuildCrudDao(Crud[Columns]):
 
 
 class GuildDao(GuildCrudDao):
-    def __init__(self, pool: Pool, name: str) -> None:
-        super().__init__(pool, name)
+    def __init__(self) -> None:
+        super().__init__(GUILDS)

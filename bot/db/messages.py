@@ -4,7 +4,7 @@ from typing import List, Sequence, Tuple
 
 from discord import Message
 
-from bot.db.utils import (Crud, DBConnection, Id, Mapper, Pool, Record, Table)
+from bot.db.utils import (Crud, DBConnection, Id, Mapper, Record)
 from .tables import MESSAGES
 
 
@@ -48,11 +48,7 @@ class MessageCrudDao(Crud[Columns]):
 
 
 
-class MessageSelectDao(Table):
-    def __init__(self, pool: Pool, name: str) -> None:
-        super(MessageSelectDao, self).__init__(pool, name)
-
-
+class MessageSelectDao:
     async def find_all_longer_then(self, conn: DBConnection, length: int) -> List[Record]:
         return await conn.fetch(f"""
             SELECT author_id, content
@@ -65,5 +61,5 @@ class MessageSelectDao(Table):
 
 
 class MessageDao(MessageCrudDao, MessageSelectDao):
-    def __init__(self, pool: Pool, name: str) -> None:
-        super().__init__(pool, name)
+    def __init__(self) -> None:
+        super().__init__(MESSAGES)
