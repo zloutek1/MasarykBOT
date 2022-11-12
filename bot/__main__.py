@@ -27,6 +27,7 @@ initail_cogs = [
     "bot.cogs.fun",
     "bot.cogs.help",
     "bot.cogs.markov",
+    "bot.cogs.leaderboard"
 ]
 
 intents = discord.Intents(

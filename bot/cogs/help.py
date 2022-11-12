@@ -12,6 +12,7 @@ from bot.utils import map_range
 
 
 Page = Tuple[str, str, List[commands.Command[Any, ..., Any]]] # type: ignore[misc]
+BotT = TypeVar('BotT', bound=commands.Bot | commands.AutoShardedBot)
 
 
 
@@ -191,7 +192,6 @@ class HelpPaginator:
         await self.show_page(1, first=True)
 
 
-BotT = TypeVar('BotT', bound=commands.Bot | commands.AutoShardedBot)
 
 class PaginatedHelpCommand(commands.HelpCommand):
     context: Context
