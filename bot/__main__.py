@@ -25,6 +25,7 @@ initail_cogs = [
     "bot.cogs.errors",
     "bot.cogs.eval",
     "bot.cogs.fun",
+    "bot.cogs.help",
     "bot.cogs.markov",
 ]
 

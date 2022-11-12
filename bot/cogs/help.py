@@ -1,18 +1,21 @@
 import itertools
 from collections import Counter
-from typing import Any, List, Mapping, Optional, Set, Tuple, Union, cast
+from typing import Any, List, Mapping, Optional, Tuple, TypeVar, Union
 
-import disnake as discord
+import discord as discord
+from discord import ButtonStyle, Embed
+from discord.ext import commands
+
 from bot.cogs.utils.context import Context
-from disnake import ButtonStyle, Embed, MessageInteraction
-from disnake.ext import commands
+from bot.utils import map_range
 
-Page = Tuple[str, str, List[commands.Command]]
 
-def map_range(x: float, in_min: float, in_max: float, out_min: float, out_max: float) -> float:
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
-class NavigationButton(discord.ui.Button):
+Page = Tuple[str, str, List[commands.Command[Any, ..., Any]]]
+
+
+
+class NavigationButton(discord.ui.Button[Any]):
     def __init__(
         self,
         paginator: "HelpPaginator",
@@ -27,13 +30,16 @@ class NavigationButton(discord.ui.Button):
         self.to=to
         self.by=by
 
-    async def callback(self, ctx: MessageInteraction) -> None:
-        await ctx.response.defer()
+
+    async def callback(self, interaction: discord.Interaction) -> Any:
+        await interaction.response.defer()
         if self.to is not None:
-            await self.paginator.show_page(self.to)
+            return await self.paginator.show_page(self.to)
         elif self.by is not None:
             page = self.paginator.current_page + self.by
-            await self.paginator.show_page(page)
+            return await self.paginator.show_page(page)
+
+
 
 class HelpView(discord.ui.View):
     def __init__(self, paginator: "HelpPaginator", entries: List[Page]) -> None:
@@ -47,12 +53,13 @@ class HelpView(discord.ui.View):
         self.add_item(NavigationButton(paginator, by=1, label='Next', style=ButtonStyle.primary))
         self.add_item(NavigationButton(paginator, to=len(entries), label='>>', style=ButtonStyle.secondary))
 
-    async def interaction_check(self, ctx: MessageInteraction) -> bool:
+
+    async def interaction_check(self, interaction: discord.Interaction, /) -> bool:
         author = self.paginator.ctx.author
-        return ctx.author.id == author.id
+        return interaction.user.id == author.id
 
 
-class HelpDropdown(discord.ui.Select):
+class HelpDropdown(discord.ui.Select[HelpView]):
     def __init__(self, paginator: "HelpPaginator", entries: List[Page]) -> None:
         self.paginator = paginator
         self.entries = self.prepare(entries)
@@ -68,6 +75,7 @@ class HelpDropdown(discord.ui.Select):
             max_values=1,
             options=options
         )
+
 
     def prepare(self, entries: List[Page]) -> List[str]:
         _entries = Counter([entry[0] for entry in entries])
@@ -94,17 +102,19 @@ class HelpDropdown(discord.ui.Select):
 
         return options
 
-    async def callback(self, ctx: MessageInteraction) -> None:
+
+    async def callback(self, interaction: discord.Interaction) -> Any:
         page = self.entries.index(self.values[0]) + 1
-        await ctx.response.defer()
+        await interaction.response.defer()
         await self.paginator.show_page(page)
+
 
 
 class HelpPaginator:
     def __init__(
         self,
         help_command: "PaginatedHelpCommand",
-        ctx: commands.Context,
+        ctx: Context,
         entries: List[Page]
     ) -> None:
         self.help_command = help_command
@@ -121,21 +131,25 @@ class HelpPaginator:
         self.total_commands = 0
         self.get_page = self.get_bot_page
 
-    def get_bot_page(self, page: int) -> List[commands.Command]:
+
+    def get_bot_page(self, page: int) -> List[commands.Command[Any, ..., Any]]:
         cog, description, cmds = self.entries[page - 1]
         self.title = f'{cog} Commands'
         self.description = description
         return cmds
+
 
     async def show_prev_page(self) -> None:
         if self.current_page > 1:
             self.current_page -= 1
         return await self.show_page(self.current_page)
 
+
     async def show_next_page(self) -> None:
         if self.current_page < len(self.entries):
             self.current_page += 1
         return await self.show_page(self.current_page)
+
 
     async def show_page(self, page: int, first: bool = False) -> None:
         if not (1 <= page and page <= len(self.entries)):
@@ -151,7 +165,8 @@ class HelpPaginator:
         else:
             self.message = await self.message.edit(embed=self.embed)
 
-    def prepare_embed(self, entries: List[commands.Command], page: int) -> None:
+
+    def prepare_embed(self, entries: List[commands.Command[Any, ..., Any]], page: int) -> None:
         self.embed.clear_fields()
         self.embed.title = self.title
 
@@ -160,10 +175,7 @@ class HelpPaginator:
 
         cmds = ""
         for entry in entries:
-            if isinstance(entry, commands.Command):
-                signature = self.format_command(entry)
-            else:
-                signature = self.format_slash_command(entry)
+            signature = self.format_command(entry)
             cmds += signature
         self.embed.description = cmds
 
@@ -171,30 +183,31 @@ class HelpPaginator:
             name=f'Page {page}/{len(self.entries)}')
 
 
-    def format_command(self, cmd: commands.Command) -> str:
+    def format_command(self, cmd: commands.Command[Any, ..., Any]) -> str:
         return f'**» {cmd.qualified_name} {cmd.signature}**\n'
 
-    def format_slash_command(self, cmd: commands.InvokableSlashCommand) -> str:
-        def format_arg(arg: discord.Option) -> str:
-            return arg.name if arg.required else f"[{arg.name}]"
-
-        signature = ' '.join(format_arg(arg) for arg in cmd.body.options)
-        return f'**/ {cmd.name} {signature}**\n'
 
     async def paginate(self) -> None:
         await self.show_page(1, first=True)
 
+
+BotT = TypeVar('BotT', bound=commands.Bot | commands.AutoShardedBot)
+
 class PaginatedHelpCommand(commands.HelpCommand):
+    context: Context
+
     def __init__(self) -> None:
         super().__init__(command_attrs={
             'help': 'Shows help about the bot, a command, or a category'
         })
 
-    async def on_help_command_error(self, ctx: Context, error: commands.CommandError) -> None:
-        if isinstance(error, commands.CommandInvokeError):
-            await ctx.send_error(str(error.original))
 
-    def get_command_signature(self, command: commands.Command) -> str:
+    async def on_help_command_error(self, ctx: commands.Context[BotT], error: commands.CommandError, /) -> None:
+        if isinstance(error, commands.CommandInvokeError):
+            await ctx.send(str(error.original))
+
+
+    def get_command_signature(self, command: commands.Command[Any, ..., Any]) -> str:
         parent = command.full_parent_name
         if len(command.aliases) > 0:
             aliases = '|'.join(command.aliases)
@@ -206,18 +219,16 @@ class PaginatedHelpCommand(commands.HelpCommand):
             alias = command.name if not parent else f'{parent} {command.name}'
         return f'{alias} {command.signature}'
 
+
     async def send_bot_help(
         self,
-        _mapping: Mapping[Optional[commands.Cog], List[commands.Command]]
+        _mapping: Mapping[Optional[commands.Cog], List[commands.Command[Any, ..., Any]]]
     ) -> None:
-        def key(cmd: commands.Command) -> str:
+        def key(cmd: commands.Command[Any, ..., Any]) -> str:
             return cmd.cog_name or '\u200bNo Category'
 
-        bot: commands.Bot = self.context.bot
-
-        entries = cast(List[commands.Command],
-                       await self.filter_commands(bot.commands, sort=True, key=key)
-        )
+        bot: commands.Bot | commands.AutoShardedBot = self.context.bot
+        entries = await self.filter_commands(bot.commands, sort=True, key=key)
         nested_pages: List[Page] = []
         per_page = 9
         total = 0
@@ -242,8 +253,10 @@ class PaginatedHelpCommand(commands.HelpCommand):
 
         await pages.paginate()
 
+
     async def send_cog_help(self, cog: commands.Cog) -> None:
-        entries = await self.filter_commands(cog.get_commands(), sort=True)
+        cmds = await self.filter_commands(cog.get_commands(), sort=True)
+        entries: List[Page] = [(cog.qualified_name, '', cmds)]
         pages = HelpPaginator(self, self.context, entries)
         pages.title = f'{cog.qualified_name} Commands'
         pages.description = cog.description
@@ -254,7 +267,7 @@ class PaginatedHelpCommand(commands.HelpCommand):
     def common_command_formatting(
         self,
         page_or_embed: Union[HelpPaginator, Embed],
-        command: commands.Command
+        command: commands.Command[Any, ..., Any]
     ) -> None:
         page_or_embed.title = self.get_command_signature(command)
         if command.description:
@@ -263,14 +276,14 @@ class PaginatedHelpCommand(commands.HelpCommand):
             page_or_embed.description = command.help or 'No help found...'
 
 
-    async def send_command_help(self, command: commands.Command) -> None:
+    async def send_command_help(self, command: commands.Command[Any, ..., Any]) -> None:
         # No pagination necessary for a single command.
         embed = discord.Embed(colour=discord.Colour.blurple())
         self.common_command_formatting(embed, command)
         await self.context.send(embed=embed)
 
 
-    async def send_group_help(self, group: commands.Group) -> None:
+    async def send_group_help(self, group: commands.Group[Any, ..., Any]) -> None:
         subcommands = group.commands
         if len(subcommands) == 0:
             await self.send_command_help(group)
@@ -285,6 +298,7 @@ class PaginatedHelpCommand(commands.HelpCommand):
         await pages.paginate()
 
 
+
 class Help(commands.Cog):
     """Commands for utilities related to Discord or the Bot itself."""
 
@@ -294,8 +308,10 @@ class Help(commands.Cog):
         bot.help_command = PaginatedHelpCommand()
         bot.help_command.cog = self
 
-    def cog_unload(self) -> None:
+
+    async def cog_unload(self) -> None:
         self.bot.help_command = self.old_help_command
+
 
     @commands.command(hidden=True)
     async def hello(self, ctx: Context) -> None:
@@ -303,5 +319,6 @@ class Help(commands.Cog):
         await ctx.send('Hello! I\'m a robot! Zloutek1 made me.')
 
 
-def setup(bot: commands.Bot) -> None:
-    bot.add_cog(Help(bot))
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(Help(bot))

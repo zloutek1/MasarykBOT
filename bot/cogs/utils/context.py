@@ -1,8 +1,10 @@
+# pyright: reportIncompatibleVariableOverride=false
+
 import asyncio
 from datetime import datetime
 import io
 from contextlib import suppress
-from typing import Any, Optional
+from typing import Any, Optional, Union
 from dateutil import tz
 from typing import TYPE_CHECKING
 import requests
@@ -14,14 +16,20 @@ from discord.utils import get
 
 if TYPE_CHECKING:
     from bot.bot import MasarykBOT
+else:
+    MasarykBOT = "MasarykBOT"
 
 
 
-class Context(commands.Context["MasarykBOT"]):
+class Context(commands.Context[MasarykBOT]):
     """
     custom Context object passed in every ctx variable
     in your commands. provides some useful getter shortcuts
     """
+    channel: Union[discord.VoiceChannel, discord.TextChannel, discord.Thread, discord.DMChannel]
+    prefix: str
+    command: commands.Command[Any, ..., Any]
+    bot: MasarykBOT
 
     def get_category(self, name: Optional[str] = None, **kwargs: Any) -> Optional[discord.CategoryChannel]:
         assert self.guild, "this method can only be run for guild events"
@@ -172,3 +180,12 @@ class Context(commands.Context["MasarykBOT"]):
                 await message.delete(delay=5)
             except asyncio.TimeoutError:
                 await message.clear_reaction('\N{WASTEBASKET}')
+
+
+
+class GuildContext(Context):
+    author: discord.Member
+    guild: discord.Guild
+    channel: Union[discord.VoiceChannel, discord.TextChannel, discord.Thread]
+    me: discord.Member
+    prefix: str
