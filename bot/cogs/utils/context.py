@@ -5,6 +5,7 @@ from contextlib import suppress
 from typing import Any, Optional
 from dateutil import tz
 from typing import TYPE_CHECKING
+import requests
 
 import discord
 from discord.errors import HTTPException, NotFound
@@ -148,6 +149,11 @@ class Context(commands.Context["MasarykBOT"]):
 
     async def send_error(self, content: str, delete_after: Optional[float] = None) -> discord.Message:
         return await self.send_embed(content, name="Error", delete_after=delete_after, color=discord.Color.red())
+
+
+    async def send_asset(self, url: str) -> discord.Message:
+        image = io.BytesIO(requests.get(url).content)
+        return await self.send(file=discord.File(image))
 
 
     async def _wait_for_reaction_or_clear(self, message: discord.Message) -> None:
