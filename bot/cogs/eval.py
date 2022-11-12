@@ -1,11 +1,13 @@
+import io
 import json
-from io import StringIO
-from typing import Any, Dict
+from typing import Dict, cast
 
 import aiohttp
+from discord import File
+from discord.ext import commands
+
 from bot.cogs.utils.context import Context
-from disnake import File
-from disnake.ext import commands
+
 
 
 def get_cmds() -> Dict[str, str]:
@@ -23,9 +25,12 @@ def get_cmds() -> Dict[str, str]:
     cmds['hs'] = cmds['haskell']
     return cmds
 
+
+
 class CodeBlock:
     missing_error = ('Missing code block. Please use the following markdown\n' +
                      '\\`\\`\\`language\ncode here\n\\`\\`\\`')
+
 
     def __init__(self, argument: str) -> None:
         try:
@@ -40,6 +45,7 @@ class CodeBlock:
         self.command = self.get_command_from_language(language.lower())
         self.source = code.rstrip('`').replace('```', '')
 
+
     @staticmethod
     def get_command_from_language(language: str) -> str:
         try:
@@ -52,9 +58,11 @@ class CodeBlock:
             raise commands.BadArgument(fmt) from err
 
 
+
 class Eval(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
+
 
     @commands.command(name="eval", aliases=["e", "coliru"])
     @commands.cooldown(1, 15, commands.BucketType.user)
@@ -80,8 +88,9 @@ class Eval(commands.Cog):
             async with aiohttp.ClientSession() as session:
                 result = await self.coliru_compile(session, data)
 
-        fp = StringIO(result)
+        fp = cast(io.BufferedIOBase, io.StringIO(result))
         await ctx.send(file = File(fp, filename="eval_result.txt"))
+
 
     async def coliru_compile(self, session: aiohttp.ClientSession, data: str) -> str:
         async with session.post('http://coliru.stacked-crooked.com/compile', data=data) as resp:
@@ -92,13 +101,6 @@ class Eval(commands.Cog):
 
             return output
 
-            """
-            if len(output) < 1992:
-                return output
-
-            # output is too big so post it in gist
-            return await self.coliru_shorten(session, data)
-            """
 
     @staticmethod
     async def coliru_shorten(session: aiohttp.ClientSession, data: str) -> str:
@@ -110,6 +112,7 @@ class Eval(commands.Cog):
                 link = f'http://coliru.stacked-crooked.com/a/{shared_id}'
                 return f'Output too big. Coliru link: {link}'
 
+
     @coliru.error
     async def coliru_error(self, ctx: Context, error: commands.CommandError) -> None:
         if isinstance(error, commands.BadArgument):
@@ -119,5 +122,6 @@ class Eval(commands.Cog):
         print(error)
 
 
-def setup(bot: commands.Bot) -> None:
-    bot.add_cog(Eval(bot))
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(Eval(bot))

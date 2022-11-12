@@ -23,6 +23,7 @@ initail_cogs = [
     "bot.cogs.bookmark",
     "bot.cogs.cog_manager",
     "bot.cogs.errors",
+    "bot.cogs.eval",
     "bot.cogs.markov",
 ]
 
