@@ -18,6 +18,11 @@ from bot.db.utils import Pool, Url
 
 
 initail_cogs = [
+    "bot.cogs.admin",
+    "bot.cogs.auto_thread",
+    "bot.cogs.bookmark",
+    "bot.cogs.cog_manager",
+    "bot.cogs.errors",
     "bot.cogs.markov",
 ]
 

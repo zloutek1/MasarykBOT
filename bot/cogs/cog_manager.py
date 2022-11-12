@@ -4,6 +4,7 @@ from bot.cogs.utils.context import Context
 from discord.ext import commands
 
 
+
 class CogManager(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
@@ -14,7 +15,7 @@ class CogManager(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def load(self, ctx: Context, *, module: str) -> None:
         """Loads a module."""
-        await ctx.message.delete(delay=5.0)
+        await ctx.safe_delete(delay=5.0)
         try:
             await self.bot.load_extension(module)
         except commands.ExtensionError as err:
@@ -29,7 +30,7 @@ class CogManager(commands.Cog):
     @commands.has_permissions(administrator=True)
     async def unload(self, ctx: Context, *, module: str) -> None:
         """Unloads a module."""
-        await ctx.message.delete(delay=5.0)
+        await ctx.safe_delete(delay=5.0)
         try:
             await self.bot.unload_extension(module)
         except commands.ExtensionError as err:
@@ -40,17 +41,17 @@ class CogManager(commands.Cog):
             await ctx.send_success(f'{module} unloaded successfully', delete_after=5.0)
 
 
-    @commands.group(name='reload', invoke_without_command=True)
+    @commands.group(invoke_without_command=True)
     @commands.has_permissions(administrator=True)
-    async def _reload(self, ctx: Context, *, module: Optional[str] = None) -> None:
+    async def reload(self, ctx: Context, *, module: Optional[str] = None) -> None:
         """Reloads a module."""
 
         if module is None:
             if self.last_reloaded is not None:
-                await self._reload(ctx, module=self.last_reloaded)
+                await self.reload(ctx, module=self.last_reloaded)
             return
 
-        await ctx.message.delete(delay=5.0)
+        await ctx.safe_delete(delay=5.0)
         try:
             await self.bot.reload_extension(module)
             self.last_reloaded = module
@@ -62,9 +63,8 @@ class CogManager(commands.Cog):
             await ctx.send_success(f'{module} reloaded successfully', delete_after=5.0)
 
 
-    @_reload.command(name='all', hidden=True)
-    @commands.has_permissions(administrator=True)
-    async def _reload_all(self, ctx: Context) -> None:
+    @reload.command(name='all', hidden=True) # type: ignore[arg-type]
+    async def reload_all(self, ctx: Context) -> None:
         """Reloads all modules"""
         output = ""
 
@@ -78,7 +78,7 @@ class CogManager(commands.Cog):
             else:
                 output += f'{module} - reloaded successfully\n'
 
-        await ctx.message.delete(delay=5.0)
+        await ctx.safe_delete(delay=5.0)
         await ctx.send_embed(output, delete_after=5.0)
 
 

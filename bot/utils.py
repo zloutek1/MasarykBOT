@@ -1,5 +1,5 @@
 
-from typing import Callable, Generator, List, Tuple, TypeVar
+from typing import Callable, Generator, List, Sequence, Tuple, TypeVar
 
 
 T = TypeVar('T')
@@ -12,6 +12,6 @@ def partition(cond: Callable[[T], bool], lst: List[T]) -> Tuple[List[T], List[T]
 
 
 
-def chunks(lst: List[T], n: int) -> Generator[List[T], None, None]:
+def chunks(lst: List[T] | str, n: int) -> Generator[Sequence[T] | Sequence[str], None, None]:
     for i in range(0, len(lst), n):
         yield lst[i:i + n]

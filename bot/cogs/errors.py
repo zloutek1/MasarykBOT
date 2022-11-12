@@ -1,44 +1,45 @@
 import logging
 import traceback
 
+from discord.abc import Messageable
+from discord.ext import commands
+from discord.utils import get
+
 from bot.cogs.utils.context import Context
-from bot.constants import Config
-from disnake.abc import Messageable
-from disnake.ext import commands
-from disnake.utils import get
+from bot.constants import CONFIG
+from bot.utils import chunks
+
+
 
 log = logging.getLogger(__name__)
+
+
+REPLY_ON_ERROS = (
+    commands.BadArgument, 
+    commands.MissingRequiredArgument, 
+    commands.MissingRole, 
+    commands.errors.BadUnionArgument, 
+    commands.CommandOnCooldown,
+    commands.NoPrivateMessage,
+    commands.MissingPermissions,
+    commands.ArgumentParsingError,
+    commands.BotMissingPermissions
+)
 
 
 class Errors(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
+
     @commands.Cog.listener()
     async def on_command_error(self, ctx: Context, error: commands.CommandError) -> None:
         if hasattr(ctx.command, "on_error"):
             return
 
-        if isinstance(error, (commands.BadArgument, commands.MissingRequiredArgument, commands.MissingRole, commands.errors.BadUnionArgument)):
+        if isinstance(error, REPLY_ON_ERROS):
             await ctx.send_error(str(error))
             return
-
-        if isinstance(error, commands.CommandOnCooldown):
-            await ctx.send_error(str(error))
-            return
-
-        if isinstance(error, commands.NoPrivateMessage):
-            await ctx.send_error('This command cannot be used in private messages.')
-            return
-
-        if isinstance(error, commands.MissingPermissions):
-            await ctx.send_error("Sorry. You don't have permissions to use this command")
-            return
-
-        for just_printable in [commands.ArgumentParsingError, commands.BotMissingPermissions]:
-            if isinstance(error, just_printable):
-                await ctx.send_error(str(error))
-                return
 
         if isinstance(error, commands.CommandInvokeError):
             await self.log_error(ctx, error.original)
@@ -47,38 +48,38 @@ class Errors(commands.Cog):
         await self.log_error(ctx, error)
 
 
+
     async def log_error(self, ctx: Context, error: Exception) -> None:
-        command_name = ctx.command.qualified_name if ctx.command else "event"
         trace = "".join(traceback.format_exception(type(error), error, error.__traceback__))
-        msg = f'In {command_name}:\n{trace}'
+        
+        if ctx.command:
+            user = ctx.author.name
+            msg = ctx.message.content
+            msg = f'In #{ctx.channel} @{user} said:\n   {msg}\n\n{trace}'
+        else:
+            msg = trace
 
         log.error(msg)
 
         if ctx.guild is None:
             return
 
-        if (guild_config := get(Config.guilds, id=ctx.guild.id)) is None:
+        if not (guild_config := get(CONFIG.guilds, id = ctx.guild.id)):
             return
 
-        if guild_config.logs is None:
+        if not (channel_id := guild_config.logs.errors):
             return
 
-        channel_id = guild_config.logs.errors
-        if channel_id and (channel := self.bot.get_channel(channel_id)) is not None:
-            if not isinstance(channel, Messageable):
-                return
+        if not (channel := await self.bot.fetch_channel(channel_id)):
+            return
 
-            part = ""
-            for line in msg.split("\n"):
-                if len(part) + len(line) < 1900:
-                    part += line + "\n"
-                else:
-                    part += line
-                    while len(part) >= 1900:
-                        await channel.send(f"```\n{part[:1900]}\n```")
-                        part = part[1900:]
-            if part:
-                await channel.send(f"```\n{part}\n```")
+        if not isinstance(channel, Messageable):
+            return
 
-def setup(bot: commands.Bot) -> None:
-    bot.add_cog(Errors(bot))
+        for chunk in chunks(msg, 1900):
+            await channel.send(f"```\n{chunk}\n```")
+
+
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(Errors(bot))

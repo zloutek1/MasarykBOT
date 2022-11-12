@@ -66,7 +66,7 @@ guilds:
         - 988918829570744350
 
     logs: !logs
-        errors: 731435433564569632
+        errors: 731435447787716680
         mute: 731435469472006156
         other: 731435447787716680
         webhook: https://discord.com/api/webhooks/816237455913123870/9H7BGuwt6nQi_jDa3wwGf9yZuqaUvQCXJQpM4iz_IEvKavH5hRIf_rP6ejmfqqJ6gXZS
