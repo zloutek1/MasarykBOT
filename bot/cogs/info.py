@@ -2,10 +2,12 @@ import time
 from datetime import datetime
 from typing import Dict, Optional
 
-from bot.cogs.utils.context import Context
-from disnake import Color, Embed
-from disnake.ext import commands
-from disnake.utils import get
+from discord import Color, Embed
+from discord.ext import commands
+from discord.utils import get
+
+from bot.cogs.utils.context import Context, GuildContext
+
 
 
 class Info(commands.Cog):
@@ -13,10 +15,12 @@ class Info(commands.Cog):
         self.bot = bot
         self.uptime: Optional[datetime] = None
 
+
     @commands.Cog.listener()
     async def on_ready(self) -> None:
         if self.uptime is None:
             self.uptime = datetime.utcnow()
+
 
     @commands.command(name="uptime")
     async def _uptime(self, ctx: Context) -> None:
@@ -27,27 +31,34 @@ class Info(commands.Cog):
         running_for = datetime.now() - self.uptime
         await ctx.send_embed(f"I have been running for {running_for}")
 
+
     @commands.command()
     async def ping(self, ctx: Context) -> None:
         """Feeling lonely?"""
         before_typing = time.monotonic()
-        await ctx.trigger_typing()
+        await ctx.typing()
         after_typing = time.monotonic()
         milliseconds = int((after_typing - before_typing) * 1000)
         msg = ':ping_pong: **PONG!** (~{}ms)'.format(milliseconds)
         await ctx.send(msg)
 
-    @commands.command()
-    async def invite(self, ctx: Context) -> None:
-        await ctx.send(f"https://discordapp.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions=268823632")
 
     @commands.command()
-    async def categories(self, ctx: Context) -> None:
+    async def invite(self, ctx: Context) -> None:
+        assert self.bot.user
+        await ctx.send(f"https://discordapp.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions=268823632")
+
+
+    @commands.command()
+    @commands.guild_only()
+    async def categories(self, ctx: GuildContext) -> None:
         categories = (category.name for category in ctx.guild.categories)
         await ctx.send(f"`{', '.join(categories)}`")
 
+
     @commands.command()
-    async def info(self, ctx: Context) -> None:
+    @commands.guild_only()
+    async def info(self, ctx: GuildContext) -> None:
         """
         send an embed containing info in format
         Server_id           Owner
@@ -60,9 +71,6 @@ class Info(commands.Cog):
         online | idle | dnd | streaming | offline
         Total:
         """
-
-        assert ctx.guild, "ERROR: this command can only be run inside a guild"
-
         status: Dict[str, int] = {}
         for member in ctx.guild.members:
             status[member.status.name] = status.get(member.status.name, 0) + 1
@@ -116,10 +124,11 @@ class Info(commands.Cog):
         time_now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         embed.set_footer(
             text=f"{str(author)} at {time_now}",
-            icon_url=author.avatar and author.avatar.with_format("png").url
+            icon_url=author.avatar.url if author.avatar else author.default_avatar.url
         )
         await ctx.send(embed=embed)
 
 
-def setup(bot: commands.Bot) -> None:
-    bot.add_cog(Info(bot))
+
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(Info(bot))

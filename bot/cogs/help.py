@@ -11,7 +11,7 @@ from bot.utils import map_range
 
 
 
-Page = Tuple[str, str, List[commands.Command[Any, ..., Any]]]
+Page = Tuple[str, str, List[commands.Command[Any, ..., Any]]] # type: ignore[misc]
 
 
 
