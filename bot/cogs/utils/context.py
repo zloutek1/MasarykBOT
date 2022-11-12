@@ -1,5 +1,6 @@
 # pyright: reportIncompatibleVariableOverride=false
 
+from __future__ import annotations
 import asyncio
 from datetime import datetime
 import io
@@ -16,12 +17,10 @@ from discord.utils import get
 
 if TYPE_CHECKING:
     from bot.bot import MasarykBOT
-else:
-    MasarykBOT = "MasarykBOT"
 
 
 
-class Context(commands.Context[MasarykBOT]):
+class Context(commands.Context["MasarykBOT"]):
     """
     custom Context object passed in every ctx variable
     in your commands. provides some useful getter shortcuts

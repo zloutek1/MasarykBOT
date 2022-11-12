@@ -1,6 +1,7 @@
+from __future__ import annotations
 import io
 from random import choice, shuffle
-from typing import Literal, Optional, cast
+from typing import TYPE_CHECKING, Literal, Optional, cast
 
 import discord
 import requests
@@ -8,7 +9,8 @@ import unicodeit
 from discord.ext import commands
 from PIL import Image
 
-from bot.cogs.utils.context import Context
+if TYPE_CHECKING:
+    from bot.cogs.utils.context import Context, GuildContext
 
 IMG_EXTS = Literal['webp', 'jpeg', 'jpg', 'png', 'gif']
 HUGS = [
@@ -159,9 +161,9 @@ class Fun(commands.Cog):
 
 
     @commands.command()
-    async def emoji_list(self, ctx: Context) -> None:
+    @commands.guild_only()
+    async def emoji_list(self, ctx: GuildContext) -> None:
         await ctx.safe_delete()
-        assert ctx.guild, "can only run in a guild"
         emojis = self.service.list_emojis(ctx.guild)
         await ctx.send(emojis)
 
@@ -178,15 +180,15 @@ class Fun(commands.Cog):
 
 
     @commands.command()
-    async def icon_url(self, ctx: Context, format: Optional[IMG_EXTS] = None) -> None:
-        assert ctx.guild is not None, "ERROR: command can only be invoked inside a guild"
+    @commands.guild_only()
+    async def icon_url(self, ctx: GuildContext, format: Optional[IMG_EXTS] = None) -> None:
         url = self.service.get_guild_icon_url(ctx.guild, format)
         await ctx.send(url or "no icon")
 
 
     @commands.command(aliases=['icon'])
-    async def logo(self, ctx: Context) -> None:
-        assert ctx.guild is not None, "ERROR: command can only be invoked inside a guild"
+    @commands.guild_only()
+    async def logo(self, ctx: GuildContext) -> None:
         if not (url := self.service.get_guild_icon_url(ctx.guild)):
             await ctx.send("no icon")
         else:
@@ -194,15 +196,15 @@ class Fun(commands.Cog):
 
 
     @commands.command()
-    async def banner_url(self, ctx: Context, format: Optional[IMG_EXTS] = None) -> None:
-        assert ctx.guild is not None, "ERROR: command can only be invoked inside a guild"
+    @commands.guild_only()
+    async def banner_url(self, ctx: GuildContext, format: Optional[IMG_EXTS] = None) -> None:
         url = self.service.get_guild_banner_url(ctx.guild, format)
         await ctx.send(url or "no banner")
 
 
     @commands.command()
-    async def banner(self, ctx: Context) -> None:
-        assert ctx.guild is not None, "ERROR: command can only be invoked inside a guild"
+    @commands.guild_only()
+    async def banner(self, ctx: GuildContext) -> None:
         if not (url := self.service.get_guild_banner_url(ctx.guild)):
             await ctx.send("no banner")
         else:
