@@ -58,6 +58,13 @@ class Admin(commands.Cog):
     async def fail(self, ctx: Context) -> NoReturn:
         raise Exception("failing code for testing purposes")
 
+    
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def sync(self, ctx: Context) -> None:
+        fmt = await ctx.bot.tree.sync()
+        await ctx.send(f"synced {len(fmt)} commands")
+
 
     @commands.command()
     @commands.has_permissions(administrator=True)

@@ -22,13 +22,15 @@ inject==4.3.1
     numpy==1.22.2
     matplotlib==3.5.1
     pandas==1.4.1
-    Pillow==9.0.1
+    Pillow==9.3.0
+    types-Pillow==9.3.0.1
 
     # fun
     unicodeit==0.7.2
     emoji==1.6.3
     types-emoji==1.2.7
-    requests==2.27.1
+    requests==2.28.1
+    types-requests==2.28.11.4
 
     # wordle
     english-words==1.1.0
