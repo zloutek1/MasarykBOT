@@ -1,15 +1,14 @@
 import logging
 import random
 from typing import TYPE_CHECKING, Dict, List, Tuple, cast
-import inject
 
-from discord.ext import commands
-from discord.ext.commands import has_permissions
-from discord.utils import escape_mentions
+import inject
 from aioredis import Redis
+from discord.ext import commands
+from discord.utils import escape_mentions
 
 from bot.cogs.utils.context import Context
-from bot.db.messages import MessageDao
+from bot.db import MessageDao
 
 if TYPE_CHECKING:
     from bot.bot import MasarykBOT
@@ -34,12 +33,12 @@ class MarkovTrainService:
     async def train(self) -> None:
         await self.clear_cache()
 
-        messages = await self.messageDao.select_longer_then(30)
+        messages = await self.messageDao.find_all_longer_then(10)
         for message in messages:
             await self.markov_train_line(message['content'])
                 
 
-    async def clear_cache(self):
+    async def clear_cache(self) -> None:
         await self.redis.flushall()
 
 
@@ -48,12 +47,12 @@ class MarkovTrainService:
         words = line.split()
         for i in range(len(words) - N):
             await self._increment_entry(
-                ngram=tuple(words[i:i+N]), 
+                ngram=cast(NGram, tuple(words[i:i+N])), 
                 next=words[i+N]
             )
 
 
-    async def _increment_entry(self, ngram: NGram, next: str):
+    async def _increment_entry(self, ngram: NGram, next: str) -> None:
         key = "markov." + SEP.join(ngram)
         options: Dict[str, str] = await self.redis.hgetall(key) or {}
         options[next] = str(int(options.get(next, 0)) + 1)
@@ -73,7 +72,7 @@ class MarkovGenerateService:
         self.possible_starts = set()
         async for key in self.redis.scan_iter(match=f"markov.{SOF}{SEP}*"):
             key = cast(str, key)
-            ngram: NGram = tuple(key.lstrip("markov.").split(SEP))
+            ngram = cast(NGram, tuple(key.lstrip("markov.").split(SEP)))
             self.possible_starts.add(ngram)
         log.info(f"loaded {len(self.possible_starts)} possible starts")
 
@@ -123,8 +122,8 @@ class MarkovGenerateService:
 class MarkovService(MarkovTrainService, MarkovGenerateService):
 
     def __init__(self) -> None:
-        super(MarkovTrainService).__init__()
-        super(MarkovGenerateService).__init__()
+        super(MarkovTrainService, self).__init__()
+        super(MarkovGenerateService, self).__init__()
 
 
 
@@ -146,7 +145,7 @@ class Markov(commands.Cog):
 
 
     @markov.command(name='train', aliases=['retrain', 'grind'])
-    @has_permissions(administrator=True)
+    @commands.has_permissions(administrator=True)
     async def train(self, ctx: Context) -> None:
         await ctx.send("[Markov] Grinding ...")
 
@@ -161,7 +160,7 @@ class Markov(commands.Cog):
 
 
     @markov.command(name="load")
-    @has_permissions(administrator=True)
+    @commands.has_permissions(administrator=True)
     async def load(self, ctx: Context) -> None:
         await self.service.load()
 
