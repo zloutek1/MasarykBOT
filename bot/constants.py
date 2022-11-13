@@ -47,7 +47,7 @@ class StarboardConfig(yaml.YAMLObject):
     emojis: StarbardEmojiConfig
     best_of_memes: Optional[int] = None
     best_of_masaryk: Optional[int] = None
-
+    REACT_LIMIT: Optional[int] = None
 
 
 @enforce_types  
@@ -99,8 +99,7 @@ class GuildConfig(yaml.YAMLObject):
     logs: LogsConfig
     roles: RoleConfig
     NEEDED_REACTIONS: Optional[int] = None
-    STARBOARD_REACT_LIMIT: Optional[int] = None
-
+    
 
 
 @enforce_types 
@@ -162,6 +161,7 @@ def get_loader() -> Type[yaml.Loader]:
   loader.add_constructor("!colors", class_loader(ColorConfig))
   loader.add_constructor("!Config", class_loader(Config))
   return loader
+ 
  
 
 with open('config.yml', encoding="UTF-8") as f:

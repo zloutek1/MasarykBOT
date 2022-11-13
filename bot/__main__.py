@@ -30,7 +30,8 @@ initail_cogs = [
     "bot.cogs.markov",
     "bot.cogs.leaderboard",
     "bot.cogs.rolemenu",
-    "bot.cogs.rules"
+    "bot.cogs.rules",
+    "bot.cogs.starboard"
 ]
 
 intents = discord.Intents(

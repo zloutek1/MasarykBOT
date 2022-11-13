@@ -15,7 +15,6 @@ guilds:
     name: fi_muni
 
     NEEDED_REACTIONS: 10
-    STARBOARD_REACT_LIMIT: 10
 
     channels: !channels
         verification: 621365818034356224
@@ -24,6 +23,7 @@ guilds:
         threaded:
         - 988839106656215041
         starboard: !starboard
+            REACT_LIMIT: 10
             starboard: 761552082159271936
             best_of_memes: 836224046030520410
             best_of_masaryk: 930957842356244530
@@ -57,7 +57,6 @@ guilds:
     name: fi test
 
     NEEDED_REACTIONS: 1
-    STARBOARD_REACT_LIMIT: 1
 
     channels: !channels
         verification: 731525269214724116
@@ -66,6 +65,7 @@ guilds:
         threaded:
             - 988918829570744350
         starboard: !starboard
+            REACT_LIMIT: 1
             starboard: 751062312781217792
             best_of_memes: null
             best_of_masaryk: 930952840703262744
@@ -93,30 +93,3 @@ guilds:
         moderator: 627249759694094366
         admin: 573595915302993920
         show_all: 760093273871613993
-
-- !guilds
-    id: 983522320981299272
-    name: test
-
-    NEEDED_REACTIONS: 1
-    STARBOARD_REACT_LIMIT: 1
-    
-    channels: !channels
-        verification: null
-        about_you: null
-        subject_registration: 983522321442701313
-        threaded: []
-        starboard_igone: []
-
-    logs: !logs
-        errors: null
-        mute: null
-        other: null
-        webhook: null
-
-    roles: !roles
-        muted: null
-        verified: null
-        moderator: null
-        admin: null
-        show_all: 983522320981299277
