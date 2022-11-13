@@ -1,341 +1,228 @@
+# pyright: reportUnnecessaryIsInstance=false
+ 
 import logging
 import re
-from typing import Any, List, Optional, Tuple, TypeVar, Union, cast
+from typing import Optional, Set, TypeVar, cast
 
-from bot.cogs.utils.context import Context, GuildChannel
-from bot.constants import Config
-from disnake import (Emoji, Guild, Member, Message, PartialEmoji,
-                     PermissionOverwrite, RawMessageUpdateEvent,
-                     RawReactionActionEvent, Reaction, Role, TextChannel, User)
-from disnake.abc import Messageable, Snowflake
-from disnake.errors import Forbidden, HTTPException
-from disnake.ext import commands
-from disnake.ext.commands.core import AnyContext
-from disnake.utils import find, get
-from emoji import UNICODE_EMOJI
+import discord
+from discord.abc import GuildChannel, Messageable, Snowflake
+from discord.ext import commands
+from discord.utils import find, get
+from emoji import get_emoji_regexp
+
+from bot.constants import CONFIG
+
+
 
 log = logging.getLogger(__name__)
-MAX_CHANNEL_OVERWRITES = 500
+BotT = TypeVar('BotT', bound=commands.Bot | commands.AutoShardedBot)
+
+
 
 class UnicodeEmoji(commands.Converter[str]):
-    """
-    discord.py's way of handling emojis is [Emoji, PartialEmoji, str]
-    UnicodeEmoji accepts str only if it is present
-    in UNICODE_EMOJI list
-    """
-    async def convert(self, _ctx: AnyContext, argument: str) -> str:
-        if argument not in UNICODE_EMOJI:
+    async def convert(self, ctx: commands.Context[BotT], argument: str) -> str:
+        if not re.match(get_emoji_regexp(), argument):
             raise commands.BadArgument('Emoji "{}" not found'.format(argument))
         return argument
 
 
-Emote = Union[Emoji, PartialEmoji, UnicodeEmoji]
+
+Action = GuildChannel | discord.Role
+Emote = discord.Emoji | discord.PartialEmoji | UnicodeEmoji
+DISCORD_MAX_CHANNEL_OVERWRITES = 500
 E_MISSING_ACCESS = 50001
 E_MISSING_PERMISSIONS = 50013
 
 
-class Rolemenu(commands.Cog):
+
+class RolemenuService:
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
+        
+    
+    @staticmethod
+    def is_rolemenu_channel(channel_id: int) -> bool:
+        return channel_id in (guild.channels.about_you for guild in CONFIG.guilds)
 
-    @commands.Cog.listener()
-    async def on_raw_reaction_add(self, payload: RawReactionActionEvent) -> None:
-        await self.on_raw_reaction_update(payload)
 
-    @commands.Cog.listener()
-    async def on_raw_reaction_remove(self, payload: RawReactionActionEvent) -> None:
-        await self.on_raw_reaction_update(payload)
+    async def fetch_message(self, payload: discord.RawReactionActionEvent | discord.RawMessageUpdateEvent) -> discord.Message:
+        channel = await self.bot.fetch_channel(payload.channel_id)
+        if not isinstance(channel, Messageable):
+            raise AssertionError(f"channel {channel} is not messageable")
+        return await channel.fetch_message(payload.message_id)
 
-    async def on_raw_reaction_update(self, payload: RawReactionActionEvent) -> None:
-        """
-        Detect a user reacting on a message inside a `about_you` channel
-        and either toggle a visiblity of a channel
-        or         toggle a role for the user
-        """
 
-        about_you_channels = [guild.channels.about_you for guild in Config.guilds]
-        if payload.channel_id not in about_you_channels:
-            return
+    def get_rolemenu_row(self, message: discord.Message, emoji: discord.PartialEmoji) -> Optional[str]:
+        rows = message.content.split('\n')
+        return find(lambda row: row.startswith(str(emoji)), rows)
 
-        if payload.guild_id is None:
-            return
 
-        guild = self.bot.get_guild(payload.guild_id)
-        if guild is None:
-            return
+    def parse_action(self, message: discord.Message, emoji: discord.PartialEmoji) -> Optional[Action]:
+        assert message.guild
+        if not (row := self.get_rolemenu_row(message, emoji)):
+            return None
+        
+        action = row.split(" ", 1)[1]
+        
+        return (
+            self.parse_channel(message.guild, action) or
+            self.parse_role(message.guild, action)
+        )
+        
+    
+    @staticmethod
+    def parse_channel(guild: discord.Guild, text: str) -> Optional[GuildChannel]:
+        if (match := re.match(r"<#(\d+)>", text)):
+            return get(guild.channels, id=int(match.group(1)))
+        return None
+    
 
-        channel = get(guild.text_channels, id=payload.channel_id)
-        if channel is None:
-            return
+    @staticmethod
+    def parse_role(guild: discord.Guild, text: str) -> Optional[discord.Role]:
+        if (match := re.match(r"<@&(\d+)>", text)):
+            return get(guild.roles, id=int(match.group(1)))
+        return None
+        
 
-        message = await channel.fetch_message(payload.message_id)
-        author = guild.get_member(payload.user_id)
+    @staticmethod
+    def list_emojis(message: discord.Message) -> Set[str]:
+        rows = message.content.split('\n')
+        return set(row.split(' ', 1)[0] for row in rows)
 
-        if author is None or author == self.bot.user:
-            return
 
-        if not (row := find(lambda row: row.startswith(str(payload.emoji)), message.content.split('\n'))):
-            return
-
-        try:
-            desc = row.split(" ", 1)[1]
-        except ValueError:
-            return
-
-        try:
-            if payload.event_type == "REACTION_ADD":
-                await self._reaction_add(guild, author, desc)
-            else:
-                await self._reaction_remove(guild, author, desc)
-        except Forbidden as err:
-            if err.code == E_MISSING_ACCESS:
-                log.warning("Missing access for option %s", row)
-
-    async def _reaction_add(self, guild: Guild, user: Member, desc: str) -> None:
-        """
-        Add role or show channel to a user
-        @param desc - name of a role or channel
-        """
-
-        if role := self.get_role(guild, desc):
-            await user.add_roles(cast(Snowflake, role))
-            log.info("added role %s to %s", str(role), user)
-            return
-
-        if channel := self.get_text_channel(guild, desc):
-            await self._show_channel(channel, user)
-            log.info("shown channel %s to %s", str(channel), user)
-            return
-
-    async def _show_channel(self, channel: GuildChannel, user: Member):
+    async def show_channel(self, channel: GuildChannel, user: discord.Member) -> None:
         if role := get(channel.guild.roles, name=f"📁{channel.name}"):
             log.info("adding role %s to %s", str(role), user)
             await user.add_roles(role)
-            return
 
-        if len(channel.overwrites) <= MAX_CHANNEL_OVERWRITES:
+        elif len(channel.overwrites) <= DISCORD_MAX_CHANNEL_OVERWRITES:
             log.info("adding permission overwrite to %s", user)
-            await channel.set_permissions(user, overwrite=PermissionOverwrite(read_messages=True))
-            return
+            await channel.set_permissions(user, overwrite=discord.PermissionOverwrite(read_messages=True))
+           
+        else:
+            await self._migrate_overrides_to_role(channel, user)
 
+    
+    async def hide_channel(self, channel: GuildChannel, user: discord.Member) -> None:
+        if role := get(channel.guild.roles, name=f"📁{channel.name}"):
+            await user.remove_roles(role)
+        else:
+            await channel.set_permissions(user, overwrite=None)
+
+
+    async def _migrate_overrides_to_role(self, channel: GuildChannel, user: discord.Member) -> None:
         if not (role := get(channel.guild.roles, name=f"📁{channel.name}")):
             log.info("creating role instead of permission overwrite")
             role = await channel.guild.create_role(name=f"📁{channel.name}")
 
         for i, (key, overwrite) in enumerate(channel.overwrites.items()):
-            if not isinstance(key, Member) or overwrite != PermissionOverwrite(read_messages=True):
+            if not isinstance(key, discord.Member) or overwrite != discord.PermissionOverwrite(read_messages=True):
                 continue
             
             await key.add_roles(role)
             await channel.set_permissions(key, overwrite=None)
             
-            if i == 10 or len(channel.overwrites) <= max(0, MAX_CHANNEL_OVERWRITES - 10):
+            if i == 10 or len(channel.overwrites) <= max(0, DISCORD_MAX_CHANNEL_OVERWRITES - 10):
                 log.info('showing role')
-                await channel.set_permissions(role, overwrite=PermissionOverwrite(read_messages=True))
+                await channel.set_permissions(role, overwrite=discord.PermissionOverwrite(read_messages=True))
                 await user.add_roles(role)
         
         log.info('adding role overwrite')
-        await channel.set_permissions(role, overwrite=PermissionOverwrite(read_messages=True))
+        await channel.set_permissions(role, overwrite=discord.PermissionOverwrite(read_messages=True))
         await user.add_roles(role)
-            
-    async def _reaction_remove(self, guild: Guild, author: Member, desc: str) -> None:
-        """
-        Remove role or hide channel from a user
-        @param desc - name of a role or channel
-        """
 
-        if role := self.get_role(guild, desc):
-            await author.remove_roles(cast(Snowflake, role))
-            log.info("removed role %s from %s", str(role), author)
-            return
 
-        if channel := self.get_text_channel(guild, desc):
-            if role := get(channel.guild.roles, name=f"📁{channel.name}"):
-                await author.remove_roles(role)
-            else:
-                await channel.set_permissions(author, overwrite=None)
-            log.info("hidden channel %s from %s", str(channel), author)
-            return
+
+class Rolemenu(commands.Cog):
+    def __init__(self, bot: commands.Bot) -> None:
+        self.bot = bot
+        self.service = RolemenuService(bot)
+
 
     @commands.Cog.listener()
-    async def on_message(self, message: Message) -> None:
-        """
-        Detect a user sending a message inside a `about_you` channel
-        detects lines in a format
-            `:emoji: #channel` or `:emoji: @role`
-        and adds corresponding emojis to the message
-        """
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
+        await self.on_raw_reaction_update(payload)
 
-        if message.guild is None:
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent) -> None:
+        await self.on_raw_reaction_update(payload)
+
+
+    async def on_raw_reaction_update(self, payload: discord.RawReactionActionEvent) -> None:
+        if not self.service.is_rolemenu_channel(payload.channel_id):
             return
 
-        if (guild_config := get(Config.guilds, id=message.guild.id)) is None:
+        message = await self.service.fetch_message(payload)
+        if not (action := self.service.parse_action(message, payload.emoji)):
             return
-        if message.channel.id != guild_config.channels.about_you:
+
+        assert message.guild
+        user = await message.guild.fetch_member(payload.user_id)
+
+        if payload.event_type == "REACTION_ADD":
+            await self._reaction_add(message.guild, user, action)
+        elif payload.event_type == "REACTION_REMOVE":
+            await self._reaction_remove(message.guild, user, action)
+        else:
+            raise NotImplementedError
+
+
+    async def _reaction_add(self, guild: discord.Guild, user: discord.Member, action: Action) -> None:
+        if isinstance(action, discord.Role):
+            await user.add_roles(cast(Snowflake, action))
+            log.info("added role %s to %s", action, user)
+
+        elif isinstance(action, discord.TextChannel):
+            await self.service.show_channel(action, user)
+            log.info("shown channel %s to %s", action, user)
+
+        else:
+            raise NotImplementedError
+
+
+    async def _reaction_remove(self, guild: discord.Guild, user: discord.Member, action: Action) -> None:
+        if isinstance(action, discord.Role):
+            await user.remove_roles(cast(Snowflake, action))
+            log.info("removed role %s from %s", action, user)
+
+        if isinstance(action, discord.TextChannel):
+            await self.service.hide_channel(action, user)
+            log.info("hidden channel %s from %s", action, user)
+
+        else:
+            raise NotImplementedError
+
+
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message) -> None:
+        if not self.service.is_rolemenu_channel(message.channel.id):
             return
 
         for row in message.content.split("\n"):
             emoji = row.strip().split(" ", 1)[0]
-            try:
-                await message.add_reaction(emoji)
-            except Forbidden as err:
-                if err.code == E_MISSING_PERMISSIONS:
-                    log.warning("missing permissions in %s", message.guild)
-            except HTTPException:
-                continue
-
-    @staticmethod
-    def get_role(guild: Guild, string: str) -> Optional[Role]:
-        if not (match := re.match(r"<@&(\d+)>", string)):
-            return None
-        role_id = int(match.group(1))
-        return get(guild.roles, id=role_id)
-
-    @staticmethod
-    def get_text_channel(guild: Guild, string: str) -> Optional[TextChannel]:
-        if not (match := re.match(r"<#(\d+)>", string)):
-            return None
-        channel_id = int(match.group(1))
-        return get(guild.text_channels, id=channel_id)
-
-    def get_emoji(self, string: str) -> Optional[Emoji]:
-        if not (match := re.match(r"<:.*:(\d+)>", string)):
-            return None
-        emoji_id = match.group(1)
-        return get(self.bot.emojis, id=int(emoji_id))
-
-    @staticmethod
-    def get_reaction(message: Message, emoji: str) -> Optional[Reaction]:
-        for react in message.reactions:
-            if str(react.emoji) == emoji:
-                return react
-        return None
+            await message.add_reaction(emoji)
+            
 
     @commands.Cog.listener()
-    async def on_raw_message_edit(self, payload: RawMessageUpdateEvent) -> None:
-        """
-        Detect a user editing a message inside a `about_you` channel
-        detects lines in a format
-            `:emoji: #channel` or `:emoji: @role`
-        and adds corresponding emojis to the message
-        """
-
-        about_you_channels = [guild.channels.about_you for guild in Config.guilds]
-        if payload.channel_id not in about_you_channels:
+    async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent) -> None:
+        if not self.service.is_rolemenu_channel(payload.channel_id):
             return
-
-        channel = self.bot.get_channel(payload.channel_id)
-        if channel is None or not isinstance(channel, Messageable):
-            return
-
-        message = await channel.fetch_message(payload.message_id)
-
-        assert 'content' in payload.data, "ERROR: key content expected in payload response"
-
-        seen_emojis = set()
-        for row in cast(Any, payload.data)['content'].split("\n"):
-            emoji = row.strip().split(" ", 1)[0]
-            seen_emojis.add(emoji)
-            try:
-                await message.add_reaction(emoji)
-            except HTTPException:
-                continue
-
+        
+        message = await self.service.fetch_message(payload)
+        seen_emojis = self.service.list_emojis(message)
+        
+        for emoji in seen_emojis:
+            await message.add_reaction(emoji)
+            
         for reaction in message.reactions:
             if str(reaction.emoji) not in seen_emojis:
                 await message.clear_reaction(reaction.emoji)
 
 
-    @commands.Cog.listener()
-    async def on_ready(self) -> None:
-        about_you_channels = [guild.channels.about_you for guild in Config.guilds]
-        for channel_id in about_you_channels:
-            channel = self.bot.get_channel(channel_id)
-            if channel is None or not isinstance(channel, TextChannel):
-                continue
+    # TODO: implement balancing
 
-            async for message in channel.history():
-                if not message.reactions:
-                    continue
+    
 
-                await self.parse_and_balance(channel, message)
-
-    async def parse_and_balance(self, channel: TextChannel, message: Message) -> None:
-        assert message.guild is not None, "ERROR: can only parse inside a guild"
-
-        for row in message.content.split("\n"):
-            emoji, desc = self.parse(row)
-
-            if emoji is None or desc is None:
-                continue
-
-            if role := self.get_role(message.guild, desc):
-                await self.balance_role(message, emoji, role)
-
-            try:
-                await self.balance_channel(message, emoji, channel)
-            except Forbidden as err:
-                if err.code == E_MISSING_ACCESS:
-                    log.warning("Missing access for option %s", row)
-            except TimeoutError as err:
-                log.warning("Balancing rolemenu for guild %s timed out", message.guild)
-
-    @staticmethod
-    def parse(message: str) -> Tuple[Optional[str], Optional[str]]:
-        try:
-            emoji, desc = message.split(" ", 1)
-            return emoji, desc
-        except ValueError:
-            return None, None
-        except IndexError:
-            return None, None
-
-    async def balance_role(self, message: Message, emoji: str, role: Role) -> None:
-        reaction = self.get_reaction(message, emoji)
-        if reaction is None:
-            return
-
-        async for user in reaction.users():
-            if isinstance(user, User):
-                await message.remove_reaction(emoji, cast(Snowflake, user))
-                continue
-
-            has_role = get(user.roles, id=role.id)
-            if not has_role:
-                log.info("added role %s to %s", str(role), user)
-                await user.add_roles(cast(Snowflake, role))
-
-        for user in role.members:
-            has_reacted = await reaction.users().get(id=user.id)
-            if not has_reacted:
-                log.info("removed role %s to %s", str(role), user)
-                await user.remove_roles(cast(Snowflake, role))
-
-    async def balance_channel(self, message: Message, emoji: str, channel: TextChannel) -> None:
-        reaction = self.get_reaction(message, emoji)
-        if reaction is None:
-            return
-
-        async for user in reaction.users():
-            if isinstance(user, User):
-                await message.remove_reaction(emoji, cast(Snowflake, user))
-                continue
-
-            if not channel.permissions_for(user).read_messages:
-                log.info("showing channel %s to %s", str(channel), user)
-                await channel.set_permissions(user,
-                                              overwrite=PermissionOverwrite(read_messages=True))
-
-        visible_to = {user: overwrite
-                      for (user, overwrite) in channel.overwrites.items()
-                      if overwrite.read_messages and isinstance(user, Member) and not user.bot}
-        for user in visible_to:
-            has_reacted = await reaction.users().get(id=user.id)
-            if not has_reacted:
-                log.info("hide channel %s to %s", str(channel), user)
-                await channel.set_permissions(user,
-                                              overwrite=None)
-
-
-def setup(bot: commands.Bot) -> None:
-    bot.add_cog(Rolemenu(bot))
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(Rolemenu(bot))
