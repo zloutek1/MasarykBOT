@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Optional
 
-from discord import Message, User, Activity, ActivityType
+from discord import Message, User, Activity, ActivityType, ClientUser
 from discord.ext import commands
 
 from bot.cogs.utils import context
@@ -15,6 +15,11 @@ class MasarykBOT(commands.Bot):
         super().__init__(*args, **kwargs)
         self.activity = self.activity or Activity(type=ActivityType.listening, name="!help")
 
+    @property
+    def user(self) -> ClientUser:
+        user = super().user
+        assert user
+        return user
 
     async def on_ready(self) -> None:
         log.info("Bot is now all ready to go")
