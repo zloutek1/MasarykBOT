@@ -17,6 +17,39 @@ class BotConfig(yaml.YAMLObject):
 
 
 
+@enforce_types 
+@dataclass(frozen=True)
+class StarboardChannelConfig(yaml.YAMLObject):
+    yaml_tag = u'!starch'
+
+    ignored: List[str | int]
+    penalised: List[str | int]
+
+
+
+@enforce_types 
+@dataclass(frozen=True)
+class StarbardEmojiConfig(yaml.YAMLObject):
+    yaml_tag = u'!starem'
+
+    ignored: List[str | int]
+    penalised: List[str | int]
+
+
+
+@enforce_types 
+@dataclass(frozen=True)
+class StarboardConfig(yaml.YAMLObject):
+    yaml_tag = u'!starboard'
+
+    starboard: int
+    channels: StarboardChannelConfig
+    emojis: StarbardEmojiConfig
+    best_of_memes: Optional[int] = None
+    best_of_masaryk: Optional[int] = None
+
+
+
 @enforce_types  
 @dataclass(frozen=True)
 class ChannelConfig(yaml.YAMLObject):
@@ -25,12 +58,9 @@ class ChannelConfig(yaml.YAMLObject):
     verification: Optional[int] = None
     about_you: Optional[int] = None
     subject_registration: Optional[int] = None
-    starboard: Optional[int] = None
-    best_of_memes: Optional[int] = None
-    best_of_masaryk: Optional[int] = None
+    starboard: Optional[StarboardConfig] = None
     threaded: List[int] = field(default_factory=list)
-    starboard_igone: List[int] = field(default_factory=list)
-
+    
 
 
 @enforce_types 
@@ -121,6 +151,9 @@ def get_loader() -> Type[yaml.Loader]:
   """Return a yaml loader."""
   loader = yaml.Loader
   loader.add_constructor("!bots", class_loader(BotConfig))
+  loader.add_constructor("!starch", class_loader(StarboardChannelConfig))
+  loader.add_constructor("!starem", class_loader(StarbardEmojiConfig))
+  loader.add_constructor("!starboard", class_loader(StarboardConfig))
   loader.add_constructor("!chnls", class_loader(ChannelConfig))
   loader.add_constructor("!logs", class_loader(LogsConfig))
   loader.add_constructor("!roles", class_loader(RoleConfig))

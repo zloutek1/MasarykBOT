@@ -21,17 +21,23 @@ guilds:
         verification: 621365818034356224
         about_you: 621365826372632606
         subject_registration: 628684083345489950
-        starboard: 761552082159271936
-        best_of_memes: 836224046030520410
-        best_of_masaryk: 930957842356244530
         threaded:
         - 988839106656215041
-        starboard_igone:
-        - 988839106656215041
-        - 625263765100953612
-        - 621718588478324736
-        - 504953215385600011
-        - 609086101511995422
+        starboard: !starboard
+            starboard: 761552082159271936
+            best_of_memes: 836224046030520410
+            best_of_masaryk: 930957842356244530
+            channels: !starch
+                ignored:
+                - 988839106656215041
+                - 625263765100953612
+                - 621718588478324736
+                - 504953215385600011
+                - 609086101511995422
+                penalised: []
+            emojis: !starem
+                ignored: []
+                penalised: []
 
     logs: !logs
         errors: 609413180137144331
@@ -57,13 +63,23 @@ guilds:
         verification: 731525269214724116
         about_you: 760211019405590540
         subject_registration: 758267743119212576
-        starboard: 751062312781217792
-        best_of_memes: null
-        best_of_masaryk: 930952840703262744
         threaded:
-        - 988918829570744350
-        starboard_igone:
-        - 988918829570744350
+            - 988918829570744350
+        starboard: !starboard
+            starboard: 751062312781217792
+            best_of_memes: null
+            best_of_masaryk: 930952840703262744
+            channels: !starch
+                ignored:
+                    - 988918829570744350
+                penalised:
+                    - memes
+            emojis: !starem
+                ignored:
+                    - .*_wine
+                penalised:
+                    - kek|pepe|lul|lol|pog|peepo|ano|nie|yes|no|cringe
+
 
     logs: !logs
         errors: 731435447787716680
@@ -89,9 +105,6 @@ guilds:
         verification: null
         about_you: null
         subject_registration: 983522321442701313
-        starboard: null
-        best_of_memes: null
-        best_of_masaryk: null
         threaded: []
         starboard_igone: []
 
