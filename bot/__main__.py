@@ -16,7 +16,8 @@ from bot.db import setup_injections as setup_db_injections
 from bot.db.utils import Pool, Url
 
 
-
+# TODO: implement Seasonal
+# TODO: implement LaTeX
 initail_cogs = [
     "bot.cogs.admin",
     "bot.cogs.auto_thread",
@@ -28,7 +29,8 @@ initail_cogs = [
     "bot.cogs.help",
     "bot.cogs.markov",
     "bot.cogs.leaderboard",
-    "bot.cogs.rolemenu"
+    "bot.cogs.rolemenu",
+    "bot.cogs.rules"
 ]
 
 intents = discord.Intents(

@@ -1,20 +1,44 @@
 from textwrap import dedent
 from typing import Dict, Union
 
-from bot.cogs.utils.context import Context, GuildChannel
-from disnake import Color, Embed, Emoji, Member, TextChannel
-from disnake.ext import commands
-from disnake.utils import get
+from discord import Color, Embed, Emoji, Member, TextChannel
+from discord.ext import commands
+from discord.utils import get
+
+from bot.cogs.utils.context import Context
 
 
 class Rules(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member: Member) -> None:
+        """
+        Send a welcome message to DM of the new member
+        with the information what to do when they join
+        the server
+        """
+
+        def emoji(name: str) -> Union[Emoji, str]:
+            obj = get(self.bot.emojis, name=name)
+            return f":{name}:" if obj is None else obj
+
+        await member.send(dedent(f"""
+            **Vítej na discordu Fakulty Informatiky Masarykovy Univerzity v Brně**
+            #pravidla a **KLIKNOUT NA {emoji("Verification")} REAKCI!!!**
+            ❯ Pro vstup je potřeba přečíst
+            ❯ Když jsem {emoji("status_offline")} offline, tak ne všechno proběhne hned.
+            ❯ Pokud nedostanete hned roli @Student, tak zkuste odkliknout, chvíli počkat a znova zakliknout.
+            """))
+
+
     @commands.group(name="rules", invoke_without_command=True)
     @commands.has_permissions(administrator=True)
     async def rules(self, ctx: Context) -> None:
         await ctx.send_help("rules")
+
 
     @rules.command(name="setup")
     async def setup_rules(self,
@@ -47,6 +71,7 @@ class Rules(commands.Cog):
 
         await ctx.message.delete()
 
+
     async def _get_channel(self, ctx: Context, name: str) -> TextChannel:
         assert ctx.guild, "ERROR: command can only run in guild"
 
@@ -54,6 +79,7 @@ class Rules(commands.Cog):
         if rules_channel is None:
             rules_channel = await ctx.guild.create_text_channel(name)
         return rules_channel
+
 
     async def _set_permissions(self, ctx: Context, channel: TextChannel) -> None:
         assert ctx.guild, "ERROR: command can only run in guild"
@@ -63,8 +89,9 @@ class Rules(commands.Cog):
         await channel.set_permissions(ctx.guild.default_role,
                                       add_reactions=False, send_messages=False, read_messages=True)
 
+
     async def _get_rules(self, ctx: Context) -> Dict[int, Embed]:
-        def role(name: str) -> str:
+        def role(name: str) -> str: #type: ignore[unused]
             obj = ctx.get_role(name)
             return "@" + name if obj is None else obj.mention
 
@@ -143,26 +170,7 @@ class Rules(commands.Cog):
 
         return embeds
 
-    @commands.Cog.listener()
-    async def on_member_join(self, member: Member) -> None:
-        """
-        Send a welcome message to DM of the new member
-        with the information what to do when they join
-        the server
-        """
-
-        def emoji(name: str) -> Union[Emoji, str]:
-            obj = get(self.bot.emojis, name=name)
-            return f":{name}:" if obj is None else obj
-
-        await member.send(dedent(f"""
-            **Vítej na discordu Fakulty Informatiky Masarykovy Univerzity v Brně**
-            #pravidla a **KLIKNOUT NA {emoji("Verification")} REAKCI!!!**
-            ❯ Pro vstup je potřeba přečíst
-            ❯ Když jsem {emoji("status_offline")} offline, tak ne všechno proběhne hned.
-            ❯ Pokud nedostanete hned roli @Student, tak zkuste odkliknout, chvíli počkat a znova zakliknout.
-            """))
 
 
-def setup(bot: commands.Bot) -> None:
-    bot.add_cog(Rules(bot))
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(Rules(bot))
