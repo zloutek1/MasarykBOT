@@ -8,6 +8,7 @@ from discord.utils import escape_markdown, get
 from bot.cogs.utils.context import GuildContext
 from bot.db.leaderboard import LeaderboardDao, Filters
 from bot.db.utils import Record
+from bot.utils import right_justify
 
 
 
@@ -49,13 +50,12 @@ class LeaderboardEmbed(discord.Embed):
     def display_row(self, row: Record, align_digits: int, bold: bool = False) -> str:
         position = int(row["row"])
         medal = self.medals.get(position) or self.medals[None]
-        count = self.right_justify(row["sent_total"], align_digits, "\u2063 ")
+        count = right_justify(row["sent_total"], align_digits, "\u2063 ")
         user = escape_markdown(row["author"])
         user = f'**{user}**' if bold else f'{user}'
         
         return f"`{position:0>2}.` {medal} `{count}` {user}"
 
-        
 
     @staticmethod
     def restrict_length(string: str) -> str:
@@ -67,15 +67,9 @@ class LeaderboardEmbed(discord.Embed):
         return string
 
 
-    @staticmethod
-    def right_justify(text: str, by: int = 0, pad:str = " ") -> str:
-        return pad * (by - len(str(text))) + str(text)
-
-
 
 class LeaderboardService:
     leaderboardDao = inject.attr(LeaderboardDao)
-
 
     async def get_data(self, user_id: int, filters: Filters) -> Tuple[List[Record], List[Record]]:
         await self.leaderboardDao.preselect(filters)
@@ -83,6 +77,7 @@ class LeaderboardService:
             await self.leaderboardDao.get_top10(),
             await self.leaderboardDao.get_around(user_id)
         )
+
 
 
 class Leaderboard(commands.Cog):
