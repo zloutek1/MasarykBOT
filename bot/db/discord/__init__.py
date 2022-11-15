@@ -13,13 +13,13 @@ from .users import UserDao
 
 
 def setup_injections(binder: inject.Binder) -> None:
-    binder.bind(AttachmentDao, AttachmentDao())
-    binder.bind(CategoryDao, CategoryDao())
-    binder.bind(ChannelDao, ChannelDao())
-    binder.bind(EmojiDao, EmojiDao())
-    binder.bind(GuildDao, GuildDao())
-    binder.bind(MessageEmojiDao, MessageEmojiDao())
-    binder.bind(MessageDao, MessageDao())
-    binder.bind(ReactionDao, ReactionDao())
-    binder.bind(RoleDao, RoleDao())
-    binder.bind(UserDao, UserDao())
+    binder.bind_to_constructor(AttachmentDao, AttachmentDao)
+    binder.bind_to_constructor(CategoryDao, CategoryDao)
+    binder.bind_to_constructor(ChannelDao, ChannelDao)
+    binder.bind_to_constructor(EmojiDao, EmojiDao)
+    binder.bind_to_constructor(GuildDao, GuildDao)
+    binder.bind_to_constructor(MessageEmojiDao, MessageEmojiDao)
+    binder.bind_to_constructor(MessageDao, MessageDao)
+    binder.bind_to_constructor(ReactionDao, ReactionDao)
+    binder.bind_to_constructor(RoleDao, RoleDao)
+    binder.bind_to_constructor(UserDao, UserDao)
