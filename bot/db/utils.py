@@ -24,10 +24,10 @@ else:
 
 
 class Table:
-    pool = inject.attr(Pool)
-
-    def __init__(self, table_name: str) -> None:
+    @inject.autoparams('pool')
+    def __init__(self, table_name: str, pool: Pool) -> None:
         self.table_name = table_name
+        self.pool = pool
 
 
 
