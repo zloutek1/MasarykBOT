@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 from bot.bot import MasarykBOT
 from bot.cogs.utils.logging import setup_logging
-from bot.db import setup_injections as setup_db_injections
+from bot.db import connect_db, setup_injections as setup_db_injections
 from bot.db.utils import Pool, Url
 
 
@@ -27,23 +27,29 @@ initail_cogs = [
     "bot.cogs.eval",
     "bot.cogs.fun",
     "bot.cogs.help",
+    "bot.cogs.info",
     "bot.cogs.markov",
     "bot.cogs.leaderboard",
     "bot.cogs.rolemenu",
     "bot.cogs.rules",
-    "bot.cogs.starboard"
+    "bot.cogs.starboard",
 ]
 
+
+
 intents = discord.Intents(
-        guilds=True,
-        guild_messages=True,
-        members=True,
-        presences = True,
-        emojis=True,
-        guild_reactions=True,
-        dm_reactions=True,
-        message_content=True
+    guilds=True,
+    guild_messages=True,
+    members=True,
+    presences = True,
+    emojis=True,
+    guild_reactions=True,
+    dm_reactions=True,
+    message_content=True
 )
+
+
+
 bot = MasarykBOT(
     command_prefix=commands.when_mentioned_or("!"),
     intents=intents,
@@ -54,14 +60,8 @@ bot = MasarykBOT(
     ),
 )
 
+
 log = logging.getLogger()
-
-
-async def connect_db(url: Url) -> Pool:
-    pool = None
-    while pool is None:
-        pool = await asyncpg.create_pool(url, command_timeout=1280)
-    return pool
 
 
 
@@ -75,13 +75,13 @@ async def connect_redis(url: Url) -> aioredis.Redis:
 
 def setup_injections(db_pool: Optional[Pool], redis: Optional[aioredis.Redis]) -> Callable[..., None]:
     def inner(binder: inject.Binder) -> None:
-        binder.install(setup_db_injections)
-
         if db_pool:
             binder.bind(Pool, db_pool)
         
         if redis:
             binder.bind(aioredis.Redis, redis)
+
+        binder.install(setup_db_injections)
     return inner
 
 
@@ -122,9 +122,6 @@ async def main() -> None:
 if __name__ == "__main__":
     load_dotenv()
     setup_logging()
-    
-    #loop = asyncio.new_event_loop()
-    #asyncio.set_event_loop(loop)
 
     try:
         asyncio.run(main())
