@@ -134,9 +134,9 @@ class RolemenuService:
 
 
 class Rolemenu(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: commands.Bot, service: RolemenuService = None) -> None:
         self.bot = bot
-        self.service = RolemenuService(bot)
+        self.service = service or RolemenuService(bot)
 
 
     @commands.Cog.listener()

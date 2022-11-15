@@ -291,9 +291,9 @@ class Starboard(commands.Cog):
     starred_messages: Dict[Id, deque[Id]] = {}
     bot_reactions_cache: deque[Id] = deque(maxlen=50)
 
-    def __init__(self, bot: MasarykBOT) -> None:
+    def __init__(self, bot: MasarykBOT, service: StarboardService = None) -> None:
         self.bot = bot
-        self.service = StarboardService(bot)
+        self.service = service or StarboardService(bot)
         
 
     @commands.Cog.listener()

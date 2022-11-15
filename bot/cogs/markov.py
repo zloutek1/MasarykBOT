@@ -26,8 +26,10 @@ SEP = "​.​"
 
 
 class MarkovTrainService:
-    messageDao = inject.attr(MessageDao)
-    redis = inject.attr(Redis)
+    @inject.autoparams('messageDao', 'redis')
+    def __init__(self, messageDao: MessageDao, redis: Redis) -> None:
+        self.messageDao = messageDao
+        self.redis = redis
 
 
     async def train(self) -> None:
@@ -61,10 +63,9 @@ class MarkovTrainService:
 
 
 class MarkovGenerateService:
-    redis = inject.attr(Redis)
-
-
-    def __init__(self) -> None:
+    @inject.autoparams('redis')
+    def __init__(self, redis: Redis) -> None:
+        self.redis = redis
         self.possible_starts: set[NGram] = set()
 
 
@@ -120,7 +121,6 @@ class MarkovGenerateService:
 
 
 class MarkovService(MarkovTrainService, MarkovGenerateService):
-
     def __init__(self) -> None:
         super(MarkovTrainService, self).__init__()
         super(MarkovGenerateService, self).__init__()
@@ -128,10 +128,9 @@ class MarkovService(MarkovTrainService, MarkovGenerateService):
 
 
 class Markov(commands.Cog):
-    service = MarkovService()
-
-    def __init__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: commands.Bot, service: MarkovService = None) -> None:
         self.bot = bot
+        self.service = service or MarkovService()
 
 
     @commands.group(invoke_without_command=True)

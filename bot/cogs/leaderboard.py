@@ -69,7 +69,10 @@ class LeaderboardEmbed(discord.Embed):
 
 
 class LeaderboardService:
-    leaderboardDao = inject.attr(LeaderboardDao)
+    @inject.autoparams('leaderboardDao')
+    def __init__(self, leaderboardDao: LeaderboardDao) -> None:
+        self.leaderboardDao = leaderboardDao
+
 
     async def get_data(self, user_id: int, filters: Filters) -> Tuple[List[Record], List[Record]]:
         await self.leaderboardDao.preselect(filters)
@@ -81,10 +84,9 @@ class LeaderboardService:
 
 
 class Leaderboard(commands.Cog):
-    service = LeaderboardService()
-
-    def __init__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: commands.Bot, service: LeaderboardService = None) -> None:
         self.bot = bot
+        self.service = service or LeaderboardService()
 
 
     @property

@@ -40,10 +40,9 @@ class AutoThreadService:
 
 
 class AutoThread(commands.Cog):
-    service = AutoThreadService()
-
-    def __init__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: commands.Bot, service: AutoThreadService = None) -> None:
         self.bot = bot
+        self.service = service or AutoThreadService()
 
 
     @commands.Cog.listener()

@@ -92,9 +92,9 @@ class BookmarkService:
 
 
 class Bookmark(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: commands.Bot, service: BookmarkService = None) -> None:
         self.bot = bot
-        self.service = BookmarkService(bot)
+        self.service = service or BookmarkService(bot)
 
 
     @commands.Cog.listener()

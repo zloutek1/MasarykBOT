@@ -155,9 +155,9 @@ class FunService:
 
 
 class Fun(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
+    def __init__(self, bot: commands.Bot, service: FunService = None) -> None:
         self.bot = bot
-        self.service = FunService(bot)
+        self.service = service or FunService(bot)
 
 
     @commands.command()
