@@ -8,11 +8,13 @@ pyyaml==5.4.1
 types-PyYAML==6.0.4
 enforce-typing==1.0.0.post1
 
+# dependency injection
+inject==4.3.1
+
 # database access
 aiohttp==3.7.4
 asyncpg==0.27.0
 asyncpg-stubs==0.27.0
-inject==4.3.1
 
 # cogs
     # markov

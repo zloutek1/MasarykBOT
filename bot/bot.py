@@ -15,12 +15,6 @@ class MasarykBOT(commands.Bot):
         super().__init__(*args, **kwargs)
         self.activity = self.activity or Activity(type=ActivityType.listening, name="!help")
 
-    @property
-    def user(self) -> ClientUser:
-        user = super().user
-        assert user
-        return user
-
     async def on_ready(self) -> None:
         log.info("Bot is now all ready to go")
         self.intorduce()

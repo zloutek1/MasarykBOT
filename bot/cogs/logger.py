@@ -1,36 +1,168 @@
-import asyncio
-import logging
-from ast import Await
-from collections import defaultdict, deque
-from datetime import datetime, timedelta
-from typing import (Any, Awaitable, Callable, Coroutine, Dict, Generator,
-                    Generic, List, Optional, Sequence, Tuple, TypeVar)
 
-from bot.bot import MasarykBOT
-from bot.cogs.utils.context import Context, GuildChannel
-from bot.db.discord import (AttachmentDao, CategoryDao, ChannelDao, EmojiDao,
-                            GuildDao, MessageDao, MessageEmojiDao, ReactionDao,
-                            RoleDao, UserDao)
-from bot.db.logger import LoggerDao
-from bot.db.utils import Record
-from disnake import (CategoryChannel, Guild, Member, Message, Reaction, Role,
-                     TextChannel)
-from disnake.abc import PrivateChannel
-from disnake.errors import Forbidden, NotFound
-from disnake.ext import commands, tasks
-from disnake.ext.commands import has_permissions
+from abc import ABC, abstractmethod
+from typing import Generic, TypeVar, Union
 
+import discord
+
+
+PartialMessageableChannel = Union[discord.TextChannel, discord.VoiceChannel, discord.Thread, discord.DMChannel, discord.PartialMessageable]
+MessageableChannel = Union[PartialMessageableChannel, discord.GroupChannel]
+
+
+T = TypeVar('T')
+R = TypeVar('R')
+
+
+
+class Backup(ABC, Generic[T]):
+    @abstractmethod
+    async def traverseUp(self, obj: T) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def backup(self, obj: T) -> None:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def traverseDown(self, obj: T) -> None:
+        raise NotImplementedError()
+        
+
+
+class GuildBackup(Backup[discord.Guild]):
+    async def traverseUp(self, guild: discord.Guild) -> None:
+        await self.backup(guild)
+
+
+    async def backup(self, guild: discord.Guild) -> None:
+        print("backup guild", guild)
+
+
+    async def traverseDown(self, guild: discord.Guild) -> None:
+        await self.backup(guild)
+        
+        for user in guild.members:
+            await UserBackup().traverseDown(user)
+
+        for role in guild.roles:
+            await RoleBackup().traverseDown(role)
+
+        for text_channel in filter(lambda ch: ch.category is None, guild.text_channels):
+            await MessagableChannelBackup().traverseDown(text_channel)
+
+        for category in guild.categories:
+            await CategoryBackup().traverseDown(category)
+
+
+
+class UserBackup(Backup[discord.User | discord.Member]):
+    async def traverseUp(self, user: discord.User | discord.Member) -> None:
+        if isinstance(user, discord.Member):
+            await GuildBackup().traverseUp(user.guild)
+        await self.backup(user)
+
+
+    async def backup(self, user: discord.User | discord.Member) -> None:
+        print("backup user", user)
+
+
+    async def traverseDown(self, user: discord.User | discord.Member) -> None:
+        await self.backup(user)
+
+
+
+class RoleBackup(Backup[discord.Role]):
+    async def traverseUp(self, role: discord.Role) -> None:
+        await GuildBackup().traverseUp(role.guild)
+        await self.backup(role)
+
+
+    async def backup(self, role: discord.Role) -> None:
+        print("backup role", role)
+
+
+    async def traverseDown(self, role: discord.Role) -> None:
+        await self.backup(role)
+
+
+
+class EmojiBackup(Backup[discord.Emoji | discord.PartialEmoji | str]):
+    async def traverseUp(self, emoji: discord.Emoji | discord.PartialEmoji | str) -> None:
+        if isinstance(emoji, discord.Emoji) and emoji.guild:
+            await GuildBackup().traverseUp(emoji.guild)
+        await self.backup(emoji)
+
+
+    async def backup(self, emoji: discord.Emoji | discord.PartialEmoji | str) -> None:
+        print("backup emoji", emoji)
+
+
+    async def traverseDown(self, emoji: discord.Emoji | discord.PartialEmoji | str) -> None:
+        await self.backup(emoji)
+
+
+
+class CategoryBackup(Backup[discord.CategoryChannel]):
+    async def traverseUp(self, category: discord.CategoryChannel) -> None:
+        await GuildBackup().traverseUp(category.guild)
+        await self.backup(category)
+
+
+    async def backup(self, category: discord.CategoryChannel) -> None:
+        print("backup category", category)
+
+
+    async def traverseDown(self, category: discord.CategoryChannel) -> None:
+        await self.backup(category)
+        
+        for text_channel in category.text_channels:
+            await MessagableChannelBackup().traverseDown(text_channel)
+
+
+
+class MessagableChannelBackup(Backup[MessageableChannel]):
+    async def traverseUp(self, messageable_channel: MessageableChannel) -> None:
+        if isinstance(messageable_channel, discord.abc.GuildChannel):
+            if messageable_channel.category:
+                await CategoryBackup().traverseUp(messageable_channel.category)
+            else:
+                await GuildBackup().traverseUp(messageable_channel.guild)
+
+        await self.backup(messageable_channel)
+
+
+    async def backup(self, messageable_channel: MessageableChannel) -> None:
+        print("backup messageable_channel", messageable_channel)
+
+
+    async def traverseDown(self, messageable_channel: MessageableChannel) -> None:
+        await self.backup(messageable_channel)
+
+        async for message in messageable_channel.history():
+            await MessageBackup().traverseDown(message)
+
+
+
+class MessageBackup(Backup[discord.Message]):
+    async def traverseUp(self, message: discord.Message) -> None:
+        await MessagableChannelBackup().traverseUp(message.channel)
+        await self.backup(message)
+
+
+    async def backup(self, message: discord.Message) -> None:
+        print("backup message", message)
+
+
+    async def traverseDown(self, message: discord.Message) -> None:
+        await self.backup(message)
+
+"""
 T = TypeVar('T')
 C = TypeVar('C')
 
 log = logging.getLogger(__name__)
 
-def partition(cond: Callable[[T], bool], lst: List[T]) -> Tuple[List[T], List[T]]:
-    return ([i for i in lst if cond(i)], [i for i in lst if not cond(i)])
 
-def chunks(lst: List[T], n: int) -> Generator[List[T], None, None]:
-    for i in range(0, len(lst), n):
-        yield lst[i:i + n]
 
 class Collectable(Generic[T, C]):
     def __init__(
@@ -42,21 +174,26 @@ class Collectable(Generic[T, C]):
         self.prepare_fn = prepare_fn
         self.insert_fn = insert_fn
 
+
     async def add(self, item: T) -> None:
         self.content.extend(await self.prepare_fn(item))
+
 
     async def db_insert(self) -> None:
         for batch in chunks(self.content, 550):
             await self.insert_fn(batch)
 
+
     def __repr__(self) -> str:
         return f"<Collectable prepare_fn={self.prepare_fn.__qualname__} insert_fn={self.insert_fn.__qualname__}>"
 
+
+
 class GetCollectables:
-    attachmentDao = AttachmentDao()
-    emojiDao = EmojiDao()
-    reactionDao = ReactionDao()
-    messageEmojiDao = MessageEmojiDao()
+    attachmentDao = inject.attr(AttachmentDao)
+    emojiDao = inject.attr(EmojiDao)
+    reactionDao = inject.attr(ReactionDao)
+    messageEmojiDao = inject.attr(MessageEmojiDao)
 
     @classmethod
     def get_collectables(cls) -> List[Collectable]:
@@ -425,10 +562,10 @@ class BackupOnEvents(GetCollectables):
         user_data = await self.userDao.prepare_one(user)
         self.insert_queues[self.userDao.insert].append(user_data)
 
-        emoji_data = await self.emojiDao.prepare_one(reaction.emoji)
+        emoji_data = await self.emojiDao.map_one(reaction.emoji)
         self.insert_queues[self.emojiDao.insert].append(emoji_data)
 
-        react_data = await self.reactionDao.prepare_one(reaction)
+        react_data = await self.reactionDao.map_one(reaction)
         self.insert_queues[self.reactionDao.insert].append(react_data)
 
     ###
@@ -567,7 +704,7 @@ class Logger(commands.Cog, BackupUntilPresent, BackupOnEvents):
         await self.backup()
 
     @commands.command(name="backup")
-    @has_permissions(administrator=True)
+    @commands.has_permissions(administrator=True)
     async def _backup(self, ctx: Context) -> None:
         if self.backup_in_progress:
             await ctx.send_error("Backup is already running")
@@ -575,5 +712,6 @@ class Logger(commands.Cog, BackupUntilPresent, BackupOnEvents):
 
         await self.backup()
 
-def setup(bot: commands.Bot) -> None:
-    bot.add_cog(Logger(bot))
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(Logger(bot))
+"""
