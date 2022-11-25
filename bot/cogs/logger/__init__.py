@@ -3,6 +3,8 @@ from discord.ext import commands
 
 from bot.cogs.utils.context import Context
 from .BotBackup import BotBackup
+from .MessageIterator import MessageIterator
+
 
 log = logging.getLogger(__name__)
 
@@ -13,7 +15,7 @@ class Logger(commands.Cog):
 
     @commands.command(name="backup")
     @commands.has_permissions(administrator=True)
-    async def _backup(self) -> None:
+    async def _backup(self, ctx: Context) -> None:
         await self.backup()
 
     async def backup(self) -> None:

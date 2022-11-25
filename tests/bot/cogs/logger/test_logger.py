@@ -1,4 +1,5 @@
 import unittest
+import unittest.mock
 from datetime import datetime
 
 import asyncpg
@@ -14,25 +15,26 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
         self.bot = helpers.MockBot(guilds=[guild])
         self.cog = logger.Logger(self.bot)
-        inject.clear_and_configure(self._setup_injections)
+        inject.clear_and_configure(self._mock_injections)
 
+    @unittest.mock.patch('bot.cogs.logger.MessageIterator.history')
+    async def test_backup(self, message_iterator_history) -> None:
+        message_iterator_history.return_value = helpers.AsyncIterator([message1, message2])
 
-    async def test_backup(self) -> None:
         await self.cog.backup()
 
-        self.assertEqual(1, inject.instance(bot.db.GuildRepository).insert.call_count) # type: ignore[attr-defined]
-        self.assertEqual(2, inject.instance(bot.db.UserRepository).insert.call_count) # type: ignore[attr-defined]
-        self.assertEqual(1, inject.instance(bot.db.RoleRepository).insert.call_count) # type: ignore[attr-defined]
-        self.assertEqual(1, inject.instance(bot.db.EmojiRepository).insert.call_count) # type: ignore[attr-defined]
-        self.assertEqual(1, inject.instance(bot.db.CategoryRepository).insert.call_count) # type: ignore[attr-defined]
-        self.assertEqual(2, inject.instance(bot.db.ChannelRepository).insert.call_count) # type: ignore[attr-defined]
-        self.assertEqual(2, inject.instance(bot.db.MessageRepository).insert.call_count) # type: ignore[attr-defined]
-        self.assertEqual(1, inject.instance(bot.db.ReactionRepository).insert.call_count) # type: ignore[attr-defined]
-        self.assertEqual(1, inject.instance(bot.db.AttachmentRepository).insert.call_count) # type: ignore[attr-defined]
-
+        self.assertEqual(1, inject.instance(bot.db.GuildRepository).insert.call_count)  # type: ignore[attr-defined]
+        self.assertEqual(2, inject.instance(bot.db.UserRepository).insert.call_count)  # type: ignore[attr-defined]
+        self.assertEqual(1, inject.instance(bot.db.RoleRepository).insert.call_count)  # type: ignore[attr-defined]
+        self.assertEqual(1, inject.instance(bot.db.EmojiRepository).insert.call_count)  # type: ignore[attr-defined]
+        self.assertEqual(1, inject.instance(bot.db.CategoryRepository).insert.call_count)  # type: ignore[attr-defined]
+        self.assertEqual(2, inject.instance(bot.db.ChannelRepository).insert.call_count)  # type: ignore[attr-defined]
+        self.assertEqual(2, inject.instance(bot.db.MessageRepository).insert.call_count)  # type: ignore[attr-defined]
+        self.assertEqual(1, inject.instance(bot.db.ReactionRepository).insert.call_count)  # type: ignore[attr-defined]
+        self.assertEqual(1, inject.instance(bot.db.AttachmentRepository).insert.call_count)  # type: ignore[attr-defined]
 
     @staticmethod
-    def _setup_injections(binder: inject.Binder) -> None:
+    def _mock_injections(binder: inject.Binder) -> None:
         binder.bind(asyncpg.Pool, unittest.mock.MagicMock())
 
         for repository in bot.db.discord.REPOSITORIES:
@@ -41,11 +43,12 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
         for mapper in bot.db.discord.MAPPERS:
             binder.bind_to_constructor(mapper, mapper)
 
+
 # ---- data ---- #
 
 # guilds
 guild = helpers.MockGuild(
-    id=1123, 
+    id=1123,
     name='Large guild',
     icon=None,
     created_at=datetime(2022, 11, 10, 15, 33, 00),
@@ -59,7 +62,7 @@ member1 = helpers.MockMember(
     bot=False,
     created_at=datetime(2010, 11, 10, 15, 33, 00),
     guild=guild
-)  
+)
 member2 = helpers.MockMember(
     id=2456,
     name='BOT',
