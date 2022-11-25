@@ -9,6 +9,7 @@ from discord.utils import escape_mentions
 
 from bot.cogs.utils.context import Context
 from bot.db import MessageRepository
+from bot.cogs.utils.checks import requires_database, requires_redis
 
 if TYPE_CHECKING:
     from bot.bot import MasarykBOT
@@ -146,5 +147,7 @@ class Markov(commands.Cog):
         await self.service.load()
 
 
+@requires_database
+@requires_redis
 async def setup(bot: "MasarykBOT") -> None:
     await bot.add_cog(Markov(bot))

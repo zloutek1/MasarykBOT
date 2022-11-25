@@ -6,7 +6,7 @@ from .tables import LEADERBOARD, USERS, CHANNELS
 Filters = Tuple[Id, List[Id], List[Id], List[Id]]
 
 
-class LeaderboardDao(Table):
+class LeaderboardRepository(Table):
     tmp_table = "ldb_lookup"
 
     def __init__(self) -> None:

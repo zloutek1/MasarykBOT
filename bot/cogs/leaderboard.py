@@ -1,14 +1,15 @@
 from typing import Dict, List, Optional, Tuple
-import inject
 
 import discord
+import inject
 from discord.ext import commands
 from discord.utils import escape_markdown, get
 
 from bot.cogs.utils.context import GuildContext
-from bot.db.leaderboard import LeaderboardDao, Filters
+from bot.db.leaderboard import LeaderboardRepository, Filters
 from bot.db.utils import Record
 from bot.utils import right_justify
+from bot.cogs.utils.checks import requires_database
 
 
 class LeaderboardEmbed(discord.Embed):
@@ -58,22 +59,22 @@ class LeaderboardEmbed(discord.Embed):
     def restrict_length(string: str) -> str:
         while len(string) >= 1024:
             lines = string.split("\n")
-            longest = max(enumerate(map(len, lines)), key=lambda x: x[1])
+            longest = max(((i, lines[i]) for i in range(len(lines))), key=lambda x: x[1])
             lines[longest[0]] = lines[longest[0]].rstrip("...")[:-1] + "..."
             string = "\n".join(lines)
         return string
 
 
 class LeaderboardService:
-    @inject.autoparams('leaderboardDao')
-    def __init__(self, leaderboardDao: LeaderboardDao) -> None:
-        self.leaderboardDao = leaderboardDao
+    @inject.autoparams('leaderboard_repository')
+    def __init__(self, leaderboard_repository: LeaderboardRepository) -> None:
+        self.leaderboard_repository = leaderboard_repository
 
     async def get_data(self, user_id: int, filters: Filters) -> Tuple[List[Record], List[Record]]:
-        await self.leaderboardDao.preselect(filters)
+        await self.leaderboard_repository.preselect(filters)
         return (
-            await self.leaderboardDao.get_top10(),
-            await self.leaderboardDao.get_around(user_id)
+            await self.leaderboard_repository.get_top10(),
+            await self.leaderboard_repository.get_around(user_id)
         )
 
 
@@ -113,5 +114,6 @@ class Leaderboard(commands.Cog):
             await ctx.send(embed=embed)
 
 
+@requires_database
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(Leaderboard(bot))
