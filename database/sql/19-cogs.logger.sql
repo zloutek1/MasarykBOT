@@ -5,9 +5,9 @@
 CREATE TABLE cogs.logger
 (
     channel_id bigint NOT NULL,
-    from_date timestamp without time zone NOT NULL,
-    to_date timestamp without time zone NOT NULL,
-    finished_at timestamp without time zone
+    from_date timestamp with time zone NOT NULL,
+    to_date timestamp with time zone NOT NULL,
+    finished_at timestamp with time zone
 )
 
 TABLESPACE pg_default;
