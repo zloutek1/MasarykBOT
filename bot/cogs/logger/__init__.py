@@ -1,5 +1,6 @@
 import logging
-from discord.ext import commands
+
+from discord.ext import commands, tasks
 
 from bot.cogs.utils.context import Context
 from .BotBackup import BotBackup
@@ -13,12 +14,21 @@ class Logger(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-    @commands.command(name="backup")
-    @commands.has_permissions(administrator=True)
-    async def _backup(self, ctx: Context) -> None:
-        await self.backup()
+    @commands.Cog.listener()
+    async def on_ready(self) -> None:
+        self.backup_task.start()
 
-    async def backup(self) -> None:
+    @commands.hybrid_command()
+    @commands.has_permissions(administrator=True)
+    async def backup(self, ctx: Context) -> None:
+        await self._backup()
+
+    @tasks.loop(hours=24)
+    async def backup_task(self) -> None:
+        log.info("running routine backup")
+        await self._backup()
+
+    async def _backup(self) -> None:
         log.info("backup started")
         await BotBackup().traverse_down(self.bot)
         log.info("backup finished")
