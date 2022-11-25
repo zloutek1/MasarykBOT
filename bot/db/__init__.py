@@ -4,9 +4,12 @@ import inject
 
 from bot.db.utils import Pool, Url
 
-from .discord import (AttachmentDao, CategoryDao, ChannelDao, EmojiDao,
-                      GuildDao, MessageDao, MessageEmojiDao, ReactionDao,
-                      RoleDao, UserDao)
+from .discord import (AttachmentRepository, CategoryRepository, ChannelRepository, EmojiRepository,
+                      GuildRepository, MessageRepository, ReactionRepository, 
+                      RoleRepository, UserRepository)
+from .discord import (AttachmentMapper, CategoryMapper, ChannelMapper, EmojiMapper,
+                      GuildMapper, MessageMapper, ReactionMapper,
+                      RoleMapper, UserMapper)
 from .discord import setup_injections as setup_discord_injections
 #from .activity import ActivityDao
 #from .emojiboard import EmojiboardDao

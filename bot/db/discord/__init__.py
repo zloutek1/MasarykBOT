@@ -1,25 +1,24 @@
+from typing import List
 import inject
 
-from .attachments import AttachmentDao
-from .categories import CategoryDao
-from .channels import ChannelDao
-from .emojis import EmojiDao
-from .guilds import GuildDao
-from .message_emojis import MessageEmojiDao
-from .messages import MessageDao
-from .reactions import ReactionDao
-from .roles import RoleDao
-from .users import UserDao
+from .attachments import AttachmentRepository, AttachmentMapper
+from .categories import CategoryRepository, CategoryMapper
+from .channels import ChannelRepository, ChannelMapper
+from .emojis import EmojiRepository, EmojiMapper
+from .guilds import GuildRepository, GuildMapper
+from .message_emojis import MessageEmojiRepository
+from .messages import MessageRepository, MessageMapper
+from .reactions import ReactionRepository, ReactionMapper
+from .roles import RoleRepository, RoleMapper
+from .users import UserRepository, UserMapper
+
+REPOSITORIES = (GuildRepository, RoleRepository, UserRepository, EmojiRepository, CategoryRepository, ChannelRepository, MessageRepository, MessageEmojiRepository, AttachmentRepository, ReactionRepository)
+MAPPERS = (GuildMapper, RoleMapper, UserMapper, EmojiMapper, CategoryMapper, ChannelMapper, MessageMapper, AttachmentMapper, ReactionMapper)
 
 
 def setup_injections(binder: inject.Binder) -> None:
-    binder.bind_to_constructor(AttachmentDao, AttachmentDao)
-    binder.bind_to_constructor(CategoryDao, CategoryDao)
-    binder.bind_to_constructor(ChannelDao, ChannelDao)
-    binder.bind_to_constructor(EmojiDao, EmojiDao)
-    binder.bind_to_constructor(GuildDao, GuildDao)
-    binder.bind_to_constructor(MessageEmojiDao, MessageEmojiDao)
-    binder.bind_to_constructor(MessageDao, MessageDao)
-    binder.bind_to_constructor(ReactionDao, ReactionDao)
-    binder.bind_to_constructor(RoleDao, RoleDao)
-    binder.bind_to_constructor(UserDao, UserDao)
+    for dao_type in REPOSITORIES:
+        binder.bind_to_constructor(dao_type, dao_type)
+    
+    for mapper_type in MAPPERS:
+        binder.bind_to_constructor(mapper_type, mapper_type)
