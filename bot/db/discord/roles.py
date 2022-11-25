@@ -3,7 +3,7 @@ from typing import Sequence, Tuple
 
 from discord import Role
 
-from bot.db.utils import (Crud, DBConnection, Id, Mapper, withConn)
+from bot.db.utils import (Crud, DBConnection, Id, Mapper, inject_conn)
 from bot.db.tables import ROLES
 
 Columns = Tuple[Id, Id, str, str, datetime]
@@ -20,7 +20,7 @@ class RoleRepository(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=ROLES)
 
-    @withConn
+    @inject_conn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
             INSERT INTO {ROLES} AS r (guild_id, id, name, color, created_at)

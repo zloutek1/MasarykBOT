@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-from .utils import DBConnection, Id, Record, Table, withConn
+from .utils import DBConnection, Id, Record, Table, inject_conn
 from .tables import LEADERBOARD, USERS, CHANNELS
 
 Filters = Tuple[Id, List[Id], List[Id], List[Id]]
@@ -12,7 +12,7 @@ class LeaderboardDao(Table):
     def __init__(self) -> None:
         super().__init__(table_name=LEADERBOARD)
 
-    @withConn
+    @inject_conn
     async def preselect(self, conn: DBConnection, filters: Filters) -> None:
         guild_id, ignored_users, include_channel_ids, exclude_channel_ids = filters
 
@@ -40,11 +40,11 @@ class LeaderboardDao(Table):
                 ) AS lookup
         """, guild_id, ignored_users, include_channel_ids, exclude_channel_ids)
 
-    @withConn
+    @inject_conn
     async def get_top10(self, conn: DBConnection) -> List[Record]:
         return await conn.fetch(f"SELECT * FROM {self.tmp_table} LIMIT 10")
 
-    @withConn
+    @inject_conn
     async def get_around(self, conn: DBConnection, id: Id) -> List[Record]:
         return await conn.fetch(f"""
             WITH desired_count AS (

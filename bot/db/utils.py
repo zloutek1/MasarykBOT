@@ -40,7 +40,7 @@ R = TypeVar('R')
 Awaitable = Coroutine[None, None, R]
 
 
-def withConn(fn: Callable[Concatenate[S, DBConnection, P], Awaitable[R]]) -> Callable[Concatenate[S, P], Awaitable[R]]:
+def inject_conn(fn: Callable[Concatenate[S, DBConnection, P], Awaitable[R]]) -> Callable[Concatenate[S, P], Awaitable[R]]:
     @wraps(fn)
     async def wrapper(self: S, *args: P.args, **kwargs: P.kwargs) -> R:
         async with self.pool.acquire() as connection:
@@ -50,13 +50,13 @@ def withConn(fn: Callable[Concatenate[S, DBConnection, P], Awaitable[R]]) -> Cal
 
 
 class Crud(ABC, Generic[TColumns], Table):
-    @withConn
+    @inject_conn
     async def find_all(self, conn: DBConnection) -> List[Record]:
         return await conn.fetch(f"""
             SELECT * FROM {self.table_name}
         """)
 
-    @withConn
+    @inject_conn
     async def find_by_id(self, conn: DBConnection, id: Id) -> Record | None:
         rows = await conn.fetch(f"""
             SELECT * FROM {self.table_name} WHERE id=$1
@@ -73,7 +73,7 @@ class Crud(ABC, Generic[TColumns], Table):
     async def update(self, data: Sequence[TColumns]) -> None:
         return await self.insert(data)
 
-    @withConn
+    @inject_conn
     async def soft_delete(self, conn: DBConnection, data: Sequence[Tuple[Id]]) -> None:
         await conn.executemany(f"""
             UPDATE {self.table_name}

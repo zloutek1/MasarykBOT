@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, Optional, Tuple
 
-from .utils import DBConnection, Id, Record, Table, withConn
+from .utils import DBConnection, Id, Record, Table, inject_conn
 from .tables import LOGGER
 
 
@@ -12,7 +12,7 @@ class LoggerRepository(Table):
     def with_process(self, data: Tuple[Id, datetime, datetime]) -> "ProcessContext":
         return ProcessContext(self, data)
 
-    @withConn
+    @inject_conn
     async def begin_process(self, conn: DBConnection, data: Tuple[Id, datetime, datetime]) -> None:
         channel_id, from_date, to_date = data
         await conn.execute(f"""
@@ -20,7 +20,7 @@ class LoggerRepository(Table):
             ON CONFLICT (channel_id, from_date) DO NOTHING
         """, channel_id, from_date, to_date)
 
-    @withConn
+    @inject_conn
     async def end_process(self, conn: DBConnection, data: Tuple[Id, datetime, datetime]) -> None:
         channel_id, from_date, to_date = data
         await conn.execute(f"""
@@ -29,7 +29,7 @@ class LoggerRepository(Table):
             WHERE channel_id=$1 AND from_date=$2 AND to_date=$3
         """, channel_id, from_date, to_date)
 
-    @withConn
+    @inject_conn
     async def find_last_process(self, conn: DBConnection, channel_id: Id) -> Optional[Record]:
         return await conn.fetchrow(f"""
             SELECT * 
@@ -38,7 +38,7 @@ class LoggerRepository(Table):
             ORDER BY to_date DESC
         """, channel_id)
 
-    @withConn
+    @inject_conn
     async def find_updatable_processes(self, conn: DBConnection) -> list[Record]:
         return await conn.fetch(f"""
             SELECT channel_id, MAX(to_date)

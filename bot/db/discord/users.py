@@ -3,7 +3,7 @@ from typing import Optional, Sequence, Tuple, Union
 
 from discord import Member, User
 
-from bot.db.utils import (Crud, DBConnection, Id, Mapper, Url, withConn)
+from bot.db.utils import (Crud, DBConnection, Id, Mapper, Url, inject_conn)
 from bot.db.tables import USERS
 
 Columns = Tuple[Id, str, Optional[Url], bool, datetime]
@@ -21,7 +21,7 @@ class UserRepository(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=USERS)
 
-    @withConn
+    @inject_conn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
             INSERT INTO {self.table_name} AS u (id, names, avatar_url, is_bot, created_at)

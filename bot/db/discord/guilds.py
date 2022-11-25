@@ -4,7 +4,7 @@ from typing import Optional, Sequence, Tuple
 from discord import Guild
 
 from bot.db.tables import GUILDS
-from bot.db.utils import (Crud, DBConnection, Id, Mapper, Url, withConn)
+from bot.db.utils import (Crud, DBConnection, Id, Mapper, Url, inject_conn)
 
 Columns = Tuple[Id, str, Optional[Url], datetime]
 
@@ -21,7 +21,7 @@ class GuildRepository(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=GUILDS)
 
-    @withConn
+    @inject_conn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
             INSERT INTO {self.table_name} AS g (id, name, icon_url, created_at)
