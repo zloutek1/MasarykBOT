@@ -1,6 +1,7 @@
 # pyright: reportMissingImports=false, reportUntypedClassDecorator=false
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
 
 import yaml
@@ -152,6 +153,7 @@ def get_loader() -> Type[yaml.Loader]:
     return loader
 
 
-with open('config.yml', encoding="UTF-8") as f:
+path = Path(__file__).parent.parent.joinpath('config.yml')
+with open(path, encoding="UTF-8") as file:
     print("Loading Config")
-    CONFIG: Config = yaml.load(f.read(), get_loader())
+    CONFIG: Config = yaml.load(file.read(), get_loader())
