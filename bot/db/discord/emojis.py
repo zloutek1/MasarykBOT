@@ -74,7 +74,7 @@ class MessageEmojiMapper(Mapper[Message, Sequence[Columns]]):
 
     
 
-class EmojiDao(Crud[Columns]):
+class EmojiRepository(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=EMOJIS)
 

@@ -24,7 +24,7 @@ class MessageMapper(Mapper[Message, Columns]):
 
 
 
-class MessageDao(Crud[Columns]):
+class MessageRepository(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=MESSAGES)
 

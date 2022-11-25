@@ -20,7 +20,7 @@ class CategoryMapper(Mapper[CategoryChannel, Columns]):
 
 
 
-class CategoryDao(Crud[Columns]):
+class CategoryRepository(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=CATEGORIES)
 

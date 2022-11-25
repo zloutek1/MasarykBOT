@@ -20,7 +20,7 @@ class RoleMapper(Mapper[Role, Columns]):
 
 
 
-class RoleDao(Crud[Columns]):
+class RoleRepository(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=ROLES)
 

@@ -19,20 +19,7 @@ class AttachmentMapper(Mapper[Attachment, Columns]):
 
 
 
-class MessageAttachmentsMapper(Mapper[Message, Sequence[Columns]]):
-    attachment_mapper = inject.attr(AttachmentMapper)
-
-    async def map(self, obj: Message) -> Sequence[Columns]:
-        message = obj
-        result: List[Columns] = []
-        for attachment in message.attachments:
-            (_, attachment_id, filename, url) = await self.attachment_mapper.map(attachment)
-            result.append((message.id, attachment_id, filename, url))
-        return result
-
-
-
-class AttachmentDao(Crud[Columns]):
+class AttachmentRepository(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=ATTACHMENTS)
 

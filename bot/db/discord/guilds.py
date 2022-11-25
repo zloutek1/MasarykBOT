@@ -22,7 +22,7 @@ class GuildMapper(Mapper[Guild, Columns]):
 
 
 
-class GuildDao(Crud[Columns]):
+class GuildRepository(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=GUILDS)
 

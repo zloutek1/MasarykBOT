@@ -21,7 +21,7 @@ class UserMapper(Mapper[Union[User, Member], Columns]):
     
 
 
-class UserDao(Crud[Columns]):
+class UserRepository(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=USERS)
 

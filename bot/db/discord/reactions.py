@@ -26,17 +26,7 @@ class ReactionMapper(Mapper[Reaction, Columns]):
 
 
 
-class MessageReactionsMapper(Mapper[Message, Sequence[Columns]]):
-    reaction_mapper = inject.attr(ReactionMapper)
-    
-    async def map(self, obj: Message) -> Sequence[Columns]:
-        message = obj
-        return [await self.reaction_mapper.map(reaction) 
-                for reaction in message.reactions]
-
-
-
-class ReactionDao(Crud[Columns]):
+class ReactionRepository(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=REACTIONS)
 

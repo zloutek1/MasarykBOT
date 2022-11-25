@@ -21,7 +21,7 @@ class ChannelMapper(Mapper[TextChannel, Columns]):
 
 
 
-class ChannelDao(Crud[Columns]):
+class ChannelRepository(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=CHANNELS)
 

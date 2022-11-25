@@ -9,7 +9,7 @@ Columns = Tuple[Id, Id, int]
 
 
 
-class MessageEmojiDao(Crud[Columns]):
+class MessageEmojiRepository(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=MESSAGE_EMOJIS)
 
