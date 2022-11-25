@@ -5,15 +5,12 @@ from .utils import DBConnection, Id, Record, Table, withConn
 from .tables import LOGGER
 
 
-
 class LoggerRepository(Table):
     def __init__(self) -> None:
         super().__init__(table_name=LOGGER)
 
-    
     def with_process(self, data: Tuple[Id, datetime, datetime]) -> "ProcessContext":
         return ProcessContext(self, data)
-
 
     @withConn
     async def begin_process(self, conn: DBConnection, data: Tuple[Id, datetime, datetime]) -> None:
@@ -23,7 +20,6 @@ class LoggerRepository(Table):
             ON CONFLICT (channel_id, from_date) DO NOTHING
         """, channel_id, from_date, to_date)
 
-    
     @withConn
     async def end_process(self, conn: DBConnection, data: Tuple[Id, datetime, datetime]) -> None:
         channel_id, from_date, to_date = data
@@ -32,7 +28,6 @@ class LoggerRepository(Table):
             SET finished_at=NOW()
             WHERE channel_id=$1 AND from_date=$2 AND to_date=$3
         """, channel_id, from_date, to_date)
-
 
     @withConn
     async def find_last_process(self, conn: DBConnection, channel_id: Id) -> Optional[Record]:
@@ -52,16 +47,13 @@ class LoggerRepository(Table):
         """)
 
 
-
 class ProcessContext:
     def __init__(self, cls: LoggerRepository, data: Tuple[Id, datetime, datetime]) -> None:
         self.parent = cls
         self.data = data
 
-
     async def __aenter__(self) -> None:
         await self.parent.begin_process(self.data)
 
-    
     async def __aexit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
         await self.parent.end_process(self.data)

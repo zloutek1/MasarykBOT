@@ -19,7 +19,6 @@ if TYPE_CHECKING:
     from bot.bot import MasarykBOT
 
 
-
 class Context(commands.Context["MasarykBOT"]):
     """
     custom Context object passed in every ctx variable
@@ -36,13 +35,11 @@ class Context(commands.Context["MasarykBOT"]):
             kwargs.update({"name": name})
         return get(self.guild.categories, **kwargs)
 
-
     def get_channel(self, name: Optional[str] = None, **kwargs: Any) -> Optional[discord.abc.GuildChannel]:
         assert self.guild, "this method can only be run for guild events"
         if name is not None:
             kwargs.update({"name": name})
         return get(self.guild.channels, **kwargs)
-
 
     def get_role(self, name: Optional[str] = None, **kwargs: Any) -> Optional[discord.Role]:
         assert self.guild, "this method can only be run for guild events"
@@ -50,12 +47,10 @@ class Context(commands.Context["MasarykBOT"]):
             kwargs.update({"name": name})
         return get(self.guild.roles, **kwargs)
 
-
     def get_emoji(self, name: Optional[str] = None, **kwargs: Any) -> Optional[discord.Emoji]:
         if name is not None:
             kwargs.update({"name": name})
         return get(self.bot.emojis, **kwargs)
-
 
     def get_member(self, name: Optional[str] = None, **kwargs: Any) -> Optional[discord.Member]:
         assert self.guild, "this method can only be run for guild events"
@@ -63,15 +58,14 @@ class Context(commands.Context["MasarykBOT"]):
             kwargs.update({"name": name})
         return get(self.guild.members, **kwargs)
 
-
     async def safe_delete(self, **kwargs: Any) -> None:
         with suppress(NotFound):
             await self.message.delete(**kwargs)
 
     async def send(
-        self, 
-        content: Optional[str] = None, *args: Any, 
-        escape_mentions: bool = True, reply: bool = False, **kwargs: Any
+            self,
+            content: Optional[str] = None, *args: Any,
+            escape_mentions: bool = True, reply: bool = False, **kwargs: Any
     ) -> discord.Message:
         if reply:
             message = await self._safe_reply(content, *args, escape_mentions=escape_mentions, **kwargs)
@@ -84,60 +78,56 @@ class Context(commands.Context["MasarykBOT"]):
 
         return message
 
-
     async def reply(self, *args: Any, mention_author: bool = False, **kwargs: Any) -> discord.Message:
         try:
             return await self.send(*args, mention_author=mention_author, reply=True, **kwargs)
         except HTTPException:
             return await self.send(*args, **kwargs)
 
-
     async def _safe_send(
-        self,
-        content: Optional[str] = None, *args: Any, 
-        escape_mentions: bool = True, **kwargs: Any
+            self,
+            content: Optional[str] = None, *args: Any,
+            escape_mentions: bool = True, **kwargs: Any
     ) -> discord.Message:
         if not content:
             return await super().send(*args, **kwargs)
-        
+
         if escape_mentions:
             content = discord.utils.escape_mentions(content)
 
         if len(content) > 2000:
             fp = io.BytesIO(content.encode())
             kwargs.pop('file', None)
-            file=discord.File(fp, filename='message_too_long.txt')
+            file = discord.File(fp, filename='message_too_long.txt')
             return await super().send(file=file, *args, **kwargs)
-        
+
         return await super().send(content, *args, **kwargs)
 
-    
     async def _safe_reply(
-        self,
-        content: Optional[str] = None, *args: Any, 
-        escape_mentions: bool = True, **kwargs: Any
+            self,
+            content: Optional[str] = None, *args: Any,
+            escape_mentions: bool = True, **kwargs: Any
     ) -> discord.Message:
         if not content:
             return await super().reply(*args, **kwargs)
-        
+
         if escape_mentions:
             content = discord.utils.escape_mentions(content)
 
         if len(content) > 2000:
             fp = io.BytesIO(content.encode())
             kwargs.pop('file', None)
-            file=discord.File(fp, filename='message_too_long.txt')
+            file = discord.File(fp, filename='message_too_long.txt')
             return await super().reply(file=file, *args, **kwargs)
-        
-        return await super().reply(content, *args, **kwargs)
 
+        return await super().reply(content, **kwargs)
 
     async def send_embed(
-        self,
-        content: str,
-        name: str = "Message",
-        delete_after: Optional[float] = None,
-        **kwargs: Any
+            self,
+            content: str,
+            name: str = "Message",
+            delete_after: Optional[float] = None,
+            **kwargs: Any
     ) -> discord.Message:
 
         timezone = tz.gettz('Europe/Bratislava')
@@ -149,19 +139,15 @@ class Context(commands.Context["MasarykBOT"]):
 
         return await self.send(embed=embed, delete_after=delete_after)
 
-
     async def send_success(self, content: str, delete_after: Optional[float] = None) -> discord.Message:
         return await self.send_embed(content, name="Success", delete_after=delete_after, color=discord.Color.green())
-
 
     async def send_error(self, content: str, delete_after: Optional[float] = None) -> discord.Message:
         return await self.send_embed(content, name="Error", delete_after=delete_after, color=discord.Color.red())
 
-
     async def send_asset(self, url: str) -> discord.Message:
         image = io.BytesIO(requests.get(url).content)
         return await self.send(file=discord.File(image))
-
 
     async def _wait_for_reaction_or_clear(self, message: discord.Message) -> None:
         def react_check(reaction: discord.Reaction, user: discord.Member) -> bool:
@@ -179,7 +165,6 @@ class Context(commands.Context["MasarykBOT"]):
                 await message.delete(delay=5)
             except asyncio.TimeoutError:
                 await message.clear_reaction('\N{WASTEBASKET}')
-
 
 
 class GuildContext(Context):

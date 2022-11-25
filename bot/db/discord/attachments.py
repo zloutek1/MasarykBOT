@@ -6,23 +6,18 @@ from discord import Attachment, Message
 from bot.db.tables import ATTACHMENTS
 from bot.db.utils import (Crud, DBConnection, Id, Mapper, Url, withConn)
 
-
-
 Columns = Tuple[Optional[Id], Id, str, Url]
-
 
 
 class AttachmentMapper(Mapper[Attachment, Columns]):
     async def map(self, obj: Attachment) -> Columns:
         attachment = obj
-        return (None, attachment.id, attachment.filename, attachment.url)
-
+        return None, attachment.id, attachment.filename, attachment.url
 
 
 class AttachmentRepository(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=ATTACHMENTS)
-
 
     @withConn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
@@ -35,7 +30,6 @@ class AttachmentRepository(Crud[Columns]):
                 WHERE a.filename<>excluded.filename OR
                         a.url<>excluded.url
         """, data)
-
 
     @withConn
     async def soft_delete(self, conn: DBConnection, data: Sequence[Tuple[Id]]) -> None:

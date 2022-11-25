@@ -5,29 +5,25 @@ from .Backup import Backup
 import bot.db
 
 
-
 class ReactionBackup(Backup[Reaction]):
-    @inject.autoparams('reactionRepository', 'mapper')
-    def __init__(self, reactionRepository: bot.db.ReactionRepository, mapper: bot.db.ReactionMapper) -> None:
-        self.reactionRepository = reactionRepository
+    @inject.autoparams('reaction_repository', 'mapper')
+    def __init__(self, reaction_repository: bot.db.ReactionRepository, mapper: bot.db.ReactionMapper) -> None:
+        self.reaction_repository = reaction_repository
         self.mapper = mapper
 
-
-    async def traverseUp(self, reaction: Reaction) -> None:
+    async def traverse_up(self, reaction: Reaction) -> None:
         from .EmojiBackup import EmojiBackup
-        await EmojiBackup().traverseUp(reaction.emoji)
+        await EmojiBackup().traverse_up(reaction.emoji)
 
         from .MessageBackup import MessageBackup
-        await MessageBackup().traverseUp(reaction.message)
+        await MessageBackup().traverse_up(reaction.message)
 
-        await super().traverseUp(reaction)
-
+        await super().traverse_up(reaction)
 
     async def backup(self, reaction: Reaction) -> None:
         await super().backup(reaction)
         columns = await self.mapper.map(reaction)
-        await self.reactionRepository.insert([columns])
+        await self.reaction_repository.insert([columns])
 
-
-    async def traverseDown(self, reaction: Reaction) -> None:
-        await super().traverseDown(reaction)
+    async def traverse_down(self, reaction: Reaction) -> None:
+        await super().traverse_down(reaction)

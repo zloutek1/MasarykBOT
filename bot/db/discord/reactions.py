@@ -9,11 +9,8 @@ from .emojis import emoji_hashcode
 from bot.db.utils import (Crud, DBConnection, Id, Mapper, withConn)
 from ..tables import REACTIONS
 
-
-
 log = logging.getLogger(__name__)
 Columns = Tuple[Id, Id, List[Id], datetime]
-
 
 
 class ReactionMapper(Mapper[Reaction, Columns]):
@@ -25,11 +22,9 @@ class ReactionMapper(Mapper[Reaction, Columns]):
         return (reaction.message.id, emoji_id, user_ids, created_at)
 
 
-
 class ReactionRepository(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=REACTIONS)
-
 
     @withConn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
@@ -43,7 +38,6 @@ class ReactionRepository(Crud[Columns]):
                 WHERE r.member_ids<>excluded.member_ids OR
                       r.created_at<>excluded.created_at
         """, data)
-
 
     @withConn
     async def soft_delete(self, conn: DBConnection, data: Sequence[Tuple[Id]]) -> None:

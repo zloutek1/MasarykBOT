@@ -6,49 +6,43 @@ from discord import Guild
 from .Backup import Backup
 import bot.db
 
-
-
 log = logging.getLogger(__name__)
 
 
-
 class GuildBackup(Backup[Guild]):
-    @inject.autoparams('guildRepository', 'mapper')
-    def __init__(self, guildRepository: bot.db.GuildRepository, mapper: bot.db.GuildMapper) -> None:
-        self.guildRepository = guildRepository
+    @inject.autoparams('guild_repository', 'mapper')
+    def __init__(self, guild_repository: bot.db.GuildRepository, mapper: bot.db.GuildMapper) -> None:
+        self.guild_repository = guild_repository
         self.mapper = mapper
 
-
-    async def traverseUp(self, guild: Guild) -> None:
-        await super().traverseUp(guild)
-
+    async def traverse_up(self, guild: Guild) -> None:
+        await super().traverse_up(guild)
 
     async def backup(self, guild: Guild) -> None:
         log.debug('backing up guild %s', guild.name)
         await super().backup(guild)
         columns = await self.mapper.map(guild)
-        await self.guildRepository.insert([columns])
+        await self.guild_repository.insert([columns])
 
-
-    async def traverseDown(self, guild: Guild) -> None:
-        await super().traverseDown(guild)
+    async def traverse_down(self, guild: Guild) -> None:
+        await super().traverse_down(guild)
 
         from .UserBackup import UserBackup
         for user in guild.members:
-            await UserBackup().traverseDown(user)
-        
+            await UserBackup().traverse_down(user)
+
         from .RoleBackup import RoleBackup
         for role in guild.roles:
-            await RoleBackup().traverseDown(role)
+            await RoleBackup().traverse_down(role)
 
         from .EmojiBackup import EmojiBackup
         for emoji in guild.emojis:
-            await EmojiBackup().traverseDown(emoji)
+            await EmojiBackup().traverse_down(emoji)
 
         from .TextChannelBackup import TextChannelBackup
         for text_channel in filter(lambda ch: ch.category is None, guild.text_channels):
-            await TextChannelBackup().traverseDown(text_channel)
+            await TextChannelBackup().traverse_down(text_channel)
 
-        from .CategoryBakup import CategoryBackup        
+        from .CategoryBakup import CategoryBackup
         for category in guild.categories:
-            await CategoryBackup().traverseDown(category)
+            await CategoryBackup().traverse_down(category)

@@ -145,7 +145,7 @@ message1.reactions = [reaction1]
 # attachments
 attachment1 = helpers.MockAttachment(
     content_type='plain/text',
-    filename='test.txt',
+    filename='night_sky.txt',
     url='http://google.com'
 )
 message1.attachments = [attachment1]

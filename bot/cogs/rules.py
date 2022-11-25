@@ -12,7 +12,6 @@ class Rules(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-
     @commands.Cog.listener()
     async def on_member_join(self, member: Member) -> None:
         """
@@ -33,18 +32,16 @@ class Rules(commands.Cog):
             ❯ Pokud nedostanete hned roli @Student, tak zkuste odkliknout, chvíli počkat a znova zakliknout.
             """))
 
-
     @commands.group(name="rules", invoke_without_command=True)
     @commands.has_permissions(administrator=True)
     async def rules(self, ctx: Context) -> None:
         await ctx.send_help("rules")
 
-
     @rules.command(name="setup")
     async def setup_rules(self,
-        ctx: Context,
-        channel_name: str = "pravidla"
-    ) -> None:
+                          ctx: Context,
+                          channel_name: str = "pravidla"
+                          ) -> None:
         rules_channel = await self._get_channel(ctx, channel_name)
         await self._set_permissions(ctx, rules_channel)
 
@@ -71,8 +68,8 @@ class Rules(commands.Cog):
 
         await ctx.message.delete()
 
-
-    async def _get_channel(self, ctx: Context, name: str) -> TextChannel:
+    @staticmethod
+    async def _get_channel(ctx: Context, name: str) -> TextChannel:
         assert ctx.guild, "ERROR: command can only run in guild"
 
         rules_channel = get(ctx.guild.text_channels, name=name)
@@ -80,8 +77,8 @@ class Rules(commands.Cog):
             rules_channel = await ctx.guild.create_text_channel(name)
         return rules_channel
 
-
-    async def _set_permissions(self, ctx: Context, channel: TextChannel) -> None:
+    @staticmethod
+    async def _set_permissions(ctx: Context, channel: TextChannel) -> None:
         assert ctx.guild, "ERROR: command can only run in guild"
 
         await channel.set_permissions(ctx.guild.me,
@@ -89,9 +86,10 @@ class Rules(commands.Cog):
         await channel.set_permissions(ctx.guild.default_role,
                                       add_reactions=False, send_messages=False, read_messages=True)
 
-
-    async def _get_rules(self, ctx: Context) -> Dict[int, Embed]:
-        def role(name: str) -> str: #type: ignore[unused]
+    @staticmethod
+    async def _get_rules(ctx: Context) -> Dict[int, Embed]:
+        # noinspection PyUnusedLocal
+        def role(name: str) -> str:  # type: ignore[unused]
             obj = ctx.get_role(name)
             return "@" + name if obj is None else obj.mention
 
@@ -99,9 +97,10 @@ class Rules(commands.Cog):
             obj = ctx.get_channel(name)
             return "#" + name if obj is None else obj.mention
 
-        embeds: Dict[int, Embed] = {}
+        embeds: Dict[int, Embed] = {
+            0: Embed(color=Color.blurple())
+        }
 
-        embeds[0] = Embed(color=Color.blurple())
         embeds[0].set_image(
             url="https://www.fi.muni.cz/files/news-img/2168-9l6ttGALboD3Vj-jcgWlcA.jpg"
         )
@@ -116,7 +115,9 @@ class Rules(commands.Cog):
         embeds[1].add_field(
             inline=False,
             name="**__Na úvod__**",
-            value="• Před vstupem na náš server se prosím seznamte s pravidly, která budete muset dodržovat při interakci s ostatními uživateli a boty. Prosím berte na vědomí, že tyto pravidla nepokrývají vše za co můžete být potrestáni.")
+            value="• Před vstupem na náš server se prosím seznamte s pravidly, která budete muset dodržovat při "
+                  "interakci s ostatními uživateli a boty. Prosím berte na vědomí, že tyto pravidla nepokrývají vše "
+                  "za co můžete být potrestáni.")
 
         embeds[1].add_field(
             inline=False,
@@ -169,7 +170,6 @@ class Rules(commands.Cog):
             value="• Připraveni vstoupit?")
 
         return embeds
-
 
 
 async def setup(bot: commands.Bot) -> None:

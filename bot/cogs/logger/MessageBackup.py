@@ -7,37 +7,33 @@ from .Backup import Backup
 import bot.db
 
 
-
 class MessageBackup(Backup[Message]):
-    @inject.autoparams('messageRepository', 'mapper')
-    def __init__(self, messageRepository: bot.db.MessageRepository, mapper: bot.db.MessageMapper) -> None:
-        self.messageRepository = messageRepository
+    @inject.autoparams('message_repository', 'mapper')
+    def __init__(self, message_repository: bot.db.MessageRepository, mapper: bot.db.MessageMapper) -> None:
+        self.message_repository = message_repository
         self.mapper = mapper
 
-
-    async def traverseUp(self, message: Message) -> None:
+    async def traverse_up(self, message: Message) -> None:
         from .TextChannelBackup import TextChannelBackup
-        await TextChannelBackup().traverseUp(message.channel)
+        await TextChannelBackup().traverse_up(message.channel)
 
         from .UserBackup import UserBackup
-        await UserBackup().traverseUp(message.author)
+        await UserBackup().traverse_up(message.author)
 
-        await super().traverseUp(message)
-
+        await super().traverse_up(message)
 
     async def backup(self, message: Message) -> None:
         await super().backup(message)
         columns = await self.mapper.map(message)
-        await self.messageRepository.insert([columns])
+        await self.message_repository.insert([columns])
 
-
-    async def traverseDown(self, message: Message) -> None:
-        await super().traverseDown(message)
+    async def traverse_down(self, message: Message) -> None:
+        await super().traverse_down(message)
 
         from .ReactionBackup import ReactionBackup
         for reaction in message.reactions:
-            await ReactionBackup().traverseDown(reaction)
+            await ReactionBackup().traverse_down(reaction)
 
         from .AttachmentBackup import AttachmentBackup
         for attachment in message.attachments:
-            await AttachmentBackup(message.id).traverseDown(attachment)
+            await AttachmentBackup(message.id).traverse_down(attachment)

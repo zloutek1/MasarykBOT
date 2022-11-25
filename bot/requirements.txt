@@ -1,56 +1,53 @@
 # core dependenices
-discord.py==2.0.1
+discord.py==2.1.0
 
 # configs
-python-dotenv==0.15.0
+python-dotenv==0.21.0
 
-pyyaml==5.4.1
-types-PyYAML==6.0.4
+pyyaml==6.0
+types-PyYAML==6.0.12.2
 enforce-typing==1.0.0.post1
 
 # dependency injection
 inject==4.3.1
 
 # database access
-aiohttp==3.7.4
+aiohttp==3.8.3
 asyncpg==0.27.0
 asyncpg-stubs==0.27.0
 
 # cogs
     # markov
-    aioredis==2.0.1
+aioredis==2.0.1
 
     # activity
-    numpy==1.22.2
-    matplotlib==3.5.1
-    pandas==1.4.1
-    Pillow==9.3.0
-    types-Pillow==9.3.0.1
+numpy==1.23.5
+matplotlib==3.6.2
+pandas==1.5.2
+Pillow==9.3.0
+types-Pillow==9.3.0.2
 
     # fun
-    unicodeit==0.7.2
-    emoji==1.6.3
-    types-emoji==1.2.7
-    requests==2.28.1
-    types-requests==2.28.11.4
-
-    # wordle
-    english-words==1.1.0
+unicodeit==0.7.2
+emoji==2.2.0
+types-emoji==2.1.0.1
+requests==2.28.1
+types-requests==2.28.11.5
 
     # math
-    sympy==1.10.1
+sympy==1.11.1
 
     # auto_thread
-    lxml==4.9.1
-    lxml-stubs==0.4.0
+lxml==4.9.1
+lxml-stubs==0.4.0
 
 # testing library
-pytest==7.0.1
-pytest-cov==3.0.0
+pytest==7.2.0
+pytest-cov==4.0.0
 
 # logging
-rich==11.2.0
-discord-handler==0.0.3
+rich==12.6.0
+discord-handler==0.0.5
 
 # mypy
-types-python-dateutil==2.8.19.3
+types-python-dateutil==2.8.19.4

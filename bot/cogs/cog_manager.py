@@ -4,12 +4,10 @@ from bot.cogs.utils.context import Context
 from discord.ext import commands
 
 
-
 class CogManager(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.last_reloaded: Optional[str] = None
-
 
     @commands.command()
     @commands.has_permissions(administrator=True)
@@ -25,7 +23,6 @@ class CogManager(commands.Cog):
         else:
             await ctx.send_success(f'{module} loaded successfully', delete_after=5.0)
 
-
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def unload(self, ctx: Context, *, module: str) -> None:
@@ -39,7 +36,6 @@ class CogManager(commands.Cog):
             await ctx.send_error(f'{err.__class__.__name__}: {err}', delete_after=5.0)
         else:
             await ctx.send_success(f'{module} unloaded successfully', delete_after=5.0)
-
 
     @commands.group(invoke_without_command=True)
     @commands.has_permissions(administrator=True)
@@ -62,8 +58,7 @@ class CogManager(commands.Cog):
         else:
             await ctx.send_success(f'{module} reloaded successfully', delete_after=5.0)
 
-
-    @reload.command(name='all', hidden=True) # type: ignore[arg-type]
+    @reload.command(name='all', hidden=True)  # type: ignore[arg-type]
     async def reload_all(self, ctx: Context) -> None:
         """Reloads all modules"""
         output = ""
@@ -81,16 +76,13 @@ class CogManager(commands.Cog):
         await ctx.safe_delete(delay=5.0)
         await ctx.send_embed(output, delete_after=5.0)
 
-
     @commands.command()
     async def cogs(self, ctx: Context) -> None:
         await ctx.send_embed(" **»** " + "\n **»** ".join(self.bot.cogs))
 
-
     @commands.command(aliases=["extentions"])
     async def extensions(self, ctx: Context) -> None:
         await ctx.send_embed(" **»** " + "\n **»** ".join(self.bot.extensions))
-
 
 
 async def setup(bot: commands.Bot) -> None:

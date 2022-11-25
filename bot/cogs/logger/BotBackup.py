@@ -4,20 +4,18 @@ from bot.cogs.logger.Backup import Backup
 
 
 class BotBackup(Backup[commands.Bot]):
-    async def traverseUp(self, bot: commands.Bot) -> None:
-        await super().traverseUp(bot)
-
+    async def traverse_up(self, bot: commands.Bot) -> None:
+        await super().traverse_up(bot)
 
     async def backup(self, bot: commands.Bot) -> None:
         pass
 
-
-    async def traverseDown(self, bot: commands.Bot) -> None:
-        await super().traverseDown(bot)
+    async def traverse_down(self, bot: commands.Bot) -> None:
+        await super().traverse_down(bot)
 
         from .GuildBackup import GuildBackup
         for guild in bot.guilds:
-            await GuildBackup().traverseDown(guild)
+            await GuildBackup().traverse_down(guild)
 
         """
         from .GuildBackup import GuildBackup

@@ -19,12 +19,11 @@ class AutoThreadService:
         if not (guild := channel.guild):
             return False
 
-        if not (guild_config := get(CONFIG.guilds, id = guild.id)):
+        if not (guild_config := get(CONFIG.guilds, id=guild.id)):
             return False
 
         threaded_channels = guild_config.channels.threaded
         return channel.id in threaded_channels
-
 
     @staticmethod
     def extract_thread_title(message: Message) -> str:
@@ -38,12 +37,10 @@ class AutoThreadService:
         return title[:50] + "..." if len(title) > 50 else title
 
 
-
 class AutoThread(commands.Cog):
     def __init__(self, bot: commands.Bot, service: AutoThreadService = None) -> None:
         self.bot = bot
         self.service = service or AutoThreadService()
-
 
     @commands.Cog.listener()
     async def on_message(self, message: Message) -> None:
@@ -51,10 +48,9 @@ class AutoThread(commands.Cog):
 
         if not self.service.is_threaded_channel(message.channel):
             return
-        
+
         title = self.service.extract_thread_title(message)
         await message.create_thread(name=title)
-
 
 
 async def setup(bot: commands.Bot) -> None:

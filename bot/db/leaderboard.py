@@ -3,24 +3,19 @@ from typing import List, Tuple
 from .utils import DBConnection, Id, Record, Table, withConn
 from .tables import LEADERBOARD, USERS, CHANNELS
 
-
-
 Filters = Tuple[Id, List[Id], List[Id], List[Id]]
-
 
 
 class LeaderboardDao(Table):
     tmp_table = "ldb_lookup"
 
-
     def __init__(self) -> None:
         super().__init__(table_name=LEADERBOARD)
-
 
     @withConn
     async def preselect(self, conn: DBConnection, filters: Filters) -> None:
         guild_id, ignored_users, include_channel_ids, exclude_channel_ids = filters
-        
+
         await conn.execute(f"DROP TABLE IF EXISTS {self.tmp_table}")
         await conn.execute(f"""
             CREATE TEMPORARY TABLE IF NOT EXISTS {self.tmp_table} AS
@@ -45,11 +40,9 @@ class LeaderboardDao(Table):
                 ) AS lookup
         """, guild_id, ignored_users, include_channel_ids, exclude_channel_ids)
 
-
     @withConn
     async def get_top10(self, conn: DBConnection) -> List[Record]:
         return await conn.fetch(f"SELECT * FROM {self.tmp_table} LIMIT 10")
-
 
     @withConn
     async def get_around(self, conn: DBConnection, id: Id) -> List[Record]:

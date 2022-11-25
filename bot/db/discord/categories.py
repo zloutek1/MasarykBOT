@@ -6,10 +6,7 @@ from discord import CategoryChannel
 from bot.db.tables import CATEGORIES
 from bot.db.utils import (Crud, DBConnection, Id, Mapper, withConn)
 
-
-
 Columns = Tuple[Id, Id, str, int, datetime]
-
 
 
 class CategoryMapper(Mapper[CategoryChannel, Columns]):
@@ -19,13 +16,11 @@ class CategoryMapper(Mapper[CategoryChannel, Columns]):
         return (category.guild.id, category.id, category.name, category.position, created_at)
 
 
-
 class CategoryRepository(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=CATEGORIES)
 
-
-    @withConn        
+    @withConn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
             INSERT INTO {self.table_name} AS c (guild_id, id, name, position, created_at)

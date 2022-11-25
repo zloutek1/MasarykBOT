@@ -4,10 +4,10 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
 
 import yaml
-from enforce_typing import enforce_types 
+from enforce_typing import enforce_types
 
 
-@enforce_types 
+@enforce_types
 @dataclass(frozen=True)
 class BotConfig(yaml.YAMLObject):
     yaml_tag = u'!bots'
@@ -16,8 +16,7 @@ class BotConfig(yaml.YAMLObject):
     DEBUG: bool = False
 
 
-
-@enforce_types 
+@enforce_types
 @dataclass(frozen=True)
 class StarboardChannelConfig(yaml.YAMLObject):
     yaml_tag = u'!starch'
@@ -26,8 +25,7 @@ class StarboardChannelConfig(yaml.YAMLObject):
     penalised: List[str | int]
 
 
-
-@enforce_types 
+@enforce_types
 @dataclass(frozen=True)
 class StarbardEmojiConfig(yaml.YAMLObject):
     yaml_tag = u'!starem'
@@ -36,8 +34,7 @@ class StarbardEmojiConfig(yaml.YAMLObject):
     penalised: List[str | int]
 
 
-
-@enforce_types 
+@enforce_types
 @dataclass(frozen=True)
 class StarboardConfig(yaml.YAMLObject):
     yaml_tag = u'!starboard'
@@ -50,7 +47,7 @@ class StarboardConfig(yaml.YAMLObject):
     REACT_LIMIT: Optional[int] = None
 
 
-@enforce_types  
+@enforce_types
 @dataclass(frozen=True)
 class ChannelConfig(yaml.YAMLObject):
     yaml_tag = u'!channels'
@@ -60,10 +57,9 @@ class ChannelConfig(yaml.YAMLObject):
     subject_registration: Optional[int] = None
     starboard: Optional[StarboardConfig] = None
     threaded: List[int] = field(default_factory=list)
-    
 
 
-@enforce_types 
+@enforce_types
 @dataclass(frozen=True)
 class LogsConfig(yaml.YAMLObject):
     yaml_tag = u'!logs'
@@ -74,8 +70,7 @@ class LogsConfig(yaml.YAMLObject):
     webhook: Optional[str] = None
 
 
-
-@enforce_types 
+@enforce_types
 @dataclass(frozen=True)
 class RoleConfig(yaml.YAMLObject):
     yaml_tag = u'!roles'
@@ -87,8 +82,7 @@ class RoleConfig(yaml.YAMLObject):
     show_all: Optional[int] = None
 
 
-
-@enforce_types 
+@enforce_types
 @dataclass(frozen=True)
 class GuildConfig(yaml.YAMLObject):
     yaml_tag = u'!guilds'
@@ -99,10 +93,9 @@ class GuildConfig(yaml.YAMLObject):
     logs: LogsConfig
     roles: RoleConfig
     NEEDED_REACTIONS: Optional[int] = None
-    
 
 
-@enforce_types 
+@enforce_types
 @dataclass(frozen=True)
 class EmojiConfig(yaml.YAMLObject):
     yaml_tag = u'!emojis'
@@ -110,8 +103,7 @@ class EmojiConfig(yaml.YAMLObject):
     Verification: Optional[int] = None
 
 
-
-@enforce_types 
+@enforce_types
 @dataclass(frozen=True)
 class ColorConfig(yaml.YAMLObject):
     yaml_tag = u'!colors'
@@ -119,8 +111,7 @@ class ColorConfig(yaml.YAMLObject):
     MUNI_YELLOW: Optional[int] = None
 
 
-
-@enforce_types 
+@enforce_types
 @dataclass(frozen=True)
 class Config(yaml.YAMLObject):
     yaml_tag = u'!Config'
@@ -131,38 +122,35 @@ class Config(yaml.YAMLObject):
     guilds: List[GuildConfig]
 
 
-
 T = TypeVar('T', bound=yaml.YAMLObject)
-
 
 
 def class_loader(clazz: Type[T]) -> Callable[[yaml.SafeLoader, yaml.nodes.MappingNode], T]:
     def constructor(loader: yaml.SafeLoader, node: yaml.nodes.MappingNode) -> T:
         mapping: Dict[str, Any] = loader.construct_mapping(node)
         obj = object.__new__(clazz)
-        obj.__init__(**mapping) # type: ignore
+        obj.__init__(**mapping)  # type: ignore
         return obj
+
     return constructor
 
 
-
 def get_loader() -> Type[yaml.Loader]:
-  """Return a yaml loader."""
-  loader = yaml.Loader
-  loader.add_constructor("!bots", class_loader(BotConfig))
-  loader.add_constructor("!starch", class_loader(StarboardChannelConfig))
-  loader.add_constructor("!starem", class_loader(StarbardEmojiConfig))
-  loader.add_constructor("!starboard", class_loader(StarboardConfig))
-  loader.add_constructor("!chnls", class_loader(ChannelConfig))
-  loader.add_constructor("!logs", class_loader(LogsConfig))
-  loader.add_constructor("!roles", class_loader(RoleConfig))
-  loader.add_constructor("!guilds", class_loader(GuildConfig))
-  loader.add_constructor("!emojis", class_loader(EmojiConfig))
-  loader.add_constructor("!colors", class_loader(ColorConfig))
-  loader.add_constructor("!Config", class_loader(Config))
-  return loader
- 
- 
+    """Return a yaml loader."""
+    loader = yaml.Loader
+    loader.add_constructor("!bots", class_loader(BotConfig))
+    loader.add_constructor("!starch", class_loader(StarboardChannelConfig))
+    loader.add_constructor("!starem", class_loader(StarbardEmojiConfig))
+    loader.add_constructor("!starboard", class_loader(StarboardConfig))
+    loader.add_constructor("!chnls", class_loader(ChannelConfig))
+    loader.add_constructor("!logs", class_loader(LogsConfig))
+    loader.add_constructor("!roles", class_loader(RoleConfig))
+    loader.add_constructor("!guilds", class_loader(GuildConfig))
+    loader.add_constructor("!emojis", class_loader(EmojiConfig))
+    loader.add_constructor("!colors", class_loader(ColorConfig))
+    loader.add_constructor("!Config", class_loader(Config))
+    return loader
+
 
 with open('config.yml', encoding="UTF-8") as f:
     print("Loading Config")

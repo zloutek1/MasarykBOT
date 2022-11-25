@@ -1,4 +1,3 @@
-
 from datetime import datetime
 from typing import Optional, Sequence, Tuple
 
@@ -7,10 +6,7 @@ from discord import Guild
 from bot.db.tables import GUILDS
 from bot.db.utils import (Crud, DBConnection, Id, Mapper, Url, withConn)
 
-
-
 Columns = Tuple[Id, str, Optional[Url], datetime]
-
 
 
 class GuildMapper(Mapper[Guild, Columns]):
@@ -21,11 +17,9 @@ class GuildMapper(Mapper[Guild, Columns]):
         return (guild.id, guild.name, icon_url, created_at)
 
 
-
 class GuildRepository(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=GUILDS)
-
 
     @withConn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:

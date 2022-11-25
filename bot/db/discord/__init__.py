@@ -12,13 +12,15 @@ from .reactions import ReactionRepository, ReactionMapper
 from .roles import RoleRepository, RoleMapper
 from .users import UserRepository, UserMapper
 
-REPOSITORIES = (GuildRepository, RoleRepository, UserRepository, EmojiRepository, CategoryRepository, ChannelRepository, MessageRepository, MessageEmojiRepository, AttachmentRepository, ReactionRepository)
-MAPPERS = (GuildMapper, RoleMapper, UserMapper, EmojiMapper, CategoryMapper, ChannelMapper, MessageMapper, AttachmentMapper, ReactionMapper)
+REPOSITORIES = (GuildRepository, RoleRepository, UserRepository, EmojiRepository, CategoryRepository, ChannelRepository,
+                MessageRepository, MessageEmojiRepository, AttachmentRepository, ReactionRepository)
+MAPPERS = (GuildMapper, RoleMapper, UserMapper, EmojiMapper, CategoryMapper, ChannelMapper, MessageMapper,
+           AttachmentMapper, ReactionMapper)
 
 
 def setup_injections(binder: inject.Binder) -> None:
     for dao_type in REPOSITORIES:
         binder.bind_to_constructor(dao_type, dao_type)
-    
+
     for mapper_type in MAPPERS:
         binder.bind_to_constructor(mapper_type, mapper_type)

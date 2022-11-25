@@ -6,10 +6,7 @@ from discord import Role
 from bot.db.utils import (Crud, DBConnection, Id, Mapper, withConn)
 from bot.db.tables import ROLES
 
-
-
 Columns = Tuple[Id, Id, str, str, datetime]
-
 
 
 class RoleMapper(Mapper[Role, Columns]):
@@ -19,11 +16,9 @@ class RoleMapper(Mapper[Role, Columns]):
         return (role.guild.id, role.id, role.name, hex(role.color.value), created_at)
 
 
-
 class RoleRepository(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=ROLES)
-
 
     @withConn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:

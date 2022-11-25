@@ -1,7 +1,5 @@
-
 from typing import Callable, Generator, List, Sequence, Tuple, TypeVar
 import discord
-
 
 T = TypeVar('T')
 C = TypeVar('C')
@@ -23,7 +21,7 @@ def map_range(x: float, in_min: float, in_max: float, out_min: float, out_max: f
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
 
-def right_justify(text: str, by: int = 0, pad:str = " ") -> str:
+def right_justify(text: str, by: int = 0, pad: str = " ") -> str:
     """ str.rjust accepting multiple characters """
     return pad * (by - len(str(text))) + str(text)
 

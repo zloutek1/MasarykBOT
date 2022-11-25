@@ -6,10 +6,7 @@ from discord import Member, User
 from bot.db.utils import (Crud, DBConnection, Id, Mapper, Url, withConn)
 from bot.db.tables import USERS
 
-
-
 Columns = Tuple[Id, str, Optional[Url], bool, datetime]
-
 
 
 class UserMapper(Mapper[Union[User, Member], Columns]):
@@ -18,13 +15,11 @@ class UserMapper(Mapper[Union[User, Member], Columns]):
         avatar_url = str(user.avatar.url) if user.avatar else None
         created_at = user.created_at.replace(tzinfo=None)
         return (user.id, user.name, avatar_url, user.bot, created_at)
-    
 
 
 class UserRepository(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=USERS)
-
 
     @withConn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:

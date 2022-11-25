@@ -6,10 +6,7 @@ from discord import TextChannel
 from bot.db.tables import CHANNELS
 from bot.db.utils import (Crud, DBConnection, Id, Mapper, withConn)
 
-
-
 Columns = Tuple[Id, Optional[Id], Id, str, int, datetime]
-
 
 
 class ChannelMapper(Mapper[TextChannel, Columns]):
@@ -20,11 +17,9 @@ class ChannelMapper(Mapper[TextChannel, Columns]):
         return (channel.guild.id, category_id, channel.id, channel.name, channel.position, created_at)
 
 
-
 class ChannelRepository(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=CHANNELS)
-
 
     @withConn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:

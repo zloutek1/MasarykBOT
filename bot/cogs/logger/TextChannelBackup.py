@@ -9,40 +9,34 @@ from .MessageIterator import MessageIterator
 from .MessageBackup import MessageBackup
 import bot.db
 
-
-
 log = logging.getLogger(__name__)
 
 
-
 class TextChannelBackup(Backup[TextChannel]):
-    @inject.autoparams('channelRepository', 'mapper')
-    def __init__(self, channelRepository: bot.db.ChannelRepository, mapper: bot.db.ChannelMapper) -> None:
-        self.channelRepository = channelRepository
+    @inject.autoparams('channel_repository', 'mapper')
+    def __init__(self, channel_repository: bot.db.ChannelRepository, mapper: bot.db.ChannelMapper) -> None:
+        self.channel_repository = channel_repository
         self.mapper = mapper
 
-
-    async def traverseUp(self, text_channel: TextChannel) -> None:
+    async def traverse_up(self, text_channel: TextChannel) -> None:
         if isinstance(text_channel, GuildChannel):
             if text_channel.category:
                 from .CategoryBakup import CategoryBackup
-                await CategoryBackup().traverseUp(text_channel.category)
+                await CategoryBackup().traverse_up(text_channel.category)
             else:
                 from .GuildBackup import GuildBackup
-                await GuildBackup().traverseUp(text_channel.guild)
+                await GuildBackup().traverse_up(text_channel.guild)
 
-        await super().traverseUp(text_channel)
-
+        await super().traverse_up(text_channel)
 
     async def backup(self, text_channel: TextChannel) -> None:
         log.debug('backing up text channel %s', text_channel.name)
         await super().backup(text_channel)
         columns = await self.mapper.map(text_channel)
-        await self.channelRepository.insert([columns])
+        await self.channel_repository.insert([columns])
 
-
-    async def traverseDown(self, text_channel: TextChannel) -> None:
-        await super().traverseDown(text_channel)
+    async def traverse_down(self, text_channel: TextChannel) -> None:
+        await super().traverse_down(text_channel)
 
         async for message in await MessageIterator(text_channel).history():
-            await MessageBackup().traverseDown(message)
+            await MessageBackup().traverse_down(message)

@@ -9,18 +9,15 @@ from discord.utils import get
 from bot.cogs.utils.context import Context, GuildContext
 
 
-
 class Info(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.uptime: Optional[datetime] = None
 
-
     @commands.Cog.listener()
     async def on_ready(self) -> None:
         if self.uptime is None:
             self.uptime = datetime.utcnow()
-
 
     @commands.command(name="uptime")
     async def _uptime(self, ctx: Context) -> None:
@@ -30,7 +27,6 @@ class Info(commands.Cog):
 
         running_for = datetime.now() - self.uptime
         await ctx.send_embed(f"I have been running for {running_for}")
-
 
     @commands.command()
     async def ping(self, ctx: Context) -> None:
@@ -42,19 +38,17 @@ class Info(commands.Cog):
         msg = ':ping_pong: **PONG!** (~{}ms)'.format(milliseconds)
         await ctx.send(msg)
 
-
     @commands.command()
     async def invite(self, ctx: Context) -> None:
         assert self.bot.user
-        await ctx.send(f"https://discordapp.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions=268823632")
-
+        await ctx.send(
+            f"https://discordapp.com/oauth2/authorize?client_id={self.bot.user.id}&scope=bot&permissions=268823632")
 
     @commands.command()
     @commands.guild_only()
     async def categories(self, ctx: GuildContext) -> None:
         categories = (category.name for category in ctx.guild.categories)
         await ctx.send(f"`{', '.join(categories)}`")
-
 
     @commands.command()
     @commands.guild_only()
@@ -91,16 +85,16 @@ class Info(commands.Cog):
             color=Color.from_rgb(0, 0, 0))
         embed.add_field(
             name="Owner",
-            value=(f"{ctx.guild.owner}")
+            value=f"{ctx.guild.owner}"
         )
         embed.add_field(
             name=f"Channels ({len(ctx.guild.channels)})",
             value=("{text} {text_count} ⁣ " +
                    "{category} {category_count} ⁣ " +
                    "{voice} {voice_count}").format(
-                 text=text, text_count=len(ctx.guild.text_channels),
-                 category=category, category_count=len(ctx.guild.categories),
-                 voice=voice, voice_count=len(ctx.guild.voice_channels)
+                text=text, text_count=len(ctx.guild.text_channels),
+                category=category, category_count=len(ctx.guild.categories),
+                voice=voice, voice_count=len(ctx.guild.voice_channels)
             ),
             inline=False
         )
@@ -127,7 +121,6 @@ class Info(commands.Cog):
             icon_url=author.avatar.url if author.avatar else author.default_avatar.url
         )
         await ctx.send(embed=embed)
-
 
 
 async def setup(bot: commands.Bot) -> None:

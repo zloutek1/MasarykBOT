@@ -7,27 +7,22 @@ from discord import Message
 from bot.db.utils import (Crud, DBConnection, Id, Mapper, Record, withConn)
 from bot.db.tables import MESSAGES
 
-
-
 log = logging.getLogger(__name__)
 
 Columns = Tuple[Id, Id, Id, str, datetime]
-
 
 
 class MessageMapper(Mapper[Message, Columns]):
     async def map(self, obj: Message) -> Columns:
         message = obj
         created_at = message.created_at.replace(tzinfo=None)
-        return (message.channel.id, message.author.id, message.id, 
+        return (message.channel.id, message.author.id, message.id,
                 message.content, created_at)
-
 
 
 class MessageRepository(Crud[Columns]):
     def __init__(self) -> None:
         super().__init__(table_name=MESSAGES)
-
 
     @withConn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
@@ -42,7 +37,6 @@ class MessageRepository(Crud[Columns]):
                         m.created_at<>excluded.created_at OR
                         m.edited_at<>excluded.edited_at
         """, data)
-
 
     @withConn
     async def find_all_longer_then(self, conn: DBConnection, length: int) -> List[Record]:

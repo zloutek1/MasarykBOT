@@ -3,10 +3,9 @@ import logging
 import os
 from typing import Callable, Optional
 
-import asyncpg
+import aioredis
 import discord
 import inject
-import aioredis
 from discord.ext import commands
 from dotenv import load_dotenv
 
@@ -15,10 +14,9 @@ from bot.cogs.utils.logging import setup_logging
 from bot.db import connect_db, setup_injections as setup_db_injections
 from bot.db.utils import Pool, Url
 
-
 # TODO: implement Seasonal
 # TODO: implement LaTeX
-initail_cogs = [
+initial_cogs = [
     "bot.cogs.admin",
     "bot.cogs.auto_thread",
     "bot.cogs.bookmark",
@@ -33,22 +31,19 @@ initail_cogs = [
     "bot.cogs.rolemenu",
     "bot.cogs.rules",
     "bot.cogs.starboard",
+    "bot.cogs.logger"
 ]
-
-
 
 intents = discord.Intents(
     guilds=True,
     guild_messages=True,
     members=True,
-    presences = True,
+    presences=True,
     emojis=True,
     guild_reactions=True,
     dm_reactions=True,
     message_content=True
 )
-
-
 
 bot = MasarykBOT(
     command_prefix=commands.when_mentioned_or("!"),
@@ -60,9 +55,7 @@ bot = MasarykBOT(
     ),
 )
 
-
 log = logging.getLogger()
-
 
 
 async def connect_redis(url: Url) -> aioredis.Redis:
@@ -72,27 +65,26 @@ async def connect_redis(url: Url) -> aioredis.Redis:
     return redis
 
 
-
 def setup_injections(db_pool: Optional[Pool], redis: Optional[aioredis.Redis]) -> Callable[..., None]:
     def inner(binder: inject.Binder) -> None:
         if db_pool:
-            binder.bind(Pool, db_pool)
-        
+            binder.bind(Pool, db_pool)  # type: ignore[misc]
+
         if redis:
             binder.bind(aioredis.Redis, redis)
 
         binder.install(setup_db_injections)
+
     return inner
 
 
-
+# noinspection PyBroadException
 async def load_extensions() -> None:
-    for extension in initail_cogs:
+    for extension in initial_cogs:
         try:
             await bot.load_extension(extension)
         except Exception:
             log.error('Failed to load extension %s.', extension, exc_info=True)
-
 
 
 async def main() -> None:
@@ -101,22 +93,19 @@ async def main() -> None:
         exit(1)
 
     pool = None
-    if (postgres_url := os.getenv("POSTGRES")):
+    if postgres_url := os.getenv("POSTGRES"):
         pool = await connect_db(postgres_url)
 
     redis = None
     if redis_url := os.getenv("REDIS"):
         redis = await connect_redis(redis_url)
-    
+
     loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, lambda: 
-        inject.configure_once(setup_injections(pool, redis))
-    )
+    await loop.run_in_executor(None, lambda: inject.configure_once(setup_injections(pool, redis)))
 
     async with bot:
         await load_extensions()
         await bot.start(token, reconnect=True)
-
 
 
 if __name__ == "__main__":

@@ -14,6 +14,7 @@ def my_namer(default_name: str) -> str:
     base_filename, _, ext, date = default_name.split(".")
     return f"{base_filename}.{date}.{ext}"
 
+
 def setup_logging() -> None:
     """
     sets up custom logging into self.log variable
