@@ -16,8 +16,9 @@ class MessageMapper(Mapper[Message, Columns]):
     async def map(self, obj: Message) -> Columns:
         message = obj
         created_at = message.created_at.replace(tzinfo=None)
+        content = message.content.replace('\x00', '')
         return (message.channel.id, message.author.id, message.id,
-                message.content, created_at)
+                content, created_at)
 
 
 class MessageRepository(Crud[Columns]):

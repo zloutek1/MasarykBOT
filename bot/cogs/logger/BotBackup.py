@@ -1,6 +1,8 @@
 from discord.ext import commands
 
 from bot.cogs.logger.Backup import Backup
+from bot.cogs.logger.HistoryIterator import HistoryIterator
+from bot.cogs.logger.MessageBackup import MessageBackup
 
 
 class BotBackup(Backup[commands.Bot]):
@@ -17,16 +19,6 @@ class BotBackup(Backup[commands.Bot]):
         for guild in bot.guilds:
             await GuildBackup().traverse_down(guild)
 
-        """
-        from .GuildBackup import GuildBackup
-        from .HistoryIterator import HistoryIterator
-        from .MessageBackup import MessageBackup
-        await super().traverseDown(bot)
-        
-        for guild in bot.guilds:
-            await GuildBackup().traverseDown(guild)
-
-        async for week in await HistoryIterator(bot).iter():
+        async for week in HistoryIterator(bot):
             async for message in await week.history():
-                await MessageBackup().traverseDown(message)
-        """
+                await MessageBackup().traverse_down(message)

@@ -1,3 +1,5 @@
+import logging
+
 import inject
 from discord import TextChannel
 from discord.ext import commands
@@ -5,6 +7,8 @@ from discord.ext import commands
 import bot.db
 from bot.db import Record
 from .MessageIterator import MessageIterator
+
+log = logging.getLogger(__name__)
 
 
 class HistoryIterator:
@@ -14,17 +18,18 @@ class HistoryIterator:
         self.logger_repository = logger_repository
         self.updatable_processes: list[Record] = []
 
-    async def iter(self) -> "HistoryIterator":
-        self.updatable_processes = await self.logger_repository.find_updatable_processes()
-        return self
-
     def __aiter__(self) -> "HistoryIterator":
         return self
 
     async def __anext__(self) -> "MessageIterator":
         if not self.updatable_processes:
+            self.updatable_processes = await self.logger_repository.find_updatable_processes()
+
+        if not self.updatable_processes:
             raise StopAsyncIteration
+
+        log.info('starting message backup batch')
         process = self.updatable_processes.pop()
         channel = await self.bot.fetch_channel(process['channel_id'])
         assert isinstance(channel, TextChannel)
-        return MessageIterator(channel)  # type: ignore[no-any-return]
+        return MessageIterator(channel)

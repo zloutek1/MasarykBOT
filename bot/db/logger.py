@@ -9,9 +9,6 @@ class LoggerRepository(Table):
     def __init__(self) -> None:
         super().__init__(table_name=LOGGER)
 
-    def with_process(self, data: Tuple[Id, datetime, datetime]) -> "ProcessContext":
-        return ProcessContext(self, data)
-
     @inject_conn
     async def begin_process(self, conn: DBConnection, data: Tuple[Id, datetime, datetime]) -> None:
         channel_id, from_date, to_date = data
@@ -41,19 +38,11 @@ class LoggerRepository(Table):
     @inject_conn
     async def find_updatable_processes(self, conn: DBConnection) -> list[Record]:
         return await conn.fetch(f"""
-            SELECT channel_id, MAX(to_date)
-            FROM {LOGGER}
-            GROUP BY channel_id
+            SELECT * 
+            FROM (
+                SELECT channel_id, MAX(to_date) as to_date
+                FROM cogs.logger
+                GROUP BY channel_id
+            ) t
+            WHERE t.to_date + interval '7 days' < now()
         """)
-
-
-class ProcessContext:
-    def __init__(self, cls: LoggerRepository, data: Tuple[Id, datetime, datetime]) -> None:
-        self.parent = cls
-        self.data = data
-
-    async def __aenter__(self) -> None:
-        await self.parent.begin_process(self.data)
-
-    async def __aexit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
-        await self.parent.end_process(self.data)
