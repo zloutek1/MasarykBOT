@@ -1,8 +1,13 @@
+import logging
+
 from discord import Role
 import inject
 
 from .Backup import Backup
 import bot.db
+
+
+log = logging.getLogger(__name__)
 
 
 class RoleBackup(Backup[Role]):
@@ -17,7 +22,7 @@ class RoleBackup(Backup[Role]):
         await self.backup(role)
 
     async def backup(self, role: Role) -> None:
-        print("backup role", role)
+        log.debug("backing up role %s", role)
         columns = await self.mapper.map(role)
         await self.role_repository.insert([columns])
 

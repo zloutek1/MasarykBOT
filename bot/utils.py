@@ -1,4 +1,4 @@
-from typing import Callable, Generator, List, Sequence, Tuple, TypeVar
+from typing import Callable, Generator, List, Sequence, Tuple, TypeVar, AsyncIterator
 import discord
 
 T = TypeVar('T')
@@ -7,7 +7,7 @@ C = TypeVar('C')
 
 def partition(cond: Callable[[T], bool], lst: List[T]) -> Tuple[List[T], List[T]]:
     """ split list on condition into (True, False) parts """
-    return ([i for i in lst if cond(i)], [i for i in lst if not cond(i)])
+    return [i for i in lst if cond(i)], [i for i in lst if not cond(i)]
 
 
 def chunks(lst: List[T] | str, n: int) -> Generator[Sequence[T] | Sequence[str], None, None]:
@@ -30,3 +30,11 @@ def emoji_name(emoji: discord.Emoji | discord.PartialEmoji | str) -> str:
     if isinstance(emoji, str):
         return emoji
     return emoji.name
+
+
+class EmptyAsyncIterator(AsyncIterator[T]):
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        raise StopAsyncIteration

@@ -7,12 +7,14 @@ import aioredis
 import discord
 import inject
 from discord.ext import commands
+from discord.ext.commands import ExtensionFailed
 from dotenv import load_dotenv
 
 from bot.bot import MasarykBOT
 from bot.cogs.utils.logging import setup_logging
 from bot.db import connect_db, setup_injections as setup_db_injections
 from bot.db.utils import Pool, Url
+from bot.cogs.utils.checks import DatabaseRequiredException, RedisRequiredException
 
 # TODO: implement Seasonal
 # TODO: implement LaTeX
@@ -28,7 +30,7 @@ initial_cogs = [
     "bot.cogs.info",
     "bot.cogs.markov",
     "bot.cogs.leaderboard",
-    "bot.cogs.rolemenu",
+    "bot.cogs.role_menu",
     "bot.cogs.rules",
     "bot.cogs.starboard",
     "bot.cogs.logger"
@@ -58,11 +60,15 @@ bot = MasarykBOT(
 log = logging.getLogger()
 
 
-async def connect_redis(url: Url) -> aioredis.Redis:
-    redis: aioredis.Redis = aioredis.from_url(url, decode_responses=True)
-    await redis.set('ping', 'pong')
-    assert 'pong' == await redis.get('ping')
-    return redis
+async def connect_redis(url: Url) -> Optional[aioredis.Redis]:
+    try:
+        redis: aioredis.Redis = aioredis.from_url(url, decode_responses=True)
+        await redis.set('ping', 'pong')
+        assert 'pong' == await redis.get('ping')
+        return redis
+    except aioredis.exceptions.ConnectionError as ex:
+        log.error("Failed to connect to redis: %s", ex)
+        return None
 
 
 def setup_injections(db_pool: Optional[Pool], redis: Optional[aioredis.Redis]) -> Callable[..., None]:
@@ -83,8 +89,13 @@ async def load_extensions() -> None:
     for extension in initial_cogs:
         try:
             await bot.load_extension(extension)
-        except Exception:
-            log.error('Failed to load extension %s.', extension, exc_info=True)
+        except ExtensionFailed as ex:
+            if isinstance(ex.__cause__, DatabaseRequiredException):
+                log.warning('skipping extension %s [database required]', extension)
+            elif isinstance(ex.__cause__, RedisRequiredException):
+                log.warning('skipping extension %s [redis required]', extension)
+            else:
+                log.error('Failed to load extension %s.', extension, exc_info=True)
 
 
 async def main() -> None:
@@ -92,11 +103,11 @@ async def main() -> None:
         log.exception("discord bot token is required to run the bot, exiting...")
         exit(1)
 
-    pool = None
+    pool: Optional[Pool] = None
     if postgres_url := os.getenv("POSTGRES"):
         pool = await connect_db(postgres_url)
 
-    redis = None
+    redis: Optional[aioredis.Redis] = None
     if redis_url := os.getenv("REDIS"):
         redis = await connect_redis(redis_url)
 
