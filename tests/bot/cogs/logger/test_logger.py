@@ -15,33 +15,39 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
         self.bot = helpers.MockBot(guilds=[guild])
         self.cog = logger.Logger(self.bot)
-        inject.clear_and_configure(self._mock_injections)
+        self.logger_repository = unittest.mock.AsyncMock()
 
     @unittest.mock.patch('bot.cogs.logger.MessageIterator.history')
     async def test_backup(self, message_iterator_history) -> None:
         message_iterator_history.return_value = helpers.AsyncIterator([message1, message2])
+        self.logger_repository.find_updatable_processes = unittest.mock.AsyncMock(return_value=[])
+        self._mock_injections()
 
-        await self.cog.backup()
+        await self.cog._backup()
 
-        self.assertEqual(1, inject.instance(bot.db.GuildRepository).insert.call_count)  # type: ignore[attr-defined]
-        self.assertEqual(2, inject.instance(bot.db.UserRepository).insert.call_count)  # type: ignore[attr-defined]
-        self.assertEqual(1, inject.instance(bot.db.RoleRepository).insert.call_count)  # type: ignore[attr-defined]
-        self.assertEqual(1, inject.instance(bot.db.EmojiRepository).insert.call_count)  # type: ignore[attr-defined]
-        self.assertEqual(1, inject.instance(bot.db.CategoryRepository).insert.call_count)  # type: ignore[attr-defined]
-        self.assertEqual(2, inject.instance(bot.db.ChannelRepository).insert.call_count)  # type: ignore[attr-defined]
-        self.assertEqual(2, inject.instance(bot.db.MessageRepository).insert.call_count)  # type: ignore[attr-defined]
-        self.assertEqual(1, inject.instance(bot.db.ReactionRepository).insert.call_count)  # type: ignore[attr-defined]
-        self.assertEqual(1, inject.instance(bot.db.AttachmentRepository).insert.call_count)  # type: ignore[attr-defined]
+        self.assertEqual(1, inject.instance(bot.db.GuildRepository).insert.call_count)
+        self.assertEqual(2, inject.instance(bot.db.UserRepository).insert.call_count)
+        self.assertEqual(1, inject.instance(bot.db.RoleRepository).insert.call_count)
+        self.assertEqual(1, inject.instance(bot.db.EmojiRepository).insert.call_count)
+        self.assertEqual(1, inject.instance(bot.db.CategoryRepository).insert.call_count)
+        self.assertEqual(2, inject.instance(bot.db.ChannelRepository).insert.call_count)
+        self.assertEqual(2, inject.instance(bot.db.MessageRepository).insert.call_count)
+        self.assertEqual(1, inject.instance(bot.db.ReactionRepository).insert.call_count)
+        self.assertEqual(1, inject.instance(bot.db.AttachmentRepository).insert.call_count)
 
-    @staticmethod
-    def _mock_injections(binder: inject.Binder) -> None:
-        binder.bind(asyncpg.Pool, unittest.mock.MagicMock())
+    def _mock_injections(self):
+        def setup_injections(binder: inject.Binder) -> None:
+            binder.bind(asyncpg.Pool, unittest.mock.MagicMock())
 
-        for repository in bot.db.discord.REPOSITORIES:
-            binder.bind(repository, unittest.mock.AsyncMock())
+            for repository in bot.db.discord.REPOSITORIES:
+                binder.bind(repository, unittest.mock.AsyncMock())
 
-        for mapper in bot.db.discord.MAPPERS:
-            binder.bind_to_constructor(mapper, mapper)
+            for mapper in bot.db.discord.MAPPERS:
+                binder.bind_to_constructor(mapper, mapper)
+
+            binder.bind(bot.db.LoggerRepository, self.logger_repository)
+
+        return inject.clear_and_configure(setup_injections)
 
 
 # ---- data ---- #
@@ -94,7 +100,7 @@ emoji1 = helpers.MockEmoji(
 guild.emojis = [emoji1]
 
 # channels
-uncategories_channel = helpers.MockTextChannel(
+uncategorized_channel = helpers.MockTextChannel(
     id=5123,
     name='uncategories',
     created_at=datetime(2010, 11, 10, 15, 33, 00),
@@ -115,7 +121,7 @@ categorised_channel = helpers.MockTextChannel(
     guild=guild
 )
 category.text_channels = [categorised_channel]
-guild.text_channels = [uncategories_channel, categorised_channel]
+guild.text_channels = [uncategorized_channel, categorised_channel]
 guild.categories = [category]
 
 # messages
