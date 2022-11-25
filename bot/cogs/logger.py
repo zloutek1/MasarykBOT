@@ -2,11 +2,11 @@
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar, Union
 
+import inject
 import discord
 
+import bot.db
 
-PartialMessageableChannel = Union[discord.TextChannel, discord.VoiceChannel, discord.Thread, discord.DMChannel, discord.PartialMessageable]
-MessageableChannel = Union[PartialMessageableChannel, discord.GroupChannel]
 
 
 T = TypeVar('T')
@@ -30,12 +30,20 @@ class Backup(ABC, Generic[T]):
 
 
 class GuildBackup(Backup[discord.Guild]):
+    @inject.autoparams('guildRepository', 'mapper')
+    def __init__(self, guildRepository: bot.db.GuildRepository, mapper: bot.db.GuildMapper) -> None:
+        self.guildRepository = guildRepository
+        self.mapper = mapper
+
+
     async def traverseUp(self, guild: discord.Guild) -> None:
         await self.backup(guild)
 
 
     async def backup(self, guild: discord.Guild) -> None:
         print("backup guild", guild)
+        columns = await self.mapper.map(guild)
+        await self.guildRepository.insert([columns])
 
 
     async def traverseDown(self, guild: discord.Guild) -> None:
@@ -47,8 +55,11 @@ class GuildBackup(Backup[discord.Guild]):
         for role in guild.roles:
             await RoleBackup().traverseDown(role)
 
+        for emoji in guild.emojis:
+            await EmojiBackup().traverseDown(emoji)
+
         for text_channel in filter(lambda ch: ch.category is None, guild.text_channels):
-            await MessagableChannelBackup().traverseDown(text_channel)
+            await TextChannelBackup().traverseDown(text_channel)
 
         for category in guild.categories:
             await CategoryBackup().traverseDown(category)
@@ -56,6 +67,12 @@ class GuildBackup(Backup[discord.Guild]):
 
 
 class UserBackup(Backup[discord.User | discord.Member]):
+    @inject.autoparams('userRepository', 'mapper')
+    def __init__(self, userRepository: bot.db.UserRepository, mapper: bot.db.UserMapper) -> None:
+        self.userRepository = userRepository
+        self.mapper = mapper
+
+
     async def traverseUp(self, user: discord.User | discord.Member) -> None:
         if isinstance(user, discord.Member):
             await GuildBackup().traverseUp(user.guild)
@@ -64,6 +81,8 @@ class UserBackup(Backup[discord.User | discord.Member]):
 
     async def backup(self, user: discord.User | discord.Member) -> None:
         print("backup user", user)
+        columns = await self.mapper.map(user)
+        await self.userRepository.insert([columns])
 
 
     async def traverseDown(self, user: discord.User | discord.Member) -> None:
@@ -72,6 +91,12 @@ class UserBackup(Backup[discord.User | discord.Member]):
 
 
 class RoleBackup(Backup[discord.Role]):
+    @inject.autoparams('roleRepository', 'mapper')
+    def __init__(self, roleRepository: bot.db.RoleRepository, mapper: bot.db.RoleMapper) -> None:
+        self.roleRepository = roleRepository
+        self.mapper = mapper
+
+
     async def traverseUp(self, role: discord.Role) -> None:
         await GuildBackup().traverseUp(role.guild)
         await self.backup(role)
@@ -79,6 +104,8 @@ class RoleBackup(Backup[discord.Role]):
 
     async def backup(self, role: discord.Role) -> None:
         print("backup role", role)
+        columns = await self.mapper.map(role)
+        await self.roleRepository.insert([columns])
 
 
     async def traverseDown(self, role: discord.Role) -> None:
@@ -87,6 +114,12 @@ class RoleBackup(Backup[discord.Role]):
 
 
 class EmojiBackup(Backup[discord.Emoji | discord.PartialEmoji | str]):
+    @inject.autoparams('emojiRepository', 'mapper')
+    def __init__(self, emojiRepository: bot.db.EmojiRepository, mapper: bot.db.EmojiMapper) -> None:
+        self.emojiRepository = emojiRepository
+        self.mapper = mapper
+
+
     async def traverseUp(self, emoji: discord.Emoji | discord.PartialEmoji | str) -> None:
         if isinstance(emoji, discord.Emoji) and emoji.guild:
             await GuildBackup().traverseUp(emoji.guild)
@@ -95,6 +128,8 @@ class EmojiBackup(Backup[discord.Emoji | discord.PartialEmoji | str]):
 
     async def backup(self, emoji: discord.Emoji | discord.PartialEmoji | str) -> None:
         print("backup emoji", emoji)
+        columns = await self.mapper.map(emoji)
+        await self.emojiRepository.insert([columns])
 
 
     async def traverseDown(self, emoji: discord.Emoji | discord.PartialEmoji | str) -> None:
@@ -103,6 +138,12 @@ class EmojiBackup(Backup[discord.Emoji | discord.PartialEmoji | str]):
 
 
 class CategoryBackup(Backup[discord.CategoryChannel]):
+    @inject.autoparams('categoryDao', 'mapper')
+    def __init__(self, categoryDao: bot.db.CategoryRepository, mapper: bot.db.CategoryMapper) -> None:
+        self.categoryDao = categoryDao
+        self.mapper = mapper
+
+
     async def traverseUp(self, category: discord.CategoryChannel) -> None:
         await GuildBackup().traverseUp(category.guild)
         await self.backup(category)
@@ -110,51 +151,129 @@ class CategoryBackup(Backup[discord.CategoryChannel]):
 
     async def backup(self, category: discord.CategoryChannel) -> None:
         print("backup category", category)
+        columns = await self.mapper.map(category)
+        await self.categoryDao.insert([columns])
 
 
     async def traverseDown(self, category: discord.CategoryChannel) -> None:
         await self.backup(category)
         
         for text_channel in category.text_channels:
-            await MessagableChannelBackup().traverseDown(text_channel)
+            await TextChannelBackup().traverseDown(text_channel)
 
 
 
-class MessagableChannelBackup(Backup[MessageableChannel]):
-    async def traverseUp(self, messageable_channel: MessageableChannel) -> None:
-        if isinstance(messageable_channel, discord.abc.GuildChannel):
-            if messageable_channel.category:
-                await CategoryBackup().traverseUp(messageable_channel.category)
+class TextChannelBackup(Backup[discord.TextChannel]):
+    @inject.autoparams('channelRepository', 'mapper')
+    def __init__(self, channelRepository: bot.db.ChannelRepository, mapper: bot.db.ChannelMapper) -> None:
+        self.channelRepository = channelRepository
+        self.mapper = mapper
+
+
+    async def traverseUp(self, text_channel: discord.TextChannel) -> None:
+        if isinstance(text_channel, discord.abc.GuildChannel):
+            if text_channel.category:
+                await CategoryBackup().traverseUp(text_channel.category)
             else:
-                await GuildBackup().traverseUp(messageable_channel.guild)
+                await GuildBackup().traverseUp(text_channel.guild)
 
-        await self.backup(messageable_channel)
-
-
-    async def backup(self, messageable_channel: MessageableChannel) -> None:
-        print("backup messageable_channel", messageable_channel)
+        await self.backup(text_channel)
 
 
-    async def traverseDown(self, messageable_channel: MessageableChannel) -> None:
-        await self.backup(messageable_channel)
+    async def backup(self, text_channel: discord.TextChannel) -> None:
+        print("backup text channel", text_channel)
+        columns = await self.mapper.map(text_channel)
+        await self.channelRepository.insert([columns])
 
-        async for message in messageable_channel.history():
+
+    async def traverseDown(self, text_channel: discord.TextChannel) -> None:
+        await self.backup(text_channel)
+
+        async for message in text_channel.history():
             await MessageBackup().traverseDown(message)
 
 
 
 class MessageBackup(Backup[discord.Message]):
+    @inject.autoparams('messageRepository', 'mapper')
+    def __init__(self, messageRepository: bot.db.MessageRepository, mapper: bot.db.MessageMapper) -> None:
+        self.messageRepository = messageRepository
+        self.mapper = mapper
+
+
     async def traverseUp(self, message: discord.Message) -> None:
-        await MessagableChannelBackup().traverseUp(message.channel)
+        await TextChannelBackup().traverseUp(message.channel)
         await self.backup(message)
 
 
     async def backup(self, message: discord.Message) -> None:
         print("backup message", message)
+        columns = await self.mapper.map(message)
+        await self.messageRepository.insert([columns])
 
 
     async def traverseDown(self, message: discord.Message) -> None:
         await self.backup(message)
+
+        for reaction in message.reactions:
+            await ReactionBackup().traverseDown(reaction)
+
+        for attachment in message.attachments:
+            await AttachmentBackup(message.id).traverseDown(attachment)
+
+
+
+class ReactionBackup(Backup[discord.Reaction]):
+    @inject.autoparams('reactionRepository', 'mapper')
+    def __init__(self, reactionRepository: bot.db.ReactionRepository, mapper: bot.db.ReactionMapper) -> None:
+        self.reactionRepository = reactionRepository
+        self.mapper = mapper
+
+
+    async def traverseUp(self, reaction: discord.Reaction) -> None:
+        await EmojiBackup().traverseUp(reaction.emoji)
+        await MessageBackup().traverseUp(reaction.message)
+        await self.backup(reaction)
+
+
+    async def backup(self, reaction: discord.Reaction) -> None:
+        print("backup reaction", reaction)
+        columns = await self.mapper.map(reaction)
+        await self.reactionRepository.insert([columns])
+
+
+    async def traverseDown(self, reaction: discord.Reaction) -> None:
+        await self.backup(reaction)
+
+
+
+class AttachmentBackup(Backup[discord.Attachment]):
+    @inject.autoparams('attachmentRepository', 'mapper')
+    def __init__(self, message_id: int | None, attachmentRepository: bot.db.AttachmentRepository, mapper: bot.db.AttachmentMapper) -> None:
+        self.message_id = message_id
+        self.attachmentRepository = attachmentRepository
+        self.mapper = mapper
+
+
+    async def traverseUp(self, attachment: discord.Attachment) -> None:
+        await self.backup(attachment)
+
+
+    async def backup(self, attachment: discord.Attachment) -> None:
+        print("backup attachment", attachment)
+        columns = await self.mapper.map(attachment)
+
+        tmp = list(columns)
+        tmp[0] = self.message_id
+        columns = tuple(tmp) # type: ignore[assignment]
+
+        await self.attachmentRepository.insert([columns])
+
+
+    async def traverseDown(self, attachment: discord.Attachment) -> None:
+        await self.backup(attachment)
+
+
 
 """
 T = TypeVar('T')
@@ -220,12 +339,12 @@ class BackupInProgressException(Exception):
     pass
 
 class BackupUntilPresent(GetCollectables):
-    guildDao = GuildDao()
+    guildRepository = guildRepository()
     categoryDao = CategoryDao()
     roleDao = RoleDao()
-    userDao = UserDao()
-    channelDao = ChannelDao()
-    messageDao = MessageDao()
+    userRepository = userRepository()
+    channelRepository = channelRepository()
+    messageRepository = messageRepository()
     emojiDao = EmojiDao()
     reactionDao = ReactionDao()
 
@@ -265,8 +384,8 @@ class BackupUntilPresent(GetCollectables):
 
     async def backup_guilds(self, guilds: List[Guild]) -> None:
         log.info(f"backing up {len(guilds)} guilds")
-        data = await self.guildDao.prepare(guilds)
-        await self.guildDao.insert(data)
+        data = await self.guildRepository.prepare(guilds)
+        await self.guildRepository.insert(data)
 
     async def backup_categories(self, categories: List[CategoryChannel]) -> None:
         log.info(f"backing up {len(categories)} categories")
@@ -281,13 +400,13 @@ class BackupUntilPresent(GetCollectables):
     async def backup_members(self, members: List[Member]) -> None:
         log.info(f"backing up {len(members)} members")
         for chunk in chunks(members, 550):
-            data = await self.userDao.prepare(chunk)
-            await self.userDao.insert(data)
+            data = await self.userRepository.prepare(chunk)
+            await self.userRepository.insert(data)
 
     async def backup_channels(self, text_channels: List[TextChannel]) -> None:
         log.info(f"backing up {len(text_channels)} channels")
-        data = await self.channelDao.prepare(text_channels)
-        await self.channelDao.insert(data)
+        data = await self.channelRepository.prepare(text_channels)
+        await self.channelRepository.insert(data)
 
     async def backup_messages(self, channel: TextChannel) -> bool:
         past = {record.get('channel_id'): record.get('id')
@@ -384,29 +503,29 @@ class BackupUntilPresent(GetCollectables):
             messages = []
             collectables = self.get_collectables()
             async for message in channel.history(after=from_date, before=to_date, limit=1_000_000, oldest_first=True):
-                members.append(await self.userDao.prepare_one(message.author))
-                messages.append(await self.messageDao.prepare_one(message))
+                members.append(await self.userRepository.prepare_one(message.author))
+                messages.append(await self.messageRepository.prepare_one(message))
                 for collectable in collectables:
                     await collectable.add(message)
 
             else:
                 for user_batch in chunks(members, 550):
-                    await self.userDao.insert(user_batch)
+                    await self.userRepository.insert(user_batch)
 
                 for msg_batch in chunks(messages, 550):
-                    await self.messageDao.insert(msg_batch)
+                    await self.messageRepository.insert(msg_batch)
 
                 for collectable in collectables:
                     await collectable.db_insert()
 
 
 class BackupOnEvents(GetCollectables):
-    guildDao = GuildDao()
+    guildRepository = guildRepository()
     categoryDao = CategoryDao()
     roleDao = RoleDao()
-    userDao = UserDao()
-    channelDao = ChannelDao()
-    messageDao = MessageDao()
+    userRepository = userRepository()
+    channelRepository = channelRepository()
+    messageRepository = messageRepository()
 
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
@@ -429,20 +548,20 @@ class BackupOnEvents(GetCollectables):
     @commands.Cog.listener()
     async def on_guild_join(self, guild: Guild) -> None:
         log.info("joined guild %s", guild)
-        data = await self.guildDao.prepare_one(guild)
-        self.insert_queues[self.guildDao.insert].append(data)
+        data = await self.guildRepository.prepare_one(guild)
+        self.insert_queues[self.guildRepository.insert].append(data)
 
     @commands.Cog.listener()
     async def on_guild_update(self, before: Guild, after: Guild) -> None:
         log.info("updated guild from %s to %s", before, after)
-        data = await self.guildDao.prepare_one(after)
-        self.update_queues[self.guildDao.update].append(data)
+        data = await self.guildRepository.prepare_one(after)
+        self.update_queues[self.guildRepository.update].append(data)
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild: Guild) -> None:
         log.info("left guild %s", guild)
         data = (guild.id,)
-        self.delete_queues[self.guildDao.soft_delete].append(data)
+        self.delete_queues[self.guildRepository.soft_delete].append(data)
 
     ###
     #
@@ -461,8 +580,8 @@ class BackupOnEvents(GetCollectables):
             await self.on_category_create(channel)
 
     async def on_textchannel_create(self, channel: TextChannel) -> None:
-        data = await self.channelDao.prepare_one(channel)
-        self.insert_queues[self.channelDao.insert].append(data)
+        data = await self.channelRepository.prepare_one(channel)
+        self.insert_queues[self.channelRepository.insert].append(data)
 
     async def on_category_create(self, channel: CategoryChannel) -> None:
         data = await self.categoryDao.prepare_one(channel)
@@ -479,8 +598,8 @@ class BackupOnEvents(GetCollectables):
             await self.on_category_update(before, after)
 
     async def on_textchannel_update(self, _before: TextChannel, after: TextChannel) -> None:
-        data = await self.channelDao.prepare_one(after)
-        self.update_queues[self.channelDao.update].append(data)
+        data = await self.channelRepository.prepare_one(after)
+        self.update_queues[self.channelRepository.update].append(data)
 
     async def on_category_update(self, _before: CategoryChannel, after: CategoryChannel) -> None:
         data = await self.categoryDao.prepare_one(after)
@@ -498,7 +617,7 @@ class BackupOnEvents(GetCollectables):
 
     async def on_textchannel_delete(self, channel: TextChannel) -> None:
         data = (channel.id,)
-        self.delete_queues[self.channelDao.soft_delete].append(data)
+        self.delete_queues[self.channelRepository.soft_delete].append(data)
 
     async def on_category_delete(self, channel: CategoryChannel) -> None:
         data = (channel.id,)
@@ -519,8 +638,8 @@ class BackupOnEvents(GetCollectables):
         if not isinstance(message.author, Member):
             return
 
-        msg_data = await self.messageDao.prepare_one(message)
-        self.insert_queues[self.messageDao.insert].append(msg_data)
+        msg_data = await self.messageRepository.prepare_one(message)
+        self.insert_queues[self.messageRepository.insert].append(msg_data)
 
         colleactables = self.get_collectables()
         for collectable in colleactables:
@@ -532,8 +651,8 @@ class BackupOnEvents(GetCollectables):
         if isinstance(before.channel, PrivateChannel):
             return
 
-        msg_data = await self.messageDao.prepare_one(after)
-        self.update_queues[self.messageDao.update].append(msg_data)
+        msg_data = await self.messageRepository.prepare_one(after)
+        self.update_queues[self.messageRepository.update].append(msg_data)
 
         colleactables = self.get_collectables()
         for collectable in colleactables:
@@ -546,7 +665,7 @@ class BackupOnEvents(GetCollectables):
             return
 
         data = (message.id,)
-        self.delete_queues[self.messageDao.soft_delete].append(data)
+        self.delete_queues[self.messageRepository.soft_delete].append(data)
 
     ###
     #
@@ -556,11 +675,11 @@ class BackupOnEvents(GetCollectables):
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction: Reaction, user: Member) -> None:
-        msg_data = await self.messageDao.prepare_one(reaction.message)
-        self.insert_queues[self.messageDao.insert].append(msg_data)
+        msg_data = await self.messageRepository.prepare_one(reaction.message)
+        self.insert_queues[self.messageRepository.insert].append(msg_data)
 
-        user_data = await self.userDao.prepare_one(user)
-        self.insert_queues[self.userDao.insert].append(user_data)
+        user_data = await self.userRepository.prepare_one(user)
+        self.insert_queues[self.userRepository.insert].append(user_data)
 
         emoji_data = await self.emojiDao.map_one(reaction.emoji)
         self.insert_queues[self.emojiDao.insert].append(emoji_data)
@@ -578,8 +697,8 @@ class BackupOnEvents(GetCollectables):
     async def on_member_join(self, member: Member) -> None:
         log.info("member %s joined (%s)", member, member.guild)
 
-        data = await self.userDao.prepare_one(member)
-        self.insert_queues[self.userDao.insert].append(data)
+        data = await self.userRepository.prepare_one(member)
+        self.insert_queues[self.userRepository.insert].append(data)
 
     @commands.Cog.listener()
     async def on_member_update(self, before: Member, after: Member) -> None:
@@ -592,16 +711,16 @@ class BackupOnEvents(GetCollectables):
         else:
             return
 
-        data = await self.userDao.prepare_one(after)
-        self.update_queues[self.userDao.update].append(data)
+        data = await self.userRepository.prepare_one(after)
+        self.update_queues[self.userRepository.update].append(data)
 
     @commands.Cog.listener()
     async def on_member_remove(self, member: Member) -> None:
         log.info("member %s left (%s)", member, member.guild)
 
         data = (member.id,)
-        await self.userDao.soft_delete([])
-        self.delete_queues[self.userDao.soft_delete].append(data)
+        await self.userRepository.soft_delete([])
+        self.delete_queues[self.userRepository.soft_delete].append(data)
 
     ###
     #
