@@ -1,6 +1,8 @@
+import io
 import logging
 import traceback
 
+from discord import File
 from discord.abc import Messageable
 from discord.ext import commands
 from discord.utils import get
@@ -76,8 +78,11 @@ class Errors(commands.Cog):
         if not isinstance(channel, Messageable):
             return
 
-        for chunk in chunks(msg, 1900):
-            await channel.send(f"```\n{chunk}\n```")
+        if len(msg) < 1990:
+            await channel.send(f"```\n{msg}\n```")
+        else:
+            fp = io.BytesIO(msg.encode('utf-8'))
+            await channel.send(file=File(fp=fp, filename=f"{type(error).__name__}.txt"))
 
 
 
