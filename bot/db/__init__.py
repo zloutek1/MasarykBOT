@@ -2,7 +2,7 @@ import asyncio
 import asyncpg
 import inject
 
-from bot.db.utils import Pool, Url
+from bot.db.utils import Pool, Record, Url
 
 from .discord import (AttachmentRepository, CategoryRepository, ChannelRepository, EmojiRepository,
                       GuildRepository, MessageRepository, ReactionRepository, 
@@ -13,7 +13,7 @@ from .discord import (AttachmentMapper, CategoryMapper, ChannelMapper, EmojiMapp
 from .discord import setup_injections as setup_discord_injections
 #from .activity import ActivityDao
 #from .emojiboard import EmojiboardDao
-from .leaderboard import LeaderboardDao
+from .logger import LoggerRepository
 #from .seasons import SeasonDao
 #from .subjects import SubjectDao
 #from .tags import TagDao

@@ -12,11 +12,13 @@ import bot.db
 
 class LoggerTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
+        self.bot = helpers.MockBot(guilds=[guild])
+        self.cog = logger.Logger(self.bot)
         inject.clear_and_configure(self._setup_injections)
 
 
     async def test_backup(self) -> None:
-        await logger.GuildBackup().traverseDown(guild)
+        await self.cog.backup()
 
         self.assertEqual(1, inject.instance(bot.db.GuildRepository).insert.call_count) # type: ignore[attr-defined]
         self.assertEqual(2, inject.instance(bot.db.UserRepository).insert.call_count) # type: ignore[attr-defined]
