@@ -17,7 +17,6 @@ REPLY_ON_ERRORS = (
     commands.MissingRequiredArgument,
     commands.MissingRole,
     commands.errors.BadUnionArgument,
-    commands.CommandOnCooldown,
     commands.NoPrivateMessage,
     commands.MissingPermissions,
     commands.ArgumentParsingError,
@@ -32,6 +31,10 @@ class Errors(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self, ctx: Context, error: commands.CommandError) -> None:
         if hasattr(ctx.command, "on_error"):
+            return
+
+        if isinstance(error, commands.CommandOnCooldown):
+            await ctx.send_error(str(error), delete_after=error.retry_after)
             return
 
         if isinstance(error, REPLY_ON_ERRORS):

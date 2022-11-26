@@ -1,28 +1,13 @@
 import io
 import json
-from typing import Dict, cast
+from typing import Dict, cast, Optional
 
 import aiohttp
+import discord
 from discord import File
 from discord.ext import commands
 
 from bot.cogs.utils.context import Context
-
-
-def get_cmds() -> Dict[str, str]:
-    cmds = {
-        'cpp': 'g++ -std=c++1z -O2 -Wall -Wextra -pedantic -pthread main.cpp -lstdc++fs && ./a.out',
-        'c': 'mv main.cpp main.c && gcc -std=c11 -O2 -Wall -Wextra -pedantic main.c && ./a.out',
-        'python': 'python3 main.cpp',
-        'haskell': 'runhaskell main.cpp'
-    }
-
-    for alias in ('cc', 'h', 'c++', 'h++', 'hpp'):
-        cmds[alias] = cmds['cpp']
-
-    cmds['py'] = cmds['python']
-    cmds['hs'] = cmds['haskell']
-    return cmds
 
 
 class CodeBlock:
@@ -38,29 +23,31 @@ class CodeBlock:
         if not block.startswith('```') and not code.endswith('```'):
             raise commands.BadArgument(self.missing_error)
 
-        language = block[3:]
-        self.command = self.get_command_from_language(language.lower())
+        self.language = block[3:].lower()
         self.source = code.rstrip('`').replace('```', '')
 
-    @staticmethod
-    def get_command_from_language(language: str) -> str:
-        try:
-            return get_cmds()[language]
-        except KeyError as err:
-            if language:
-                fmt = f'Unknown language to compile for: {language}'
-            else:
-                fmt = 'Could not find a language to compile with.'
-            raise commands.BadArgument(fmt) from err
 
+class ColiruService:
+    @property
+    def commands(self) -> Dict[str, str]:
+        cmds = {
+            'cpp': 'g++ -std=c++1z -O2 -Wall -Wextra -pedantic -pthread main.cpp -lstdc++fs && ./a.out',
+            'c': 'mv main.cpp main.c && gcc -std=c11 -O2 -Wall -Wextra -pedantic main.c && ./a.out',
+            'python': 'python3 main.cpp',
+            'haskell': 'runhaskell main.cpp'
+        }
 
-class Eval(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
-        self.bot = bot
+        for alias in ('cc', 'h', 'c++', 'h++', 'hpp'):
+            cmds[alias] = cmds['cpp']
 
-    @commands.command(name="eval", aliases=["e", "coliru"])
-    @commands.cooldown(1, 15, commands.BucketType.user)
-    async def coliru(self, ctx: Context, *, code: CodeBlock) -> None:
+        cmds['py'] = cmds['python']
+        cmds['hs'] = cmds['haskell']
+        return cmds
+
+    def supports_language(self, language: str) -> bool:
+        return language in self.commands
+
+    async def eval(self, ctx: Context, *, code: CodeBlock) -> str:
         """Compiles code via Coliru.
         You have to pass in a code block with the language syntax
         either set to one of these:
@@ -72,7 +59,7 @@ class Eval(commands.Cog):
         Please don't spam this for Stacked's sake.
         """
         payload = {
-            'cmd': code.command,
+            'cmd': self.commands[code.language],
             'src': code.source
         }
 
@@ -80,14 +67,12 @@ class Eval(commands.Cog):
 
         async with ctx.typing():
             async with aiohttp.ClientSession() as session:
-                result = await self.coliru_compile(session, data)
-
-        fp = cast(io.BufferedIOBase, io.StringIO(result))
-        await ctx.send(file=File(fp, filename="eval_result.txt"))
+                return await self.compile(session, data)
 
     @staticmethod
-    async def coliru_compile(session: aiohttp.ClientSession, data: str) -> str:
-        async with session.post('http://coliru.stacked-crooked.com/compile', data=data) as resp:
+    async def compile(session: aiohttp.ClientSession, data: str) -> str:
+        headers = {'content-type': 'application/json'}
+        async with session.post('http://coliru.stacked-crooked.com/compile', data=data, headers=headers) as resp:
             if resp.status != 200:
                 return 'Coliru did not respond in time.'
 
@@ -95,23 +80,78 @@ class Eval(commands.Cog):
 
             return output
 
-    @staticmethod
-    async def coliru_shorten(session: aiohttp.ClientSession, data: str) -> str:
-        async with session.post('http://coliru.stacked-crooked.com/share', data=data) as response:
-            if response.status != 200:
-                return 'Could not create coliru shared link'
-            else:
-                shared_id = await response.text()
-                link = f'http://coliru.stacked-crooked.com/a/{shared_id}'
-                return f'Output too big. Coliru link: {link}'
 
-    @coliru.error
-    async def coliru_error(self, ctx: Context, error: commands.CommandError) -> None:
-        if isinstance(error, commands.BadArgument):
-            await ctx.send_error(str(error))
-        if isinstance(error, commands.MissingRequiredArgument):
-            await ctx.send_error(CodeBlock.missing_error)
-        print(error)
+class AplCompilingService:
+    @staticmethod
+    def supports_language(language: str) -> bool:
+        return language == "apl"
+
+    async def eval(self, ctx: Context, *, code: CodeBlock) -> str:
+        payload = [
+            "",
+            0,
+            "",
+            code.source.strip()
+        ]
+
+        data = json.dumps(payload)
+
+        async with ctx.typing():
+            async with aiohttp.ClientSession() as session:
+                return await self.compile(session, data)
+
+    @staticmethod
+    async def compile(session: aiohttp.ClientSession, data: str) -> str:
+        headers = {'content-type': 'application/json'}
+        async with session.post('https://tryapl.org/Exec', data=data, headers=headers) as resp:
+            if resp.status != 200:
+                return 'TryApl did not respond in time.'
+
+            output = await resp.json(encoding='utf-8')
+
+            return '\n'.join(output[3])
+
+
+class Eval(commands.Cog):
+    def __init__(
+            self,
+            bot: commands.Bot,
+            coliru_service: ColiruService = ColiruService(),
+            apl_service: AplCompilingService = AplCompilingService()
+    ) -> None:
+        self.bot = bot
+        self.coliru_service = coliru_service
+        self.apl_service = apl_service
+
+    @commands.command(name="eval", aliases=["coliru"])
+    @commands.cooldown(1, 15, commands.BucketType.user)
+    async def eval(self, ctx: Context, *, code: CodeBlock) -> None:
+        compilers = [self.coliru_service, self.apl_service]
+        for compiler in compilers:
+            if compiler.supports_language(code.language):
+                response = await compiler.eval(ctx, code=code)
+                return await self.display_result(ctx, code, response)
+        raise commands.BadArgument("unsupported language: " + code.language)
+
+    @staticmethod
+    async def display_result(ctx: Context, code: CodeBlock, response: str) -> None:
+        embed = discord.Embed(color=discord.Color.green())
+        file: Optional[discord.File] = None
+
+        if len(code.source) < 1024:
+            embed.add_field(name='source', value=f'```{code.language}\n{code.source}\n```', inline=False)
+        if len(response) < 1024:
+            embed.add_field(name='response', value=f'```{code.language}\n{response}\n```', inline=False)
+        else:
+            fp = io.BytesIO(response.encode('utf-8'))
+            file = discord.File(fp=fp, filename='eval-result.txt')
+
+        if embed.fields:
+            await ctx.send(embed=embed, file=file)
+        elif file:
+            await ctx.send(file=file)
+        else:
+            await ctx.send_error('fail to display result')
 
 
 async def setup(bot: commands.Bot) -> None:
