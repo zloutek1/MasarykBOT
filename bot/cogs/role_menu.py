@@ -35,24 +35,23 @@ class RoleMenuService:
         self.bot = bot
 
     @staticmethod
-    def is_rolemenu_channel(channel_id: int) -> bool:
+    def is_role_menu_channel(channel_id: int) -> bool:
         return channel_id in (guild.channels.about_you for guild in CONFIG.guilds)
 
-    async def fetch_message(self,
-                            payload: discord.RawReactionActionEvent | discord.RawMessageUpdateEvent) -> discord.Message:
+    async def fetch_message(self, payload: discord.RawReactionActionEvent | discord.RawMessageUpdateEvent) -> discord.Message:
         channel = await self.bot.fetch_channel(payload.channel_id)
         if not isinstance(channel, Messageable):
             raise AssertionError(f"channel {channel} is not messageable")
         return await channel.fetch_message(payload.message_id)
 
     @staticmethod
-    def get_rolemenu_row(message: discord.Message, emoji: discord.PartialEmoji) -> Optional[str]:
+    def get_role_menu_row(message: discord.Message, emoji: discord.PartialEmoji) -> Optional[str]:
         rows = message.content.split('\n')
         return find(lambda row: row.startswith(str(emoji)), rows)
 
     def parse_action(self, message: discord.Message, emoji: discord.PartialEmoji) -> Optional[Action]:
         assert message.guild
-        if not (row := self.get_rolemenu_row(message, emoji)):
+        if not (row := self.get_role_menu_row(message, emoji)):
             return None
 
         action = row.split(" ", 1)[1]
@@ -73,6 +72,30 @@ class RoleMenuService:
         if match := re.match(r"<@&(\d+)>", text):
             return get(guild.roles, id=int(match.group(1)))
         return None
+
+    async def execute_add_action(self, user: discord.Member, action: Action) -> None:
+        if isinstance(action, discord.Role):
+            await user.add_roles(cast(Snowflake, action))
+            log.info("added role %s to %s", action, user)
+
+        elif isinstance(action, discord.TextChannel):
+            await self.show_channel(action, user)
+            log.info("shown channel %s to %s", action, user)
+
+        else:
+            raise NotImplementedError
+
+    async def execute_remove_action(self, user: discord.Member, action: Action) -> None:
+        if isinstance(action, discord.Role):
+            await user.remove_roles(cast(Snowflake, action))
+            log.info("removed role %s from %s", action, user)
+
+        if isinstance(action, discord.TextChannel):
+            await self.hide_channel(action, user)
+            log.info("hidden channel %s from %s", action, user)
+
+        else:
+            raise NotImplementedError
 
     @staticmethod
     def list_emojis(message: discord.Message) -> Set[str]:
@@ -135,7 +158,7 @@ class RoleMenu(commands.Cog):
         await self.on_raw_reaction_update(payload)
 
     async def on_raw_reaction_update(self, payload: discord.RawReactionActionEvent) -> None:
-        if not self.service.is_rolemenu_channel(payload.channel_id):
+        if not self.service.is_role_menu_channel(payload.channel_id):
             return
 
         message = await self.service.fetch_message(payload)
@@ -146,39 +169,15 @@ class RoleMenu(commands.Cog):
         user = await message.guild.fetch_member(payload.user_id)
 
         if payload.event_type == "REACTION_ADD":
-            await self._reaction_add(user, action)
+            await self.service.execute_add_action(user, action)
         elif payload.event_type == "REACTION_REMOVE":
-            await self._reaction_remove(user, action)
-        else:
-            raise NotImplementedError
-
-    async def _reaction_add(self, user: discord.Member, action: Action) -> None:
-        if isinstance(action, discord.Role):
-            await user.add_roles(cast(Snowflake, action))
-            log.info("added role %s to %s", action, user)
-
-        elif isinstance(action, discord.TextChannel):
-            await self.service.show_channel(action, user)
-            log.info("shown channel %s to %s", action, user)
-
-        else:
-            raise NotImplementedError
-
-    async def _reaction_remove(self, user: discord.Member, action: Action) -> None:
-        if isinstance(action, discord.Role):
-            await user.remove_roles(cast(Snowflake, action))
-            log.info("removed role %s from %s", action, user)
-
-        if isinstance(action, discord.TextChannel):
-            await self.service.hide_channel(action, user)
-            log.info("hidden channel %s from %s", action, user)
-
+            await self.service.execute_remove_action(user, action)
         else:
             raise NotImplementedError
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
-        if not self.service.is_rolemenu_channel(message.channel.id):
+        if not self.service.is_role_menu_channel(message.channel.id):
             return
 
         for row in message.content.split("\n"):
@@ -187,7 +186,7 @@ class RoleMenu(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent) -> None:
-        if not self.service.is_rolemenu_channel(payload.channel_id):
+        if not self.service.is_role_menu_channel(payload.channel_id):
             return
 
         message = await self.service.fetch_message(payload)
