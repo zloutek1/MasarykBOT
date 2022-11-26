@@ -4,7 +4,7 @@ bot: !bots
     DEBUG: false
 
 emoji: !emojis
-    Verification: 617745093889359872
+    Verification: 605131658219356170
 
 colors: !colors
     MUNI_YELLOW: 15387993

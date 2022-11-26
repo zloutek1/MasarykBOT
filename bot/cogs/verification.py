@@ -1,92 +1,65 @@
 import logging
-from typing import List, Set, cast
+from typing import cast
 
-import disnake as discord
-from bot.constants import Config
-from disnake.abc import Snowflake
-from disnake.errors import Forbidden
-from disnake.ext import commands, tasks
-from disnake.utils import find, get
+import discord
+from discord.abc import Snowflake, Messageable
+from discord.ext import commands
+from discord.utils import get
+
+from bot.constants import CONFIG
 
 log = logging.getLogger(__name__)
 E_MISSING_PERMISSIONS = 50013
 
 
-class Verification(commands.Cog):
+class VerificationService:
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-    @property
-    def verification_channels(self) -> List[discord.TextChannel]:
-        verification_ids = [guild.channels.verification for guild in Config.guilds]
-        return [
-            channel
-            for channel_id in verification_ids
-            if (channel := self.bot.get_channel(channel_id)) is not None
-            if isinstance(channel, discord.TextChannel)
-        ]
+    @staticmethod
+    def is_verification_channel(channel_id: int) -> bool:
+        return channel_id in (guild.channels.verification for guild in CONFIG.guilds)
+
+    def has_required_permissions(self, guild_id: int) -> bool:
+        assert (guild := get(self.bot.guilds, id=guild_id))
+        return guild.me.guild_permissions.manage_roles
+
+    async def fetch_message(self, payload: discord.RawReactionActionEvent) -> discord.Message:
+        channel = await self.bot.fetch_channel(payload.channel_id)
+        if not isinstance(channel, Messageable):
+            raise AssertionError(f"channel {channel} is not messageable")
+        return await channel.fetch_message(payload.message_id)
+
+    @staticmethod
+    async def verify_member(member: discord.Member) -> None:
+        assert (guild_config := get(CONFIG.guilds, id=member.guild.id))
+        if not (verified_role := get(member.guild.roles, id=guild_config.roles.verified)):
+            log.warning("No verified role present in guild %s", member.guild)
+            return
+
+        await member.add_roles(cast(Snowflake, verified_role))
+        log.info("verified user %s, added role %s", member.name, f"@{verified_role}")
+
+    @staticmethod
+    async def unverify_member(member: discord.Member) -> None:
+        assert (guild_config := get(CONFIG.guilds, id=member.guild.id))
+        if not (verified_role := get(member.guild.roles, id=guild_config.roles.verified)):
+            log.warning("No verified role present in guild %s", member.guild)
+            return
+
+        await member.remove_roles(cast(Snowflake, verified_role))
+        log.info("unverified user %s, removed role %s", member.name, f"@{verified_role}")
+
+
+class Verification(commands.Cog):
+    def __init__(self, bot: commands.Bot, service: VerificationService = None) -> None:
+        self.bot = bot
+        self.service = service or VerificationService(bot)
 
     @commands.Cog.listener()
     async def on_ready(self) -> None:
-        log.info("found %d verification channels", len(self.verification_channels))
-
+        pass
         # await self._synchronize()
-
-    @tasks.loop(hours = 168)  # 168 hours == 1 week
-    async def _repeat_synchronize(self) -> None:
-        await self._synchronize()
-
-    async def _synchronize(self) -> None:
-        def confirm_react(reaction: discord.Reaction) -> bool:
-            if isinstance(reaction.emoji, str):
-                return False
-            return reaction.emoji.name.lower() in ("verification", "verify", "accept")
-
-        for channel in self.verification_channels:
-            async for message in channel.history():
-                verif_react = find(confirm_react, message.reactions)
-                if verif_react is None:
-                    continue
-
-                await self._synchronize_react(channel.guild, verif_react)
-
-    async def _synchronize_react(self, guild: discord.Guild, verif_react: discord.Reaction) -> None:
-        guild_config = get(Config.guilds, id=guild.id)
-        if guild_config is None:
-            log.warning("I don't have a config for guild %s", guild)
-            return
-
-        if not guild.me.guild_permissions.manage_roles:
-            log.warning("I don't have manage_roles permissions in %s", guild)
-            return
-
-        verified_role = find(lambda role: role.id == guild_config.roles.verified, guild.roles)
-        if verified_role is None:
-            log.warning("No verified role presnt in guild %s", guild)
-            return
-
-        with_role = set(filter(lambda member: verified_role in member.roles, guild.members))
-        verified = cast(Set[discord.Member],
-                        set(await verif_react.users()
-                                             .filter(lambda user: isinstance(user, discord.Member))
-                                             .flatten()
-                        )
-        )
-
-        out_of_sync = len(with_role - verified) + len(verified - with_role)
-        log.info("found %d users out of sync", out_of_sync)
-
-        try:
-            for member in with_role - verified:
-                await self._verify_leave(member)
-
-            for member in verified - with_role:
-                await self._verify_join(member)
-
-        except Forbidden as err:
-            if err.code == E_MISSING_PERMISSIONS:
-                log.warning("missing permissions in guild %s", guild)
-
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
@@ -97,71 +70,28 @@ class Verification(commands.Cog):
         await self.on_raw_reaction_update(payload)
 
     async def on_raw_reaction_update(self, payload: discord.RawReactionActionEvent) -> None:
-        if payload.guild_id is None:
+        if not self.service.is_verification_channel(payload.channel_id):
             return
 
-        if (guild_config := get(Config.guilds, id=payload.guild_id)) is None:
+        if payload.emoji.id != CONFIG.emoji.Verification:
             return
 
-        if payload.channel_id != guild_config.channels.verification:
+        if not self.service.has_required_permissions(payload.guild_id):
+            log.warning("I don't have required permissions in guid with id %d", payload.guild_id)
             return
 
-        if payload.emoji.name.lower() not in ("verification", "verify", "accept"):
-            return
-
-        guild = get(self.bot.guilds, id=payload.guild_id)
-        if guild is None:
-            return
-
-        member = get(guild.members, id=payload.user_id)
-        if member is None:
-            return
-
-        if not guild.me.guild_permissions.manage_roles:
-            log.warning("I don't have manage_roles permissions in %s", guild)
-            return
+        message = await self.service.fetch_message(payload)
+        member = await message.guild.fetch_member(payload.user_id)
 
         if payload.event_type == "REACTION_ADD":
-            await self._verify_join(member)
-
+            await self.service.verify_member(member)
         elif payload.event_type == "REACTION_REMOVE":
-            await self._verify_leave(member)
+            await self.service.unverify_member(member)
+        else:
+            raise NotImplementedError
 
-    async def _verify_join(self, member: discord.Member) -> None:
-        guild_config = get(Config.guilds, id=member.guild.id)
-        if guild_config is None:
-            log.warning("I don't have a config for guild %s", member.guild)
-            return
-
-        if not isinstance(member, discord.Member):
-            log.warning("user %s is not longer a member of a guild", member)
-            return
-
-        verified_role = find(lambda role: role.id == guild_config.roles.verified, member.guild.roles)
-        if verified_role is None:
-            log.warning("No verified role presnt in guild %s", member.guild)
-            return
-
-        await member.add_roles(cast(Snowflake, verified_role))
-        log.info("verified user %s, added role %s", member.name, f"@{verified_role}")
-
-    async def _verify_leave(self, member: discord.Member) -> None:
-        guild_config = get(Config.guilds, id=member.guild.id)
-        if guild_config is None:
-            log.warning("I don't have a config for guild %s", member.guild)
-            return
-
-        if not isinstance(member, discord.Member):
-            log.warning("user %s is not longer a member of a guild", member)
-            return
-
-        to_remove = list(filter(lambda role: role.id == guild_config.roles.verified, member.roles))
-        to_remove_s = cast(List[Snowflake], to_remove)
-        await member.remove_roles(*to_remove_s)
-
-        removed_roles = ', '.join(map(lambda r: '@'+r.name, to_remove))
-        log.info("unverified user %s, removed roles %s", member.name, removed_roles)
+    # TODO: implement balancing
 
 
-def setup(bot: commands.Bot) -> None:
-    bot.add_cog(Verification(bot))
+async def setup(bot: commands.Bot) -> None:
+    await bot.add_cog(Verification(bot))
