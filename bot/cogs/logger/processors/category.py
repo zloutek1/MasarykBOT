@@ -2,7 +2,7 @@ import logging
 import inject
 from discord import CategoryChannel
 
-from .Backup import Backup
+from ._base import Backup
 import bot.db
 
 log = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ class CategoryBackup(Backup[CategoryChannel]):
         self.mapper = mapper
 
     async def traverse_up(self, category: CategoryChannel) -> None:
-        from .GuildBackup import GuildBackup
+        from .guild import GuildBackup
         await GuildBackup().traverse_up(category.guild)
         await super().traverse_up(category)
 
@@ -26,7 +26,7 @@ class CategoryBackup(Backup[CategoryChannel]):
         await self.category_repository.insert([columns])
 
     async def traverse_down(self, category: CategoryChannel) -> None:
-        from .TextChannelBackup import TextChannelBackup
+        from .text_channel import TextChannelBackup
         await super().traverse_down(category)
 
         for text_channel in category.text_channels:

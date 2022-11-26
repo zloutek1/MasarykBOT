@@ -3,8 +3,9 @@ import logging
 from discord.ext import commands, tasks
 
 from bot.cogs.utils.context import Context
-from .BotBackup import BotBackup
-from .MessageIterator import MessageIterator
+
+from .processors import BotBackup
+from .message_iterator import MessageIterator
 
 
 log = logging.getLogger(__name__)
@@ -25,13 +26,13 @@ class Logger(commands.Cog):
 
     @tasks.loop(hours=24)
     async def backup_task(self) -> None:
-        log.info("running routine backup")
+        log.info("running routine processors")
         await self._backup()
 
     async def _backup(self) -> None:
-        log.info("backup started")
+        log.info("processors started")
         await BotBackup().traverse_down(self.bot)
-        log.info("backup finished")
+        log.info("processors finished")
 
 
 async def setup(bot: commands.Bot) -> None:

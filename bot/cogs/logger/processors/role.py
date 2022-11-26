@@ -3,7 +3,7 @@ import logging
 from discord import Role
 import inject
 
-from .Backup import Backup
+from ._base import Backup
 import bot.db
 
 
@@ -17,7 +17,7 @@ class RoleBackup(Backup[Role]):
         self.mapper = mapper
 
     async def traverse_up(self, role: Role) -> None:
-        from .GuildBackup import GuildBackup
+        from .guild import GuildBackup
         await GuildBackup().traverse_up(role.guild)
         await self.backup(role)
 

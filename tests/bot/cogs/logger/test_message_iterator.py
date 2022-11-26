@@ -7,11 +7,11 @@ from freezegun import freeze_time
 from pytz import UTC
 
 import bot.db
-from bot.cogs.logger.MessageIterator import MessageIterator
+from bot.cogs.logger.message_iterator import MessageIterator
 import tests.helpers as helpers
 
 
-class LoggerTests(unittest.IsolatedAsyncioTestCase):
+class MessageIteratorTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
         self.channel = helpers.MockTextChannel(id=10, created_at=datetime(2020, 10, 1, 12, 22))
         self.logger_repository = unittest.mock.AsyncMock()

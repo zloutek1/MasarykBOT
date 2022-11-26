@@ -4,9 +4,9 @@ import inject
 from discord import TextChannel
 from discord.abc import GuildChannel
 
-from .Backup import Backup
-from .MessageIterator import MessageIterator
-from .MessageBackup import MessageBackup
+from ._base import Backup
+from ..message_iterator import MessageIterator
+from .message import MessageBackup
 import bot.db
 
 log = logging.getLogger(__name__)
@@ -21,10 +21,10 @@ class TextChannelBackup(Backup[TextChannel]):
     async def traverse_up(self, text_channel: TextChannel) -> None:
         if isinstance(text_channel, GuildChannel):
             if text_channel.category:
-                from .CategoryBakup import CategoryBackup
+                from .category import CategoryBackup
                 await CategoryBackup().traverse_up(text_channel.category)
             else:
-                from .GuildBackup import GuildBackup
+                from .guild import GuildBackup
                 await GuildBackup().traverse_up(text_channel.guild)
 
         await super().traverse_up(text_channel)

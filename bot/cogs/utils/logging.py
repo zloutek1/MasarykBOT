@@ -20,7 +20,7 @@ def setup_logging() -> None:
     sets up custom logging into self.log variable
 
     set format to
-    [2019-09-29 18:51:04] [INFO   ] core.logger: Begining backup
+    [2019-09-29 18:51:04] [INFO   ] core.logger: Begining processors
     """
 
     logging.getLogger('discord').setLevel(logging.WARNING)

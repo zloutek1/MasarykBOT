@@ -1,7 +1,7 @@
 import inject
 from discord import Attachment
 
-from .Backup import Backup
+from ._base import Backup
 import bot.db
 
 

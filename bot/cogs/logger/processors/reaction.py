@@ -1,7 +1,7 @@
 import inject
 from discord import Reaction
 
-from .Backup import Backup
+from ._base import Backup
 import bot.db
 
 
@@ -12,10 +12,10 @@ class ReactionBackup(Backup[Reaction]):
         self.mapper = mapper
 
     async def traverse_up(self, reaction: Reaction) -> None:
-        from .EmojiBackup import EmojiBackup
+        from .emoji import EmojiBackup
         await EmojiBackup().traverse_up(reaction.emoji)
 
-        from .MessageBackup import MessageBackup
+        from .message import MessageBackup
         await MessageBackup().traverse_up(reaction.message)
 
         await super().traverse_up(reaction)

@@ -6,7 +6,7 @@ from discord.ext import commands
 
 import bot.db
 from bot.db import Record
-from .MessageIterator import MessageIterator
+from .message_iterator import MessageIterator
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +28,7 @@ class HistoryIterator:
         if not self.updatable_processes:
             raise StopAsyncIteration
 
-        log.info('starting message backup batch')
+        log.info('starting message processors batch')
         process = self.updatable_processes.pop()
         channel = await self.bot.fetch_channel(process['channel_id'])
         assert isinstance(channel, TextChannel)

@@ -37,7 +37,7 @@ class MessageIterator:
         if abs(to_date - from_date) < timedelta(days=1):
             return EmptyAsyncIterator()
 
-        log.info("backup up messages %s to %s in %s (%s)", from_date.date(), to_date.date(), self.text_channel.name,
+        log.info("processors up messages %s to %s in %s (%s)", from_date.date(), to_date.date(), self.text_channel.name,
                  self.text_channel.guild.name)
 
         await self.logger_repository.begin_process((self.text_channel.id, from_date, to_date))

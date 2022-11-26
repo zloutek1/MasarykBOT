@@ -4,7 +4,7 @@ import logging
 import inject
 from discord import Message
 
-from .Backup import Backup
+from ._base import Backup
 import bot.db
 
 log = logging.getLogger(__name__)
@@ -19,10 +19,10 @@ class MessageBackup(Backup[Message]):
         self.mapper = mapper
 
     async def traverse_up(self, message: Message) -> None:
-        from .TextChannelBackup import TextChannelBackup
+        from .text_channel import TextChannelBackup
         await TextChannelBackup().traverse_up(message.channel)
 
-        from .UserBackup import UserBackup
+        from .user import UserBackup
         await UserBackup().traverse_up(message.author)
 
         await super().traverse_up(message)
@@ -41,10 +41,10 @@ class MessageBackup(Backup[Message]):
     async def traverse_down(self, message: Message) -> None:
         await super().traverse_down(message)
 
-        from .ReactionBackup import ReactionBackup
+        from .reaction import ReactionBackup
         for reaction in message.reactions:
             await ReactionBackup().traverse_down(reaction)
 
-        from .AttachmentBackup import AttachmentBackup
+        from .attachment import AttachmentBackup
         for attachment in message.attachments:
             await AttachmentBackup(message.id).traverse_down(attachment)

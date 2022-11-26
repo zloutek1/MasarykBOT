@@ -3,7 +3,7 @@ import logging
 import inject
 from discord import User, Member
 
-from bot.cogs.logger.Backup import Backup
+from ._base import Backup
 import bot.db
 
 log = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ class UserBackup(Backup[User | Member]):
         self.mapper = mapper
 
     async def traverse_up(self, user: User | Member) -> None:
-        from .GuildBackup import GuildBackup
+        from .guild import GuildBackup
         if isinstance(user, Member):
             await GuildBackup().traverse_up(user.guild)
         await super().traverse_up(user)

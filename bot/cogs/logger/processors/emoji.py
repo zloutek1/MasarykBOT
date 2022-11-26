@@ -3,7 +3,7 @@ import logging
 import inject
 from discord import Emoji, PartialEmoji
 
-from .Backup import Backup
+from ._base import Backup
 import bot.db
 
 log = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ class EmojiBackup(Backup[Emoji | PartialEmoji | str]):
 
     async def traverse_up(self, emoji: Emoji | PartialEmoji | str) -> None:
         if isinstance(emoji, Emoji) and emoji.guild:
-            from .GuildBackup import GuildBackup
+            from .guild import GuildBackup
             await GuildBackup().traverse_up(emoji.guild)
         await super().traverse_up(emoji)
 
