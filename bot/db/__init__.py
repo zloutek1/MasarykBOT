@@ -36,6 +36,6 @@ async def connect_db(url: Url) -> Optional[Pool]:
             if attempts > 1_000:
                 raise TimeoutError("tried to connect over 1000 times")
         return pool
-    except socket.gaierror as ex:
+    except (socket.gaierror, OSError) as ex:
         log.error("Failed to connect to database: %s", ex)
         return None
