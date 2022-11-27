@@ -17,7 +17,7 @@ class MasarykBOT(commands.Bot):
 
     async def on_ready(self) -> None:
         log.info("Bot is now all ready to go")
-        self.intorduce()
+        self.introduce()
 
     async def on_message(self, message: Message) -> None:
         if message.author.bot:
@@ -27,6 +27,8 @@ class MasarykBOT(commands.Bot):
         if CONFIG.bot.DEBUG and not message.author.guild_permissions.administrator:
             return
         await self.process_commands(message)
+
+    # TODO: add custom context to app_commands
 
     async def process_commands(self, message: Message) -> None:
         ctx = await self.get_context(message, cls=context.Context)
@@ -58,7 +60,7 @@ class MasarykBOT(commands.Bot):
         log.info("unloading cog: %s", name)
         return await super().remove_cog(name, *args, **kwargs)
 
-    def intorduce(self) -> None:
+    def introduce(self) -> None:
         assert self.user, "no user"
         bot_name = self.user.name.encode(errors='replace').decode()
         print("\n\n\n")
