@@ -13,7 +13,7 @@ class CategoryMapper(Mapper[CategoryChannel, Columns]):
     async def map(self, obj: CategoryChannel) -> Columns:
         category = obj
         created_at = category.created_at.replace(tzinfo=None)
-        return (category.guild.id, category.id, category.name, category.position, created_at)
+        return category.guild.id, category.id, category.name, category.position, created_at
 
 
 class CategoryRepository(Crud[Columns]):
@@ -23,7 +23,7 @@ class CategoryRepository(Crud[Columns]):
     @inject_conn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
-            INSERT INTO {self.table_name} AS c (guild_id, id, name, position, created_at)
+            INSERT INTO server.categories AS c (guild_id, id, name, position, created_at)
             VALUES ($1, $2, $3, $4, $5)
             ON CONFLICT (id) DO UPDATE
                 SET name=$3,

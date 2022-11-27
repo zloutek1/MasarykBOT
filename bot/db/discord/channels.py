@@ -14,7 +14,7 @@ class ChannelMapper(Mapper[TextChannel, Columns]):
         channel = obj
         category_id = channel.category.id if channel.category is not None else None
         created_at = channel.created_at.replace(tzinfo=None)
-        return (channel.guild.id, category_id, channel.id, channel.name, channel.position, created_at)
+        return channel.guild.id, category_id, channel.id, channel.name, channel.position, created_at
 
 
 class ChannelRepository(Crud[Columns]):
@@ -24,7 +24,7 @@ class ChannelRepository(Crud[Columns]):
     @inject_conn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
-            INSERT INTO {CHANNELS} AS ch (guild_id, category_id, id, name, position, created_at)
+            INSERT INTO server.channels AS ch (guild_id, category_id, id, name, position, created_at)
             VALUES ($1, $2, $3, $4, $5, $6)
             ON CONFLICT (id) DO UPDATE
                 SET name=$4,

@@ -14,7 +14,7 @@ class UserMapper(Mapper[Union[User, Member], Columns]):
         user = obj
         avatar_url = str(user.avatar.url) if user.avatar else None
         created_at = user.created_at.replace(tzinfo=None)
-        return (user.id, user.name, avatar_url, user.bot, created_at)
+        return user.id, user.name, avatar_url, user.bot, created_at
 
 
 class UserRepository(Crud[Columns]):
@@ -24,7 +24,7 @@ class UserRepository(Crud[Columns]):
     @inject_conn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
-            INSERT INTO {self.table_name} AS u (id, names, avatar_url, is_bot, created_at)
+            INSERT INTO server.users AS u (id, names, avatar_url, is_bot, created_at)
             VALUES ($1, ARRAY[$2], $3, $4, $5)
             ON CONFLICT (id) DO UPDATE
                 SET names=ARRAY(

@@ -11,8 +11,9 @@ MESSAGE_EMOJIS = "server.message_emojis"
 EMOJIS = "server.emojis"
 
 # muni
+FACULTIES = "muni.faculties"
 SUBJECTS = "muni.subjects"
-REGISTERS = "muni.registers"
+STUDENTS = "muni.students"
 SUBJECT_SERVER = "muni.subject_server"
 SUBJECT_CATEGORY = "muni.subject_category"
 

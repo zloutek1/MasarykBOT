@@ -17,8 +17,7 @@ class MessageMapper(Mapper[Message, Columns]):
         message = obj
         created_at = message.created_at.replace(tzinfo=None)
         content = message.content.replace('\x00', '')
-        return (message.channel.id, message.author.id, message.id,
-                content, created_at)
+        return message.channel.id, message.author.id, message.id, content, created_at
 
 
 class MessageRepository(Crud[Columns]):
@@ -28,7 +27,7 @@ class MessageRepository(Crud[Columns]):
     @inject_conn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
-            INSERT INTO {self.table_name} AS m (channel_id, author_id, id, content, created_at)
+            INSERT INTO server.messages AS m (channel_id, author_id, id, content, created_at)
             VALUES ($1, $2, $3, $4, $5)
             ON CONFLICT (id) DO UPDATE
                 SET content=$4,

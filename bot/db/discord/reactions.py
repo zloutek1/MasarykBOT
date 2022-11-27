@@ -19,7 +19,7 @@ class ReactionMapper(Mapper[Reaction, Columns]):
         user_ids = [user.id async for user in reaction.users()]
         emoji_id = emoji_hashcode(reaction.emoji)
         created_at = reaction.message.created_at.replace(tzinfo=None)
-        return (reaction.message.id, emoji_id, user_ids, created_at)
+        return reaction.message.id, emoji_id, user_ids, created_at
 
 
 class ReactionRepository(Crud[Columns]):
@@ -29,7 +29,7 @@ class ReactionRepository(Crud[Columns]):
     @inject_conn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
-            INSERT INTO {self.table_name} AS r (message_id, emoji_id, member_ids, created_at)
+            INSERT INTO server.reactions AS r (message_id, emoji_id, member_ids, created_at)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (message_id, emoji_id) DO UPDATE
                 SET member_ids=$3,
@@ -42,7 +42,7 @@ class ReactionRepository(Crud[Columns]):
     @inject_conn
     async def soft_delete(self, conn: DBConnection, data: Sequence[Tuple[Id]]) -> None:
         await conn.executemany(f"""
-            UPDATE {self.table_name}
+            UPDATE server.reactions
             SET deleted_at=NOW()
             WHERE message_id = $1 AND emoji_id=$2;
         """, data)

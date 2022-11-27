@@ -13,7 +13,7 @@ class MessageEmojiRepository(Crud[Columns]):
     @inject_conn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
-            INSERT INTO {self.table_name} AS me (message_id, emoji_id, count)
+            INSERT INTO server.message_emoji AS me (message_id, emoji_id, count)
             VALUES ($1, $2, $3)
             ON CONFLICT (message_id, emoji_id) DO UPDATE
                 SET count=$3,

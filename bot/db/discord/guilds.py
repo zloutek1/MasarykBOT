@@ -14,7 +14,7 @@ class GuildMapper(Mapper[Guild, Columns]):
         guild = obj
         icon_url = str(guild.icon.url) if guild.icon else None
         created_at = guild.created_at.replace(tzinfo=None)
-        return (guild.id, guild.name, icon_url, created_at)
+        return guild.id, guild.name, icon_url, created_at
 
 
 class GuildRepository(Crud[Columns]):
@@ -24,7 +24,7 @@ class GuildRepository(Crud[Columns]):
     @inject_conn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
-            INSERT INTO {self.table_name} AS g (id, name, icon_url, created_at)
+            INSERT INTO server.guilds AS g (id, name, icon_url, created_at)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (id) DO UPDATE
                 SET name=$2,

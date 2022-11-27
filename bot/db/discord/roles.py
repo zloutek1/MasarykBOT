@@ -13,7 +13,7 @@ class RoleMapper(Mapper[Role, Columns]):
     async def map(self, obj: Role) -> Columns:
         role = obj
         created_at = role.created_at.replace(tzinfo=None)
-        return (role.guild.id, role.id, role.name, hex(role.color.value), created_at)
+        return role.guild.id, role.id, role.name, hex(role.color.value), created_at
 
 
 class RoleRepository(Crud[Columns]):
@@ -23,7 +23,7 @@ class RoleRepository(Crud[Columns]):
     @inject_conn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
-            INSERT INTO {ROLES} AS r (guild_id, id, name, color, created_at)
+            INSERT INTO server.roles AS r (guild_id, id, name, color, created_at)
             VALUES ($1, $2, $3, $4, $5)
             ON CONFLICT (id) DO UPDATE
                 SET name=$3,

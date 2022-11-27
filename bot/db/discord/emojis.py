@@ -70,7 +70,7 @@ class EmojiRepository(Crud[Columns]):
     @inject_conn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
-            INSERT INTO {EMOJIS} AS e (id, name, url, animated)
+            INSERT INTO server.emojis AS e (id, name, url, animated)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (id) DO UPDATE
                 SET name=$2,

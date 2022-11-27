@@ -1,7 +1,6 @@
-import inject
-from typing import List, Optional, Sequence, Tuple
+from typing import Optional, Sequence, Tuple
 
-from discord import Attachment, Message
+from discord import Attachment
 
 from bot.db.tables import ATTACHMENTS
 from bot.db.utils import (Crud, DBConnection, Id, Mapper, Url, inject_conn)
@@ -22,7 +21,7 @@ class AttachmentRepository(Crud[Columns]):
     @inject_conn
     async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
         await conn.executemany(f"""
-            INSERT INTO {self.table_name} AS a (message_id, id, filename, url)
+            INSERT INTO server.attachments AS a (message_id, id, filename, url)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (id) DO UPDATE
                 SET filename=$3,
