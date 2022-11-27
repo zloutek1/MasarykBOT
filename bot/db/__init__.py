@@ -7,6 +7,7 @@ import asyncpg
 import inject
 
 from bot.db.utils import Pool, Record, Url
+
 from .discord import (AttachmentMapper, CategoryMapper, ChannelMapper, EmojiMapper,
                       GuildMapper, MessageMapper, ReactionMapper,
                       RoleMapper, UserMapper)
@@ -14,6 +15,10 @@ from .discord import (AttachmentRepository, CategoryRepository, ChannelRepositor
                       GuildRepository, MessageRepository, ReactionRepository,
                       RoleRepository, UserRepository)
 from .discord import setup_injections as setup_discord_injections
+
+from .muni import (FacultyRepository, CourseRepository)
+from .muni import setup_injections as setup_muni_injections
+
 from .leaderboard import LeaderboardRepository
 from .logger import LoggerRepository
 
@@ -22,6 +27,7 @@ log = logging.getLogger(__name__)
 
 def setup_injections(binder: inject.Binder) -> None:
     binder.install(setup_discord_injections)
+    binder.install(setup_muni_injections)
 
 
 async def connect_db(url: Url) -> Optional[Pool]:

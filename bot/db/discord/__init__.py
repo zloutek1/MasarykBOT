@@ -19,8 +19,8 @@ MAPPERS = (GuildMapper, RoleMapper, UserMapper, EmojiMapper, CategoryMapper, Cha
 
 
 def setup_injections(binder: inject.Binder) -> None:
-    for dao_type in REPOSITORIES:
-        binder.bind_to_constructor(dao_type, dao_type)
+    for repo_type in REPOSITORIES:
+        binder.bind_to_constructor(repo_type, repo_type)
 
     for mapper_type in MAPPERS:
         binder.bind_to_constructor(mapper_type, mapper_type)

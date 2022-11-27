@@ -21,6 +21,13 @@ else:
     DBConnection = asyncpg.pool.PoolConnectionProxy
 
 
+class Entity:
+    @classmethod
+    def convert(cls, record: Record):
+        # noinspection PyArgumentList
+        return cls(**{k: v for (k, v) in record.items()})
+
+
 class Table:
     @inject.autoparams('pool')
     def __init__(self, table_name: str, pool: Pool) -> None:
