@@ -6,7 +6,8 @@ from discord import Color, Embed
 from discord.ext import commands
 from discord.utils import get
 
-from bot.cogs.utils.context import Context, GuildContext
+from bot.cogs.utils.context import Context
+from bot.cogs.utils.extra_types import GuildContext
 
 
 class Info(commands.Cog):

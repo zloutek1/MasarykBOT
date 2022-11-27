@@ -1,8 +1,8 @@
 import logging
-from typing import cast
+from typing import cast, Dict
 
 import discord
-from discord.abc import Snowflake, Messageable
+from discord.abc import Snowflake
 from discord.ext import commands
 from discord.utils import get
 
@@ -16,19 +16,26 @@ class VerificationService:
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
+    async def load_verification_messages(self) -> Dict[int, discord.Message]:
+        result = {}
+        for guild_config in CONFIG.guilds:
+            channel_id = guild_config.channels.verification
+            if not (channel := self.bot.get_channel(channel_id)):
+                continue
+            message = await self._find_verification_message(channel)
+            result[message.id] = message
+        return result
+
     @staticmethod
-    def is_verification_channel(channel_id: int) -> bool:
-        return channel_id in (guild.channels.verification for guild in CONFIG.guilds)
+    async def _find_verification_message(channel: discord.abc.Messageable) -> discord.Message:
+        async for message in channel.history(oldest_first=True):
+            for reaction in message.reactions:
+                if reaction.emoji.id == CONFIG.emoji.Verification:
+                    return message
 
     def has_required_permissions(self, guild_id: int) -> bool:
         assert (guild := get(self.bot.guilds, id=guild_id))
         return guild.me.guild_permissions.manage_roles
-
-    async def fetch_message(self, payload: discord.RawReactionActionEvent) -> discord.Message:
-        channel = await self.bot.fetch_channel(payload.channel_id)
-        if not isinstance(channel, Messageable):
-            raise AssertionError(f"channel {channel} is not messageable")
-        return await channel.fetch_message(payload.message_id)
 
     @staticmethod
     async def verify_member(member: discord.Member) -> None:
@@ -55,40 +62,35 @@ class Verification(commands.Cog):
     def __init__(self, bot: commands.Bot, service: VerificationService = None) -> None:
         self.bot = bot
         self.service = service or VerificationService(bot)
+        self.verification_messages: Dict[int, discord.Message] = {}
 
     @commands.Cog.listener()
     async def on_ready(self) -> None:
-        pass
-        # await self._synchronize()
+        self.verification_messages = await self.service.load_verification_messages()
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
-        await self.on_raw_reaction_update(payload)
+        if self._is_valid_payload(payload):
+            await self.on_raw_reaction_update(payload)
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent) -> None:
-        await self.on_raw_reaction_update(payload)
+        if self._is_valid_payload(payload):
+            await self.on_raw_reaction_update(payload)
 
     async def on_raw_reaction_update(self, payload: discord.RawReactionActionEvent) -> None:
-        if not self.service.is_verification_channel(payload.channel_id):
-            return
-
-        if payload.emoji.id != CONFIG.emoji.Verification:
-            return
-
-        if not self.service.has_required_permissions(payload.guild_id):
-            log.warning("I don't have required permissions in guid with id %d", payload.guild_id)
-            return
-
-        message = await self.service.fetch_message(payload)
+        message = self.verification_messages[payload.message_id]
         member = await message.guild.fetch_member(payload.user_id)
 
         if payload.event_type == "REACTION_ADD":
             await self.service.verify_member(member)
         elif payload.event_type == "REACTION_REMOVE":
             await self.service.unverify_member(member)
-        else:
-            raise NotImplementedError
+
+    def _is_valid_payload(self, payload: discord.RawReactionActionEvent) -> bool:
+        return (payload.message_id in self.verification_messages
+                and payload.emoji.id == CONFIG.emoji.Verification
+                and self.service.has_required_permissions(payload.guild_id))
 
     # TODO: implement balancing
 

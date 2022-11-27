@@ -165,11 +165,3 @@ class Context(commands.Context["MasarykBOT"]):
                 await message.delete(delay=5)
             except asyncio.TimeoutError:
                 await message.clear_reaction('\N{WASTEBASKET}')
-
-
-class GuildContext(Context):
-    author: discord.Member
-    guild: discord.Guild
-    channel: Union[discord.VoiceChannel, discord.TextChannel, discord.Thread]
-    me: discord.Member
-    prefix: str

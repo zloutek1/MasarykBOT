@@ -2,7 +2,7 @@
 
 import logging
 import re
-from typing import Optional, Set, TypeVar, cast
+from typing import Optional, Set, TypeVar, cast, Dict
 
 import discord
 from discord.abc import GuildChannel, Messageable, Snowflake
@@ -10,6 +10,7 @@ from discord.ext import commands
 from discord.utils import find, get
 from emoji import is_emoji
 
+from bot.cogs.utils.extra_types import GuildMessage
 from bot.constants import CONFIG
 
 log = logging.getLogger(__name__)
@@ -30,78 +31,36 @@ E_MISSING_ACCESS = 50001
 E_MISSING_PERMISSIONS = 50013
 
 
-class RoleMenuService:
-    def __init__(self, bot: commands.Bot) -> None:
-        self.bot = bot
+class ActionParsingService:
+    def parse_action(self, message: GuildMessage, emoji: discord.PartialEmoji) -> Optional[Action]:
+        assert (row := self.get_role_menu_row(message, emoji))
 
-    @staticmethod
-    def is_role_menu_channel(channel_id: int) -> bool:
-        return channel_id in (guild.channels.about_you for guild in CONFIG.guilds)
+        action = row.split(" ", 1)[1]
 
-    async def fetch_message(self, payload: discord.RawReactionActionEvent | discord.RawMessageUpdateEvent) -> discord.Message:
-        channel = await self.bot.fetch_channel(payload.channel_id)
-        if not isinstance(channel, Messageable):
-            raise AssertionError(f"channel {channel} is not messageable")
-        return await channel.fetch_message(payload.message_id)
+        return (
+                self._parse_channel(message.guild, action) or
+                self._parse_role(message.guild, action)
+        )
 
     @staticmethod
     def get_role_menu_row(message: discord.Message, emoji: discord.PartialEmoji) -> Optional[str]:
         rows = message.content.split('\n')
         return find(lambda row: row.startswith(str(emoji)), rows)
 
-    def parse_action(self, message: discord.Message, emoji: discord.PartialEmoji) -> Optional[Action]:
-        assert message.guild
-        if not (row := self.get_role_menu_row(message, emoji)):
-            return None
-
-        action = row.split(" ", 1)[1]
-
-        return (
-                self.parse_channel(message.guild, action) or
-                self.parse_role(message.guild, action)
-        )
-
     @staticmethod
-    def parse_channel(guild: discord.Guild, text: str) -> Optional[GuildChannel]:
+    def _parse_channel(guild: discord.Guild, text: str) -> Optional[GuildChannel]:
         if match := re.match(r"<#(\d+)>", text):
             return get(guild.channels, id=int(match.group(1)))
         return None
 
     @staticmethod
-    def parse_role(guild: discord.Guild, text: str) -> Optional[discord.Role]:
+    def _parse_role(guild: discord.Guild, text: str) -> Optional[discord.Role]:
         if match := re.match(r"<@&(\d+)>", text):
             return get(guild.roles, id=int(match.group(1)))
         return None
 
-    async def execute_add_action(self, user: discord.Member, action: Action) -> None:
-        if isinstance(action, discord.Role):
-            await user.add_roles(cast(Snowflake, action))
-            log.info("added role %s to %s", action, user)
 
-        elif isinstance(action, discord.TextChannel):
-            await self.show_channel(action, user)
-            log.info("shown channel %s to %s", action, user)
-
-        else:
-            raise NotImplementedError
-
-    async def execute_remove_action(self, user: discord.Member, action: Action) -> None:
-        if isinstance(action, discord.Role):
-            await user.remove_roles(cast(Snowflake, action))
-            log.info("removed role %s from %s", action, user)
-
-        if isinstance(action, discord.TextChannel):
-            await self.hide_channel(action, user)
-            log.info("hidden channel %s from %s", action, user)
-
-        else:
-            raise NotImplementedError
-
-    @staticmethod
-    def list_emojis(message: discord.Message) -> Set[str]:
-        rows = message.content.split('\n')
-        return set(row.split(' ', 1)[0] for row in rows)
-
+class ChannelActionService:
     async def show_channel(self, channel: GuildChannel, user: discord.Member) -> None:
         if role := get(channel.guild.roles, name=f"📁{channel.name}"):
             log.info("adding role %s to %s", str(role), user)
@@ -144,60 +103,113 @@ class RoleMenuService:
         await user.add_roles(role)
 
 
+class RoleMenuService:
+    def __init__(
+            self,
+            bot: commands.Bot,
+            parsing_service: ActionParsingService = None,
+            channel_action_service: ChannelActionService = None
+    ) -> None:
+        self.bot = bot
+        self.parsing = parsing_service or ActionParsingService()
+        self.channel_action = channel_action_service or ChannelActionService()
+
+    async def load_role_menu_messages(self) -> Dict[int, GuildMessage]:
+        result = {}
+        for guild_config in CONFIG.guilds:
+            channel_id = guild_config.channels.about_you
+            if not (channel := self.bot.get_channel(channel_id)):
+                continue
+            for message in await self._find_role_menu_messages_in_channel(channel):
+                result[message.id] = message
+        return result
+
+    @staticmethod
+    async def _find_role_menu_messages_in_channel(channel: Messageable) -> list[GuildMessage]:
+        return [cast(GuildMessage, message) async for message in channel.history() if message.reactions]
+
+    async def execute_add_action(self, user: discord.Member, action: Action) -> None:
+        if isinstance(action, discord.Role):
+            await user.add_roles(cast(Snowflake, action))
+            log.info("added role %s to %s", action, user)
+        elif isinstance(action, discord.TextChannel):
+            await self.channel_action.show_channel(action, user)
+            log.info("shown channel %s to %s", action, user)
+        else:
+            raise NotImplementedError
+
+    async def execute_remove_action(self, user: discord.Member, action: Action) -> None:
+        if isinstance(action, discord.Role):
+            await user.remove_roles(cast(Snowflake, action))
+            log.info("removed role %s from %s", action, user)
+        elif isinstance(action, discord.TextChannel):
+            await self.channel_action.hide_channel(action, user)
+            log.info("hidden channel %s from %s", action, user)
+        else:
+            raise NotImplementedError
+
+    async def update_role_menu(self, message):
+        seen_emojis = self._list_emojis(message)
+        for emoji in seen_emojis:
+            await message.add_reaction(emoji)
+        for reaction in message.reactions:
+            if str(reaction.emoji) not in seen_emojis:
+                await message.clear_reaction(reaction.emoji)
+
+    @staticmethod
+    def _list_emojis(message: discord.Message) -> Set[str]:
+        rows = message.content.split('\n')
+        return set(row.split(' ', 1)[0] for row in rows)
+
+
 class RoleMenu(commands.Cog):
     def __init__(self, bot: commands.Bot, service: RoleMenuService = None) -> None:
         self.bot = bot
         self.service = service or RoleMenuService(bot)
+        self.role_menu_messages: Dict[int, GuildMessage] = {}
+
+    @commands.Cog.listener()
+    async def on_ready(self) -> None:
+        self.role_menu_messages = await self.service.load_role_menu_messages()
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
-        await self.on_raw_reaction_update(payload)
+        if payload.message_id in self.role_menu_messages:
+            await self.on_raw_reaction_update(payload)
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent) -> None:
-        await self.on_raw_reaction_update(payload)
+        if payload.message_id in self.role_menu_messages:
+            await self.on_raw_reaction_update(payload)
 
     async def on_raw_reaction_update(self, payload: discord.RawReactionActionEvent) -> None:
-        if not self.service.is_role_menu_channel(payload.channel_id):
-            return
-
-        message = await self.service.fetch_message(payload)
-        if not (action := self.service.parse_action(message, payload.emoji)):
-            return
-
-        assert message.guild
+        message = self.role_menu_messages[payload.message_id]
         user = await message.guild.fetch_member(payload.user_id)
+        if not (action := self.service.parsing.parse_action(message, payload.emoji)):
+            return
 
         if payload.event_type == "REACTION_ADD":
             await self.service.execute_add_action(user, action)
         elif payload.event_type == "REACTION_REMOVE":
             await self.service.execute_remove_action(user, action)
-        else:
-            raise NotImplementedError
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
-        if not self.service.is_role_menu_channel(message.channel.id):
+        if message.channel.id not in (guild.channels.about_you for guild in CONFIG.guilds):
             return
 
+        self.role_menu_messages[message.id] = cast(GuildMessage, message)
         for row in message.content.split("\n"):
             emoji = row.strip().split(" ", 1)[0]
             await message.add_reaction(emoji)
 
     @commands.Cog.listener()
     async def on_raw_message_edit(self, payload: discord.RawMessageUpdateEvent) -> None:
-        if not self.service.is_role_menu_channel(payload.channel_id):
+        if payload.message_id not in self.role_menu_messages:
             return
 
-        message = await self.service.fetch_message(payload)
-        seen_emojis = self.service.list_emojis(message)
-
-        for emoji in seen_emojis:
-            await message.add_reaction(emoji)
-
-        for reaction in message.reactions:
-            if str(reaction.emoji) not in seen_emojis:
-                await message.clear_reaction(reaction.emoji)
+        message = self.role_menu_messages[payload.message_id]
+        await self.service.update_role_menu(message)
 
     # TODO: implement balancing
 

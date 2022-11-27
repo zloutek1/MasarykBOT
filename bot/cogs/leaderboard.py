@@ -5,7 +5,7 @@ import inject
 from discord.ext import commands
 from discord.utils import escape_markdown, get
 
-from bot.cogs.utils.context import GuildContext
+from bot.cogs.utils.extra_types import GuildContext
 from bot.db.leaderboard import LeaderboardRepository, Filters
 from bot.db.utils import Record
 from bot.utils import right_justify
