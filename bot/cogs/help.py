@@ -6,7 +6,7 @@ import discord as discord
 from discord import ButtonStyle, Embed
 from discord.ext import commands
 
-from bot.cogs.utils.context import Context
+from .utils import Context
 from bot.utils import map_range
 
 Page = Tuple[str, str, List[commands.Command[Any, ..., Any]]]  # type: ignore[misc]

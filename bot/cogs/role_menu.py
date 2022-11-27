@@ -10,7 +10,7 @@ from discord.ext import commands
 from discord.utils import find, get
 from emoji import is_emoji
 
-from bot.cogs.utils.extra_types import GuildMessage
+from .utils import GuildMessage
 from bot.constants import CONFIG
 
 log = logging.getLogger(__name__)

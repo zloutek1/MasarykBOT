@@ -10,7 +10,7 @@ from discord.ext import commands
 from PIL import Image
 
 if TYPE_CHECKING:
-    from bot.cogs.utils.context import Context, GuildContext
+    from .utils import Context, GuildContext
 
 IMG_EXTENSIONS = Literal['webp', 'jpeg', 'jpg', 'png', 'gif']
 HUGS = [

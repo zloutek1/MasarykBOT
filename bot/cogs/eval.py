@@ -1,13 +1,13 @@
 import io
 import json
-from typing import Dict, cast, Optional
+from typing import Dict, Optional
 
 import aiohttp
 import discord
-from discord import File
 from discord.ext import commands
 
-from bot.cogs.utils.context import Context
+from .utils import Context
+
 
 
 class CodeBlock:

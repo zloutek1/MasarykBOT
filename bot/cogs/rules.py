@@ -5,7 +5,7 @@ from discord import Color, Embed, Emoji, Member, TextChannel
 from discord.ext import commands
 from discord.utils import get
 
-from bot.cogs.utils.context import Context
+from .utils import Context
 
 
 class Rules(commands.Cog):

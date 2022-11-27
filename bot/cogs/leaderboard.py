@@ -5,11 +5,10 @@ import inject
 from discord.ext import commands
 from discord.utils import escape_markdown, get
 
-from bot.cogs.utils.extra_types import GuildContext
 from bot.db.leaderboard import LeaderboardRepository, Filters
 from bot.db.utils import Record
 from bot.utils import right_justify
-from bot.cogs.utils.checks import requires_database
+from .utils import requires_database, GuildContext
 
 
 class LeaderboardEmbed(discord.Embed):

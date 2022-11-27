@@ -7,9 +7,8 @@ from aioredis import Redis
 from discord.ext import commands
 from discord.utils import escape_mentions
 
-from bot.cogs.utils.context import Context
 from bot.db import MessageRepository
-from bot.cogs.utils.checks import requires_database, requires_redis
+from .utils import requires_database, requires_redis, Context
 
 if TYPE_CHECKING:
     from bot.bot import MasarykBOT

@@ -1,6 +1,6 @@
 from typing import Optional
 
-from bot.cogs.utils.context import Context
+from .utils import Context
 from discord.ext import commands
 
 

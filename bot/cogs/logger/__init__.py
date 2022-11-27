@@ -2,12 +2,10 @@ import logging
 
 from discord.ext import commands, tasks
 
-from bot.cogs.utils.context import Context
-from bot.cogs.utils.checks import requires_database
 
 from .processors import BotBackup
 from .message_iterator import MessageIterator
-
+from ..utils import requires_database, Context
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +22,7 @@ class Logger(commands.Cog):
 
     @commands.hybrid_command()
     @commands.has_permissions(administrator=True)
-    async def backup(self, ctx: Context) -> None:
+    async def backup(self, _ctx: Context) -> None:
         await self._backup()
 
     @tasks.loop(hours=24)
