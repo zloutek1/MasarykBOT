@@ -2,10 +2,11 @@
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Type, TypeVar
+from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, Hashable
 
 import yaml
 from enforce_typing import enforce_types
+
 
 
 @enforce_types
@@ -17,6 +18,7 @@ class BotConfig(yaml.YAMLObject):
     DEBUG: bool = False
 
 
+
 @enforce_types
 @dataclass(frozen=True)
 class StarboardChannelConfig(yaml.YAMLObject):
@@ -26,13 +28,25 @@ class StarboardChannelConfig(yaml.YAMLObject):
     penalised: List[str | int]
 
 
+
 @enforce_types
 @dataclass(frozen=True)
-class StarbardEmojiConfig(yaml.YAMLObject):
+class StarboardEmojiConfig(yaml.YAMLObject):
     yaml_tag = u'!starem'
 
     ignored: List[str | int]
     penalised: List[str | int]
+
+
+
+@enforce_types
+@dataclass(frozen=True)
+class CourseConfig(yaml.YAMLObject):
+    yaml_tag = u'!course'
+
+    MINIMUM_REGISTRATIONS: int
+    registration_channel: int
+
 
 
 @enforce_types
@@ -40,12 +54,13 @@ class StarbardEmojiConfig(yaml.YAMLObject):
 class StarboardConfig(yaml.YAMLObject):
     yaml_tag = u'!starboard'
 
+    REACT_LIMIT: int
     starboard: int
     channels: StarboardChannelConfig
-    emojis: StarbardEmojiConfig
+    emojis: StarboardEmojiConfig
     best_of_memes: Optional[int] = None
     best_of_masaryk: Optional[int] = None
-    REACT_LIMIT: Optional[int] = None
+
 
 
 @enforce_types
@@ -55,9 +70,10 @@ class ChannelConfig(yaml.YAMLObject):
 
     verification: Optional[int] = None
     about_you: Optional[int] = None
-    subject_registration: Optional[int] = None
+    course: Optional[CourseConfig] = None
     starboard: Optional[StarboardConfig] = None
     threaded: List[int] = field(default_factory=list)
+
 
 
 @enforce_types
@@ -69,6 +85,7 @@ class LogsConfig(yaml.YAMLObject):
     mute: Optional[int] = None
     other: Optional[int] = None
     webhook: Optional[str] = None
+
 
 
 @enforce_types
@@ -83,6 +100,7 @@ class RoleConfig(yaml.YAMLObject):
     show_all: Optional[int] = None
 
 
+
 @enforce_types
 @dataclass(frozen=True)
 class GuildConfig(yaml.YAMLObject):
@@ -93,7 +111,7 @@ class GuildConfig(yaml.YAMLObject):
     channels: ChannelConfig
     logs: LogsConfig
     roles: RoleConfig
-    NEEDED_REACTIONS: Optional[int] = None
+
 
 
 @enforce_types
@@ -104,12 +122,14 @@ class EmojiConfig(yaml.YAMLObject):
     Verification: Optional[int] = None
 
 
+
 @enforce_types
 @dataclass(frozen=True)
 class ColorConfig(yaml.YAMLObject):
     yaml_tag = u'!colors'
 
     MUNI_YELLOW: Optional[int] = None
+
 
 
 @enforce_types
@@ -123,17 +143,21 @@ class Config(yaml.YAMLObject):
     guilds: List[GuildConfig]
 
 
+
 T = TypeVar('T', bound=yaml.YAMLObject)
+
 
 
 def class_loader(clazz: Type[T]) -> Callable[[yaml.SafeLoader, yaml.nodes.MappingNode], T]:
     def constructor(loader: yaml.SafeLoader, node: yaml.nodes.MappingNode) -> T:
-        mapping: Dict[str, Any] = loader.construct_mapping(node)
+        mapping: Dict[Hashable, Any] = loader.construct_mapping(node)
         obj = object.__new__(clazz)
         obj.__init__(**mapping)  # type: ignore
         return obj
 
+
     return constructor
+
 
 
 def get_loader() -> Type[yaml.Loader]:
@@ -141,7 +165,8 @@ def get_loader() -> Type[yaml.Loader]:
     loader = yaml.Loader
     loader.add_constructor("!bots", class_loader(BotConfig))
     loader.add_constructor("!starch", class_loader(StarboardChannelConfig))
-    loader.add_constructor("!starem", class_loader(StarbardEmojiConfig))
+    loader.add_constructor("!starem", class_loader(StarboardEmojiConfig))
+    loader.add_constructor("!course", class_loader(CourseConfig))
     loader.add_constructor("!starboard", class_loader(StarboardConfig))
     loader.add_constructor("!chnls", class_loader(ChannelConfig))
     loader.add_constructor("!logs", class_loader(LogsConfig))
@@ -151,6 +176,7 @@ def get_loader() -> Type[yaml.Loader]:
     loader.add_constructor("!colors", class_loader(ColorConfig))
     loader.add_constructor("!Config", class_loader(Config))
     return loader
+
 
 
 path = Path(__file__).parent.parent.joinpath('config.yml')

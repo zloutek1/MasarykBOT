@@ -14,12 +14,12 @@ guilds:
     id: 486184376544002073
     name: fi_muni
 
-    NEEDED_REACTIONS: 10
-
     channels: !channels
         verification: 621365818034356224
         about_you: 621365826372632606
-        subject_registration: 628684083345489950
+        course: !course
+            MINIMUM_REGISTRATIONS: 10
+            registration_channel: 628684083345489950
         threaded:
         - 988839106656215041
         starboard: !starboard
@@ -56,12 +56,12 @@ guilds:
     id: 573528762843660299
     name: fi test
 
-    NEEDED_REACTIONS: 1
-
     channels: !channels
         verification: 731525269214724116
         about_you: 760211019405590540
-        subject_registration: 758267743119212576
+        course: !course
+            MINIMUM_REGISTRATIONS: 1
+            registration_channel: 758267743119212576
         threaded:
             - 988918829570744350
         starboard: !starboard

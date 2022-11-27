@@ -120,7 +120,7 @@ class StarboardProcessingService:
                 or self.channel.id in ignore_channels
                 or isinstance(self.channel, discord.Thread) and self.channel.parent_id in ignore_channels
                 or self._should_ignore_emoji(cfg)
-                or self.reaction.count < (star_cfg.REACT_LIMIT or math.inf)
+                or self.reaction.count < star_cfg.REACT_LIMIT
                 or self.reaction.count < self._calculate_ignore_score()
         )
 
@@ -128,7 +128,7 @@ class StarboardProcessingService:
         ignore_channels = [
             cfg.channels.about_you,
             cfg.channels.verification,
-            cfg.channels.subject_registration,
+            cfg.channels.course_registration,
         ]
 
         if cfg.channels.starboard:
