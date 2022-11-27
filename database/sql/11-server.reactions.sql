@@ -19,9 +19,7 @@ CREATE TABLE server.reactions
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
 )
-WITH (
-    OIDS = FALSE
-)
+
 TABLESPACE pg_default;
 
 ALTER TABLE server.reactions

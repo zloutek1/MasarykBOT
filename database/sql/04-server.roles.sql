@@ -8,7 +8,7 @@ CREATE TABLE server.roles
     id bigint NOT NULL,
     name character varying(100) COLLATE pg_catalog."default" NOT NULL,
     color character varying(8) COLLATE pg_catalog."default" NOT NULL,
-    created_at timestamp without time zone NOT NULL,
+    created_at timestamp without time zone NOT NULL DEFAULT now(),
     edited_at timestamp without time zone,
     deleted_at timestamp without time zone,
     CONSTRAINT roles_pkey PRIMARY KEY (id),

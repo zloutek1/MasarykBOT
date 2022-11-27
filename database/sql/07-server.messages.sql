@@ -15,13 +15,11 @@ CREATE TABLE server.messages
     CONSTRAINT messages_fkey_channel FOREIGN KEY (channel_id)
         REFERENCES server.channels (id) MATCH SIMPLE
         ON UPDATE NO ACTION
-        ON DELETE NO ACTION
-        NOT VALID,
+        ON DELETE NO ACTION,
     CONSTRAINT messages_fkey_user FOREIGN KEY (author_id)
         REFERENCES server.users (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
-        NOT VALID
 )
 
 TABLESPACE pg_default;

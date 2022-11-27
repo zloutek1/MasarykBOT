@@ -8,9 +8,7 @@ CREATE TABLE cogs.leaderboard
     author_id bigint,
     messages_sent integer
 )
-WITH (
-    OIDS = FALSE
-)
+
 TABLESPACE pg_default;
 
 ALTER TABLE cogs.leaderboard

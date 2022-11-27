@@ -16,7 +16,6 @@ CREATE TABLE server.categories
         REFERENCES server.guilds (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
-        NOT VALID
 )
 
 TABLESPACE pg_default;

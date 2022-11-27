@@ -16,13 +16,11 @@ CREATE TABLE server.channels
     CONSTRAINT channels_fkey_category FOREIGN KEY (category_id)
         REFERENCES server.categories (id) MATCH SIMPLE
         ON UPDATE NO ACTION
-        ON DELETE NO ACTION
-        NOT VALID,
+        ON DELETE NO ACTION,
     CONSTRAINT channels_fkey_guild FOREIGN KEY (guild_id)
         REFERENCES server.guilds (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
-        NOT VALID
 )
 
 TABLESPACE pg_default;
