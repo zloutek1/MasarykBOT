@@ -9,9 +9,9 @@ COPY . /MasarykBOT
 RUN apt-get update && apt-get install -y git
 RUN apt-get install -y --no-install-recommends dvipng texlive-latex-extra texlive-fonts-recommended cm-super
 
-COPY bot/requirements.txt bot/requirements.txt
 RUN pip install --upgrade pip
 RUN pip install -r bot/requirements.txt
+RUN pip install -r tests/requirements.txt
 RUN pip install mypy>=0.990
 RUN pip install flake8>=4.0.1
 RUN pip install coverage>=6.3.2
