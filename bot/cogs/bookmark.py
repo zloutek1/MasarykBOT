@@ -35,7 +35,7 @@ class BookmarkService:
     async def fetch_message(self, payload: RawReactionActionEvent) -> Message:
         channel = await self.bot.fetch_channel(payload.channel_id)
         if not isinstance(channel, Messageable):
-            raise AssertionError(f"channel {channel} is not messageable")
+            raise AssertionError(f"cannot send messages in channel {channel}")
         return await channel.fetch_message(payload.message_id)
 
     @staticmethod
