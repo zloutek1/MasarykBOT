@@ -9,7 +9,7 @@ from bot.constants import CONFIG
 from bot.db import CourseRepository
 from .registration_context import CourseRegistrationContext
 from .trie import Trie
-from ...db.muni.course import CourseEntity
+from bot.db.muni.course import CourseEntity
 
 DISCORD_CATEGORY_MAX_CHANNELS_LIMIT = 50
 

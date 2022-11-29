@@ -1,4 +1,5 @@
 import contextlib
+from pathlib import Path
 from typing import Dict, List, cast
 
 import discord
@@ -13,7 +14,9 @@ from bot.db.muni.course import CourseEntity
 from .course_service import CourseService
 from ..utils import Context, GuildContext, requires_database
 
-with open('bot/assets/course_registration_message.txt', 'r') as file:
+
+_reg_msg_path = Path(__file__).parent.parent.parent.joinpath('assets/course_registration_message.txt')
+with open(_reg_msg_path, 'r') as file:
     COURSE_REGISTRATION_MESSAGE = file.read()
 
 

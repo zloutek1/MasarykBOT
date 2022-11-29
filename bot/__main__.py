@@ -34,7 +34,8 @@ initial_cogs = [
     "bot.cogs.rules",
     "bot.cogs.starboard",
     "bot.cogs.logger",
-    "bot.cogs.verification"
+    "bot.cogs.verification",
+    "bot.cogs.course"
 ]
 
 intents = discord.Intents(
