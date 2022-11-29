@@ -1,10 +1,9 @@
 import inject
 
-from .faculty import FacultyRepository
 from .course import CourseRepository
 from .student import StudentRepository
 
-REPOSITORIES = (FacultyRepository, CourseRepository, StudentRepository)
+REPOSITORIES = (CourseRepository, StudentRepository)
 
 
 def setup_injections(binder: inject.Binder) -> None:
