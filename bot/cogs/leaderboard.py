@@ -7,8 +7,7 @@ from discord.utils import escape_markdown, get
 
 from bot.db.leaderboard import LeaderboardRepository, Filters
 from bot.db.utils import Record
-from bot.utils import right_justify
-from .utils import requires_database, GuildContext
+from .utils import right_justify, requires_database, GuildContext
 
 
 class LeaderboardEmbed(discord.Embed):

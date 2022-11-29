@@ -11,7 +11,7 @@ from discord.ext import commands
 from discord.utils import find, get
 
 from bot.constants import CONFIG, GuildConfig, StarboardConfig
-from bot.utils import emoji_name
+from .utils import emoji_name
 
 if TYPE_CHECKING:
     from bot.bot import MasarykBOT
@@ -128,7 +128,7 @@ class StarboardProcessingService:
         ignore_channels = [
             cfg.channels.about_you,
             cfg.channels.verification,
-            cfg.channels.course_registration,
+            cfg.channels.course.registration_channel,
         ]
 
         if cfg.channels.starboard:

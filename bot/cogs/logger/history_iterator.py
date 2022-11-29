@@ -1,5 +1,6 @@
 import logging
 
+import discord.errors
 import inject
 from discord import TextChannel
 from discord.ext import commands
