@@ -1,4 +1,4 @@
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Iterable
 
 from bot.db.tables import STUDENTS
 from bot.db.utils import inject_conn, DBConnection, Id, Crud
@@ -29,6 +29,16 @@ class StudentRepository(Crud[Columns]):
             WHERE faculty=$1 AND code=$2 AND guild_id=$3 AND left_at IS NULL
         """, *data)
         return row['count'] if row else None
+
+
+    @inject_conn
+    async def find_all_students_courses(self, conn: DBConnection, data: Tuple[Id, Id]) -> Iterable[str]:
+        rows = await conn.fetch("""
+                SELECT faculty||':'||code as result
+                FROM muni.students
+                WHERE guild_id=$1 AND member_id=$2 AND left_at IS NULL
+            """, *data)
+        return map(lambda row: row['result'], rows)
 
 
     @inject_conn

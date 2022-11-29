@@ -1,15 +1,15 @@
 from enum import auto, Enum
-from typing import List, Optional, Dict
+from typing import List, Dict, Iterable
 
 import discord
 import inject
 from discord.ext import commands
 
 from bot.constants import CONFIG
-from bot.db import CourseRepository
+from bot.db import CourseRepository, StudentRepository
+from bot.db.muni.course import CourseEntity
 from .registration_context import CourseRegistrationContext
 from .trie import Trie
-from bot.db.muni.course import CourseEntity
 
 DISCORD_CATEGORY_MAX_CHANNELS_LIMIT = 50
 
@@ -26,10 +26,16 @@ class CourseService:
     category_trie = Trie()
 
 
-    @inject.autoparams('course_repository')
-    def __init__(self, bot: commands.Bot, course_repository: CourseRepository) -> None:
+    @inject.autoparams('course_repository', 'student_repository')
+    def __init__(
+            self,
+            bot: commands.Bot,
+            course_repository: CourseRepository,
+            student_repository: StudentRepository
+    ) -> None:
         self.bot = bot
         self._course_repository = course_repository
+        self._student_repository = student_repository
 
 
     async def load_category_trie(self) -> None:
@@ -54,11 +60,21 @@ class CourseService:
 
 
     @staticmethod
-    async def get_course_info(course: CourseEntity) -> Optional[discord.Embed]:
+    async def get_course_info(course: CourseEntity) -> discord.Embed:
         return discord.Embed(
             color=CONFIG.colors.MUNI_YELLOW,
             title=f"{course.faculty}:{course.code}",
             description=f"{course.name}\n\n{course.url}"
+        )
+
+
+    async def get_user_info(self, guild: discord.Guild, user: discord.Member) -> discord.Embed:
+        course_codes = await self._student_repository.find_all_students_courses((guild.id, user.id))
+
+        return discord.Embed(
+            color=CONFIG.colors.MUNI_YELLOW,
+            title=f"{user.display_name}'s courses",
+            description=', '.join(course_codes) or "no courses registered"
         )
 
 
@@ -96,4 +112,10 @@ class CourseService:
 
 
     async def leave_all_courses(self, guild: discord.Guild, user: discord.Member) -> None:
-        pass
+        for course in await self.find_students_courses(guild, user):
+            await self.leave_course(guild, user, course)
+
+
+    async def find_students_courses(self, guild: discord.Guild, user: discord.Member) -> Iterable[CourseEntity]:
+        course_codes = list(await self._student_repository.find_all_students_courses((guild.id, user.id)))
+        return await self._course_repository.find_courses(course_codes)

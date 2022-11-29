@@ -1,6 +1,6 @@
 import contextlib
 from pathlib import Path
-from typing import Dict, List, cast
+from typing import Dict, List, cast, Optional
 
 import discord
 import inject
@@ -27,9 +27,21 @@ class NotInRegistrationChannel(commands.UserInputError):
 def in_registration_channel():
     def predicate(ctx: Context) -> bool:
         assert isinstance(ctx.cog, CourseCog)
-        if ctx.channel.id not in cast(CourseCog, ctx.cog).course_registration_channels:
-            raise NotInRegistrationChannel(f"{ctx.channel.mention} is not a course registration channel")
+        cog = cast(CourseCog, ctx.cog)
+        if ctx.channel.id not in cog.course_registration_channels:
+            raise NotInRegistrationChannel(fmt_error(ctx, cog))
         return True
+
+
+    def fmt_error(ctx: Context, cog: "CourseCog") -> str:
+        registration_channel = get(cog.course_registration_channels.values(), guild__id=ctx.guild.id)
+        if registration_channel is None:
+            return f"You are not in a course registration channel."
+        if hasattr(registration_channel, 'mention'):
+            return f"You are not in a course registration channel. Please use {registration_channel.mention}"
+        return f"You are not in a course registration channel. Please use #{registration_channel}"
+
+
     return commands.check(predicate)
 
 
@@ -85,9 +97,11 @@ class CourseCog(commands.Cog):
             await ctx.send(f'Left course {course.faculty}:{course.code}')
 
 
-    @course.command()
+    @course.command(aliases=['remove_all', 'hide_all'])
+    @in_registration_channel()
     async def leave_all(self, ctx: GuildContext) -> None:
         await self._service.leave_all_courses(ctx.guild, ctx.author)
+        await ctx.send(f'Left all courses')
 
 
     @course.command()
@@ -99,6 +113,13 @@ class CourseCog(commands.Cog):
     @course.command()
     async def find(self, ctx: GuildContext, course: Course) -> None:
         embed = await self._service.get_course_info(course)
+        await ctx.send(embed=embed)
+
+
+    @course.command()
+    async def profile(self, ctx: GuildContext, member: Optional[discord.Member]) -> None:
+        member = ctx.author if member is None else member
+        embed = await self._service.get_user_info(ctx.guild, member)
         await ctx.send(embed=embed)
 
 
