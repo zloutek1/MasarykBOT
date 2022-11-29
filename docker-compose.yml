@@ -47,10 +47,6 @@ services:
       dockerfile: tests/Dockerfile.test
     volumes:
       - .:/MasarykBOT
-    environment:
-      - POSTGRES=postgresql://masaryk:localdbpassword@database/discord
-    depends_on:
-      - database
 
   database_backup:
     container_name: db_backup
@@ -72,7 +68,7 @@ services:
 
   pgadmin:
     container_name: pgadmin
-    image: dpage/pgadmin4
+    image: dpage/pgadmin4:6.16
     ports:
       - 8832:80
     links:

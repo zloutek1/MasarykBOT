@@ -6,5 +6,5 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-#    - name: Build the docker-compose stack
-#      run: docker-compose up --exit-code-from tests --build tests
+    - name: Build the docker-compose stack
+      run: docker-compose up --exit-code-from tests --build tests
