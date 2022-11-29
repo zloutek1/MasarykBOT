@@ -1,13 +1,14 @@
 import logging
-from typing import Any, Optional
+from typing import Any, Optional, Union, Type
 
-from discord import Message, User, Activity, ActivityType, ClientUser
+from discord import Message, User, Activity, ActivityType, Interaction
 from discord.ext import commands
 
-from bot.cogs.utils import context
+from bot.cogs.utils import context, Context
 from bot.constants import CONFIG
 
 log = logging.getLogger(__name__)
+
 
 
 class MasarykBOT(commands.Bot):
@@ -15,9 +16,11 @@ class MasarykBOT(commands.Bot):
         super().__init__(*args, **kwargs)
         self.activity = self.activity or Activity(type=ActivityType.listening, name="!help")
 
+
     async def on_ready(self) -> None:
         log.info("Bot is now all ready to go")
         self.introduce()
+
 
     async def on_message(self, message: Message) -> None:
         if message.author.bot:
@@ -28,10 +31,13 @@ class MasarykBOT(commands.Bot):
             return
         await self.process_commands(message)
 
-    # TODO: add custom context to app_commands
+
+    async def get_context(self, origin: Union[Message, Interaction], /, *, cls: Type[commands.Context] = Context) -> Context:
+        return await super(MasarykBOT, self).get_context(origin, cls=cls)
+
 
     async def process_commands(self, message: Message) -> None:
-        ctx = await self.get_context(message, cls=context.Context)
+        ctx = await self.get_context(message)
 
         if ctx.command is None:
             assert self.user, "no user"
@@ -46,19 +52,23 @@ class MasarykBOT(commands.Bot):
             log.info("User initiated power off, closing")
             await self.close()
 
+
     async def reply_markov(self, ctx: context.Context) -> None:
         markov = self.get_command("markov")
         if markov is not None and await markov.can_run(ctx):
             log.info("user %s used markov by mention: %s", ctx.message.author, ctx.message.content)
             await markov(ctx)
 
+
     async def add_cog(self, cog: commands.Cog, *args: Any, **kwargs: Any) -> None:
         log.info("loading cog: %s", cog.qualified_name)
         return await super().add_cog(cog, *args, **kwargs)
 
+
     async def remove_cog(self, name: str, *args: Any, **kwargs: Any) -> Optional[commands.Cog]:
         log.info("unloading cog: %s", name)
         return await super().remove_cog(name, *args, **kwargs)
+
 
     def introduce(self) -> None:
         assert self.user, "no user"
