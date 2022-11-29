@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 import discord.errors
 import inject
@@ -6,17 +7,18 @@ from discord import TextChannel
 from discord.ext import commands
 
 import bot.db
-from bot.db import Record
+from bot.db import Record, LoggerRepository, ChannelRepository
 from .message_iterator import MessageIterator
 
 log = logging.getLogger(__name__)
 
 
 class HistoryIterator:
-    @inject.autoparams('logger_repository')
-    def __init__(self, bot: commands.Bot, logger_repository: bot.db.LoggerRepository) -> None:
+    @inject.autoparams('logger_repository', 'channel_repository')
+    def __init__(self, bot: commands.Bot, logger_repository: LoggerRepository, channel_repository: ChannelRepository) -> None:
         self.bot = bot
-        self.logger_repository = logger_repository
+        self._logger_repository = logger_repository
+        self._channel_repository = channel_repository
         self.updatable_processes: list[Record] = []
 
     def __aiter__(self) -> "HistoryIterator":
@@ -24,13 +26,30 @@ class HistoryIterator:
 
     async def __anext__(self) -> "MessageIterator":
         if not self.updatable_processes:
-            self.updatable_processes = await self.logger_repository.find_updatable_processes()
+            log.info('starting message processors batch')
+            self.updatable_processes = await self._logger_repository.find_updatable_processes()
 
+        channel: Optional[TextChannel] = None
+        while not channel:
+            channel = await self.get_next_channel_to_process()
+
+        return MessageIterator(channel)
+
+
+    async def get_next_channel_to_process(self) -> Optional[TextChannel]:
         if not self.updatable_processes:
             raise StopAsyncIteration
 
-        log.info('starting message processors batch')
         process = self.updatable_processes.pop()
-        channel = await self.bot.fetch_channel(process['channel_id'])
-        assert isinstance(channel, TextChannel)
-        return MessageIterator(channel)
+        try:
+            channel = await self.bot.fetch_channel(process['channel_id'])
+            assert isinstance(channel, TextChannel)
+            return channel
+        except discord.NotFound:
+            log.info(f"Channel {process['channel_id']} not longer exists, marking as deleted")
+            await self.mark_channel_as_deleted(process['channel_id'])
+            return None
+
+
+    async def mark_channel_as_deleted(self, channel_id: int) -> None:
+        await self._channel_repository.soft_delete([(channel_id,)])
