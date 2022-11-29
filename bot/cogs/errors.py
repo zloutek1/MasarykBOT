@@ -15,13 +15,10 @@ from bot.constants import CONFIG
 log = logging.getLogger(__name__)
 
 REPLY_ON_ERRORS = (
-    commands.BadArgument,
-    commands.MissingRequiredArgument,
+    commands.UserInputError,
     commands.MissingRole,
-    commands.errors.BadUnionArgument,
     commands.NoPrivateMessage,
     commands.MissingPermissions,
-    commands.ArgumentParsingError,
     commands.BotMissingPermissions
 )
 
