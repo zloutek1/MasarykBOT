@@ -38,11 +38,14 @@ class LoggerRepository(Table):
     @inject_conn
     async def find_updatable_processes(self, conn: DBConnection) -> list[Record]:
         return await conn.fetch(f"""
-            SELECT * 
+            SELECT channel_id, to_date
             FROM (
                 SELECT channel_id, MAX(to_date) as to_date
                 FROM cogs.logger
                 GROUP BY channel_id
             ) t
-            WHERE t.to_date + interval '7 days' < now()
+            INNER JOIN server.channels as c 
+                ON c.id = t.channel_id
+            WHERE t.to_date + interval '7 days' < now() AND
+                  c.deleted_at IS NULL
         """)
