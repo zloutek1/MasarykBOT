@@ -2,13 +2,14 @@ import unittest
 import unittest.mock
 from datetime import datetime
 
-import asyncpg
-import inject
 import discord
+import inject
 
+import bot.db
 import tests.helpers as helpers
 from bot.cogs import logger
-import bot.db
+from tests.bot.utils import mock_database
+
 
 
 class LoggerTests(unittest.IsolatedAsyncioTestCase):
@@ -37,14 +38,7 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
 
     def _mock_injections(self):
         def setup_injections(binder: inject.Binder) -> None:
-            binder.bind(asyncpg.Pool, unittest.mock.MagicMock())
-
-            for repository in bot.db.discord.REPOSITORIES:
-                binder.bind(repository, unittest.mock.AsyncMock())
-
-            for mapper in bot.db.discord.MAPPERS:
-                binder.bind_to_constructor(mapper, mapper)
-
+            binder.install(mock_database)
             binder.bind(bot.db.LoggerRepository, self.logger_repository)
 
         return inject.clear_and_configure(setup_injections)

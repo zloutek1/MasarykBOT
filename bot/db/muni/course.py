@@ -15,8 +15,8 @@ class CourseEntity(Entity):
     url: Url
     terms: List[str]
     created_at: datetime
-    edited_at: Optional[datetime]
-    deleted_at: Optional[datetime]
+    edited_at: Optional[datetime] = None
+    deleted_at: Optional[datetime] = None
 
 
 
