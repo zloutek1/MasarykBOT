@@ -7,7 +7,7 @@ from discord.utils import get
 from bot.cogs.course.trie import Trie
 from bot.cogs.utils import sanitize_channel_name
 from bot.constants import CONFIG
-from bot.db.muni import StudentRepository
+from bot.db import StudentRepository
 from bot.db.muni.course import CourseEntity
 
 MAX_CHANNEL_OVERWRITES = 500

@@ -6,7 +6,7 @@ import inject
 from discord.ext import commands
 
 from bot.constants import CONFIG
-from bot.db import CourseRepository, FacultyRepository
+from bot.db import CourseRepository
 from .registration_context import CourseRegistrationContext
 from .trie import Trie
 from ...db.muni.course import CourseEntity
@@ -26,15 +26,9 @@ class CourseService:
     category_trie = Trie()
 
 
-    @inject.autoparams('faculty_repository', 'course_repository')
-    def __init__(
-            self,
-            bot: commands.Bot,
-            faculty_repository: FacultyRepository,
-            course_repository: CourseRepository,
-    ) -> None:
+    @inject.autoparams('course_repository')
+    def __init__(self, bot: commands.Bot, course_repository: CourseRepository) -> None:
         self.bot = bot
-        self._faculty_repository = faculty_repository
         self._course_repository = course_repository
 
 

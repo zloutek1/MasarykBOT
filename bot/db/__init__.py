@@ -16,7 +16,7 @@ from .discord import (AttachmentRepository, CategoryRepository, ChannelRepositor
                       RoleRepository, UserRepository)
 from .discord import setup_injections as setup_discord_injections
 
-from .muni import (FacultyRepository, CourseRepository)
+from .muni import (CourseRepository, StudentRepository)
 from .muni import setup_injections as setup_muni_injections
 
 from .leaderboard import LeaderboardRepository
