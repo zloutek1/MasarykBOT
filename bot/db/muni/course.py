@@ -30,7 +30,7 @@ class CourseRepository(Table):
         rows = await conn.fetch(f"""
             SELECT *
             FROM muni.courses
-            WHERE lower(concat(faculty, ':', code, ' ', substr(name, 1, 50))) LIKE lower($1)
+            WHERE lower(faculty||':'||code||' '||substr(name, 1, 50)) LIKE lower($1)
             LIMIT 25
         """, pattern)
         return [CourseEntity.convert(row) for row in rows]
@@ -53,3 +53,13 @@ class CourseRepository(Table):
             FROM muni.courses
         """)
         return map(lambda row: row['result'], rows)
+
+
+    @inject_conn
+    async def find_courses(self, conn: DBConnection, data: List[str]) -> Iterable[CourseEntity]:
+        rows = await conn.fetch(f"""
+                SELECT *
+                FROM muni.courses
+                WHERE (faculty||':'||code)=ANY($1::varchar[])
+            """, data)
+        return [CourseEntity.convert(row) for row in rows]
