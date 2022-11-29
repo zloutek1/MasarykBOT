@@ -1,3 +1,4 @@
+from enum import auto, Enum
 from typing import List, Optional, Dict
 
 import discord
@@ -7,11 +8,24 @@ from discord.ext import commands
 from bot.constants import CONFIG
 from bot.db import CourseRepository, FacultyRepository
 from .registration_context import CourseRegistrationContext
+from .trie import Trie
 from ...db.muni.course import CourseEntity
+
+DISCORD_CATEGORY_MAX_CHANNELS_LIMIT = 50
+
+
+
+class Status(Enum):
+    REGISTERED = auto()
+    SHOWN = auto()
+    UNSIGNED = auto()
 
 
 
 class CourseService:
+    category_trie = Trie()
+
+
     @inject.autoparams('faculty_repository', 'course_repository')
     def __init__(
             self,
@@ -22,6 +36,11 @@ class CourseService:
         self.bot = bot
         self._faculty_repository = faculty_repository
         self._course_repository = course_repository
+
+
+    async def load_category_trie(self) -> None:
+        courses = await self._course_repository.find_all_courses()
+        self.category_trie.insert_all(courses)
 
 
     def load_course_registration_channels(self) -> Dict[int, discord.abc.Messageable]:
@@ -62,21 +81,23 @@ class CourseService:
         )
 
 
-    @staticmethod
-    async def join_course(guild: discord.Guild, user: discord.Member, course: CourseEntity) -> None:
+    async def join_course(self, guild: discord.Guild, user: discord.Member, course: CourseEntity) -> Status:
         context = CourseRegistrationContext(guild, user, course)
         await context.register_course()
-        if not (channel := await context.find_course_channel()):
-            if await context.should_create_course_channel():
-                channel = await context.create_course_channel()
+        if not (channel := context.find_course_channel()):
+            if not await context.should_create_course_channel():
+                return Status.REGISTERED
+            category = await context.create_or_get_course_category(self.category_trie, DISCORD_CATEGORY_MAX_CHANNELS_LIMIT)
+            channel = await context.create_course_channel(category)
         await context.show_course_channel(channel)
+        return Status.SHOWN
 
 
     @staticmethod
     async def leave_course(guild: discord.Guild, user: discord.Member, course: CourseEntity) -> None:
         context = CourseRegistrationContext(guild, user, course)
         await context.unregister_course()
-        if channel := await context.find_course_channel():
+        if channel := context.find_course_channel():
             await context.hide_course_channel(channel)
 
 

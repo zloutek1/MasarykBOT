@@ -1,5 +1,5 @@
 import contextlib
-from typing import Dict, List
+from typing import Dict, List, cast
 
 import discord
 import inject
@@ -16,6 +16,18 @@ from ..utils import Context, GuildContext, requires_database
 with open('bot/assets/course_registration_message.txt', 'r') as file:
     COURSE_REGISTRATION_MESSAGE = file.read()
 
+
+class NotInRegistrationChannel(commands.UserInputError):
+    pass
+
+
+def in_registration_channel():
+    def predicate(ctx: Context) -> bool:
+        assert isinstance(ctx.cog, CourseCog)
+        if ctx.channel.id not in cast(CourseCog, ctx.cog).course_registration_channels:
+            raise NotInRegistrationChannel(f"{ctx.channel.mention} is not a course registration channel")
+        return True
+    return commands.check(predicate)
 
 
 class Course(commands.Converter, CourseEntity):
@@ -39,6 +51,7 @@ class CourseCog(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         self.course_registration_channels = self._service.load_course_registration_channels()
+        await self._service.load_category_trie()
 
 
     @commands.hybrid_group(aliases=['subject'])
@@ -47,20 +60,23 @@ class CourseCog(commands.Cog):
         pass
 
 
-    @course.command(aliases=['add'])
+    @course.command(aliases=['add', 'show'])
+    @in_registration_channel()
     async def join(self, ctx: GuildContext, courses: commands.Greedy[Course]) -> None:
         if len(courses) > 10:
             raise commands.BadArgument('You can only join 10 courses with one command')
         for course in courses:
-            await self._service.join_course(ctx.guild, ctx.author, course)
-            await ctx.send(f'Joined course {course.faculty}:{course.code}')
+            status = await self._service.join_course(ctx.guild, ctx.author, course)
+            match status:
+                case status.REGISTERED: await ctx.send_success(f"Registered course {course.faculty}:{course.code}")
+                case status.SHOWN: await ctx.send_success(f"Shown course {course.faculty}:{course.code}")
 
 
-    @course.command(aliases=['remove'])
+    @course.command(aliases=['remove', 'hide'])
+    @in_registration_channel()
     async def leave(self, ctx: GuildContext, courses: commands.Greedy[Course]) -> None:
         if len(courses) > 10:
-            raise commands.BadArgument(
-                'You can only leave 10 courses with one command, consider using `!course leave_all`')
+            raise commands.BadArgument('You can only leave 10 courses with one command, consider using `!course leave_all`')
         for course in courses:
             await self._service.leave_course(ctx.guild, ctx.author, course)
             await ctx.send(f'Left course {course.faculty}:{course.code}')
@@ -68,7 +84,7 @@ class CourseCog(commands.Cog):
 
     @course.command()
     async def leave_all(self, ctx: GuildContext) -> None:
-        await self._service.leave_course(ctx.guild, ctx.author)
+        await self._service.leave_all_courses(ctx.guild, ctx.author)
 
 
     @course.command()
@@ -113,7 +129,7 @@ class CourseCog(commands.Cog):
         if message.embeds and message.embeds[0].description == COURSE_REGISTRATION_MESSAGE:
             return
         with contextlib.suppress(discord.errors.NotFound):
-            await message.delete(delay=1.2 if message.embeds else 0.2)
+            await message.delete(delay=5.2 if message.embeds else 0.2)
 
 
 
