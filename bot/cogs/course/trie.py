@@ -1,4 +1,4 @@
-from typing import Dict, Tuple, List, Optional, Iterable
+from typing import Dict, Tuple, List, Optional, Iterable, Any
 
 
 
@@ -13,15 +13,20 @@ class Trie:
         return repr(self.children)
 
 
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, Trie):
+            return repr(self) == repr(other)
+        return False
+
+
     def insert(self, word: str) -> None:
-        letter, word = self._shift(word)
-
-        self.children[letter] = self.children.get(letter, Trie())
         if word == "":
-            self.children[letter].is_word = True
-        else:
-            self.children[letter].insert(word)
+            self.is_word = True
+            return
 
+        letter, word = self._shift(word)
+        self.children[letter] = self.children.get(letter, Trie())
+        self.children[letter].insert(word)
         self.items += 1
 
 
@@ -45,7 +50,7 @@ class Trie:
         if self.items == 0:
             return []
 
-        if self.items < limit:
+        if self.items <= limit:
             return [prefix]
 
         categories = []
@@ -58,7 +63,7 @@ class Trie:
         if prefix == "" and i == 0 and not self.contains(word):
             return None
 
-        if self.items < limit:
+        if self.items <= limit:
             return prefix
 
         for letter, subtree in self.children.items():
