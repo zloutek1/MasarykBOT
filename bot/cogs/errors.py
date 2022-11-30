@@ -93,7 +93,6 @@ class Errors(commands.Cog):
     @staticmethod
     def _format_error(ctx: commands.Context, error: Exception) -> str:
         trace = "".join(traceback.format_exception(type(error), error, error.__traceback__))
-        message = trace
         if ctx.command:
             user = ctx.author.name
             if ctx.message.content:
