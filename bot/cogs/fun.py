@@ -56,25 +56,21 @@ class FunService:
             for i in range(0, len(emojis), columns)
         ) or "no emojis"
 
-    def get_guild_icon_url(self, guild: discord.Guild, format: Optional[IMG_EXTENSIONS] = None) -> Optional[str]:
-        return self._asset_url(guild.icon, format)
+    def get_guild_icon_url(self, guild: discord.Guild, fmt: Optional[IMG_EXTENSIONS] = None) -> Optional[str]:
+        return self._asset_url(guild.icon, fmt)
 
-    def get_guild_banner_url(self, guild: discord.Guild, format: Optional[IMG_EXTENSIONS] = None) -> Optional[str]:
-        return self._asset_url(guild.banner, format)
+    def get_guild_banner_url(self, guild: discord.Guild, fmt: Optional[IMG_EXTENSIONS] = None) -> Optional[str]:
+        return self._asset_url(guild.banner, fmt)
 
-    def get_user_avatar_url(
-            self,
-            user: discord.User | discord.Member,
-            format: Optional[IMG_EXTENSIONS] = None
-    ) -> Optional[str]:
-        return self._asset_url(user.avatar, format)
+    def get_user_avatar_url(self, user: discord.User | discord.Member, fmt: Optional[IMG_EXTENSIONS] = None) -> Optional[str]:
+        return self._asset_url(user.avatar, fmt)
 
     @staticmethod
-    def _asset_url(asset: Optional[discord.Asset], format: Optional[IMG_EXTENSIONS] = None) -> Optional[str]:
+    def _asset_url(asset: Optional[discord.Asset], fmt: Optional[IMG_EXTENSIONS] = None) -> Optional[str]:
         if not asset:
             return None
-        if format:
-            fmt_asset: discord.Asset = asset.with_format(format)
+        if fmt:
+            fmt_asset: discord.Asset = asset.with_format(fmt)
             return fmt_asset.url
         return asset.url
 
@@ -98,21 +94,21 @@ class FunService:
         ascii_x_dots = 2
         ascii_y_dots = 4
 
-        ascii = ""
+        ascii_result = ""
         for y in range(0, img.height, ascii_y_dots):
             line = ""
             for x in range(0, img.width, ascii_x_dots):
                 c = self._chunk2braille(img.crop((x, y, x + ascii_x_dots, y + ascii_y_dots)), threshold, inverted)
                 line += c
-            ascii += line + "\n"
-        return ascii
+            ascii_result += line + "\n"
+        return ascii_result
 
     @staticmethod
-    def _chunk2braille(slice: Image.Image, treshold: int = 127, inverted: bool = False) -> str:
+    def _chunk2braille(img_slice: Image.Image, threshold: int = 127, inverted: bool = False) -> str:
         """https://en.wikipedia.org/wiki/Braille_Patterns"""
-        dots = [(1 + int(inverted) + int(cast(int, slice.getpixel((x, y))) < treshold)) % 2
-                for y in range(slice.height)
-                for x in range(slice.width)]
+        dots = [(1 + int(inverted) + int(cast(int, img_slice.getpixel((x, y))) < threshold)) % 2
+                for y in range(img_slice.height)
+                for x in range(img_slice.width)]
 
         dots = [dots[0], dots[2],
                 dots[4], dots[1],
@@ -145,8 +141,8 @@ class Fun(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
-    async def icon_url(self, ctx: GuildContext, format: Optional[IMG_EXTENSIONS] = None) -> None:
-        url = self.service.get_guild_icon_url(ctx.guild, format)
+    async def icon_url(self, ctx: GuildContext, fmt: Optional[IMG_EXTENSIONS] = None) -> None:
+        url = self.service.get_guild_icon_url(ctx.guild, fmt)
         await ctx.send(url or "no icon")
 
     @commands.command(aliases=['icon'])
@@ -159,8 +155,8 @@ class Fun(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
-    async def banner_url(self, ctx: GuildContext, format: Optional[IMG_EXTENSIONS] = None) -> None:
-        url = self.service.get_guild_banner_url(ctx.guild, format)
+    async def banner_url(self, ctx: GuildContext, fmt: Optional[IMG_EXTENSIONS] = None) -> None:
+        url = self.service.get_guild_banner_url(ctx.guild, fmt)
         await ctx.send(url or "no banner")
 
     @commands.command()
@@ -172,8 +168,8 @@ class Fun(commands.Cog):
             await ctx.send_asset(url)
 
     @commands.command()
-    async def avatar_url(self, ctx: Context, format: Optional[IMG_EXTENSIONS] = None) -> None:
-        url = self.service.get_user_avatar_url(ctx.author, format)
+    async def avatar_url(self, ctx: Context, fmt: Optional[IMG_EXTENSIONS] = None) -> None:
+        url = self.service.get_user_avatar_url(ctx.author, fmt)
         await ctx.send(url or ctx.author.default_avatar.url)
 
     @commands.command()
