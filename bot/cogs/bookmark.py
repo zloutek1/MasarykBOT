@@ -1,3 +1,4 @@
+import discord
 from discord import (Message, RawReactionActionEvent, PartialEmoji, Embed, DMChannel)
 from discord.abc import Messageable, GuildChannel
 from discord.ext import commands
@@ -100,14 +101,20 @@ class Bookmark(commands.Cog):
             return await self.on_delete_reaction(payload)
 
     async def on_bookmark_reaction(self, payload: RawReactionActionEvent) -> None:
-        message = await self.service.fetch_message(payload)
-        embed = self.service.to_embed(message)
+        try:
+            message = await self.service.fetch_message(payload)
+        except discord.NotFound:
+            return
 
         user = await self.bot.fetch_user(payload.user_id)
+        embed = self.service.to_embed(message)
         await user.send(embed=embed)
 
     async def on_delete_reaction(self, payload: RawReactionActionEvent) -> None:
-        message = await self.service.fetch_message(payload)
+        try:
+            message = await self.service.fetch_message(payload)
+        except discord.NotFound:
+            return
         if not self.service.is_bookmark_message(message):
             return
         await message.delete()

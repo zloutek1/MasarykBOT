@@ -277,7 +277,10 @@ class Starboard(commands.Cog):
         if payload.user_id == self.bot.user.id:
             self.bot_reactions_cache.append(payload.message_id)
 
-        message = await self.service.fetch_message(payload)
+        try:
+            message = await self.service.fetch_message(payload)
+        except discord.NotFound:
+            return
 
         if not (reaction := find(lambda r: payload.emoji.name == emoji_name(r.emoji), message.reactions)):
             return
