@@ -14,11 +14,13 @@ class LeaderboardEmbed(discord.Embed):
             self,
             top10: List[LeaderboardEntity],
             around: List[LeaderboardEntity],
-            medals: Dict[int | None, discord.Emoji]
+            medals: Dict[int | None, discord.Emoji],
+            user: discord.Member
     ) -> None:
         super().__init__(color=0x53acf2)
 
         self.medals = medals
+        self.user = user
 
         self.add_field(
             inline=False,
@@ -38,7 +40,7 @@ class LeaderboardEmbed(discord.Embed):
 
         return self.restrict_length(
             "\n".join(
-                self.display_row(row, align_digits, False)
+                self.display_row(row, align_digits, row.author_id == self.user.id)
                 for row in rows
             )
         )

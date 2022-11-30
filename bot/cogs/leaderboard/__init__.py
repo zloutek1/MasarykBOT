@@ -45,7 +45,7 @@ class LeaderboardCog(commands.Cog):
             filters = LeaderboardFilter(ctx.guild.id, bot_ids, include_channel_ids, exclude_channel_ids)
             (top10, around) = await self._repository.get_data(member.id, filters)
 
-            embed = LeaderboardEmbed(top10, around, self.medals)
+            embed = LeaderboardEmbed(top10, around, self.medals, member)
             await ctx.send(embed=embed)
 
 
