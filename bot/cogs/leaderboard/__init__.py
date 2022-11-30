@@ -1,19 +1,22 @@
 from typing import Dict, Optional
 
 import discord
+import inject
 from discord.ext import commands
 from discord.utils import get
 
 from bot.cogs.leaderboard.leaderboard_embed import LeaderboardEmbed
-from bot.cogs.leaderboard.leaderboard_service import LeaderboardService
 from bot.cogs.utils import GuildContext, requires_database
+from bot.db import LeaderboardRepository
+from bot.db.leaderboard import LeaderboardFilter
 
 
 
 class LeaderboardCog(commands.Cog):
-    def __init__(self, bot: commands.Bot, service: LeaderboardService = None) -> None:
+    @inject.autoparams('leaderboard_repository')
+    def __init__(self, bot: commands.Bot, leaderboard_repository: LeaderboardRepository = None) -> None:
         self.bot = bot
-        self.service = service or LeaderboardService()
+        self._repository = leaderboard_repository
 
     @property
     def medals(self) -> Dict[int | None, discord.Emoji]:
@@ -39,9 +42,8 @@ class LeaderboardCog(commands.Cog):
             exclude_channel_ids = [channel.id for channel in exclude_channels]
             bot_ids = [bot.id for bot in filter(lambda user: user.bot, ctx.guild.members)]
 
-            filters = (ctx.guild.id, bot_ids, include_channel_ids, exclude_channel_ids)
-
-            (top10, around) = await self.service.get_data(member.id, filters)
+            filters = LeaderboardFilter(ctx.guild.id, bot_ids, include_channel_ids, exclude_channel_ids)
+            (top10, around) = await self._repository.get_data(member.id, filters)
 
             embed = LeaderboardEmbed(top10, around, self.medals)
             await ctx.send(embed=embed)

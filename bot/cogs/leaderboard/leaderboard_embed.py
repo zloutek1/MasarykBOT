@@ -5,14 +5,15 @@ from discord.utils import escape_markdown
 
 from bot.cogs.utils import right_justify
 from bot.db import Record
+from bot.db.leaderboard import LeaderboardEntity
 
 
 
 class LeaderboardEmbed(discord.Embed):
     def __init__(
             self,
-            top10: List[Record],
-            around: List[Record],
+            top10: List[LeaderboardEntity],
+            around: List[LeaderboardEntity],
             medals: Dict[int | None, discord.Emoji]
     ) -> None:
         super().__init__(color=0x53acf2)
@@ -30,10 +31,10 @@ class LeaderboardEmbed(discord.Embed):
             value=self.make_table(around)
         )
 
-    def make_table(self, rows: List[Record]) -> str:
+    def make_table(self, rows: List[LeaderboardEntity]) -> str:
         if not rows:
             return "empty"
-        align_digits = len(str(rows[0]["sent_total"]))
+        align_digits = len(str(rows[0].sent_total))
 
         return self.restrict_length(
             "\n".join(
@@ -42,14 +43,13 @@ class LeaderboardEmbed(discord.Embed):
             )
         )
 
-    def display_row(self, row: Record, align_digits: int, bold: bool = False) -> str:
-        position = int(row["row"])
-        medal = self.medals.get(position, self.medals[None])
-        count = right_justify(row["sent_total"], align_digits, "\u2063 ")
-        user = escape_markdown(row["author"])
+    def display_row(self, row: LeaderboardEntity, align_digits: int, bold: bool = False) -> str:
+        medal = self.medals.get(row.row_no, self.medals[None])
+        count = right_justify(str(row.sent_total), align_digits, "\u2063 ")
+        user = escape_markdown(row.author)
         user = f'**{user}**' if bold else f'{user}'
 
-        return f"`{position:0>2}.` {medal} `{count}` {user}"
+        return f"`{row.row_no:0>2}.` {medal} `{count}` {user}"
 
     @staticmethod
     def restrict_length(string: str) -> str:
