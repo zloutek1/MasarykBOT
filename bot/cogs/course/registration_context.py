@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Dict
 
 import discord
 import inject
@@ -76,9 +76,27 @@ class CourseRegistrationContext:
     async def create_course_channel(self, category: discord.CategoryChannel) -> discord.TextChannel:
         return await self.guild.create_text_channel(
             name=self.course_channel_name,
-            category=category
+            category=category,
+            overwrites=self._get_overwrites_for_new_channel(),
+            topic=f"Místnost pro předmět {self.course.name}"
         )
 
+
+    def _get_overwrites_for_new_channel(self) -> Dict[discord.Member | discord.Role, discord.PermissionOverwrite]:
+        overwrites = {
+            self.guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            self.guild.me: discord.PermissionOverwrite(read_messages=True)
+        }
+
+        show_all = self.guild.get_role(self.guild_config.roles.show_all)
+        if show_all is not None:
+            overwrites[show_all] = discord.PermissionOverwrite(read_messages=True)
+
+        muted = self.guild.get_role(self.guild_config.roles.muted)
+        if muted is not None:
+            overwrites[muted] = discord.PermissionOverwrite(send_messages=False)
+
+        return overwrites
 
     async def create_or_get_course_category(
             self,
