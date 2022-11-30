@@ -1,7 +1,8 @@
 import logging
 from typing import Any, Optional, Union, Type
 
-from discord import Message, User, Activity, ActivityType, Interaction
+import discord
+from discord import Message, User, Activity, ActivityType, Interaction, app_commands
 from discord.ext import commands
 
 from bot.cogs.utils import context, Context
@@ -22,42 +23,26 @@ class MasarykBOT(commands.Bot):
         self.introduce()
 
 
-    async def on_message(self, message: Message) -> None:
-        if message.author.bot:
-            return
-        if isinstance(message.author, User):
-            return
-        if CONFIG.bot.DEBUG and not message.author.guild_permissions.administrator:
-            return
-        await self.process_commands(message)
-
-
-    async def get_context(self, origin: Union[Message, Interaction], /, *, cls: Type[commands.Context] = Context) -> Context:
+    async def get_context(self, origin: Union[Message, Interaction], /, *,
+                          cls: Type[commands.Context] = Context) -> Context:
         return await super(MasarykBOT, self).get_context(origin, cls=cls)
 
 
     async def process_commands(self, message: Message) -> None:
-        ctx = await self.get_context(message)
-
-        if ctx.command is None:
-            assert self.user, "no user"
-            if self.user.id in ctx.message.raw_mentions:
-                await self.reply_markov(ctx)
+        if CONFIG.bot.DEBUG and not message.author.guild_permissions.administrator:
             return
-
-        log.info("user %s used command: %s", message.author, message.content)
-        try:
-            await self.invoke(ctx)
-        except KeyboardInterrupt:
-            log.info("User initiated power off, closing")
-            await self.close()
+        await super(MasarykBOT, self).process_commands(message)
 
 
-    async def reply_markov(self, ctx: context.Context) -> None:
-        markov = self.get_command("markov")
-        if markov is not None and await markov.can_run(ctx):
-            log.info("user %s used markov by mention: %s", ctx.message.author, ctx.message.content)
-            await markov(ctx)
+    @staticmethod
+    async def on_command(ctx: Context):
+        if ctx.message.content:
+            command = ctx.message.content
+            log.info(f'in #{ctx.channel} @{ctx.author} used command: {command}')
+        else:
+            params = ' '.join(map(str, ctx.kwargs.values()))
+            command = f"{ctx.prefix}{ctx.command} {params}"
+            log.info(f'in #{ctx.channel} @{ctx.author} used slash command: {command}')
 
 
     async def add_cog(self, cog: commands.Cog, *args: Any, **kwargs: Any) -> None:
