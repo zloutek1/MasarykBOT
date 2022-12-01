@@ -2,20 +2,21 @@ from typing import List
 import inject
 
 from .attachments import AttachmentRepository, AttachmentMapper, AttachmentEntity
-from .categories import CategoryRepository, CategoryMapper
-from .channels import ChannelRepository, ChannelMapper
-from .emojis import EmojiRepository, EmojiMapper
-from .guilds import GuildRepository, GuildMapper
-from .messages import MessageRepository, MessageMapper
-from .reactions import ReactionRepository, ReactionMapper
-from .roles import RoleRepository, RoleMapper
-from .users import UserRepository, UserMapper
+from .categories import CategoryRepository, CategoryMapper, CategoryEntity
+from .channels import ChannelRepository, ChannelMapper, ChannelEntity
+from .emojis import EmojiRepository, EmojiMapper, EmojiEntity
+from .guilds import GuildRepository, GuildMapper, GuildEntity
+from .messages import MessageRepository, MessageMapper, MessageEntity
+from .reactions import ReactionRepository, ReactionMapper, ReactionEntity
+from .roles import RoleRepository, RoleMapper, RoleEntity
+from .users import UserRepository, UserMapper, UserEntity
 
 REPOSITORIES = (GuildRepository, RoleRepository, UserRepository, EmojiRepository, CategoryRepository, ChannelRepository,
                 MessageRepository, AttachmentRepository, ReactionRepository)
 MAPPERS = (GuildMapper, RoleMapper, UserMapper, EmojiMapper, CategoryMapper, ChannelMapper, MessageMapper,
            AttachmentMapper, ReactionMapper)
-ENTITIES = (AttachmentEntity,)
+ENTITIES = (GuildEntity, RoleEntity, UserEntity, EmojiEntity, CategoryEntity, ChannelEntity,
+            MessageEntity, AttachmentEntity, ReactionEntity)
 
 
 
