@@ -2,13 +2,14 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional, Iterable
 
-from bot.db.tables import SUBJECTS
-from bot.db.utils import Table, inject_conn, DBConnection, Url, Entity
+from bot.db.utils import inject_conn, DBConnection, Url, Entity, Table
 
 
 
 @dataclass
 class CourseEntity(Entity):
+    __table_name__ = "muni.courses"
+
     faculty: str
     code: str
     name: str
@@ -20,9 +21,9 @@ class CourseEntity(Entity):
 
 
 
-class CourseRepository(Table):
+class CourseRepository(Table[CourseEntity]):
     def __init__(self):
-        super().__init__(table_name=SUBJECTS)
+        super().__init__(entity=CourseEntity)
 
 
     @inject_conn
@@ -33,7 +34,7 @@ class CourseRepository(Table):
             WHERE lower(faculty||':'||code||' '||substr(name, 1, 50)) LIKE lower($1)
             LIMIT 25
         """, pattern)
-        return [CourseEntity.convert(row) for row in rows]
+        return CourseEntity.convert_many(rows)
 
 
     @inject_conn
@@ -62,4 +63,4 @@ class CourseRepository(Table):
                 FROM muni.courses
                 WHERE (faculty||':'||code)=ANY($1::varchar[])
             """, data)
-        return [CourseEntity.convert(row) for row in rows]
+        return CourseEntity.convert_many(rows)

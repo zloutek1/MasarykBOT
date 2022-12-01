@@ -1,24 +1,34 @@
+from dataclasses import dataclass, astuple
 from typing import Tuple, Optional, Iterable
 
-from bot.db.tables import STUDENTS
-from bot.db.utils import inject_conn, DBConnection, Id, Crud
-
-Columns = Tuple[str, str, Id, Id]
+from bot.db.utils import inject_conn, DBConnection, Id, Crud, Entity
 
 
-class StudentRepository(Crud[Columns]):
+
+@dataclass
+class StudentEntity(Entity):
+    __table_name__ = "muni.students"
+
+    faculty: str
+    code: str
+    guild_id: Id
+    member_id: Id
+
+
+
+class StudentRepository(Crud[StudentEntity]):
     def __init__(self):
-        super().__init__(table_name=STUDENTS)
+        super().__init__(entity=StudentEntity)
 
 
     @inject_conn
-    async def insert(self, conn: DBConnection, data: Tuple[Columns]) -> None:
+    async def insert(self, conn: DBConnection, data: StudentEntity) -> None:
         await conn.execute("""
             INSERT INTO muni.students (faculty, code, guild_id, member_id)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (faculty, code, guild_id, member_id) DO UPDATE 
                 SET left_at=NULL
-        """, *data)
+        """, astuple(data))
 
 
     @inject_conn
@@ -42,9 +52,9 @@ class StudentRepository(Crud[Columns]):
 
 
     @inject_conn
-    async def soft_delete(self, conn: DBConnection, data: Tuple[str, str, Id, Id]) -> None:
+    async def soft_delete(self, conn: DBConnection, data: StudentEntity) -> None:
         await conn.execute("""
             UPDATE muni.students
             SET left_at=NOW()
             WHERE faculty=$1 AND code=$2 AND guild_id=$3 AND member_id=$4
-        """, *data)
+        """, astuple(data))
