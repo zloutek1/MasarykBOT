@@ -2,7 +2,7 @@ from typing import Union
 
 import discord
 
-from bot.utils.context import Context
+from .context import Context
 
 
 class GuildContext(Context):
@@ -15,3 +15,7 @@ class GuildContext(Context):
 
 class GuildMessage(discord.Message):
     guild: discord.Guild
+
+
+
+AnyEmote = discord.Emoji | discord.PartialEmoji | str

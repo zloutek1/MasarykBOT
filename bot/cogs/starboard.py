@@ -11,7 +11,7 @@ from discord.ext import commands
 from discord.utils import find, get
 
 from bot.constants import CONFIG, GuildConfig, StarboardConfig
-from bot.utils import emoji_name
+from bot.utils import get_emoji_name
 
 if TYPE_CHECKING:
     from bot.bot import MasarykBOT
@@ -176,7 +176,7 @@ class StarboardProcessingService:
         fame_limit = self._penalise_spoiler(fame_limit, by=5)
         fame_limit = self._penalise_emoji(star_cfg, fame_limit, by=15)
 
-        if emoji_name(self.reaction.emoji) in ('⭐', '🌟'):
+        if get_emoji_name(self.reaction.emoji) in ('⭐', '🌟'):
             return fame_limit - 5
 
         return fame_limit
@@ -282,7 +282,7 @@ class Starboard(commands.Cog):
         except discord.NotFound:
             return
 
-        if not (reaction := find(lambda r: payload.emoji.name == emoji_name(r.emoji), message.reactions)):
+        if not (reaction := find(lambda r: payload.emoji.name == get_emoji_name(r.emoji), message.reactions)):
             return
 
         if not (context := self.service.construct_context(reaction)):
