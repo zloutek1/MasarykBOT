@@ -6,28 +6,43 @@ from typing import Optional
 import asyncpg
 import inject
 
-from bot.db.utils import Pool, Record, Url
+# ---- utils ----
+from .utils import (Crud, Entity, Mapper, Table, UnitOfWork, Id, Url, Record,
+                    DBConnection, Cursor, Pool, DBTransaction)
 
+
+# ---- discord ----
 from .discord import (AttachmentMapper, CategoryMapper, ChannelMapper, EmojiMapper,
                       GuildMapper, MessageMapper, ReactionMapper,
                       RoleMapper, UserMapper)
 from .discord import (AttachmentRepository, CategoryRepository, ChannelRepository, EmojiRepository,
                       GuildRepository, MessageRepository, ReactionRepository,
                       RoleRepository, UserRepository)
+from .discord import (AttachmentEntity)
 from .discord import setup_injections as setup_discord_injections
 
+
+# ---- muni ----
 from .muni import (CourseRepository, StudentRepository)
 from .muni import setup_injections as setup_muni_injections
 
-from .leaderboard import LeaderboardRepository
-from .logger import LoggerRepository
+
+# ---- cogs ----
+from .cogs import (LeaderboardRepository, LoggerRepository)
+from .cogs import (LeaderboardEntity, LoggerEntity)
+from .cogs import setup_injections as setup_cogs_injections
 
 log = logging.getLogger(__name__)
+
 
 
 def setup_injections(binder: inject.Binder) -> None:
     binder.install(setup_discord_injections)
     binder.install(setup_muni_injections)
+    binder.install(setup_cogs_injections)
+
+    binder.bind_to_constructor(UnitOfWork, UnitOfWork)
+
 
 
 async def connect_db(url: Url) -> Optional[Pool]:
