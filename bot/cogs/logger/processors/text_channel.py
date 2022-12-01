@@ -4,17 +4,17 @@ import inject
 from discord import TextChannel
 from discord.abc import GuildChannel
 
+from bot.db import ChannelRepository, ChannelMapper, ChannelEntity
 from ._base import Backup
-from ..message_iterator import MessageIterator
 from .message import MessageBackup
-import bot.db
+from ..message_iterator import MessageIterator
 
 log = logging.getLogger(__name__)
 
 
 class TextChannelBackup(Backup[TextChannel]):
     @inject.autoparams('channel_repository', 'mapper')
-    def __init__(self, channel_repository: bot.db.ChannelRepository, mapper: bot.db.ChannelMapper) -> None:
+    def __init__(self, channel_repository: ChannelRepository, mapper: ChannelMapper) -> None:
         self.channel_repository = channel_repository
         self.mapper = mapper
 
@@ -32,8 +32,8 @@ class TextChannelBackup(Backup[TextChannel]):
     async def backup(self, text_channel: TextChannel) -> None:
         log.debug('backing up text channel %s', text_channel.name)
         await super().backup(text_channel)
-        columns = await self.mapper.map(text_channel)
-        await self.channel_repository.insert([columns])
+        entity: ChannelEntity = await self.mapper.map(text_channel)
+        await self.channel_repository.insert([entity])
 
     async def traverse_down(self, text_channel: TextChannel) -> None:
         await super().traverse_down(text_channel)

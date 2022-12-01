@@ -7,7 +7,7 @@ from discord import TextChannel
 from discord.ext import commands
 
 import bot.db
-from bot.db import Record, LoggerRepository, ChannelRepository
+from bot.db import LoggerRepository, ChannelRepository
 from .message_iterator import MessageIterator
 
 log = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ class HistoryIterator:
         self.bot = bot
         self._logger_repository = logger_repository
         self._channel_repository = channel_repository
-        self.updatable_processes: list[Record] = []
+        self.updatable_processes: list[LoggerRepository.UpdatableProcesses] = []
 
     def __aiter__(self) -> "HistoryIterator":
         return self
@@ -42,12 +42,12 @@ class HistoryIterator:
 
         process = self.updatable_processes.pop()
         try:
-            channel = await self.bot.fetch_channel(process['channel_id'])
+            channel = await self.bot.fetch_channel(process.channel_id)
             assert isinstance(channel, TextChannel)
             return channel
         except discord.NotFound:
-            log.info(f"Channel {process['channel_id']} not longer exists, marking as deleted")
-            await self.mark_channel_as_deleted(process['channel_id'])
+            log.info(f"Channel {process.channel_id} not longer exists, marking as deleted")
+            await self.mark_channel_as_deleted(process.channel_id)
             return None
 
 

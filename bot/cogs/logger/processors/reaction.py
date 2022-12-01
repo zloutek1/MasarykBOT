@@ -1,13 +1,14 @@
 import inject
 from discord import Reaction
 
+from bot.db import ReactionRepository, ReactionMapper, ReactionEntity
 from ._base import Backup
-import bot.db
+
 
 
 class ReactionBackup(Backup[Reaction]):
     @inject.autoparams('reaction_repository', 'mapper')
-    def __init__(self, reaction_repository: bot.db.ReactionRepository, mapper: bot.db.ReactionMapper) -> None:
+    def __init__(self, reaction_repository: ReactionRepository, mapper: ReactionMapper) -> None:
         self.reaction_repository = reaction_repository
         self.mapper = mapper
 
@@ -22,8 +23,8 @@ class ReactionBackup(Backup[Reaction]):
 
     async def backup(self, reaction: Reaction) -> None:
         await super().backup(reaction)
-        columns = await self.mapper.map(reaction)
-        await self.reaction_repository.insert([columns])
+        entity: ReactionEntity = await self.mapper.map(reaction)
+        await self.reaction_repository.insert([entity])
 
     async def traverse_down(self, reaction: Reaction) -> None:
         await super().traverse_down(reaction)
