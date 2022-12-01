@@ -1,6 +1,7 @@
+from collections import namedtuple
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Optional, Tuple, NamedTuple, List
 
 from bot.db.utils import Id, Entity, Table, DBConnection, inject_conn
 
@@ -52,9 +53,12 @@ class LoggerRepository(Table[LoggerEntity]):
         return LoggerEntity.convert(row) if row else None
 
 
+    UpdatableProcesses = NamedTuple('UpdatableProcesses', [('channel_id', Id), ('to_date', datetime)])
+
+
     @inject_conn
-    async def find_updatable_processes(self, conn: DBConnection) -> list[Record]:
-        return await conn.fetch(f"""
+    async def find_updatable_processes(self, conn: DBConnection) -> List["LoggerRepository.UpdatableProcesses"]:
+        rows = await conn.fetch(f"""
             SELECT channel_id, to_date
             FROM (
                 SELECT channel_id, MAX(to_date) as to_date
@@ -66,3 +70,4 @@ class LoggerRepository(Table[LoggerEntity]):
             WHERE t.to_date + interval '7 days' < now() AND
                   c.deleted_at IS NULL
         """)
+        return [self.UpdatableProcesses(*row.values()) for row in rows]
