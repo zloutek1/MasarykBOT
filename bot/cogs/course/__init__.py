@@ -12,7 +12,7 @@ from bot.constants import CONFIG
 from bot.db import CourseRepository
 from bot.db.muni.course import CourseEntity
 from .course_service import CourseService
-from ..utils import Context, GuildContext, requires_database
+from bot.utils import Context, GuildContext, requires_database
 
 
 _reg_msg_path = Path(__file__).parent.parent.parent.joinpath('assets/course_registration_message.txt')

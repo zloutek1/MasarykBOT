@@ -6,9 +6,9 @@ from discord.ext import commands
 from discord.utils import get
 
 from bot.cogs.leaderboard.leaderboard_embed import LeaderboardEmbed
-from bot.cogs.utils import GuildContext, requires_database
+from bot.utils import GuildContext, requires_database
 from bot.db import LeaderboardRepository
-from bot.db.leaderboard import LeaderboardFilter
+from bot.db.cogs.leaderboard import LeaderboardFilter
 
 
 

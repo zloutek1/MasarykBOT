@@ -6,7 +6,7 @@ from typing import NoReturn, Optional
 import discord as discord
 from discord.ext import commands
 
-from .utils import Context
+from bot.utils import Context
 
 log = logging.getLogger(__name__)
 

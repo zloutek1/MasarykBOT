@@ -9,7 +9,7 @@ from discord import File, app_commands
 from discord.ext import commands
 from discord.utils import get
 
-from .utils import Context
+from bot.utils import Context
 from bot.constants import CONFIG
 
 log = logging.getLogger(__name__)

@@ -6,7 +6,7 @@ import discord as discord
 from discord import ButtonStyle, Embed
 from discord.ext import commands
 
-from .utils import Context, map_range
+from bot.utils import Context, map_range
 
 Page = Tuple[str, str, List[commands.Command[Any, ..., Any]]]  # type: ignore[misc]
 BotT = TypeVar('BotT', bound=commands.Bot | commands.AutoShardedBot)
