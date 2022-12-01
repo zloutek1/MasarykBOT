@@ -1,16 +1,17 @@
 import logging
+
 import inject
 from discord import CategoryChannel
 
+from bot.db import CategoryMapper, CategoryRepository, CategoryEntity
 from ._base import Backup
-import bot.db
 
 log = logging.getLogger(__name__)
 
 
 class CategoryBackup(Backup[CategoryChannel]):
     @inject.autoparams('category_repository', 'mapper')
-    def __init__(self, category_repository: bot.db.CategoryRepository, mapper: bot.db.CategoryMapper) -> None:
+    def __init__(self, category_repository: CategoryRepository, mapper: CategoryMapper) -> None:
         self.category_repository = category_repository
         self.mapper = mapper
 
@@ -22,8 +23,8 @@ class CategoryBackup(Backup[CategoryChannel]):
     async def backup(self, category: CategoryChannel) -> None:
         log.debug('backing up category %s', category.name)
         await super().backup(category)
-        columns = await self.mapper.map(category)
-        await self.category_repository.insert([columns])
+        entity: CategoryEntity = await self.mapper.map(category)
+        await self.category_repository.insert([entity])
 
     async def traverse_down(self, category: CategoryChannel) -> None:
         from .text_channel import TextChannelBackup
