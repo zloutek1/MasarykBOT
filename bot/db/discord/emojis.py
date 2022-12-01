@@ -33,7 +33,7 @@ class EmojiMapper(Mapper[AnyEmote, EmojiEntity]):
 
     @staticmethod
     def _map_unicode(emoji: str) -> EmojiEntity:
-        emoji_id = emoji_id(emoji)
+        emoji_id = get_emoji_id(emoji)
         hex_id = '_'.join(hex(ord(char))[2:] for char in emoji)
         url = "https://unicode.org/emoji/charts/full-emoji-list.html#{hex}".format(hex=hex_id)
         return EmojiEntity(emoji_id, demojize(emoji).strip(':'), url, False)
@@ -41,7 +41,7 @@ class EmojiMapper(Mapper[AnyEmote, EmojiEntity]):
 
     @staticmethod
     def _map_discord(emoji: Emoji | PartialEmoji) -> EmojiEntity:
-        return EmojiEntity(get_emoji_id(emoji), emoji.name, str(emoji.url), emoji.animated)
+        return EmojiEntity(get_emoji_id(emoji), emoji.name, str(emoji.url), emoji.animated, emoji.created_at)
 
 
 
