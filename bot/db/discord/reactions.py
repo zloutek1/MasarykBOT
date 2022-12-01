@@ -1,34 +1,43 @@
-import logging
-import inject
+from dataclasses import dataclass, astuple
 from datetime import datetime
-from typing import List, Sequence, Tuple
+from typing import List, Optional
 
-from discord import Reaction, Message
+from discord import Reaction
 
-from .emojis import emoji_hashcode
-from bot.db.utils import (Crud, DBConnection, Id, Mapper, inject_conn)
-from ..tables import REACTIONS
-
-log = logging.getLogger(__name__)
-Columns = Tuple[Id, Id, List[Id], datetime]
+from bot.db.utils import Crud, DBConnection, Id, Mapper, inject_conn, Entity
+from bot.utils import get_emoji_id
 
 
-class ReactionMapper(Mapper[Reaction, Columns]):
-    async def map(self, obj: Reaction) -> Columns:
+
+@dataclass
+class ReactionEntity(Entity):
+    message_id: Id
+    emoji_id: Id
+    user_ids: List[Id]
+    created_at: datetime
+    edited_at: Optional[datetime] = None
+    deleted_at: Optional[datetime] = None
+
+
+
+class ReactionMapper(Mapper[Reaction, ReactionEntity]):
+    async def map(self, obj: Reaction) -> ReactionEntity:
         reaction = obj
         user_ids = [user.id async for user in reaction.users()]
-        emoji_id = emoji_hashcode(reaction.emoji)
+        emoji_id = get_emoji_id(reaction.emoji)
         created_at = reaction.message.created_at.replace(tzinfo=None)
-        return reaction.message.id, emoji_id, user_ids, created_at
+        return ReactionEntity(reaction.message.id, emoji_id, user_ids, created_at)
 
 
-class ReactionRepository(Crud[Columns]):
+
+class ReactionRepository(Crud[ReactionEntity]):
     def __init__(self) -> None:
-        super().__init__(table_name=REACTIONS)
+        super().__init__(entity=ReactionEntity)
+
 
     @inject_conn
-    async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
-        await conn.executemany(f"""
+    async def insert(self, conn: DBConnection, data: ReactionEntity) -> None:
+        await conn.execute(f"""
             INSERT INTO server.reactions AS r (message_id, emoji_id, member_ids, created_at)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (message_id, emoji_id) DO UPDATE
@@ -37,12 +46,13 @@ class ReactionRepository(Crud[Columns]):
                     edited_at=NOW()
                 WHERE r.member_ids<>excluded.member_ids OR
                       r.created_at<>excluded.created_at
-        """, data)
+        """, astuple(data))
+
 
     @inject_conn
-    async def soft_delete(self, conn: DBConnection, data: Sequence[Tuple[Id]]) -> None:
-        await conn.executemany(f"""
+    async def soft_delete(self, conn: DBConnection, id: Id) -> None:
+        await conn.execute(f"""
             UPDATE server.reactions
             SET deleted_at=NOW()
             WHERE message_id = $1 AND emoji_id=$2;
-        """, data)
+        """, (id,))

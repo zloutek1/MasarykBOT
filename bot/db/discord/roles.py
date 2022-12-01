@@ -1,28 +1,42 @@
+from dataclasses import dataclass, astuple
 from datetime import datetime
-from typing import Sequence, Tuple
+from typing import Optional
 
 from discord import Role
 
-from bot.db.utils import (Crud, DBConnection, Id, Mapper, inject_conn)
-from bot.db.tables import ROLES
-
-Columns = Tuple[Id, Id, str, str, datetime]
+from bot.db.utils import (Crud, DBConnection, Id, Mapper, inject_conn, Entity)
 
 
-class RoleMapper(Mapper[Role, Columns]):
-    async def map(self, obj: Role) -> Columns:
+
+@dataclass
+class RoleEntity(Entity):
+    __table_name__ = "server.role"
+
+    guild_id: Id
+    id: Id
+    name: str
+    color: str
+    created_at: datetime
+    edited_at: Optional[datetime] = None
+    deleted_at: Optional[datetime] = None
+
+
+
+class RoleMapper(Mapper[Role, RoleEntity]):
+    async def map(self, obj: Role) -> RoleEntity:
         role = obj
         created_at = role.created_at.replace(tzinfo=None)
-        return role.guild.id, role.id, role.name, hex(role.color.value), created_at
+        return RoleEntity(role.guild.id, role.id, role.name, hex(role.color.value), created_at)
 
 
-class RoleRepository(Crud[Columns]):
+class RoleRepository(Crud[RoleEntity]):
     def __init__(self) -> None:
-        super().__init__(table_name=ROLES)
+        super().__init__(entity=RoleEntity)
+
 
     @inject_conn
-    async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
-        await conn.executemany(f"""
+    async def insert(self, conn: DBConnection, data: RoleEntity) -> None:
+        await conn.execute(f"""
             INSERT INTO server.roles AS r (guild_id, id, name, color, created_at)
             VALUES ($1, $2, $3, $4, $5)
             ON CONFLICT (id) DO UPDATE
@@ -33,4 +47,4 @@ class RoleRepository(Crud[Columns]):
                 WHERE r.name<>excluded.name OR
                         r.color<>excluded.color OR
                         r.created_at<>excluded.created_at
-        """, data)
+        """, astuple(data))

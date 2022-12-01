@@ -1,28 +1,43 @@
+from dataclasses import dataclass, astuple
 from datetime import datetime
-from typing import Sequence, Tuple
+from typing import Optional
 
 from discord import CategoryChannel
 
-from bot.db.tables import CATEGORIES
-from bot.db.utils import (Crud, DBConnection, Id, Mapper, inject_conn)
-
-Columns = Tuple[Id, Id, str, int, datetime]
+from bot.db.utils import Crud, DBConnection, Id, Mapper, inject_conn, Entity
 
 
-class CategoryMapper(Mapper[CategoryChannel, Columns]):
-    async def map(self, obj: CategoryChannel) -> Columns:
+
+@dataclass
+class CategoryEntity(Entity):
+    __table_name__ = "server.category"
+
+    guild_id: Id
+    id: Id
+    name: str
+    position: int
+    created_at: datetime
+    edited_at: Optional[datetime] = None
+    deleted_at: Optional[datetime] = None
+
+
+
+class CategoryMapper(Mapper[CategoryChannel, CategoryEntity]):
+    async def map(self, obj: CategoryChannel) -> CategoryEntity:
         category = obj
         created_at = category.created_at.replace(tzinfo=None)
-        return category.guild.id, category.id, category.name, category.position, created_at
+        return CategoryEntity(category.guild.id, category.id, category.name, category.position, created_at)
 
 
-class CategoryRepository(Crud[Columns]):
+
+class CategoryRepository(Crud[CategoryEntity]):
     def __init__(self) -> None:
-        super().__init__(table_name=CATEGORIES)
+        super().__init__(entity=CategoryEntity)
+
 
     @inject_conn
-    async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
-        await conn.executemany(f"""
+    async def insert(self, conn: DBConnection, data: CategoryEntity) -> None:
+        await conn.execute(f"""
             INSERT INTO server.categories AS c (guild_id, id, name, position, created_at)
             VALUES ($1, $2, $3, $4, $5)
             ON CONFLICT (id) DO UPDATE
@@ -33,4 +48,4 @@ class CategoryRepository(Crud[Columns]):
                 WHERE c.name<>excluded.name OR
                         c.position<>excluded.position OR
                         c.created_at<>excluded.created_at
-        """, data)
+        """, astuple(data))

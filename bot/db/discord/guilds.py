@@ -1,29 +1,41 @@
+from dataclasses import dataclass, astuple
 from datetime import datetime
-from typing import Optional, Sequence, Tuple
+from typing import Optional
 
 from discord import Guild
 
-from bot.db.tables import GUILDS
-from bot.db.utils import (Crud, DBConnection, Id, Mapper, Url, inject_conn)
-
-Columns = Tuple[Id, str, Optional[Url], datetime]
+from bot.db.utils import Crud, DBConnection, Id, Mapper, Url, inject_conn, Entity
 
 
-class GuildMapper(Mapper[Guild, Columns]):
-    async def map(self, obj: Guild) -> Columns:
+
+@dataclass
+class GuildEntity(Entity):
+    id: Id
+    name: str
+    url: Optional[Url]
+    created_at: datetime
+    edited_at: Optional[datetime] = None
+    deleted_at: Optional[datetime] = None
+
+
+
+class GuildMapper(Mapper[Guild, GuildEntity]):
+    async def map(self, obj: Guild) -> GuildEntity:
         guild = obj
         icon_url = str(guild.icon.url) if guild.icon else None
         created_at = guild.created_at.replace(tzinfo=None)
-        return guild.id, guild.name, icon_url, created_at
+        return GuildEntity(guild.id, guild.name, icon_url, created_at)
 
 
-class GuildRepository(Crud[Columns]):
+
+class GuildRepository(Crud[GuildEntity]):
     def __init__(self) -> None:
-        super().__init__(table_name=GUILDS)
+        super().__init__(entity=GuildEntity)
+
 
     @inject_conn
-    async def insert(self, conn: DBConnection, data: Sequence[Columns]) -> None:
-        await conn.executemany(f"""
+    async def insert(self, conn: DBConnection, data: GuildEntity) -> None:
+        await conn.execute(f"""
             INSERT INTO server.guilds AS g (id, name, icon_url, created_at)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (id) DO UPDATE
@@ -34,4 +46,4 @@ class GuildRepository(Crud[Columns]):
                 WHERE g.name<>excluded.name OR
                         g.icon_url<>excluded.icon_url OR
                         g.created_at<>excluded.created_at
-        """, data)
+        """, astuple(data))
