@@ -1,8 +1,7 @@
 from dataclasses import dataclass
 from typing import List, Tuple
 
-from .utils import DBConnection, Id, Record, Table, inject_conn, Entity
-from .tables import LEADERBOARD, USERS, CHANNELS
+from bot.db.utils import DBConnection, Id, Entity, Table, inject_conn
 
 
 
@@ -29,7 +28,7 @@ class LeaderboardRepository(Table):
 
 
     def __init__(self) -> None:
-        super().__init__(table_name=LEADERBOARD)
+        super().__init__(table_name="cogs.leaderboard")
 
 
     @inject_conn
