@@ -7,7 +7,7 @@ from discord import TextChannel, Message
 from pytz import UTC
 
 import bot.db
-from ..utils import EmptyAsyncIterator
+from bot.utils import EmptyAsyncIterator
 
 log = logging.getLogger(__name__)
 

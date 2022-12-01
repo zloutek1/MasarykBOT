@@ -5,7 +5,7 @@ from discord.ext import commands, tasks
 
 from .processors import BotBackup
 from .message_iterator import MessageIterator
-from ..utils import requires_database, Context
+from bot.utils import requires_database, Context
 
 log = logging.getLogger(__name__)
 

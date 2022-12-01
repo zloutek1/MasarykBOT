@@ -3,9 +3,8 @@ from typing import List, Dict
 import discord
 from discord.utils import escape_markdown
 
-from bot.cogs.utils import right_justify
-from bot.db import Record
-from bot.db.leaderboard import LeaderboardEntity
+from bot.utils import right_justify
+from bot.db.cogs import LeaderboardEntity
 
 
 

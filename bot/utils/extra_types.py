@@ -2,7 +2,7 @@ from typing import Union
 
 import discord
 
-from bot.cogs.utils.context import Context
+from bot.utils.context import Context
 
 
 class GuildContext(Context):

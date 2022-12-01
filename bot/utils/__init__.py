@@ -35,14 +35,6 @@ def right_justify(text: str, by: int = 0, pad: str = " ") -> str:
 
 
 
-def emoji_name(emoji: discord.Emoji | discord.PartialEmoji | str) -> str:
-    """ extract name of the emoji """
-    if isinstance(emoji, str):
-        return emoji
-    return emoji.name
-
-
-
 class EmptyAsyncIterator(AsyncIterator[T]):
     def __aiter__(self):
         return self

@@ -11,7 +11,7 @@ from discord.ext import commands
 from discord.utils import find, get
 
 from bot.constants import CONFIG, GuildConfig, StarboardConfig
-from .utils import emoji_name
+from bot.utils import emoji_name
 
 if TYPE_CHECKING:
     from bot.bot import MasarykBOT
