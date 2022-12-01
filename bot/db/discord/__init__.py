@@ -6,14 +6,13 @@ from .categories import CategoryRepository, CategoryMapper
 from .channels import ChannelRepository, ChannelMapper
 from .emojis import EmojiRepository, EmojiMapper
 from .guilds import GuildRepository, GuildMapper
-from .message_emojis import MessageEmojiRepository
 from .messages import MessageRepository, MessageMapper
 from .reactions import ReactionRepository, ReactionMapper
 from .roles import RoleRepository, RoleMapper
 from .users import UserRepository, UserMapper
 
 REPOSITORIES = (GuildRepository, RoleRepository, UserRepository, EmojiRepository, CategoryRepository, ChannelRepository,
-                MessageRepository, MessageEmojiRepository, AttachmentRepository, ReactionRepository)
+                MessageRepository, AttachmentRepository, ReactionRepository)
 MAPPERS = (GuildMapper, RoleMapper, UserMapper, EmojiMapper, CategoryMapper, ChannelMapper, MessageMapper,
            AttachmentMapper, ReactionMapper)
 ENTITIES = (AttachmentEntity,)

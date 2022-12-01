@@ -1,5 +1,5 @@
 from dataclasses import dataclass, astuple
-from typing import Optional, Sequence, Tuple
+from typing import Optional
 
 from discord import Attachment
 
@@ -9,6 +9,8 @@ from bot.db.utils import Entity, Mapper, Id, Crud, inject_conn, DBConnection
 
 @dataclass
 class AttachmentEntity(Entity):
+    __table_name__ = "server.attachment"
+
     message_id: Optional[Id]
     id: Id
     filename: str
@@ -25,7 +27,7 @@ class AttachmentMapper(Mapper[Attachment, AttachmentEntity]):
 
 class AttachmentRepository(Crud[AttachmentEntity]):
     def __init__(self) -> None:
-        super().__init__(table_name="server.attachments")
+        super().__init__(entity=AttachmentEntity)
 
 
     @inject_conn

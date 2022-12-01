@@ -4,7 +4,7 @@
 
 CREATE TABLE server.attachments
 (
-    message_id bigint NOT NULL,
+    message_id bigint,
     id bigint NOT NULL,
     filename text COLLATE pg_catalog."default",
     url text COLLATE pg_catalog."default",
