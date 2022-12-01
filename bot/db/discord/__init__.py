@@ -1,7 +1,7 @@
 from typing import List
 import inject
 
-from .attachments import AttachmentRepository, AttachmentMapper
+from .attachments import AttachmentRepository, AttachmentMapper, AttachmentEntity
 from .categories import CategoryRepository, CategoryMapper
 from .channels import ChannelRepository, ChannelMapper
 from .emojis import EmojiRepository, EmojiMapper
@@ -16,6 +16,8 @@ REPOSITORIES = (GuildRepository, RoleRepository, UserRepository, EmojiRepository
                 MessageRepository, MessageEmojiRepository, AttachmentRepository, ReactionRepository)
 MAPPERS = (GuildMapper, RoleMapper, UserMapper, EmojiMapper, CategoryMapper, ChannelMapper, MessageMapper,
            AttachmentMapper, ReactionMapper)
+ENTITIES = (AttachmentEntity,)
+
 
 
 def setup_injections(binder: inject.Binder) -> None:
