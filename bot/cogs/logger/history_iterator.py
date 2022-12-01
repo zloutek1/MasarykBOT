@@ -13,16 +13,20 @@ from .message_iterator import MessageIterator
 log = logging.getLogger(__name__)
 
 
+
 class HistoryIterator:
     @inject.autoparams('logger_repository', 'channel_repository')
-    def __init__(self, bot: commands.Bot, logger_repository: LoggerRepository, channel_repository: ChannelRepository) -> None:
+    def __init__(self, bot: commands.Bot, logger_repository: LoggerRepository,
+                 channel_repository: ChannelRepository) -> None:
         self.bot = bot
         self._logger_repository = logger_repository
         self._channel_repository = channel_repository
         self.updatable_processes: list[LoggerRepository.UpdatableProcesses] = []
 
+
     def __aiter__(self) -> "HistoryIterator":
         return self
+
 
     async def __anext__(self) -> "MessageIterator":
         if not self.updatable_processes:

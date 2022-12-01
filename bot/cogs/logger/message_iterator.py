@@ -12,6 +12,7 @@ from bot.utils import EmptyAsyncIterator
 log = logging.getLogger(__name__)
 
 
+
 class MessageIterator:
     @inject.autoparams('logger_repository')
     def __init__(self, text_channel: TextChannel, logger_repository: bot.db.LoggerRepository) -> None:
@@ -21,14 +22,16 @@ class MessageIterator:
         self.text_channel = text_channel
         self.logger_repository = logger_repository
 
+
     async def _get_from_date(self) -> datetime:
         last_process = await self.logger_repository.find_last_process(self.text_channel.id)
         if last_process is None:
             return self.text_channel.created_at
-        elif last_process['finished_at'] is None:
-            return cast(datetime, last_process['from_date'])
+        elif last_process.finished_at is None:
+            return cast(datetime, last_process.from_date)
         else:
-            return cast(datetime, last_process['to_date'])
+            return cast(datetime, last_process.to_date)
+
 
     async def history(self) -> AsyncIterator[Message]:
         from_date = min(await self._get_from_date(), datetime.now(tz=UTC))
@@ -46,8 +49,10 @@ class MessageIterator:
         self._to_date = to_date
         return self
 
+
     def __aiter__(self):
         return self
+
 
     async def __anext__(self):
         try:
