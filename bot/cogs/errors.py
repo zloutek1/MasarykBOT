@@ -19,7 +19,8 @@ REPLY_ON_ERRORS = (
     commands.MissingRole,
     commands.NoPrivateMessage,
     commands.MissingPermissions,
-    commands.BotMissingPermissions
+    commands.BotMissingPermissions,
+    commands.CommandNotFound
 )
 
 
@@ -102,6 +103,7 @@ class Errors(commands.Cog):
                 params = ' '.join(map(str, ctx.kwargs.values()))
                 command = f"{ctx.prefix}{ctx.command} {params}"
                 return f'In #{ctx.channel} @{user} executed:\n   {command}\n\n{trace}'
+        return trace
 
 
 
