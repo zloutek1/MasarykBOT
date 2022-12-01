@@ -1,11 +1,10 @@
 import logging
 from typing import Any, Optional, Union, Type
 
-import discord
-from discord import Message, User, Activity, ActivityType, Interaction, app_commands
+from discord import Message, Activity, ActivityType, Interaction
 from discord.ext import commands
 
-from bot.cogs.utils import context, Context
+from bot.utils import Context
 from bot.constants import CONFIG
 
 log = logging.getLogger(__name__)

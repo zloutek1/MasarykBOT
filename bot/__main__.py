@@ -11,10 +11,8 @@ from discord.ext.commands import ExtensionFailed
 from dotenv import load_dotenv
 
 from bot.bot import MasarykBOT
-from bot.cogs.utils.logging import setup_logging
-from bot.db import connect_db, setup_injections as setup_db_injections
-from bot.db.utils import Pool, Url
-from bot.cogs.utils.checks import DatabaseRequiredException, RedisRequiredException
+from bot.utils import setup_logging, DatabaseRequiredException, RedisRequiredException
+from bot.db import connect_db, Pool, Url, setup_injections as setup_db_injections
 
 # TODO: implement Seasonal
 # TODO: implement LaTeX
@@ -77,12 +75,10 @@ def setup_injections(db_pool: Optional[Pool], redis: Optional[aioredis.Redis]) -
     def inner(binder: inject.Binder) -> None:
         if db_pool:
             binder.bind(Pool, db_pool)  # type: ignore[misc]
+            binder.install(setup_db_injections)
 
         if redis:
             binder.bind(aioredis.Redis, redis)
-
-        binder.install(setup_db_injections)
-
     return inner
 
 
