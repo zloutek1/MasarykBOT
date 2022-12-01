@@ -13,7 +13,7 @@ class Page(Generic[TEntity]):
         self.entity = entity
         self.per_page = per_page
 
-    def __aiter__(self) -> "Page":
+    def __aiter__(self) -> "Page[TEntity]":
         return self
 
     async def __anext__(self) -> List[TEntity]:

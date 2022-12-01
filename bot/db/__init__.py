@@ -7,9 +7,7 @@ import asyncpg
 import inject
 
 # ---- utils ----
-from .utils import (Crud, Entity, Mapper, Table, UnitOfWork, Id, Url, Record,
-                    DBConnection, Cursor, Pool, DBTransaction)
-
+from .utils import UnitOfWork, Url, Pool
 
 # ---- discord ----
 from .discord import (AttachmentMapper, CategoryMapper, ChannelMapper, EmojiMapper,
@@ -18,12 +16,15 @@ from .discord import (AttachmentMapper, CategoryMapper, ChannelMapper, EmojiMapp
 from .discord import (AttachmentRepository, CategoryRepository, ChannelRepository, EmojiRepository,
                       GuildRepository, MessageRepository, ReactionRepository,
                       RoleRepository, UserRepository)
-from .discord import (AttachmentEntity)
+from .discord import (AttachmentEntity, CategoryEntity, ChannelEntity, EmojiEntity,
+                      GuildEntity, MessageEntity, ReactionEntity,
+                      RoleEntity, UserEntity)
 from .discord import setup_injections as setup_discord_injections
 
 
 # ---- muni ----
 from .muni import (CourseRepository, StudentRepository)
+from .muni import (CourseEntity, StudentEntity)
 from .muni import setup_injections as setup_muni_injections
 
 
