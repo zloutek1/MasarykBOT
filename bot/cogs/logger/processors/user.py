@@ -25,7 +25,7 @@ class UserBackup(Backup[User | Member]):
         log.debug('backing up user %s', user.name)
         await super().backup(user)
         entity: UserEntity = await self.mapper.map(user)
-        await self.user_repository.insert([entity])
+        await self.user_repository.insert(entity)
 
     async def traverse_down(self, user: User | Member) -> None:
         await super().traverse_down(user)

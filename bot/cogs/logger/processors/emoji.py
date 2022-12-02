@@ -25,7 +25,7 @@ class EmojiBackup(Backup[Emoji | PartialEmoji | str]):
         log.debug('backing up emoji %s', emoji.name if hasattr(emoji, 'name') else emoji)
         await super().backup(emoji)
         entity: EmojiEntity = await self.mapper.map(emoji)
-        await self.emoji_repository.insert([entity])
+        await self.emoji_repository.insert(entity)
 
     async def traverse_down(self, emoji: Emoji | PartialEmoji | str) -> None:
         await super().traverse_down(emoji)

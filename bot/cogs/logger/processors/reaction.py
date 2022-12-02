@@ -24,7 +24,7 @@ class ReactionBackup(Backup[Reaction]):
     async def backup(self, reaction: Reaction) -> None:
         await super().backup(reaction)
         entity: ReactionEntity = await self.mapper.map(reaction)
-        await self.reaction_repository.insert([entity])
+        await self.reaction_repository.insert(entity)
 
     async def traverse_down(self, reaction: Reaction) -> None:
         await super().traverse_down(reaction)

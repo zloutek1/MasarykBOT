@@ -1,4 +1,4 @@
-from dataclasses import dataclass, astuple
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional, Union
 
@@ -39,16 +39,16 @@ class UserRepository(Crud[UserEntity]):
     @inject_conn
     async def insert(self, conn: DBConnection, data: UserEntity) -> None:
         await conn.execute(f"""
-            INSERT INTO server.users AS u (id, names, avatar_url, is_bot, created_at)
-            VALUES ($1, ARRAY[$2], $3, $4, $5)
+            INSERT INTO server.users AS u (id, name, avatar_url, is_bot, created_at)
+            VALUES ($1, $2, $3, $4, $5)
             ON CONFLICT (id) DO UPDATE
                 SET name=$2,
                     avatar_url=$3,
                     is_bot=$4,
                     created_at=$5,
                     edited_at=NOW()
-                WHERE $2<>ANY(excluded.names) OR
-                        u.avatar_url<>excluded.avatar_url OR
-                        u.is_bot<>excluded.is_bot OR
-                        u.created_at<>excluded.created_at
-        """, astuple(data))
+                WHERE u.name<>excluded.name OR
+                      u.avatar_url<>excluded.avatar_url OR
+                      u.is_bot<>excluded.is_bot OR
+                      u.created_at<>excluded.created_at
+        """, data.id, data.name, data.avatar_url, data.is_bot, data.created_at)

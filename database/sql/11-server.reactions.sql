@@ -7,9 +7,9 @@ CREATE TABLE server.reactions
     message_id bigint NOT NULL,
     emoji_id bigint NOT NULL,
     member_ids bigint[] NOT NULL,
-    created_at timestamp without time zone NOT NULL DEFAULT now(),
-    edited_at timestamp without time zone,
-    deleted_at timestamp without time zone,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    edited_at timestamp with time zone,
+    deleted_at timestamp with time zone,
     CONSTRAINT reactions_fkey_emoji FOREIGN KEY (emoji_id)
         REFERENCES server.emojis (id) MATCH SIMPLE
         ON UPDATE NO ACTION

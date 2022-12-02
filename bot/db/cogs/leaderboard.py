@@ -16,6 +16,8 @@ class LeaderboardFilter:
 
 @dataclass
 class LeaderboardEntity(Entity):
+    __table_name__ = "cogs.leaderboard"
+
     row_no: int
     author_id: Id
     author: str
@@ -23,12 +25,12 @@ class LeaderboardEntity(Entity):
 
 
 
-class LeaderboardRepository(Table):
+class LeaderboardRepository(Table[LeaderboardEntity]):
     tmp_table = "ldb_lookup"
 
 
     def __init__(self) -> None:
-        super().__init__(table_name="cogs.leaderboard")
+        super().__init__(entity=LeaderboardEntity)
 
 
     @inject_conn

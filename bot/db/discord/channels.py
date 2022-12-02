@@ -1,4 +1,4 @@
-from dataclasses import dataclass, astuple
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
@@ -50,4 +50,4 @@ class ChannelRepository(Crud[ChannelEntity]):
                 WHERE ch.name<>excluded.name OR
                         ch.position<>excluded.position OR
                         ch.created_at<>excluded.created_at
-        """, astuple(data))
+        """, data.guild_id, data.category_id, data.id, data.name, data.position, data.created_at)

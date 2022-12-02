@@ -1,4 +1,4 @@
-from dataclasses import dataclass, astuple
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
@@ -36,7 +36,7 @@ class EmojiMapper(Mapper[AnyEmote, EmojiEntity]):
         emoji_id = get_emoji_id(emoji)
         hex_id = '_'.join(hex(ord(char))[2:] for char in emoji)
         url = "https://unicode.org/emoji/charts/full-emoji-list.html#{hex}".format(hex=hex_id)
-        return EmojiEntity(emoji_id, demojize(emoji).strip(':'), url, False)
+        return EmojiEntity(emoji_id, demojize(emoji).strip(':'), url, False, datetime.min)
 
 
     @staticmethod
@@ -53,8 +53,8 @@ class EmojiRepository(Crud[EmojiEntity]):
     @inject_conn
     async def insert(self, conn: DBConnection, data: EmojiEntity) -> None:
         await conn.execute(f"""
-            INSERT INTO server.emojis AS e (id, name, url, animated)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO server.emojis AS e (id, name, url, animated, created_at)
+            VALUES ($1, $2, $3, $4, $5)
             ON CONFLICT (id) DO UPDATE
                 SET name=$2,
                     url=$3,
@@ -63,4 +63,4 @@ class EmojiRepository(Crud[EmojiEntity]):
                 WHERE e.name<>excluded.name OR
                       e.url<>excluded.url OR
                       e.animated<>excluded.animated
-        """, astuple(data))
+        """, data.id, data.name, data.url, data.animated, data.created_at)

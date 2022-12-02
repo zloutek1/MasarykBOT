@@ -1,4 +1,4 @@
-from dataclasses import dataclass, astuple
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
@@ -47,4 +47,4 @@ class RoleRepository(Crud[RoleEntity]):
                 WHERE r.name<>excluded.name OR
                         r.color<>excluded.color OR
                         r.created_at<>excluded.created_at
-        """, astuple(data))
+        """, data.guild_id, data.id, data.name, data.color, data.created_at)

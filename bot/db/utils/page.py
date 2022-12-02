@@ -1,4 +1,5 @@
-from typing import TypeVar, Generic, List
+from collections.abc import AsyncIterator
+from typing import TypeVar, List
 
 from .entity import Entity
 from .types import Cursor
@@ -7,7 +8,7 @@ from .types import Cursor
 TEntity = TypeVar('TEntity', bound=Entity)
 
 
-class Page(Generic[TEntity]):
+class Page(AsyncIterator[List[TEntity]]):
     def __init__(self, cursor: Cursor, entity: TEntity, per_page: int = 50) -> None:
         self.cursor = cursor
         self.entity = entity
@@ -20,4 +21,5 @@ class Page(Generic[TEntity]):
         if not (rows := await self.cursor.fetch(self.per_page)):
             raise StopAsyncIteration
         return [self.entity.convert(row) for row in rows]
+
     

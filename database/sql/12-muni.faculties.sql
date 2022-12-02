@@ -7,9 +7,9 @@ CREATE TABLE IF NOT EXISTS muni.faculties
     id integer NOT NULL,
     code character varying COLLATE pg_catalog."default" NOT NULL,
     name character varying COLLATE pg_catalog."default" NOT NULL,
-    created_at timestamp without time zone NOT NULL DEFAULT now(),
-    edited_at timestamp without time zone,
-    deleted_at timestamp without time zone,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    edited_at timestamp with time zone,
+    deleted_at timestamp with time zone,
     CONSTRAINT faculties_pkey PRIMARY KEY (id)
 )
 

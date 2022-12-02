@@ -1,4 +1,4 @@
-from dataclasses import dataclass, astuple
+from dataclasses import dataclass
 from typing import Optional
 
 from discord import Attachment
@@ -40,7 +40,7 @@ class AttachmentRepository(Crud[AttachmentEntity]):
                     url=$4
                 WHERE a.filename<>excluded.filename OR
                         a.url<>excluded.url
-        """, astuple(data))
+        """, data.message_id, data.id, data.filename, data.url)
 
 
     @inject_conn

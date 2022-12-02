@@ -23,7 +23,7 @@ class RoleBackup(Backup[Role]):
     async def backup(self, role: Role) -> None:
         log.debug("backing up role %s", role)
         entity: RoleEntity = await self.mapper.map(role)
-        await self.role_repository.insert([entity])
+        await self.role_repository.insert(entity)
 
     async def traverse_down(self, role: Role) -> None:
         await self.backup(role)

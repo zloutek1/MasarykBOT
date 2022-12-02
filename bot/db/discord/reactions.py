@@ -1,4 +1,4 @@
-from dataclasses import dataclass, astuple
+from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional
 
@@ -46,7 +46,7 @@ class ReactionRepository(Crud[ReactionEntity]):
                     edited_at=NOW()
                 WHERE r.member_ids<>excluded.member_ids OR
                       r.created_at<>excluded.created_at
-        """, astuple(data))
+        """, data.message_id, data.emoji_id, data.user_ids, data.created_at)
 
 
     @inject_conn

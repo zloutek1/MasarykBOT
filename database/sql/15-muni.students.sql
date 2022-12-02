@@ -8,8 +8,8 @@ CREATE TABLE muni.students
     code character varying COLLATE pg_catalog."default" NOT NULL,
     guild_id bigint NOT NULL,
     member_id bigint NOT NULL,
-    joined_at timestamp without time zone NOT NULL DEFAULT now(),
-    left_at timestamp without time zone,
+    joined_at timestamp with time zone NOT NULL DEFAULT now(),
+    left_at timestamp with time zone,
     CONSTRAINT students_pkey PRIMARY KEY (faculty, code, guild_id, member_id),
     CONSTRAINT students_fkey_code FOREIGN KEY (code, faculty)
         REFERENCES muni.courses (code, faculty) MATCH SIMPLE

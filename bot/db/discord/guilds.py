@@ -1,4 +1,4 @@
-from dataclasses import dataclass, astuple
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
@@ -12,7 +12,7 @@ from bot.db.utils import Crud, DBConnection, Id, Mapper, Url, inject_conn, Entit
 class GuildEntity(Entity):
     id: Id
     name: str
-    url: Optional[Url]
+    icon_url: Optional[Url]
     created_at: datetime
     edited_at: Optional[datetime] = None
     deleted_at: Optional[datetime] = None
@@ -46,4 +46,4 @@ class GuildRepository(Crud[GuildEntity]):
                 WHERE g.name<>excluded.name OR
                         g.icon_url<>excluded.icon_url OR
                         g.created_at<>excluded.created_at
-        """, astuple(data))
+        """, data.id, data.name, data.icon_url, data.created_at)

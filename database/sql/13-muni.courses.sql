@@ -9,9 +9,9 @@ CREATE TABLE IF NOT EXISTS muni.courses
     name character varying COLLATE pg_catalog."default" NOT NULL,
     url text COLLATE pg_catalog."default" NOT NULL,
     terms character varying[] COLLATE pg_catalog."default" NOT NULL,
-    created_at timestamp without time zone NOT NULL DEFAULT now(),
-    edited_at timestamp without time zone,
-    deleted_at timestamp without time zone,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    edited_at timestamp with time zone,
+    deleted_at timestamp with time zone,
     CONSTRAINT courses_pkey PRIMARY KEY (faculty, code),
     CONSTRAINT fki_course_faculty_fkey_faculty FOREIGN KEY (faculty)
         REFERENCES muni.faculties (code) MATCH SIMPLE

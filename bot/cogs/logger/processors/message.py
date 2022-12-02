@@ -30,7 +30,7 @@ class MessageBackup(Backup[Message]):
     async def backup(self, message: Message) -> None:
         await super().backup(message)
         entity: MessageEntity = await self.mapper.map(message)
-        await self.message_repository.insert([entity])
+        await self.message_repository.insert(entity)
 
         self.rate_limiter += 1
         if self.rate_limiter > 8_000:
@@ -48,3 +48,5 @@ class MessageBackup(Backup[Message]):
         from .attachment import AttachmentBackup
         for attachment in message.attachments:
             await AttachmentBackup(message.id).traverse_down(attachment)
+
+        # TODO: add message_emoji parsing

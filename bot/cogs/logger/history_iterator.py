@@ -1,4 +1,5 @@
 import logging
+from collections.abc import AsyncIterator
 from typing import Optional
 
 import discord.errors
@@ -14,7 +15,7 @@ log = logging.getLogger(__name__)
 
 
 
-class HistoryIterator:
+class HistoryIterator(AsyncIterator[MessageIterator]):
     @inject.autoparams('logger_repository', 'channel_repository')
     def __init__(self, bot: commands.Bot, logger_repository: LoggerRepository,
                  channel_repository: ChannelRepository) -> None:

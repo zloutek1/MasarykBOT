@@ -7,7 +7,7 @@ import asyncpg
 import inject
 
 # ---- utils ----
-from .utils import UnitOfWork, Url, Pool
+from .utils import UnitOfWork, Url, Pool, Page
 
 # ---- discord ----
 from .discord import (AttachmentMapper, CategoryMapper, ChannelMapper, EmojiMapper,

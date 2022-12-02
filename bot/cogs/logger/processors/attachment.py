@@ -27,7 +27,7 @@ class AttachmentBackup(Backup[Attachment]):
         entity: AttachmentEntity = await self.mapper.map(attachment)
         entity.message_id = self.message_id
 
-        await self.attachment_repository.insert([entity])
+        await self.attachment_repository.insert(entity)
 
     async def traverse_down(self, attachment: Attachment) -> None:
         await super().traverse_down(attachment)

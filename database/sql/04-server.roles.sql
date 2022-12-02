@@ -8,9 +8,9 @@ CREATE TABLE server.roles
     id bigint NOT NULL,
     name character varying(100) COLLATE pg_catalog."default" NOT NULL,
     color character varying(8) COLLATE pg_catalog."default" NOT NULL,
-    created_at timestamp without time zone NOT NULL DEFAULT now(),
-    edited_at timestamp without time zone,
-    deleted_at timestamp without time zone,
+    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    edited_at timestamp with time zone,
+    deleted_at timestamp with time zone,
     CONSTRAINT roles_pkey PRIMARY KEY (id),
     CONSTRAINT roles_fkey_guild FOREIGN KEY (guild_id)
         REFERENCES server.guilds (id) MATCH SIMPLE

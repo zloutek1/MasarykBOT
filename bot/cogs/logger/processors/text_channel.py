@@ -33,7 +33,7 @@ class TextChannelBackup(Backup[TextChannel]):
         log.debug('backing up text channel %s', text_channel.name)
         await super().backup(text_channel)
         entity: ChannelEntity = await self.mapper.map(text_channel)
-        await self.channel_repository.insert([entity])
+        await self.channel_repository.insert(entity)
 
     async def traverse_down(self, text_channel: TextChannel) -> None:
         await super().traverse_down(text_channel)
