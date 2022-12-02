@@ -34,7 +34,7 @@ class MarkovCog(commands.Cog):
 
 
     @commands.Cog.listener()
-    async def on_message(self, message: discord.Message) -> None:
+    async def on_message_backup(self, message: discord.Message) -> None:
         if self.training_service.can_learn_message(message):
             await self.training_service.train_message(message.guild.id, message.content)
 

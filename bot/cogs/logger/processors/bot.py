@@ -9,8 +9,10 @@ class BotBackup(Backup[commands.Bot]):
     async def traverse_up(self, bot: commands.Bot) -> None:
         await super().traverse_up(bot)
 
+
     async def backup(self, bot: commands.Bot) -> None:
         pass
+
 
     async def traverse_down(self, bot: commands.Bot) -> None:
         await super().traverse_down(bot)
