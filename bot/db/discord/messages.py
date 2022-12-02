@@ -13,6 +13,8 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class MessageEntity(Entity):
+    __table_name__ = "server.messages"
+
     channel_id: Id
     author_id: Id
     id: Id

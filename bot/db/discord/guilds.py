@@ -10,6 +10,8 @@ from bot.db.utils import Crud, DBConnection, Id, Mapper, Url, inject_conn, Entit
 
 @dataclass
 class GuildEntity(Entity):
+    __table_name__ = "server.guilds"
+
     id: Id
     name: str
     icon_url: Optional[Url]

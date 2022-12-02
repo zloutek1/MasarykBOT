@@ -11,6 +11,8 @@ from bot.utils import get_emoji_id
 
 @dataclass
 class ReactionEntity(Entity):
+    __table_name__ = "server.reactions"
+
     message_id: Id
     emoji_id: Id
     user_ids: List[Id]

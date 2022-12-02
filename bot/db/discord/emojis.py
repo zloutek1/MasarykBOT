@@ -13,6 +13,8 @@ from bot.utils.emoji import get_emoji_id
 
 @dataclass
 class EmojiEntity(Entity):
+    __table_name__ = "server.emojis"
+
     id: Id
     name: str
     url: Url
