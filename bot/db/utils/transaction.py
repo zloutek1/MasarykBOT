@@ -10,10 +10,11 @@ log = logging.getLogger(__name__)
 
 
 class TransactionContext:
-    def __init__(self, pool: Pool) -> None:
+    def __init__(self, pool: Pool, readonly: bool = False) -> None:
         self.pool = pool
         self.conn: Optional[DBConnection] = None
         self._transaction: Optional[DBTransaction] = None
+        self.readonly = readonly
 
 
     async def __aenter__(self) -> "TransactionContext":
@@ -36,7 +37,7 @@ class TransactionContext:
 
     async def _start(self):
         self.conn: DBConnection = await self.pool.acquire()
-        self._transaction = self.conn.transaction()
+        self._transaction = self.conn.transaction(readonly=self.readonly)
         await self._transaction.start()
 
 
@@ -58,6 +59,6 @@ class UnitOfWork:
         self.pool = pool
 
 
-    def transaction(self) -> TransactionContext:
-        return TransactionContext(self.pool)
+    def transaction(self, readonly: bool = False) -> TransactionContext:
+        return TransactionContext(self.pool, readonly)
 

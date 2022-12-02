@@ -2,9 +2,10 @@ import inject
 
 from .leaderboard import LeaderboardRepository, LeaderboardEntity
 from .logger import LoggerRepository, LoggerEntity
+from .markov import MarkovRepository, MarkovEntity
 
-REPOSITORIES = (LeaderboardRepository, LoggerRepository)
-ENTITIES = (LeaderboardEntity, LoggerEntity)
+REPOSITORIES = (LeaderboardRepository, LoggerRepository, MarkovRepository)
+ENTITIES = (LeaderboardEntity, LoggerEntity, MarkovEntity)
 
 
 

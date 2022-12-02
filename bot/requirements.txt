@@ -17,9 +17,6 @@ asyncpg==0.27.0
 asyncpg-stubs==0.27.0
 
 # cogs
-    # markov
-aioredis==2.0.1
-
     # activity
 numpy==1.23.5
 matplotlib==3.6.2

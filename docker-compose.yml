@@ -5,7 +5,7 @@ services:
     container_name: db
     image: postgres:12
     ports:
-      - 5432:5432
+      - "5432:5432"
     environment:
       - POSTGRES_USER=masaryk
       - POSTGRES_PASSWORD=localdbpassword
@@ -15,16 +15,6 @@ services:
       - ./database/sql:/docker-entrypoint-initdb.d/
       - postgres:/var/lib/postgresql/data     # persist data even if container shuts down
     restart: unless-stopped
-
-  redis:
-    container_name: redis
-    image: redis:7
-    ports:
-      - 6379:6379
-    volumes:
-      - redis:/data                    
-    restart: unless-stopped
-    command: bash -c "redis-server --appendonly yes --requirepass redis_pass --maxmemory-policy noeviction"
 
   bot:
     container_name: bot
@@ -70,7 +60,7 @@ services:
     container_name: pgadmin
     image: dpage/pgadmin4:6.16
     ports:
-      - 8832:80
+      - "8832:80"
     links:
       - database
     depends_on:

@@ -52,3 +52,12 @@ class MessageRepository(Crud[MessageEntity]):
                         m.created_at<>excluded.created_at OR
                         m.edited_at<>excluded.edited_at
         """, data.channel_id, data.author_id, data.id, data.content, data.created_at)
+
+
+    @inject_conn
+    async def count(self, conn: DBConnection) -> int:
+        row = await conn.fetchrow("""
+            SELECT COUNT(*) as count
+            FROM server.messages
+        """)
+        return row['count']
