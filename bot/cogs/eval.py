@@ -112,7 +112,7 @@ class AplCompilingService:
             return '\n'.join(output[3])
 
 
-class Eval(commands.Cog):
+class EvalCog(commands.Cog):
     def __init__(
             self,
             bot: commands.Bot,
@@ -155,4 +155,4 @@ class Eval(commands.Cog):
 
 
 async def setup(bot: commands.Bot) -> None:
-    await bot.add_cog(Eval(bot))
+    await bot.add_cog(EvalCog(bot))

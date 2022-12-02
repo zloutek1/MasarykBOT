@@ -118,7 +118,7 @@ class FunService:
         return chr(10240 + int('0b' + ''.join(map(str, reversed(dots))), 2))
 
 
-class Fun(commands.Cog):
+class FunCog(commands.Cog):
     def __init__(self, bot: commands.Bot, service: FunService = None) -> None:
         self.bot = bot
         self.service = service or FunService(bot)
@@ -226,4 +226,4 @@ class Fun(commands.Cog):
 
 
 async def setup(bot: commands.Bot) -> None:
-    await bot.add_cog(Fun(bot))
+    await bot.add_cog(FunCog(bot))

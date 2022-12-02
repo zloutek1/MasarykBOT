@@ -11,7 +11,7 @@ from bot.utils import Context
 log = logging.getLogger(__name__)
 
 
-class Admin(commands.Cog):
+class AdminCog(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
@@ -79,4 +79,4 @@ class Admin(commands.Cog):
 
 
 async def setup(bot: commands.Bot) -> None:
-    await bot.add_cog(Admin(bot))
+    await bot.add_cog(AdminCog(bot))

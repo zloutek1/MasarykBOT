@@ -87,14 +87,14 @@ class StarboardProcessingService:
         if self.should_ignore_message():
             return None
 
-        Starboard.starred_messages.setdefault(self.guild.id, deque(maxlen=50))
-        if self.message.id in Starboard.starred_messages[self.guild.id]:
+        StarboardCog.starred_messages.setdefault(self.guild.id, deque(maxlen=50))
+        if self.message.id in StarboardCog.starred_messages[self.guild.id]:
             return None
 
-        Starboard.starred_messages[self.guild.id].append(self.message.id)
+        StarboardCog.starred_messages[self.guild.id].append(self.message.id)
 
         if await self.is_already_in_starboard():
-            Starboard.starred_messages[self.guild.id].remove(self.message.id)
+            StarboardCog.starred_messages[self.guild.id].remove(self.message.id)
             return None
 
         log.info("adding message with %s reactions to starboard (%s)", self.reaction.count, self.ctx)
@@ -160,8 +160,8 @@ class StarboardProcessingService:
         return False
 
     def _is_recently_starred(self) -> bool:
-        return (self.guild.id in Starboard.starred_messages and
-                self.message.id in Starboard.starred_messages[self.guild.id])
+        return (self.guild.id in StarboardCog.starred_messages and
+                self.message.id in StarboardCog.starred_messages[self.guild.id])
 
     def _calculate_ignore_score(self) -> float:
         assert (cfg := get(CONFIG.guilds, id=self.guild.id))
@@ -207,7 +207,7 @@ class StarboardProcessingService:
         return fame_limit
 
     async def is_already_in_starboard(self) -> bool:
-        if self.message.id in Starboard.bot_reactions_cache:
+        if self.message.id in StarboardCog.bot_reactions_cache:
             return True
 
         for react in self.message.reactions:
@@ -264,7 +264,7 @@ class StarboardEmbed(discord.Embed):
         return f"<:{reaction.emoji.name}:{reaction.emoji.id}> {reaction.count}"
 
 
-class Starboard(commands.Cog):
+class StarboardCog(commands.Cog):
     starred_messages: Dict[Id, deque[Id]] = {}
     bot_reactions_cache: deque[Id] = deque(maxlen=50)
 
@@ -298,4 +298,4 @@ class Starboard(commands.Cog):
 
 
 async def setup(bot: MasarykBOT) -> None:
-    await bot.add_cog(Starboard(bot))
+    await bot.add_cog(StarboardCog(bot))

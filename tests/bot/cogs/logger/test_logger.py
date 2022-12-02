@@ -15,7 +15,7 @@ from tests.bot.utils import mock_database
 class LoggerTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
         self.bot = helpers.MockBot(guilds=[guild])
-        self.cog = logger.Logger(self.bot)
+        self.cog = logger.LoggerCog(self.bot)
         self.logger_repository = unittest.mock.AsyncMock()
 
     @unittest.mock.patch('bot.cogs.logger.MessageIterator.history')

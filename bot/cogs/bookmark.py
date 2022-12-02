@@ -87,7 +87,7 @@ class BookmarkService:
         return embed
 
 
-class Bookmark(commands.Cog):
+class BookmarkCog(commands.Cog):
     def __init__(self, bot: commands.Bot, service: BookmarkService = None) -> None:
         self.bot = bot
         self.service = service or BookmarkService(bot)
@@ -121,4 +121,4 @@ class Bookmark(commands.Cog):
 
 
 async def setup(bot: commands.Bot) -> None:
-    await bot.add_cog(Bookmark(bot))
+    await bot.add_cog(BookmarkCog(bot))

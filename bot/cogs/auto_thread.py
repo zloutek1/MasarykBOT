@@ -37,7 +37,7 @@ class AutoThreadService:
         return title[:50] + "..." if len(title) > 50 else title
 
 
-class AutoThread(commands.Cog):
+class AutoThreadCog(commands.Cog):
     def __init__(self, bot: commands.Bot, service: AutoThreadService = None) -> None:
         self.bot = bot
         self.service = service or AutoThreadService()
@@ -54,4 +54,4 @@ class AutoThread(commands.Cog):
 
 
 async def setup(bot: commands.Bot) -> None:
-    await bot.add_cog(AutoThread(bot))
+    await bot.add_cog(AutoThreadCog(bot))

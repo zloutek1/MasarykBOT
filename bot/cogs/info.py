@@ -9,7 +9,7 @@ from discord.utils import get
 from bot.utils import Context, GuildContext
 
 
-class Info(commands.Cog):
+class InfoCog(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.uptime: Optional[datetime] = None
@@ -124,4 +124,4 @@ class Info(commands.Cog):
 
 
 async def setup(bot: commands.Bot) -> None:
-    await bot.add_cog(Info(bot))
+    await bot.add_cog(InfoCog(bot))

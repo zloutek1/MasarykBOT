@@ -8,7 +8,7 @@ from discord.utils import get
 from bot.utils import Context
 
 
-class Rules(commands.Cog):
+class RulesCog(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
@@ -173,4 +173,4 @@ class Rules(commands.Cog):
 
 
 async def setup(bot: commands.Bot) -> None:
-    await bot.add_cog(Rules(bot))
+    await bot.add_cog(RulesCog(bot))

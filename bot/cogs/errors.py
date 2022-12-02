@@ -25,7 +25,7 @@ REPLY_ON_ERRORS = (
 
 
 
-class Errors(commands.Cog):
+class ErrorCog(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
@@ -108,4 +108,4 @@ class Errors(commands.Cog):
 
 
 async def setup(bot: commands.Bot) -> None:
-    await bot.add_cog(Errors(bot))
+    await bot.add_cog(ErrorCog(bot))

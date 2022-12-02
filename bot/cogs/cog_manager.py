@@ -4,7 +4,7 @@ from bot.utils import Context
 from discord.ext import commands
 
 
-class CogManager(commands.Cog):
+class CogManagerCog(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.last_reloaded: Optional[str] = None
@@ -86,4 +86,4 @@ class CogManager(commands.Cog):
 
 
 async def setup(bot: commands.Bot) -> None:
-    await bot.add_cog(CogManager(bot))
+    await bot.add_cog(CogManagerCog(bot))

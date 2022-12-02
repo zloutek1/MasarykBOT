@@ -1,4 +1,5 @@
 import logging
+from contextlib import suppress
 
 from discord.ext import commands, tasks
 
@@ -10,7 +11,11 @@ from bot.utils import requires_database, Context
 log = logging.getLogger(__name__)
 
 
-class Logger(commands.Cog):
+class BackupAlreadyRunning(RuntimeError):
+    pass
+
+
+class LoggerCog(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.backup_running: bool = False
@@ -28,11 +33,12 @@ class Logger(commands.Cog):
     @tasks.loop(hours=24)
     async def backup_task(self) -> None:
         log.info("running routine processors")
-        await self._backup()
+        with suppress(BackupAlreadyRunning):
+            await self._backup()
 
     async def _backup(self) -> None:
         if self.backup_running:
-            raise RuntimeError('backup process is already running')
+            raise BackupAlreadyRunning('backup process is already running')
         log.info("processors started")
         self.backup_running = True
         await BotBackup().traverse_down(self.bot)
@@ -42,4 +48,4 @@ class Logger(commands.Cog):
 
 @requires_database
 async def setup(bot: commands.Bot) -> None:
-    await bot.add_cog(Logger(bot))
+    await bot.add_cog(LoggerCog(bot))

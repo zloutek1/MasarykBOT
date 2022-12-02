@@ -162,7 +162,7 @@ class RoleMenuService:
         return set(row.split(' ', 1)[0] for row in rows)
 
 
-class RoleMenu(commands.Cog):
+class RoleMenuCog(commands.Cog):
     def __init__(self, bot: commands.Bot, service: RoleMenuService = None) -> None:
         self.bot = bot
         self.service = service or RoleMenuService(bot)
@@ -215,4 +215,4 @@ class RoleMenu(commands.Cog):
 
 
 async def setup(bot: commands.Bot) -> None:
-    await bot.add_cog(RoleMenu(bot))
+    await bot.add_cog(RoleMenuCog(bot))
