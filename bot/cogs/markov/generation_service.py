@@ -2,11 +2,14 @@ import random
 from typing import Optional
 
 import inject
+from discord.utils import get
 
+from bot.constants import CONFIG
 from bot.db.cogs import MarkovRepository
 
 
-CONTEXT_SIZE = 8
+DEFAULT_CONTEXT_SIZE = 8
+
 
 
 class MarkovGenerationService:
@@ -32,9 +35,19 @@ class MarkovGenerationService:
 
 
     async def _find_next(self, guild_id: int, message: str) -> Optional[str]:
-        if not (options := await self.markov_repository.find_random_next(guild_id, context=message[-CONTEXT_SIZE:])):
+        context_size = self._get_context_size(guild_id)
+        if not (options := await self.markov_repository.find_random_next(guild_id, context=message[-context_size:])):
             return None
 
         follows = [option.follows for option in options]
         frequencies = [option.frequency for option in options]
         return random.choices(follows, weights=frequencies, k=1)[0]
+
+
+    @staticmethod
+    def _get_context_size(guild_id: int) -> int:
+        if not (guild_config := get(CONFIG.guilds, id=guild_id)):
+            return DEFAULT_CONTEXT_SIZE
+        if not (markov_config := guild_config.cogs.markov):
+            return DEFAULT_CONTEXT_SIZE
+        return markov_config.context_size

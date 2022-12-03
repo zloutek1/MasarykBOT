@@ -78,6 +78,24 @@ class ChannelConfig(yaml.YAMLObject):
 
 @enforce_types
 @dataclass(frozen=True)
+class MarkovConfig(yaml.YAMLObject):
+    yaml_tag = u'!markov'
+
+    context_size: int
+
+
+
+@enforce_types
+@dataclass(frozen=True)
+class CogsConfig(yaml.YAMLObject):
+    yaml_tag = u'!cogs'
+
+    markov: Optional[MarkovConfig] = None
+
+
+
+@enforce_types
+@dataclass(frozen=True)
 class LogsConfig(yaml.YAMLObject):
     yaml_tag = u'!logs'
 
@@ -109,6 +127,7 @@ class GuildConfig(yaml.YAMLObject):
     id: int
     name: str
     channels: ChannelConfig
+    cogs: CogsConfig
     logs: LogsConfig
     roles: RoleConfig
 
@@ -172,6 +191,8 @@ def get_loader() -> Type[yaml.Loader]:
     loader.add_constructor("!logs", class_loader(LogsConfig))
     loader.add_constructor("!roles", class_loader(RoleConfig))
     loader.add_constructor("!guilds", class_loader(GuildConfig))
+    loader.add_constructor("!cogs", class_loader(CogsConfig))
+    loader.add_constructor("!markov", class_loader(MarkovConfig))
     loader.add_constructor("!emojis", class_loader(EmojiConfig))
     loader.add_constructor("!colors", class_loader(ColorConfig))
     loader.add_constructor("!Config", class_loader(Config))

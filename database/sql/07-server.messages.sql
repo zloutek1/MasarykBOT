@@ -8,6 +8,7 @@ CREATE TABLE server.messages
     author_id bigint NOT NULL,
     id bigint NOT NULL,
     content text COLLATE pg_catalog."default" NOT NULL,
+    is_command boolean NOT NULL DEFAULT false,
     created_at timestamp with time zone NOT NULL DEFAULT now(),
     edited_at timestamp with time zone,
     deleted_at timestamp with time zone,

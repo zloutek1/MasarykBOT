@@ -39,6 +39,10 @@ guilds:
                 ignored: []
                 penalised: []
 
+    cogs: !cogs
+        markov: !markov
+            context_size: 6
+
     logs: !logs
         errors: 609413180137144331
         mute: null
@@ -80,6 +84,9 @@ guilds:
                 penalised:
                     - kek|pepe|lul|lol|pog|peepo|ano|nie|yes|no|cringe
 
+    cogs: !cogs
+        markov: !markov
+            context_size: 6
 
     logs: !logs
         errors: 731435447787716680

@@ -67,8 +67,8 @@ services:
     environment:
       - PGADMIN_DEFAULT_EMAIL=masaryk@gmail.com
       - PGADMIN_DEFAULT_PASSWORD=pass
-    volumes:
-      - ~/Documents/database/imports:/var/lib/pgadmin/storage
+    #volumes:
+    #  - ~/Documents/database/imports:/var/lib/pgadmin/storage
 
 volumes:
   postgres:

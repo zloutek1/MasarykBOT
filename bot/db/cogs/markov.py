@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional, NamedTuple, List
+from typing import NamedTuple, List
 
 from bot.db.discord.messages import MessageEntity
 from bot.db.utils import Id, Entity, Table, DBConnection, inject_conn, Page
@@ -62,7 +62,8 @@ class MarkovRepository(Table[MarkovEntity]):
                         FROM server.messages m
                         INNER JOIN server.channels c on c.id = m.channel_id
                         INNER JOIN server.users u on u.id = m.author_id
-                        WHERE guild_id = $1 AND 
+                        WHERE guild_id = $1 AND
+                              NOT m.is_command AND 
                               NOT u.is_bot 
                     """, guild_id)
         return Page[MessageEntity](cursor, MessageEntity)
