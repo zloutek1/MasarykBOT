@@ -30,7 +30,7 @@ class MarkovGenerationService:
         follows = await self._find_next(guild_id, message)
         if not follows:
             message = ""
-            follows = await self.markov_repository.find_random_next(guild_id, context="")
+            follows = await self._find_next(guild_id, "")
         return message, follows
 
 

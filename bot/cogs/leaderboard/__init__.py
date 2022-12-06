@@ -30,6 +30,7 @@ class LeaderboardCog(commands.Cog):
     # noinspection PyDefaultArgument
     @commands.hybrid_command()
     @commands.guild_only()
+    @commands.cooldown(1, 10, commands.BucketType.user)
     async def leaderboard(
             self, ctx: GuildContext,
             include_channels: commands.Greedy[discord.TextChannel] = [],  # type: ignore[assignment]
