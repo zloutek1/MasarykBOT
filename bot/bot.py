@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional, Union, Type
+from typing import Any, Optional, Union, Type, cast
 
 from discord import Message, Activity, ActivityType, Interaction
 from discord.ext import commands
@@ -30,6 +30,11 @@ class MasarykBOT(commands.Bot):
     async def process_commands(self, message: Message) -> None:
         if CONFIG.bot.DEBUG and not message.author.guild_permissions.administrator:
             return
+
+        from bot.cogs.markov import MarkovCog
+        if cog := cast(MarkovCog, self.get_cog("MarkovCog")):
+            await cog.markov_from_message(message)
+
         await super(MasarykBOT, self).process_commands(message)
 
 
