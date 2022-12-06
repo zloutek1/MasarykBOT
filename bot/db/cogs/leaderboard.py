@@ -51,7 +51,7 @@ class LeaderboardRepository(Table[LeaderboardEntity]):
                 FROM (
                     SELECT
                         author_id,
-                        author.names[1] AS author,
+                        author.name AS author,
                         SUM(messages_sent) AS sent_total
                     FROM cogs.leaderboard
                     INNER JOIN server.users AS author
@@ -65,7 +65,7 @@ class LeaderboardRepository(Table[LeaderboardEntity]):
                               channel_id = ANY($3::bigint[])
                           ) AND
                           channel_id <> ALL($4::bigint[])
-                    GROUP BY author_id, author.names
+                    GROUP BY author_id, author.name
                     ORDER BY sent_total DESC
                 ) AS lookup
         """, filters.guild_id, filters.ignored_users, filters.include_channel_ids, filters.exclude_channel_ids)
