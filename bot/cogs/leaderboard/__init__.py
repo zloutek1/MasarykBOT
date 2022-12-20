@@ -1,4 +1,4 @@
-from typing import Dict, Optional
+from typing import Dict, Optional, Sequence
 
 import discord
 import inject
@@ -14,17 +14,22 @@ from bot.db.cogs.leaderboard import LeaderboardFilter
 
 class LeaderboardCog(commands.Cog):
     @inject.autoparams('leaderboard_repository')
-    def __init__(self, bot: commands.Bot, leaderboard_repository: LeaderboardRepository = None) -> None:
+    def __init__(self, bot: commands.Bot, leaderboard_repository: LeaderboardRepository) -> None:
         self.bot = bot
         self._repository = leaderboard_repository
 
     @property
     def medals(self) -> Dict[int | None, discord.Emoji]:
+        def try_to_get(lst: Sequence[discord.Emoji], name: str) -> discord.Emoji:
+            if not (emoji := get(lst, name=name)):
+                raise AssertionError(f"Emoji with name {name} not found")
+            return emoji
+            
         return {
-            None: get(self.bot.emojis, name="BLANK"),
-            1: get(self.bot.emojis, name="gold_medal"),
-            2: get(self.bot.emojis, name="silver_medal"),
-            3: get(self.bot.emojis, name="bronze_medal")
+            None: try_to_get(self.bot.emojis, name="BLANK"),
+            1: try_to_get(self.bot.emojis, name="gold_medal"),
+            2: try_to_get(self.bot.emojis, name="silver_medal"),
+            3: try_to_get(self.bot.emojis, name="bronze_medal")
         }
 
     # noinspection PyDefaultArgument

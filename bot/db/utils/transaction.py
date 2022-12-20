@@ -4,7 +4,7 @@ from typing import Optional, Type
 
 import inject
 
-from bot.db.utils.types import Pool, DBConnection, DBTransaction
+from bot.db.utils.dbtypes import Pool, DBConnection, DBTransaction
 
 log = logging.getLogger(__name__)
 

@@ -26,7 +26,11 @@ class MarkovTrainingService:
 
     @staticmethod
     def should_learn_message(message: discord.Message) -> bool:
-        return not message.author.bot and not message.content.startswith(('!', 'pls'))
+        return (
+            not message.author.bot and 
+            not message.content.startswith(('!', 'pls')) and
+            message.guild is not None
+        )
 
 
     async def train(self, guild_id: int) -> None:

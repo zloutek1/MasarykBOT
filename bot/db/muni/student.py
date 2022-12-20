@@ -1,5 +1,5 @@
 from dataclasses import dataclass, astuple
-from typing import Tuple, Optional, Iterable
+from typing import Tuple, Optional, Iterable, cast
 
 from bot.db.utils import inject_conn, DBConnection, Id, Crud, Entity
 
@@ -17,7 +17,7 @@ class StudentEntity(Entity):
 
 
 class StudentRepository(Crud[StudentEntity]):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(entity=StudentEntity)
 
 
@@ -32,13 +32,14 @@ class StudentRepository(Crud[StudentEntity]):
 
 
     @inject_conn
-    async def count_course_students(self, conn: DBConnection, data: Tuple[str, str, Id]) -> Optional[int]:
+    async def count_course_students(self, conn: DBConnection, data: Tuple[str, str, Id]) -> int:
         row = await conn.fetchrow("""
             SELECT COUNT(*) as count
             FROM muni.students
             WHERE faculty=$1 AND code=$2 AND guild_id=$3 AND left_at IS NULL
         """, *data)
-        return row['count'] if row else None
+        assert row
+        return cast(int, row['count'])
 
 
     @inject_conn
@@ -48,7 +49,7 @@ class StudentRepository(Crud[StudentEntity]):
                 FROM muni.students
                 WHERE guild_id=$1 AND member_id=$2 AND left_at IS NULL
             """, *data)
-        return map(lambda row: row['result'], rows)
+        return map(lambda row: cast(str, row['result']), rows)
 
 
     @inject_conn

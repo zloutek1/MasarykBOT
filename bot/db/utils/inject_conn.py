@@ -3,7 +3,7 @@ from inspect import iscoroutinefunction
 from typing import Callable, Concatenate, TypeVar, ParamSpec, Coroutine, Optional
 
 from bot.db.utils.table import Table
-from bot.db.utils.types import DBConnection
+from bot.db.utils.dbtypes import DBConnection
 
 S = TypeVar('S', bound=Table)
 P = ParamSpec('P')

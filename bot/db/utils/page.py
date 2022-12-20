@@ -1,15 +1,15 @@
 from collections.abc import AsyncIterator
-from typing import TypeVar, List
+from typing import Type, TypeVar, List
 
 from .entity import Entity
-from .types import Cursor
+from .dbtypes import Cursor
 
 
 TEntity = TypeVar('TEntity', bound=Entity)
 
 
 class Page(AsyncIterator[List[TEntity]]):
-    def __init__(self, cursor: Cursor, entity: TEntity, per_page: int = 50) -> None:
+    def __init__(self, cursor: Cursor, entity: Type[TEntity], per_page: int = 50) -> None:
         self.cursor = cursor
         self.entity = entity
         self.per_page = per_page

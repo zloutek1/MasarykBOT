@@ -3,7 +3,7 @@ from typing import TypeVar, Generic
 import inject
 
 from .entity import Entity
-from .types import Pool
+from .dbtypes import Pool
 
 TEntity = TypeVar('TEntity', bound=Entity)
 

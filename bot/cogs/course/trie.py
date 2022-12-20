@@ -73,6 +73,6 @@ class Trie:
 
     @staticmethod
     def _shift(word: str) -> Tuple[str, str]:
-        letter, *rest = word
+        letter, *rest = tuple(word)
         word = ''.join(rest)
         return letter, word

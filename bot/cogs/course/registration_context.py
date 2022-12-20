@@ -5,6 +5,7 @@ import inject
 from discord.utils import get
 
 from bot.cogs.course.trie import Trie
+from bot.db.muni.student import StudentEntity
 from bot.utils import sanitize_channel_name
 from bot.constants import CONFIG
 from bot.db import StudentRepository
@@ -30,21 +31,24 @@ class CourseRegistrationContext:
 
         assert (guild_config := get(CONFIG.guilds, id=guild.id))
         self.guild_config = guild_config
+        assert self.guild_config.channels.course, "Course channels are required"
 
 
     @property
-    def course_channel_name(self):
+    def course_channel_name(self) -> str:
         return (sanitize_channel_name(f"{self.course.code} {self.course.name}")
                 if self.course.faculty == "FI" else
                 sanitize_channel_name(f"{self.course.faculty}:{self.course.code} {self.course.name}"))
 
 
     async def register_course(self) -> None:
-        await self._student_repository.insert((self.course.faculty, self.course.code, self.guild.id, self.user.id))
+        student = StudentEntity(self.course.faculty, self.course.code, self.guild.id, self.user.id)
+        await self._student_repository.insert(student)
 
 
     async def unregister_course(self) -> None:
-        await self._student_repository.soft_delete((self.course.faculty, self.course.code, self.guild.id, self.user.id))
+        student = StudentEntity(self.course.faculty, self.course.code, self.guild.id, self.user.id)
+        await self._student_repository.soft_delete(student)
 
 
     def find_course_channel(self) -> Optional[discord.TextChannel]:
@@ -52,6 +56,8 @@ class CourseRegistrationContext:
 
 
     async def should_create_course_channel(self) -> bool:
+        assert self.guild_config.channels.course, "Course channels are required"
+
         students = await self._student_repository.count_course_students(
             (self.course.faculty, self.course.code, self.guild.id))
         return students >= self.guild_config.channels.course.MINIMUM_REGISTRATIONS
@@ -83,18 +89,20 @@ class CourseRegistrationContext:
 
 
     def _get_overwrites_for_new_channel(self) -> Dict[discord.Member | discord.Role, discord.PermissionOverwrite]:
-        overwrites = {
+        overwrites: Dict[discord.Member | discord.Role, discord.PermissionOverwrite] = {
             self.guild.default_role: discord.PermissionOverwrite(read_messages=False),
             self.guild.me: discord.PermissionOverwrite(read_messages=True)
         }
 
-        show_all = self.guild.get_role(self.guild_config.roles.show_all)
-        if show_all is not None:
-            overwrites[show_all] = discord.PermissionOverwrite(read_messages=True)
+        if show_all_role := self.guild_config.roles.show_all:
+            show_all = self.guild.get_role(show_all_role)
+            if show_all is not None:
+                overwrites[show_all] = discord.PermissionOverwrite(read_messages=True)
 
-        muted = self.guild.get_role(self.guild_config.roles.muted)
-        if muted is not None:
-            overwrites[muted] = discord.PermissionOverwrite(send_messages=False)
+        if muted_role := self.guild_config.roles.muted:
+            muted = self.guild.get_role(muted_role)
+            if muted is not None:
+                overwrites[muted] = discord.PermissionOverwrite(send_messages=False)
 
         return overwrites
 

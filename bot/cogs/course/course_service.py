@@ -44,12 +44,14 @@ class CourseService:
 
 
     def load_course_registration_channels(self) -> Dict[int, discord.abc.Messageable]:
-        result = {}
+        result: Dict[int, discord.abc.Messageable] = {}
         for guild_config in CONFIG.guilds:
             if not guild_config.channels.course:
                 continue
             channel_id = guild_config.channels.course.registration_channel
             if not (channel := self.bot.get_channel(channel_id)):
+                continue
+            if not isinstance(channel, discord.abc.Messageable):
                 continue
             result[channel.id] = channel
         return result

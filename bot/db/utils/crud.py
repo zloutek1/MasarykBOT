@@ -5,7 +5,7 @@ from .entity import Entity
 from .inject_conn import inject_conn
 from .page import Page
 from .table import Table
-from .types import DBConnection, Id
+from .dbtypes import DBConnection, Id
 
 TEntity = TypeVar('TEntity', bound=Entity)
 

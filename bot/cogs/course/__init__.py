@@ -25,7 +25,7 @@ class NotInRegistrationChannel(commands.UserInputError):
 
 
 def in_registration_channel():
-    def predicate(ctx: Context) -> bool:
+    def predicate(ctx: GuildContext) -> bool:
         assert isinstance(ctx.cog, CourseCog)
         cog = cast(CourseCog, ctx.cog)
         if ctx.channel.id not in cog.course_registration_channels:
@@ -33,7 +33,7 @@ def in_registration_channel():
         return True
 
 
-    def fmt_error(ctx: Context, cog: "CourseCog") -> str:
+    def fmt_error(ctx: GuildContext, cog: "CourseCog") -> str:
         registration_channel = get(cog.course_registration_channels.values(), guild__id=ctx.guild.id)
         if registration_channel is None:
             return f"You are not in a course registration channel."
@@ -48,7 +48,7 @@ def in_registration_channel():
 class Course(commands.Converter, CourseEntity):
     @classmethod
     @inject.autoparams('course_repository')
-    async def convert(cls, ctx: Context, argument: str, course_repository: CourseRepository = None) -> CourseEntity:
+    async def convert(cls, ctx: Context, argument: str, course_repository: CourseRepository) -> CourseEntity:
         faculty, code = argument.split(':', 1) if ':' in argument else ('FI', argument)
         if not (course := await course_repository.find_by_code(faculty, code)):
             raise commands.BadArgument(f'Course {argument} not found')
@@ -57,14 +57,14 @@ class Course(commands.Converter, CourseEntity):
 
 
 class CourseCog(commands.Cog):
-    def __init__(self, bot: commands.Bot, subject_service: CourseService = None) -> None:
+    def __init__(self, bot: commands.Bot, subject_service: Optional[CourseService] = None) -> None:
         self.bot = bot
         self._service = subject_service or CourseService(bot)
         self.course_registration_channels: Dict[int, discord.abc.Messageable] = {}
 
 
     @commands.Cog.listener()
-    async def on_ready(self):
+    async def on_ready(self) -> None:
         self.course_registration_channels = self._service.load_course_registration_channels()
         await self._service.load_category_trie()
 
