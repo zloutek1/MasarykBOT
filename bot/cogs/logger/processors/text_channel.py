@@ -18,6 +18,7 @@ class TextChannelBackup(Backup[TextChannel]):
         self.channel_repository = channel_repository
         self.mapper = mapper
 
+
     async def traverse_up(self, text_channel: TextChannel) -> None:
         if isinstance(text_channel, GuildChannel):
             if text_channel.category:
@@ -29,11 +30,13 @@ class TextChannelBackup(Backup[TextChannel]):
 
         await super().traverse_up(text_channel)
 
+
     async def backup(self, text_channel: TextChannel) -> None:
         log.debug('backing up text channel %s', text_channel.name)
         await super().backup(text_channel)
         entity: ChannelEntity = await self.mapper.map(text_channel)
         await self.channel_repository.insert(entity)
+
 
     async def traverse_down(self, text_channel: TextChannel) -> None:
         await super().traverse_down(text_channel)

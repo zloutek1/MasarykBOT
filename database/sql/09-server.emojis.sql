@@ -8,7 +8,7 @@ CREATE TABLE server.emojis
     name character varying COLLATE pg_catalog."default" NOT NULL,
     url character varying COLLATE pg_catalog."default",
     animated boolean,
-    created_at timestamp with time zone NOT NULL DEFAULT now(),
+    created_at timestamp with time zone DEFAULT now(),
     edited_at timestamp with time zone,
     deleted_at timestamp with time zone,
     CONSTRAINT emojis_pkey PRIMARY KEY (id)

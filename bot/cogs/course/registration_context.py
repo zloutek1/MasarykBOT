@@ -106,6 +106,7 @@ class CourseRegistrationContext:
 
         return overwrites
 
+
     async def create_or_get_course_category(
             self,
             category_trie: Trie,

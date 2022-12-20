@@ -8,14 +8,14 @@ from bot.cogs.course.trie import Trie
 
 class TrieTests(unittest.TestCase):
     @staticmethod
-    def test_insert_given_empty_word_sets_root_as_word():
+    def test_insert_given_empty_word_sets_root_as_word() -> None:
         trie = Trie()
         trie.insert("")
         assert_that(trie.is_word).is_true()
 
 
     @staticmethod
-    def test_insert_given_word_sets_word_as_word():
+    def test_insert_given_word_sets_word_as_word() -> None:
         trie = Trie()
         trie.insert("hi")
 
@@ -27,21 +27,21 @@ class TrieTests(unittest.TestCase):
 
 
     @staticmethod
-    def test_contains_given_existing_word_returns_true():
+    def test_contains_given_existing_word_returns_true() -> None:
         trie = Trie()
         trie.insert("hi")
         assert_that(trie.contains('hi')).is_true()
 
 
     @staticmethod
-    def test_contains_given_missing_word_returns_false():
+    def test_contains_given_missing_word_returns_false() -> None:
         trie = Trie()
         trie.insert("hi")
         assert_that(trie.contains('hello')).is_false()
 
 
     @staticmethod
-    def test_insert_all_given_two_words_inserts_both():
+    def test_insert_all_given_two_words_inserts_both() -> None:
         multi_trie = Trie()
         multi_trie.insert_all(["hi", "hello"])
 
@@ -53,7 +53,7 @@ class TrieTests(unittest.TestCase):
 
 
     @staticmethod
-    def test_generate_prefix_groups_given_limit_one_returns_five_result():
+    def test_generate_prefix_groups_given_limit_one_returns_five_result() -> None:
         trie = Trie()
         trie.insert_all(["hello", "hi", "help", "helicopter", "hire", "hindu", "hollow", "ah"])
 
@@ -62,7 +62,7 @@ class TrieTests(unittest.TestCase):
 
 
     @staticmethod
-    def test_generate_prefix_groups_given_limit_two_returns_five_results():
+    def test_generate_prefix_groups_given_limit_two_returns_five_results() -> None:
         trie = Trie()
         trie.insert_all(["hello", "hi", "help", "helicopter", "hire", "hindu", "hollow", "ah"])
 
@@ -71,7 +71,7 @@ class TrieTests(unittest.TestCase):
 
 
     @staticmethod
-    def test_generate_prefix_groups_given_limit_three_returns_four_results():
+    def test_generate_prefix_groups_given_limit_three_returns_four_results() -> None:
         trie = Trie()
         trie.insert_all(["hello", "hi", "help", "helicopter", "hire", "hindu", "hollow", "ah"])
 
@@ -80,7 +80,7 @@ class TrieTests(unittest.TestCase):
 
 
     @staticmethod
-    def test_generate_prefix_groups_given_limit_seven_returns_two_results():
+    def test_generate_prefix_groups_given_limit_seven_returns_two_results() -> None:
         trie = Trie()
         trie.insert_all(["hello", "hi", "help", "helicopter", "hire", "hindu", "hollow", "ah"])
 
@@ -89,7 +89,7 @@ class TrieTests(unittest.TestCase):
 
 
     @staticmethod
-    def test_find_prefix_with_missing_word_returns_None():
+    def test_find_prefix_with_missing_word_returns_None() -> None:
         trie = Trie()
         trie.insert_all(["hello", "hi", "help", "helicopter", "hire", "hindu", "hollow", "ah"])
 
@@ -98,7 +98,7 @@ class TrieTests(unittest.TestCase):
 
 
     @staticmethod
-    def test_find_prefix_for_given_limit_three_returns_correct_prefix():
+    def test_find_prefix_for_given_limit_three_returns_correct_prefix() -> None:
         trie = Trie()
         trie.insert_all(["hello", "hi", "help", "helicopter", "hire", "hindu", "hollow", "ah"])
 

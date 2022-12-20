@@ -4,6 +4,7 @@ from .category import CategoryBackup
 from .emoji import EmojiBackup
 from .guild import GuildBackup
 from .message import MessageBackup
+from .message_emoji import MessageEmojiBackup
 from .reaction import ReactionBackup
 from .role import RoleBackup
 from .text_channel import TextChannelBackup

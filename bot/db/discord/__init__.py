@@ -7,16 +7,17 @@ from .channels import ChannelRepository, ChannelMapper, ChannelEntity
 from .emojis import EmojiRepository, EmojiMapper, EmojiEntity
 from .guilds import GuildRepository, GuildMapper, GuildEntity
 from .messages import MessageRepository, MessageMapper, MessageEntity
+from .message_emojis import MessageEmojiRepository, MessageEmojiMapper, MessageEmojiEntity
 from .reactions import ReactionRepository, ReactionMapper, ReactionEntity
 from .roles import RoleRepository, RoleMapper, RoleEntity
 from .users import UserRepository, UserMapper, UserEntity
 
 REPOSITORIES = (GuildRepository, RoleRepository, UserRepository, EmojiRepository, CategoryRepository, ChannelRepository,
-                MessageRepository, AttachmentRepository, ReactionRepository)
+                MessageRepository, AttachmentRepository, ReactionRepository, MessageEmojiRepository)
 MAPPERS = (GuildMapper, RoleMapper, UserMapper, EmojiMapper, CategoryMapper, ChannelMapper, MessageMapper,
-           AttachmentMapper, ReactionMapper)
+           AttachmentMapper, ReactionMapper, MessageEmojiMapper)
 ENTITIES = (GuildEntity, RoleEntity, UserEntity, EmojiEntity, CategoryEntity, ChannelEntity,
-            MessageEntity, AttachmentEntity, ReactionEntity)
+            MessageEntity, AttachmentEntity, ReactionEntity, MessageEmojiEntity)
 
 
 

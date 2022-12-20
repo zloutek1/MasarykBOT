@@ -19,7 +19,7 @@ class EmojiEntity(Entity):
     name: str
     url: Url
     animated: bool
-    created_at: datetime
+    created_at: Optional[datetime]
     edited_at: Optional[datetime] = None
     deleted_at: Optional[datetime] = None
 

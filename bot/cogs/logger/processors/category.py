@@ -15,16 +15,19 @@ class CategoryBackup(Backup[CategoryChannel]):
         self.category_repository = category_repository
         self.mapper = mapper
 
+
     async def traverse_up(self, category: CategoryChannel) -> None:
         from .guild import GuildBackup
         await GuildBackup().traverse_up(category.guild)
         await super().traverse_up(category)
+
 
     async def backup(self, category: CategoryChannel) -> None:
         log.debug('backing up category %s', category.name)
         await super().backup(category)
         entity: CategoryEntity = await self.mapper.map(category)
         await self.category_repository.insert(entity)
+
 
     async def traverse_down(self, category: CategoryChannel) -> None:
         from .text_channel import TextChannelBackup

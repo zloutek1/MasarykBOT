@@ -15,17 +15,20 @@ class EmojiBackup(Backup[Emoji | PartialEmoji | str]):
         self.emoji_repository = emoji_repository
         self.mapper = mapper
 
+
     async def traverse_up(self, emoji: Emoji | PartialEmoji | str) -> None:
         if isinstance(emoji, Emoji) and emoji.guild:
             from .guild import GuildBackup
             await GuildBackup().traverse_up(emoji.guild)
         await super().traverse_up(emoji)
 
+
     async def backup(self, emoji: Emoji | PartialEmoji | str) -> None:
         log.debug('backing up emoji %s', emoji.name if hasattr(emoji, 'name') else emoji)
         await super().backup(emoji)
         entity: EmojiEntity = await self.mapper.map(emoji)
         await self.emoji_repository.insert(entity)
+
 
     async def traverse_down(self, emoji: Emoji | PartialEmoji | str) -> None:
         await super().traverse_down(emoji)

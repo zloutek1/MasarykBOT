@@ -15,17 +15,20 @@ class UserBackup(Backup[User | Member]):
         self.user_repository = user_repository
         self.mapper = mapper
 
+
     async def traverse_up(self, user: User | Member) -> None:
         from .guild import GuildBackup
         if isinstance(user, Member):
             await GuildBackup().traverse_up(user.guild)
         await super().traverse_up(user)
 
+
     async def backup(self, user: User | Member) -> None:
         log.debug('backing up user %s', user.name)
         await super().backup(user)
         entity: UserEntity = await self.mapper.map(user)
         await self.user_repository.insert(entity)
+
 
     async def traverse_down(self, user: User | Member) -> None:
         await super().traverse_down(user)

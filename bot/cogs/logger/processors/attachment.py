@@ -18,8 +18,10 @@ class AttachmentBackup(Backup[Attachment]):
         self.attachment_repository = attachment_repository
         self.mapper = mapper
 
+
     async def traverse_up(self, attachment: Attachment) -> None:
         await super().traverse_up(attachment)
+
 
     async def backup(self, attachment: Attachment) -> None:
         await super().backup(attachment)
@@ -28,6 +30,7 @@ class AttachmentBackup(Backup[Attachment]):
         entity.message_id = self.message_id
 
         await self.attachment_repository.insert(entity)
+
 
     async def traverse_down(self, attachment: Attachment) -> None:
         await super().traverse_down(attachment)
