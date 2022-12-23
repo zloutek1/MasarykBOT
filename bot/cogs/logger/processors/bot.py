@@ -6,6 +6,10 @@ from ..history_iterator import HistoryIterator
 
 
 class BotBackup(Backup[commands.Bot]):
+    def __init__(self):
+        super().__init__()
+
+
     async def traverse_up(self, bot: commands.Bot) -> None:
         await super().traverse_up(bot)
 

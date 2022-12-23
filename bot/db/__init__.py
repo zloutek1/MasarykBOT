@@ -11,13 +11,13 @@ from .utils import UnitOfWork, Url, Pool, Page
 
 # ---- discord ----
 from .discord import (AttachmentMapper, CategoryMapper, ChannelMapper, EmojiMapper,
-                      GuildMapper, MessageMapper, ReactionMapper,
+                      GuildMapper, MessageMapper, MessageEmojiMapper, ReactionMapper,
                       RoleMapper, UserMapper)
 from .discord import (AttachmentRepository, CategoryRepository, ChannelRepository, EmojiRepository,
-                      GuildRepository, MessageRepository, ReactionRepository,
+                      GuildRepository, MessageRepository, MessageEmojiRepository, ReactionRepository,
                       RoleRepository, UserRepository)
 from .discord import (AttachmentEntity, CategoryEntity, ChannelEntity, EmojiEntity,
-                      GuildEntity, MessageEntity, ReactionEntity,
+                      GuildEntity, MessageEntity, MessageEmojiEntity, ReactionEntity,
                       RoleEntity, UserEntity)
 from .discord import setup_injections as setup_discord_injections
 

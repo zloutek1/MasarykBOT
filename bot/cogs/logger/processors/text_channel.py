@@ -15,6 +15,7 @@ log = logging.getLogger(__name__)
 class TextChannelBackup(Backup[TextChannel]):
     @inject.autoparams('channel_repository', 'mapper')
     def __init__(self, channel_repository: ChannelRepository, mapper: ChannelMapper) -> None:
+        super().__init__()
         self.channel_repository = channel_repository
         self.mapper = mapper
 

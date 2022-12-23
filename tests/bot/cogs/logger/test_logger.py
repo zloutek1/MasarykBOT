@@ -4,10 +4,12 @@ from datetime import datetime
 
 import discord
 import inject
+from discord.ext import commands
 
 import bot.db
 import tests.helpers as helpers
 from bot.cogs import logger
+from bot.cogs.logger.processors import inject_backups
 from tests.bot.utils import mock_database
 
 
@@ -17,6 +19,7 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
         self.bot = helpers.MockBot(guilds=[guild])
         self.cog = logger.LoggerCog(self.bot)
         self.logger_repository = unittest.mock.AsyncMock()
+        self.message_emoji_repository = unittest.mock.AsyncMock()
 
     @unittest.mock.patch('bot.cogs.logger.MessageIterator.history')
     async def test_backup(self, message_iterator_history) -> None:
@@ -33,12 +36,15 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(1, inject.instance(bot.db.CategoryRepository).insert.call_count)
         self.assertEqual(2, inject.instance(bot.db.ChannelRepository).insert.call_count)
         self.assertEqual(2, inject.instance(bot.db.MessageRepository).insert.call_count)
+        self.assertEqual(3, inject.instance(bot.db.MessageEmojiRepository).insert.call_count)
         self.assertEqual(1, inject.instance(bot.db.ReactionRepository).insert.call_count)
         self.assertEqual(1, inject.instance(bot.db.AttachmentRepository).insert.call_count)
 
     def _mock_injections(self):
         def setup_injections(binder: inject.Binder) -> None:
             binder.install(mock_database)
+            binder.install(inject_backups)
+            binder.bind(commands.Bot, self.bot)
             binder.bind(bot.db.LoggerRepository, self.logger_repository)
 
         return inject.clear_and_configure(setup_injections)
@@ -121,7 +127,7 @@ guild.categories = [category]
 # messages
 message1 = helpers.MockMessage(
     id=6123,
-    content="Hello",
+    content="Hello, I 🔖 you",
     created_at=datetime(2010, 11, 10, 15, 33, 00),
     author=member1,
     channel=categorised_channel,
@@ -129,7 +135,7 @@ message1 = helpers.MockMessage(
 )
 message2 = helpers.MockMessage(
     id=6456,
-    content="Oh, Hi",
+    content="Oh, Hi <:kek:1054601880090705940> <:kek:1054601880090705940> <a:danceblob:1054602472657780816>",
     created_at=datetime(2010, 11, 10, 15, 33, 00),
     author=member2,
     channel=categorised_channel,

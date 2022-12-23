@@ -8,12 +8,8 @@ from ._base import Backup
 
 class AttachmentBackup(Backup[Attachment]):
     @inject.autoparams('attachment_repository', 'mapper')
-    def __init__(
-            self,
-            message_id: int | None,
-            attachment_repository: AttachmentRepository,
-            mapper: AttachmentMapper
-    ) -> None:
+    def __init__(self, message_id: int | None, attachment_repository: AttachmentRepository, mapper: AttachmentMapper) -> None:
+        super().__init__()
         self.message_id = message_id
         self.attachment_repository = attachment_repository
         self.mapper = mapper

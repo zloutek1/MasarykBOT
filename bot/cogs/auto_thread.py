@@ -1,4 +1,4 @@
-from typing import cast
+from typing import Optional, cast
 from urllib.request import urlopen
 from lxml.html import parse
 
@@ -25,6 +25,7 @@ class AutoThreadService:
         threaded_channels = guild_config.channels.threaded
         return channel.id in threaded_channels
 
+
     @staticmethod
     def extract_thread_title(message: Message) -> str:
         title = message.content.split("\n")[0]
@@ -37,10 +38,12 @@ class AutoThreadService:
         return title[:50] + "..." if len(title) > 50 else title
 
 
+
 class AutoThreadCog(commands.Cog):
-    def __init__(self, bot: commands.Bot, service: AutoThreadService = None) -> None:
+    def __init__(self, bot: commands.Bot, service: Optional[AutoThreadService] = None) -> None:
         self.bot = bot
         self.service = service or AutoThreadService()
+
 
     @commands.Cog.listener()
     async def on_message(self, message: Message) -> None:
@@ -51,6 +54,7 @@ class AutoThreadCog(commands.Cog):
 
         title = self.service.extract_thread_title(message)
         await message.create_thread(name=title)
+
 
 
 async def setup(bot: commands.Bot) -> None:

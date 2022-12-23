@@ -10,16 +10,15 @@ class DatabaseRequiredException(RuntimeError):
 
 
 def requires_database(func):
-    from bot.db import Pool
-
-    # noinspection PyProtectedMember
-    database_available = Pool in inject.get_injector()._bindings
-    if not database_available:
-        raise DatabaseRequiredException
-
-
     @functools.wraps(func)
     async def wrapper(bot):
+        from bot.db import Pool
+
+        # noinspection PyProtectedMember
+        database_available = Pool in inject.get_injector()._bindings
+        if not database_available:
+            raise DatabaseRequiredException
+
         return await func(bot)
 
 

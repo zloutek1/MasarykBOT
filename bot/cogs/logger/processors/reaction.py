@@ -9,6 +9,7 @@ from ._base import Backup
 class ReactionBackup(Backup[Reaction]):
     @inject.autoparams('reaction_repository', 'mapper')
     def __init__(self, reaction_repository: ReactionRepository, mapper: ReactionMapper) -> None:
+        super().__init__()
         self.reaction_repository = reaction_repository
         self.mapper = mapper
 

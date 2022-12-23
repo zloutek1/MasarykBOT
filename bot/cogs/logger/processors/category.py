@@ -12,6 +12,7 @@ log = logging.getLogger(__name__)
 class CategoryBackup(Backup[CategoryChannel]):
     @inject.autoparams('category_repository', 'mapper')
     def __init__(self, category_repository: CategoryRepository, mapper: CategoryMapper) -> None:
+        super().__init__()
         self.category_repository = category_repository
         self.mapper = mapper
 

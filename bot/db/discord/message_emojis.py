@@ -7,6 +7,7 @@ from discord import Message
 from emoji import emoji_list
 
 from bot.db.utils import Entity, Mapper, Id, Crud, inject_conn, DBConnection
+from bot.utils import get_emoji_id
 
 
 
@@ -25,9 +26,12 @@ class MessageEmojiMapper(Mapper[Message, Tuple[MessageEmojiEntity, ...]]):
         message = obj
 
         unicode_emojis = Counter([item['emoji'] for item in emoji_list(message.content)])
-        discord_emojis = Counter(re.findall(r"<a?:\d+:\w+>", message.content))
+        discord_emojis = Counter(re.findall(r"<a?:\w+:\d+>", message.content))
 
-        return (MessageEmojiEntity(message.id, message.id, 0),)
+        return tuple(
+            MessageEmojiEntity(message.id, get_emoji_id(emoji), count)
+            for emoji, count in (unicode_emojis + discord_emojis).items()
+        )
 
 
 

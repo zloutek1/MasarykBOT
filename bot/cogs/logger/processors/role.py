@@ -12,6 +12,7 @@ log = logging.getLogger(__name__)
 class RoleBackup(Backup[Role]):
     @inject.autoparams('role_repository', 'mapper')
     def __init__(self, role_repository: RoleRepository, mapper: RoleMapper) -> None:
+        super().__init__()
         self.role_repository = role_repository
         self.mapper = mapper
 

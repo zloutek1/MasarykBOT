@@ -12,6 +12,7 @@ log = logging.getLogger(__name__)
 class EmojiBackup(Backup[Emoji | PartialEmoji | str]):
     @inject.autoparams('emoji_repository', 'mapper')
     def __init__(self, emoji_repository: EmojiRepository, mapper: EmojiMapper) -> None:
+        super().__init__()
         self.emoji_repository = emoji_repository
         self.mapper = mapper
 

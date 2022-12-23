@@ -10,11 +10,8 @@ from ._base import Backup
 
 class MessageEmojiBackup(Backup[Message]):
     @inject.autoparams('repository', 'mapper')
-    def __init__(
-            self,
-            repository: MessageEmojiRepository,
-            mapper: MessageEmojiMapper
-    ) -> None:
+    def __init__(self, repository: MessageEmojiRepository, mapper: MessageEmojiMapper) -> None:
+        super().__init__()
         self.repository = repository
         self.mapper = mapper
 

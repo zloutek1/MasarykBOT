@@ -1,15 +1,13 @@
 from functools import wraps
 from inspect import iscoroutinefunction
-from typing import Callable, Concatenate, TypeVar, ParamSpec, Coroutine, Optional
+from typing import Callable, Concatenate, TypeVar, ParamSpec, Awaitable, Optional
 
-from bot.db.utils.table import Table
 from bot.db.utils.dbtypes import DBConnection
+from bot.db.utils.table import Table
 
 S = TypeVar('S', bound=Table)
 P = ParamSpec('P')
 R = TypeVar('R')
-Awaitable = Coroutine[None, None, R]
-
 
 
 def inject_conn(fn: Callable[Concatenate[S, DBConnection, P], Awaitable[R]]) -> Callable[Concatenate[S, P], Awaitable[R]]:

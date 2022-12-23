@@ -28,16 +28,22 @@ class StarboardContext:
     channel: discord.TextChannel | discord.Thread
     guild: discord.Guild
 
+    def __str__(self) -> str:
+        return f"(reaction=<emoji={self.reaction.emoji} count={self.reaction.count}>, message={self.message.id}, channel=<id={self.channel.id} name={self.channel.name}>, guild=<id={self.guild.id} name={self.guild.name}>)"
+
+
 
 class StarboardService:
     def __init__(self, bot: MasarykBOT) -> None:
         self.bot = bot
+
 
     async def fetch_message(self, payload: discord.RawReactionActionEvent) -> discord.Message:
         channel = await self.bot.fetch_channel(payload.channel_id)
         if not isinstance(channel, discord.abc.Messageable):
             raise AssertionError(f"channel {channel} is not messageable")
         return await channel.fetch_message(payload.message_id)
+
 
     def construct_context(self, reaction: discord.Reaction) -> Optional[StarboardContext]:
         if not isinstance(reaction.message.channel, (discord.TextChannel, discord.Thread)):
@@ -54,10 +60,12 @@ class StarboardService:
             guild=reaction.message.guild
         )
 
+
     @staticmethod
     async def process_starboard(ctx: StarboardContext) -> Optional[discord.TextChannel | discord.Thread]:
         processor = StarboardProcessingService(ctx)
         return await processor()
+
 
     async def get_reply_thread(self, message: discord.Message, depth: int = 15) -> List[str]:
         reply_emoji = get(self.bot.emojis, name="reply")
@@ -74,6 +82,7 @@ class StarboardService:
         return replies
 
 
+
 class StarboardProcessingService:
     def __init__(self, ctx: StarboardContext) -> None:
         self.ctx = ctx
@@ -82,6 +91,7 @@ class StarboardProcessingService:
         self.channel = ctx.channel
         self.message = ctx.message
         self.reaction = ctx.reaction
+
 
     async def __call__(self) -> Optional[discord.TextChannel | discord.Thread]:
         if self.should_ignore_message():
@@ -109,6 +119,7 @@ class StarboardProcessingService:
         assert isinstance(starboard_channel, (discord.TextChannel, discord.Thread))
         return starboard_channel
 
+
     def should_ignore_message(self) -> bool:
         assert (cfg := get(CONFIG.guilds, id=self.guild.id))
         assert (star_cfg := cfg.channels.starboard)
@@ -124,11 +135,12 @@ class StarboardProcessingService:
                 or self.reaction.count < self._calculate_ignore_score()
         )
 
+
     def _get_channels_to_ignore(self, cfg: GuildConfig) -> List[int | None]:
-        ignore_channels = [
+        ignore_channels: List[int | None] = [
             cfg.channels.about_you,
             cfg.channels.verification,
-            cfg.channels.course.registration_channel,
+            cfg.channels.course.registration_channel if cfg.channels.course else None,
         ]
 
         if cfg.channels.starboard:
@@ -143,6 +155,7 @@ class StarboardProcessingService:
                     )
 
         return ignore_channels
+
 
     def _should_ignore_emoji(self, cfg: GuildConfig) -> bool:
         if not cfg.channels.starboard:
@@ -159,9 +172,11 @@ class StarboardProcessingService:
                     return True
         return False
 
+
     def _is_recently_starred(self) -> bool:
         return (self.guild.id in StarboardCog.starred_messages and
                 self.message.id in StarboardCog.starred_messages[self.guild.id])
+
 
     def _calculate_ignore_score(self) -> float:
         assert (cfg := get(CONFIG.guilds, id=self.guild.id))
@@ -181,6 +196,7 @@ class StarboardProcessingService:
 
         return fame_limit
 
+
     def _penalise_emoji(self, star_cfg: StarboardConfig, fame_limit: float, *, by: int) -> float:
         for pattern in star_cfg.channels.penalised:
             if isinstance(self.reaction.emoji, (discord.Emoji, discord.PartialEmoji)):
@@ -193,10 +209,12 @@ class StarboardProcessingService:
                     return fame_limit + by
         return fame_limit
 
+
     def _penalise_spoiler(self, fame_limit: float, *, by: int) -> float:
         if self.message.content.count("||") >= 2:
             return fame_limit + by
         return fame_limit
+
 
     def _penalise_channel(self, star_cfg: StarboardConfig, fame_limit: float, *, by: int) -> float:
         for pattern in star_cfg.channels.penalised:
@@ -206,7 +224,9 @@ class StarboardProcessingService:
                 return fame_limit + by
         return fame_limit
 
+
     async def is_already_in_starboard(self) -> bool:
+        assert self.bot.user, "no user"
         if self.message.id in StarboardCog.bot_reactions_cache:
             return True
 
@@ -216,10 +236,12 @@ class StarboardProcessingService:
                     return True
         return False
 
+
     def pick_starboard_channel(self) -> Tuple[Optional[Id], str]:
         assert (cfg := cast(GuildConfig, get(CONFIG.guilds, id=self.guild.id)))
         assert (star_cfg := cfg.channels.starboard)
         assert isinstance(self.message.channel, (discord.TextChannel, discord.Thread))
+        assert self.bot.user, "no user"
 
         if self.message.channel.name == "memes":
             return star_cfg.best_of_memes, "best-of-memes"
@@ -227,6 +249,7 @@ class StarboardProcessingService:
             return star_cfg.best_of_masaryk, "best-of-masaryk"
         else:
             return star_cfg.starboard, "starboard"
+
 
 
 class StarboardEmbed(discord.Embed):
@@ -251,11 +274,13 @@ class StarboardEmbed(discord.Embed):
         else:
             self.set_author(name=message.author.display_name, icon_url=message.author.default_avatar.url)
 
+
     def _format_reactions(self, message: discord.Message) -> str:
         return " ".join(
             self._format_reaction(reaction)
             for reaction in message.reactions
         )
+
 
     @staticmethod
     def _format_reaction(reaction: discord.Reaction) -> str:
@@ -264,16 +289,19 @@ class StarboardEmbed(discord.Embed):
         return f"<:{reaction.emoji.name}:{reaction.emoji.id}> {reaction.count}"
 
 
+
 class StarboardCog(commands.Cog):
     starred_messages: Dict[Id, deque[Id]] = {}
     bot_reactions_cache: deque[Id] = deque(maxlen=50)
 
-    def __init__(self, bot: MasarykBOT, service: StarboardService = None) -> None:
+    def __init__(self, bot: MasarykBOT, service: Optional[StarboardService] = None) -> None:
         self.bot = bot
         self.service = service or StarboardService(bot)
 
+
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
+        assert self.bot.user, "no user"
         if payload.user_id == self.bot.user.id:
             self.bot_reactions_cache.append(payload.message_id)
 
@@ -295,6 +323,7 @@ class StarboardCog(commands.Cog):
         embed = StarboardEmbed(message, replies)
 
         await starboard_channel.send(embed=embed)
+
 
 
 async def setup(bot: MasarykBOT) -> None:

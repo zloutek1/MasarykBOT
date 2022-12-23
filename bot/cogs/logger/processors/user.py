@@ -12,6 +12,7 @@ log = logging.getLogger(__name__)
 class UserBackup(Backup[User | Member]):
     @inject.autoparams('user_repository', 'mapper')
     def __init__(self, user_repository: UserRepository, mapper: UserMapper) -> None:
+        super().__init__()
         self.user_repository = user_repository
         self.mapper = mapper
 

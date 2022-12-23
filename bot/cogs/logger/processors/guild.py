@@ -13,6 +13,7 @@ log = logging.getLogger(__name__)
 class GuildBackup(Backup[Guild]):
     @inject.autoparams('guild_repository', 'mapper')
     def __init__(self, guild_repository: GuildRepository, mapper: GuildMapper) -> None:
+        super().__init__()
         self.guild_repository = guild_repository
         self.mapper = mapper
 

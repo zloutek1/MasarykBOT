@@ -16,6 +16,7 @@ class MessageBackup(Backup[Message]):
 
     @inject.autoparams('bot', 'message_repository', 'mapper')
     def __init__(self, bot: commands.Bot, message_repository: MessageRepository, mapper: MessageMapper) -> None:
+        super().__init__()
         self.bot = bot
         self.message_repository = message_repository
         self.mapper = mapper
