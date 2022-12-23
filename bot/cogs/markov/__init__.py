@@ -39,7 +39,7 @@ class MarkovCog(commands.Cog):
         log.debug("generated markov message %s", message or "no response")
 
 
-    @markov.command(name='train', aliases=['retrain', 'grind'])
+    @markov.command(name='train', aliases=['retrain', 'grind']) # type: ignore[arg-type]
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
     async def train(self, ctx: GuildContext) -> None:

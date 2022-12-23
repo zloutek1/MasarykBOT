@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timedelta
-from typing import cast, AsyncIterator
+from typing import Optional, cast, AsyncIterator
 
 import inject
 from discord import TextChannel, Message
@@ -14,11 +14,13 @@ log = logging.getLogger(__name__)
 
 
 class MessageIterator:
+    _to_date: datetime
+    _from_date: datetime
+    _iterator: AsyncIterator[Message]
+     
+        
     @inject.autoparams('logger_repository')
     def __init__(self, text_channel: TextChannel, logger_repository: bot.db.LoggerRepository) -> None:
-        self._to_date = None
-        self._from_date = None
-        self._iterator = None
         self.text_channel = text_channel
         self.logger_repository = logger_repository
 
@@ -50,11 +52,11 @@ class MessageIterator:
         return self
 
 
-    def __aiter__(self):
+    def __aiter__(self) -> "MessageIterator":
         return self
 
 
-    async def __anext__(self):
+    async def __anext__(self) -> Message:
         try:
             return await anext(self._iterator)
         except StopAsyncIteration:

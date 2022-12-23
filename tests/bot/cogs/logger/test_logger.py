@@ -1,3 +1,4 @@
+from typing import Any, Union, cast
 import unittest
 import unittest.mock
 from datetime import datetime
@@ -21,33 +22,39 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
         self.logger_repository = unittest.mock.AsyncMock()
         self.message_emoji_repository = unittest.mock.AsyncMock()
 
+
     @unittest.mock.patch('bot.cogs.logger.MessageIterator.history')
-    async def test_backup(self, message_iterator_history) -> None:
+    async def test_backup(self, message_iterator_history: unittest.mock.AsyncMock) -> None:
         message_iterator_history.return_value = helpers.AsyncIterator([message1, message2])
         self.logger_repository.find_updatable_processes = unittest.mock.AsyncMock(return_value=[])
         self._mock_injections()
 
         await self.cog._backup()
 
-        self.assertEqual(1, inject.instance(bot.db.GuildRepository).insert.call_count)
-        self.assertEqual(2, inject.instance(bot.db.UserRepository).insert.call_count)
-        self.assertEqual(1, inject.instance(bot.db.RoleRepository).insert.call_count)
-        self.assertEqual(1, inject.instance(bot.db.EmojiRepository).insert.call_count)
-        self.assertEqual(1, inject.instance(bot.db.CategoryRepository).insert.call_count)
-        self.assertEqual(2, inject.instance(bot.db.ChannelRepository).insert.call_count)
-        self.assertEqual(2, inject.instance(bot.db.MessageRepository).insert.call_count)
-        self.assertEqual(3, inject.instance(bot.db.MessageEmojiRepository).insert.call_count)
-        self.assertEqual(1, inject.instance(bot.db.ReactionRepository).insert.call_count)
-        self.assertEqual(1, inject.instance(bot.db.AttachmentRepository).insert.call_count)
+        self.assertEqual(1, self._get_insert_call_count(bot.db.GuildRepository))
+        self.assertEqual(2, self._get_insert_call_count(bot.db.UserRepository))
+        self.assertEqual(1, self._get_insert_call_count(bot.db.RoleRepository))
+        self.assertEqual(1, self._get_insert_call_count(bot.db.EmojiRepository))
+        self.assertEqual(1, self._get_insert_call_count(bot.db.CategoryRepository))
+        self.assertEqual(2, self._get_insert_call_count(bot.db.ChannelRepository))
+        self.assertEqual(2, self._get_insert_call_count(bot.db.MessageRepository))
+        self.assertEqual(3, self._get_insert_call_count(bot.db.MessageEmojiRepository))
+        self.assertEqual(1, self._get_insert_call_count(bot.db.ReactionRepository))
+        self.assertEqual(1, self._get_insert_call_count(bot.db.AttachmentRepository))
 
-    def _mock_injections(self):
+
+    @staticmethod
+    def _get_insert_call_count(repo: Any) -> int:
+        return cast(unittest.mock.AsyncMock, inject.instance(repo).insert).call_count
+
+
+    def _mock_injections(self) -> None:
         def setup_injections(binder: inject.Binder) -> None:
             binder.install(mock_database)
             binder.install(inject_backups)
             binder.bind(commands.Bot, self.bot)
             binder.bind(bot.db.LoggerRepository, self.logger_repository)
-
-        return inject.clear_and_configure(setup_injections)
+        inject.clear_and_configure(setup_injections)
 
 
 # ---- data ---- #

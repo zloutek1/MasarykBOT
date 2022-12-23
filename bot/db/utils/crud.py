@@ -28,7 +28,7 @@ class Crud(ABC, Table[TEntity]):
             FROM {self.__table_name__} 
             WHERE id=$1
         """, (id,))
-        return row
+        return self.entity.convert(row) if row else None
 
 
     @abstractmethod

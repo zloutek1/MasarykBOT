@@ -5,7 +5,7 @@ log = logging.getLogger(__name__)
 
 
 class ProgressReporter:
-    def __init__(self, max_count: int, report_percentage: int = 5, start_count: int = 0, message: str = None):
+    def __init__(self, max_count: int, report_percentage: int = 5, start_count: int = 0, message: str = 'Progress: %d') -> None:
         self.max_count = max_count
         self.report_percentage = report_percentage
         self.count = start_count
@@ -25,7 +25,7 @@ class ProgressReporter:
             self._report_progress()
 
 
-    def _should_report(self, prev_percentage: float):
+    def _should_report(self, prev_percentage: float) -> bool:
         return prev_percentage % self.report_percentage > self.percentage % self.report_percentage
 
     def _report_progress(self) -> None:

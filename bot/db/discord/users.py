@@ -25,7 +25,7 @@ class UserEntity(Entity):
 class UserMapper(Mapper[Union[User, Member], UserEntity]):
     async def map(self, obj: Union[User, Member]) -> UserEntity:
         user = obj
-        avatar_url = str(user.avatar.url) if user.avatar else None
+        avatar_url = str(user.avatar.url) if user.avatar else user.default_avatar.url
         created_at = user.created_at.replace(tzinfo=None)
         return UserEntity(user.id, user.name, avatar_url, user.bot, created_at)
 

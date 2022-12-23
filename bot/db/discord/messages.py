@@ -1,7 +1,7 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import Optional, cast
 
 from discord import Message
 
@@ -65,4 +65,5 @@ class MessageRepository(Crud[MessageEntity]):
             SELECT COUNT(*) as count
             FROM server.messages
         """)
-        return row['count']
+        assert row, "query will always return count"
+        return cast(int, row['count'])

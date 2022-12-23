@@ -152,6 +152,7 @@ class HelpPaginator:
         if first:
             self.message = await self.ctx.send(embed=self.embed, view=self.view)
         else:
+            assert self.message, "message cannot be None for non-first page"
             self.message = await self.message.edit(embed=self.embed)
 
     def prepare_embed(self, entries: List[commands.Command[Any, ..., Any]], page: int) -> None:

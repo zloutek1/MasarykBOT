@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional, Iterable
+from typing import List, Optional, Iterable, cast
 
 from bot.db.utils import inject_conn, DBConnection, Url, Entity, Table
 
@@ -22,7 +22,7 @@ class CourseEntity(Entity):
 
 
 class CourseRepository(Table[CourseEntity]):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(entity=CourseEntity)
 
 
@@ -53,7 +53,7 @@ class CourseRepository(Table[CourseEntity]):
             SELECT faculty||':'||code as result
             FROM muni.courses
         """)
-        return map(lambda row: row['result'], rows)
+        return map(lambda row: cast(str, row['result']), rows)
 
 
     @inject_conn

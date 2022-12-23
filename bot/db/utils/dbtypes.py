@@ -18,9 +18,9 @@ else:
     Cursor = asyncpg.cursor.Cursor
 
 if TYPE_CHECKING:
-    Pool = asyncpg.Pool[Record]
+    Pool = asyncpg.pool.Pool[Record] # ignore: misc
 else:
-    Pool = asyncpg.Pool
+    Pool = asyncpg.pool.Pool
 
 if TYPE_CHECKING:
     DBConnection = asyncpg.pool.PoolConnectionProxy[Record]

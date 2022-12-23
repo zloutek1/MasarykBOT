@@ -1,7 +1,11 @@
 import functools
+from typing import TYPE_CHECKING, Awaitable, Callable, TypeVar
 
 import inject
+from discord.ext import commands
 
+
+_T = TypeVar('_T')
 
 
 class DatabaseRequiredException(RuntimeError):
@@ -9,17 +13,18 @@ class DatabaseRequiredException(RuntimeError):
 
 
 
-def requires_database(func):
+def requires_database(func: Callable[..., Awaitable[_T]]) -> Callable[..., Awaitable[_T]]:
     @functools.wraps(func)
-    async def wrapper(bot):
+    async def wrapper(bot: commands.Bot) -> _T:
         from bot.db import Pool
 
+        injector = inject.get_injector()
+        assert injector, "no dependecny injector provided"
+        
         # noinspection PyProtectedMember
-        database_available = Pool in inject.get_injector()._bindings
+        database_available = Pool in injector._bindings
         if not database_available:
             raise DatabaseRequiredException
 
         return await func(bot)
-
-
     return wrapper

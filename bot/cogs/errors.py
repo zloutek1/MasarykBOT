@@ -49,10 +49,11 @@ class ErrorCog(commands.Cog):
             await ctx.send_error(str(error))
             return
 
-        while isinstance(error, (commands.CommandInvokeError, commands.errors.HybridCommandError, app_commands.errors.CommandInvokeError)):
-            error = error.original
+        exception: Exception = error
+        while isinstance(exception, (commands.CommandInvokeError, commands.errors.HybridCommandError, app_commands.errors.CommandInvokeError)):
+            exception = exception.original
 
-        trace = self._format_error(ctx, error)
+        trace = self._format_error(ctx, exception)
         await self.log_error(trace, guild=ctx.guild)
 
 
@@ -79,7 +80,10 @@ class ErrorCog(commands.Cog):
         for guild_config in CONFIG.guilds:
             if not (channel_id := guild_config.logs.errors):
                 continue
-            error_channel = self.bot.get_channel(channel_id)
+            if not (error_channel := self.bot.get_channel(channel_id)):
+                continue
+            if not isinstance(error_channel, discord.abc.Messageable):
+                continue
             await self.log_error_to_channel(error_channel, message)
 
 
@@ -88,7 +92,11 @@ class ErrorCog(commands.Cog):
             return None
         if not (channel_id := guild_config.logs.errors):
             return None
-        return self.bot.get_channel(channel_id)
+        if not (channel := self.bot.get_channel(channel_id)):
+            return None
+        if not isinstance(channel, discord.abc.Messageable):
+            return None
+        return channel
 
 
     @staticmethod

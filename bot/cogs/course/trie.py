@@ -69,6 +69,7 @@ class Trie:
         for letter, subtree in self.children.items():
             if word[i] == letter:
                 return subtree.find_prefix_for(word, limit, prefix=prefix + letter, i=i + 1)
+        return None
 
 
     @staticmethod

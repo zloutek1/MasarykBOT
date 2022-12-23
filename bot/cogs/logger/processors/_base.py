@@ -8,7 +8,7 @@ R = TypeVar('R')
 class Backup(ABC, Generic[T]):
     _backedUp: dict[Type["Backup"], set[T]] = {}
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._backedUp.setdefault(type(self), set())
 
     @abstractmethod

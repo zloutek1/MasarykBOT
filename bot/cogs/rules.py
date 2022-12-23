@@ -37,7 +37,7 @@ class RulesCog(commands.Cog):
     async def rules(self, ctx: Context) -> None:
         await ctx.send_help("rules")
 
-    @rules.command(name="setup")
+    @rules.command(name="setup") # type: ignore[arg-type]
     async def setup_rules(self,
                           ctx: Context,
                           channel_name: str = "pravidla"
@@ -89,7 +89,7 @@ class RulesCog(commands.Cog):
     @staticmethod
     async def _get_rules(ctx: Context) -> Dict[int, Embed]:
         # noinspection PyUnusedLocal
-        def role(name: str) -> str:  # type: ignore[unused]
+        def role(name: str) -> str:
             obj = ctx.get_role(name)
             return "@" + name if obj is None else obj.mention
 

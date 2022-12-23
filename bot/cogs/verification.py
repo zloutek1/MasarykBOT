@@ -1,5 +1,5 @@
 import logging
-from typing import cast, Dict
+from typing import Optional, cast, Dict
 
 import discord
 from discord.abc import Snowflake
@@ -7,6 +7,7 @@ from discord.ext import commands
 from discord.utils import get
 
 from bot.constants import CONFIG
+from bot.utils.emoji import get_emoji_id
 
 log = logging.getLogger(__name__)
 E_MISSING_PERMISSIONS = 50013
@@ -22,19 +23,24 @@ class VerificationService:
         result = {}
         for guild_config in CONFIG.guilds:
             channel_id = guild_config.channels.verification
+            assert channel_id, "no verification channel id found in config"
             if not (channel := self.bot.get_channel(channel_id)):
                 continue
-            message = await self._find_verification_message(channel)
+            if not isinstance(channel, discord.abc.Messageable):
+                continue
+            if not (message := await self._find_verification_message(channel)):
+                continue
             result[message.id] = message
         return result
 
 
     @staticmethod
-    async def _find_verification_message(channel: discord.abc.Messageable) -> discord.Message:
+    async def _find_verification_message(channel: discord.abc.Messageable) -> Optional[discord.Message]:
         async for message in channel.history(oldest_first=True):
             for reaction in message.reactions:
-                if reaction.emoji.id == CONFIG.emoji.Verification:
+                if get_emoji_id(reaction.emoji) == CONFIG.emoji.Verification:
                     return message
+        return None
 
 
     def has_required_permissions(self, guild_id: int) -> bool:
@@ -66,7 +72,7 @@ class VerificationService:
 
 
 class VerificationCog(commands.Cog):
-    def __init__(self, bot: commands.Bot, service: VerificationService = None) -> None:
+    def __init__(self, bot: commands.Bot, service: Optional[VerificationService] = None) -> None:
         self.bot = bot
         self.service = service or VerificationService(bot)
         self.verification_messages: Dict[int, discord.Message] = {}
@@ -91,6 +97,7 @@ class VerificationCog(commands.Cog):
 
     async def on_raw_reaction_update(self, payload: discord.RawReactionActionEvent) -> None:
         message = self.verification_messages[payload.message_id]
+        assert message.guild, f"verification message must be in a guild, got {message}"
         member = await message.guild.fetch_member(payload.user_id)
 
         if payload.event_type == "REACTION_ADD":
@@ -102,6 +109,7 @@ class VerificationCog(commands.Cog):
     def _is_valid_payload(self, payload: discord.RawReactionActionEvent) -> bool:
         return (payload.message_id in self.verification_messages
                 and payload.emoji.id == CONFIG.emoji.Verification
+                and payload.guild_id is not None
                 and self.service.has_required_permissions(payload.guild_id))
 
     # TODO: implement balancing

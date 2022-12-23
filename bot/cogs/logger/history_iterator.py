@@ -1,13 +1,12 @@
 import logging
 from collections.abc import AsyncIterator
-from typing import Optional
+from typing import Optional, cast
 
 import discord.errors
 import inject
 from discord import TextChannel
 from discord.ext import commands
 
-import bot.db
 from bot.db import LoggerRepository, ChannelRepository
 from .message_iterator import MessageIterator
 
@@ -38,7 +37,7 @@ class HistoryIterator(AsyncIterator[MessageIterator]):
         while not channel:
             channel = await self.get_next_channel_to_process()
 
-        return MessageIterator(channel)
+        return cast("MessageIterator", MessageIterator(channel))
 
 
     async def get_next_channel_to_process(self) -> Optional[TextChannel]:

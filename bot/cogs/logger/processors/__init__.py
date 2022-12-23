@@ -14,7 +14,7 @@ from .user import UserBackup
 
 
 
-def inject_backups(binder: inject.Binder):
+def inject_backups(binder: inject.Binder) -> None:
     binder.bind(AttachmentBackup, AttachmentBackup)
     binder.bind(BotBackup, BotBackup)
     binder.bind(CategoryBackup, CategoryBackup)

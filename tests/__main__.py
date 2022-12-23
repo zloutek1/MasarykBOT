@@ -1,3 +1,4 @@
+from typing import Any
 import unittest.mock
 
 import inject
@@ -6,11 +7,13 @@ import pytest
 from bot.db import Pool
 
 
-def setup_global_mock_injections():
-    inject.configure(lambda binder: binder.bind(Pool, unittest.mock.Mock(Pool)))
+def setup_global_mock_injections() -> None:
+    def mock_db(binder: inject.Binder) -> None:
+        binder.bind(Pool, unittest.mock.Mock(Pool))
+    inject.configure(mock_db)
 
 
-def load_tests(loader, tests, pattern):
+def load_tests(loader: Any, tests: Any, pattern: Any) -> Any:
     return loader.discover('.')
 
 

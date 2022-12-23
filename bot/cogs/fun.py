@@ -119,7 +119,7 @@ class FunService:
 
 
 class FunCog(commands.Cog):
-    def __init__(self, bot: commands.Bot, service: FunService = None) -> None:
+    def __init__(self, bot: commands.Bot, service: Optional[FunService] = None) -> None:
         self.bot = bot
         self.service = service or FunService(bot)
 

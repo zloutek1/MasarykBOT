@@ -1,6 +1,7 @@
+from abc import ABC, abstractmethod
 import io
 import json
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import aiohttp
 import discord
@@ -27,7 +28,17 @@ class CodeBlock:
         self.source = code.rstrip('`').replace('```', '')
 
 
-class ColiruService:
+class EvalService(ABC):
+    @abstractmethod
+    def supports_language(self, language: str) -> bool:
+        raise NotImplementedError()
+
+    @abstractmethod
+    async def eval(self, ctx: Context, *, code: CodeBlock) -> str:
+        raise NotImplementedError()
+
+
+class ColiruService(EvalService):
     @property
     def commands(self) -> Dict[str, str]:
         cmds = {
@@ -81,7 +92,7 @@ class ColiruService:
             return output
 
 
-class AplCompilingService:
+class AplCompilingService(EvalService):
     @staticmethod
     def supports_language(language: str) -> bool:
         return language == "apl"
@@ -126,7 +137,7 @@ class EvalCog(commands.Cog):
     @commands.command(name="eval", aliases=["coliru"])
     @commands.cooldown(1, 15, commands.BucketType.user)
     async def eval(self, ctx: Context, *, code: CodeBlock) -> None:
-        compilers = [self.coliru_service, self.apl_service]
+        compilers: List[EvalService] = [self.coliru_service, self.apl_service]
         for compiler in compilers:
             if compiler.supports_language(code.language):
                 response = await compiler.eval(ctx, code=code)

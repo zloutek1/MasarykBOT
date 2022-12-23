@@ -12,9 +12,10 @@ log = logging.getLogger(__name__)
 class TransactionContext:
     def __init__(self, pool: Pool, readonly: bool = False) -> None:
         self.pool = pool
-        self.conn: Optional[DBConnection] = None
-        self._transaction: Optional[DBTransaction] = None
         self.readonly = readonly
+
+        self.conn: Optional[DBConnection]
+        self._transaction: Optional[DBTransaction]
 
 
     async def __aenter__(self) -> "TransactionContext":
@@ -35,21 +36,34 @@ class TransactionContext:
             await self._commit()
 
 
-    async def _start(self):
-        self.conn: DBConnection = await self.pool.acquire()
+    async def _start(self) -> None:
+        self.conn = await self.pool.acquire()
         self._transaction = self.conn.transaction(readonly=self.readonly)
         await self._transaction.start()
 
 
-    async def _commit(self):
-        self._transaction = await self._transaction.commit()
-        self.conn = await self.conn.close()
+    async def _commit(self) -> None:
+        assert self._transaction, "no transaction"
+        assert self.conn, "no connection"
+        
+        await self._transaction.commit()
+        await self.conn.close()
+        
+        self._transaction = None
+        self.conn = None
 
 
-    async def _rollback(self):
-        self._transaction = await self._transaction.rollback()
+    async def _rollback(self) -> None:
+        assert self._transaction, "no transaction"
+        assert self.conn, "no connection"
+        
+        await self._transaction.rollback()
         log.error("Transaction failed, statement rolled back")
-        self.conn = await self.conn.close()
+        await self.conn.close()
+
+        self._transaction = None
+        self.conn = None
+
 
 
 

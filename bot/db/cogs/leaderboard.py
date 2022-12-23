@@ -35,11 +35,12 @@ class LeaderboardRepository(Table[LeaderboardEntity]):
 
     @inject_conn
     async def get_data(self, conn: DBConnection, user_id: int, filters: LeaderboardFilter) -> Tuple[List[LeaderboardEntity], List[LeaderboardEntity]]:
-        await self.preselect.__wrapped__(self, conn, filters)
+        await self.preselect(filters, conn=conn)
         return (
-            await self.get_top10.__wrapped__(self, conn),
-            await self.get_around.__wrapped__(self, conn, user_id)
+            await self.get_top10(conn=conn),
+            await self.get_around(user_id, conn=conn)
         )
+
 
     @inject_conn
     async def preselect(self, conn: DBConnection, filters: LeaderboardFilter) -> None:

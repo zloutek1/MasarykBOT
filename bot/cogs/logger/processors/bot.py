@@ -6,7 +6,7 @@ from ..history_iterator import HistoryIterator
 
 
 class BotBackup(Backup[commands.Bot]):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
 
