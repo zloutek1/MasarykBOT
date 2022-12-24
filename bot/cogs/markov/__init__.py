@@ -69,7 +69,6 @@ class MarkovCog(commands.Cog):
         if self.bot.user.mention == start[0]:
             start.pop(0)
 
-        print("markov", start)
         await self.markov(ctx, *start)
         return True
 
