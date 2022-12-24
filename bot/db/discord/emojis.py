@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+import re
+from typing import Optional, Tuple
 
-from discord import Emoji, PartialEmoji
-from emoji import demojize
+from discord import Emoji, PartialEmoji, Message
+from emoji import demojize, emoji_list
 
 from bot.db.utils import Crud, DBConnection, Id, Mapper, Url, inject_conn, Entity
 from bot.utils import AnyEmote
@@ -43,7 +44,7 @@ class EmojiMapper(Mapper[AnyEmote, EmojiEntity]):
 
     @staticmethod
     def _map_discord(emoji: Emoji | PartialEmoji) -> EmojiEntity:
-        return EmojiEntity(get_emoji_id(emoji), emoji.name, str(emoji.url), emoji.animated, emoji.created_at)
+        return EmojiEntity(get_emoji_id(emoji), emoji.name, str(emoji.url), emoji.animated, emoji.created_at)        
 
 
 

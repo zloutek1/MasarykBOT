@@ -36,6 +36,8 @@ services:
       dockerfile: tests/Dockerfile.test
     volumes:
       - .:/MasarykBOT
+    profiles:
+      - test
 
   database_backup:
     container_name: db_backup
@@ -54,6 +56,8 @@ services:
       - POSTGRES_EXTRA_OPTS=-Z6 --blobs
       - SCHEDULE=@daily
     restart: unless-stopped
+    profiles:
+      - prod
 
   pgadmin:
     container_name: pgadmin
