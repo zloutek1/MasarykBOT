@@ -41,7 +41,7 @@ class MarkovRepository(Table[MarkovEntity]):
             SELECT follows, frequency
             FROM cogs.markov 
             WHERE guild_id = $1 AND 
-                  context LIKE ('%'||$2) AND 
+                  context LIKE ('%'||$2) ESCAPE '|' AND 
                   frequency > 0 
             ORDER BY frequency
         """, guild_id, context)

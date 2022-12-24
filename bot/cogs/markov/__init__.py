@@ -61,8 +61,8 @@ class MarkovCog(commands.Cog):
 
 
     async def markov_from_message(self, message: discord.Message) -> bool:
-        ctx = await self.bot.get_context(message)
-        if ctx.command or not self.bot.user or self.bot.user not in message.mentions:
+        ctx = await self.bot.get_context(message, cls=Context)
+        if self._can_run_markov(ctx) or not self.bot.user:
             return False
 
         start = ctx.message.content.split(' ')
@@ -72,6 +72,12 @@ class MarkovCog(commands.Cog):
         print("markov", start)
         await self.markov(ctx, *start)
         return True
+
+
+    @staticmethod
+    def _can_run_markov(ctx: Context) -> bool:
+        return bool(ctx.command) or (ctx.bot.user not in ctx.message.mentions) or ctx.author.bot
+
 
 
 @requires_database

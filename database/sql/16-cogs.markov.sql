@@ -27,3 +27,11 @@ CREATE INDEX IF NOT EXISTS fki_markov_fkey_guild
     ON cogs.markov USING btree
     (guild_id ASC NULLS LAST)
     TABLESPACE pg_default;
+-- Index: fki_markov_guild_context
+
+-- DROP INDEX IF EXISTS cogs.fki_markov_guild_context;
+
+CREATE INDEX IF NOT EXISTS fki_markov_guild_context
+    ON cogs.markov USING btree
+    (guild_id ASC NULLS LAST, context COLLATE pg_catalog."default" ASC NULLS LAST)
+    TABLESPACE pg_default;
