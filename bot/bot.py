@@ -1,14 +1,14 @@
 import logging
-from typing import TYPE_CHECKING, Any, Optional, Union, Type, cast
+from typing import TYPE_CHECKING, Any, Optional, Union, Type, cast, overload
 
 from discord import Message, Activity, ActivityType, Interaction, Member
+from discord.abc import MISSING
 from discord.ext import commands
+from discord.ext.commands._types import ContextT
 
 from bot.utils import Context
 from bot.constants import CONFIG
-
-if TYPE_CHECKING:
-    from typing_extensions import Self
+from typing_extensions import Self
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +24,12 @@ class MasarykBOT(commands.Bot):
         log.info("Bot is now all ready to go")
         self.introduce()
 
-    
+
+    async def get_context(self, origin: Union[Message, Interaction], /, *, cls: Type[ContextT] = MISSING) -> Any:
+        cls = cast(Type[ContextT], Context) if cls is MISSING else cls
+        return await super(MasarykBOT, self).get_context(origin, cls=cls)
+
+
     async def process_commands(self, message: Message) -> None:
         if CONFIG.bot.DEBUG and isinstance(message.author, Member) and not message.author.guild_permissions.administrator:
             return

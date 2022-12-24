@@ -42,11 +42,17 @@ class ErrorCog(commands.Cog):
             return
 
         if isinstance(error, commands.CommandOnCooldown):
-            await ctx.send_error(str(error), delete_after=error.retry_after)
+            if isinstance(ctx, Context):
+                await ctx.send_error(str(error), delete_after=error.retry_after)
+            else:
+                await ctx.send(str(error), delete_after=error.retry_after)
             return
 
         if isinstance(error, REPLY_ON_ERRORS):
-            await ctx.send_error(str(error))
+            if isinstance(ctx, Context):
+                await ctx.send_error(str(error))
+            else:
+                await ctx.send(str(error))
             return
 
         exception: Exception = error
