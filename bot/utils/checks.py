@@ -3,9 +3,7 @@ from typing import TYPE_CHECKING, Awaitable, Callable, TypeVar
 
 import inject
 from discord.ext import commands
-
-from bot.db import Pool
-
+    
 
 
 _T = TypeVar('_T')
@@ -22,6 +20,7 @@ def requires_database(func: Callable[..., Awaitable[_T]]) -> Callable[..., Await
         injector = inject.get_injector()
         assert injector, "no dependecny injector provided"
         
+        from bot.db import Pool
         database_available = Pool in injector._bindings # type: ignore[misc]
         if not database_available:
             raise DatabaseRequiredException

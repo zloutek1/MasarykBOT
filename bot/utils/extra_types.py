@@ -15,7 +15,3 @@ class GuildContext(Context):
 
 class GuildMessage(discord.Message):
     guild: discord.Guild
-
-
-
-AnyEmote = discord.Emoji | discord.PartialEmoji | str

@@ -4,7 +4,7 @@ import inject
 from discord import Emoji, PartialEmoji
 
 from bot.db import EmojiRepository, EmojiMapper, EmojiEntity
-from bot.utils.extra_types import AnyEmote
+from bot.utils import AnyEmote
 from ._base import Backup
 
 log = logging.getLogger(__name__)

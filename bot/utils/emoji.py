@@ -1,8 +1,11 @@
-from typing import Optional
+import discord
+from discord.ext import commands
 
 from bot.utils.context import Context
-from .extra_types import AnyEmote
-from discord.ext import commands
+
+
+
+AnyEmote = discord.Emoji | discord.PartialEmoji | str
 
 
 

@@ -1,14 +1,12 @@
 from dataclasses import dataclass
 from datetime import datetime
-import re
-from typing import Optional, Tuple
+from typing import Optional
 
-from discord import Emoji, PartialEmoji, Message
-from emoji import demojize, emoji_list
+from discord import Emoji, PartialEmoji
+from emoji import demojize
 
 from bot.db.utils import Crud, DBConnection, Id, Mapper, Url, inject_conn, Entity
-from bot.utils import AnyEmote
-from bot.utils.emoji import get_emoji_id
+from bot.utils import AnyEmote, get_emoji_id
 
 
 

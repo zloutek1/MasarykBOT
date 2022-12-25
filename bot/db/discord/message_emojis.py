@@ -10,10 +10,7 @@ import inject
 from emoji import emoji_list
 
 from bot.db.utils import Entity, Mapper, Id, Crud, inject_conn, DBConnection
-from bot.utils import get_emoji_id
-from bot.utils.context import Context
-from bot.utils.emoji import convert_emoji
-from bot.utils.extra_types import AnyEmote
+from bot.utils import Context, get_emoji_id, convert_emoji, AnyEmote
 
 
 
