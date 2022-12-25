@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Literal, Optional, cast
 
 import discord
 import requests
-import unicodeit
 from discord.ext import commands
 from PIL import Image
 
@@ -219,10 +218,6 @@ class FunCog(commands.Cog):
         asciified_emoji = self.service.asciify(emoji, treshold, size, inverted)
         await ctx.send(asciified_emoji)
 
-    @commands.command()
-    async def unicode(self, ctx: Context, latex: str) -> None:
-        """Convert latex into unicode: https://github.com/svenkreiss/unicodeit"""
-        await ctx.send(unicodeit.replace(latex.strip('`')))
 
 
 async def setup(bot: commands.Bot) -> None:

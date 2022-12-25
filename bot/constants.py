@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, Hashable
 
 import yaml
-from enforce_typing import enforce_types
+from enforce_typing import enforce_types # type: ignore[import]
 
 
 
