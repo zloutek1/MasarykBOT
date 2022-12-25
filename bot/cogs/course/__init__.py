@@ -72,7 +72,7 @@ class CourseCog(commands.Cog):
     @commands.hybrid_group(aliases=['subject'])
     @commands.guild_only()
     async def course(self, ctx: GuildContext) -> None:
-        pass
+        await ctx.send_help("course")
 
 
     @course.command(aliases=['add', 'show'])
