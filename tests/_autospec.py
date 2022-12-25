@@ -1,5 +1,3 @@
-# type: ignore
-
 import contextlib
 import functools
 import unittest.mock

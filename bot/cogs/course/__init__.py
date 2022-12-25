@@ -7,6 +7,7 @@ import inject
 from discord.app_commands import Choice
 from discord.ext import commands
 from discord.utils import get
+from discord.ext.commands._types import Check
 
 from bot.constants import CONFIG
 from bot.db import CourseRepository
@@ -24,8 +25,8 @@ class NotInRegistrationChannel(commands.UserInputError):
     pass
 
 
-def in_registration_channel():
-    def predicate(ctx: GuildContext) -> bool:
+def in_registration_channel() -> Check[GuildContext]:
+    async def predicate(ctx: GuildContext) -> bool:
         assert isinstance(ctx.cog, CourseCog)
         cog = cast(CourseCog, ctx.cog)
         if ctx.channel.id not in cog.course_registration_channels:
@@ -41,8 +42,8 @@ def in_registration_channel():
             return f"You are not in a course registration channel. Please use {registration_channel.mention}"
         return f"You are not in a course registration channel. Please use #{registration_channel}"
 
-
     return commands.check(predicate)
+
 
 
 class Course(commands.Converter, CourseEntity):

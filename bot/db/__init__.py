@@ -7,7 +7,7 @@ import asyncpg
 import inject
 
 # ---- utils ----
-from .utils import UnitOfWork, Url, Pool, Page
+from .utils import UnitOfWork, Url, Page, Pool, Record
 
 # ---- discord ----
 from .discord import (AttachmentMapper, CategoryMapper, ChannelMapper, EmojiMapper,
@@ -46,9 +46,9 @@ def setup_injections(binder: inject.Binder) -> None:
 
 
 
-async def connect_db(url: Url) -> Optional[Pool]:
+async def connect_db(url: Url) -> Optional[Pool[Record]]:
     try:
-        pool = None
+        pool: Pool[Record] | None = None
         attempts = 0
         while pool is None:
             pool = await asyncpg.create_pool(url, command_timeout=1280)
