@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeAlias
 
 import asyncpg.cursor
 import asyncpg.transaction
@@ -8,7 +8,8 @@ Id = int
 Url = str
 
 Record = asyncpg.Record
-Pool = asyncpg.Pool
+
+Pool: TypeAlias = asyncpg.Pool[asyncpg.Record] # type: ignore
 
 DBTransaction = asyncpg.transaction.Transaction
 

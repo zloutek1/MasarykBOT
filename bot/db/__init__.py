@@ -46,9 +46,9 @@ def setup_injections(binder: inject.Binder) -> None:
 
 
 
-async def connect_db(url: Url) -> Optional[Pool[Record]]:
+async def connect_db(url: Url) -> Optional[Pool]:
     try:
-        pool: Pool[Record] | None = None
+        pool: Pool | None = None
         attempts = 0
         while pool is None:
             pool = await asyncpg.create_pool(url, command_timeout=1280)

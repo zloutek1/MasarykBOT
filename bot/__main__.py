@@ -60,11 +60,11 @@ bot = MasarykBOT(
 log = logging.getLogger()
 
 
-def setup_injections(db_pool: Optional[Pool[Record]], bot: commands.Bot) -> Callable[..., None]:
+def setup_injections(db_pool: Optional[Pool], bot: commands.Bot) -> Callable[..., None]:
     def inner(binder: inject.Binder) -> None:
         binder.bind(commands.Bot, bot)
         if db_pool:
-            binder.bind(Pool[Record], db_pool)  # type: ignore[misc]
+            binder.bind(Pool, db_pool)  # type: ignore[misc]
             binder.install(setup_db_injections)
     return inner
 

@@ -4,13 +4,13 @@ from typing import Optional, Type
 
 import inject
 
-from bot.db.utils.dbtypes import Pool, Record, DBConnection, DBTransaction
+from bot.db.utils import Pool, Record, DBConnection, DBTransaction
 
 log = logging.getLogger(__name__)
 
 
 class TransactionContext:
-    def __init__(self, pool: Pool[Record], readonly: bool = False) -> None:
+    def __init__(self, pool: Pool, readonly: bool = False) -> None:
         self.pool = pool
         self.readonly = readonly
 
