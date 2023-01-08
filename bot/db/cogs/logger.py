@@ -45,6 +45,15 @@ class LoggerRepository(Table[LoggerEntity]):
 
 
     @inject_conn
+    async def insert_process(self, conn: DBConnection, data: Tuple[Id, datetime, datetime]) -> None:
+        channel_id, from_date, to_date = data
+        await conn.execute(f"""
+               INSERT INTO cogs.logger VALUES ($1, $2, $3, NOW())
+               ON CONFLICT (channel_id, from_date) DO NOTHING
+           """, channel_id, from_date, to_date)
+
+
+    @inject_conn
     async def find_last_process(self, conn: DBConnection, channel_id: Id) -> Optional[LoggerEntity]:
         row = await conn.fetchrow(f"""
             SELECT * 
