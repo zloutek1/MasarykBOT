@@ -61,8 +61,10 @@ class MarkovCog(commands.Cog):
 
 
     async def markov_from_message(self, message: discord.Message) -> bool:
+        assert self.bot.user, "bot must be signed in"
+
         ctx: Context = await self.bot.get_context(message, cls=Context)
-        if self._can_run_markov(ctx) or not self.bot.user:
+        if not self._can_run_markov(ctx):
             return False
 
         if ctx.guild is None:
@@ -72,16 +74,19 @@ class MarkovCog(commands.Cog):
         if self.bot.user.mention == start[0]:
             start.pop(0)
 
+        log.info("in #%s @%s used markov by mention: %s", ctx.channel, ctx.author, message.content)
         await self.markov(cast(GuildContext, ctx), *start)
         return True
 
 
     @staticmethod
     def _can_run_markov(ctx: Context) -> bool:
+        assert ctx.bot.user, "bot must be signed in"
+
         return (
-                (bool(ctx.command)
-                 or (ctx.bot.user is not None and ctx.bot.user.id not in map(lambda u: u.id, ctx.message.mentions)))
-                and not ctx.author.bot
+            ctx.command is None
+            and not ctx.author.bot
+            and (ctx.bot.user.id in map(lambda u: u.id, ctx.message.mentions))
         )
 
 

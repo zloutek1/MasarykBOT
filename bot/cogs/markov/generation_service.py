@@ -7,7 +7,6 @@ from discord.utils import get
 from bot.constants import CONFIG
 from bot.db.cogs import MarkovRepository
 
-
 DEFAULT_CONTEXT_SIZE = 8
 
 
