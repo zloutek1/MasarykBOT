@@ -5,7 +5,7 @@ from typing import Callable, Concatenate, TypeVar, ParamSpec, Coroutine, Optiona
 from bot.db.utils.dbtypes import DBConnection
 from bot.db.utils.table import Table
 
-S = TypeVar('S', bound=Table)
+S = TypeVar('S', bound=Table)  # type: ignore
 P = ParamSpec('P')
 R = TypeVar('R')
 Awaitable = Coroutine[None, None, R]

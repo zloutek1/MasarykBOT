@@ -39,7 +39,7 @@ class MarkovCog(commands.Cog):
         log.debug("generated markov message %s", message or "no response")
 
 
-    @markov.command(name='train', aliases=['retrain', 'grind']) # type: ignore[arg-type]
+    @markov.command(name='train', aliases=['retrain', 'grind'])  # type: ignore[arg-type]
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
     async def train(self, ctx: GuildContext) -> None:
@@ -61,21 +61,28 @@ class MarkovCog(commands.Cog):
 
 
     async def markov_from_message(self, message: discord.Message) -> bool:
-        ctx = await self.bot.get_context(message, cls=Context)
+        ctx: Context = await self.bot.get_context(message, cls=Context)
         if self._can_run_markov(ctx) or not self.bot.user:
+            return False
+
+        if ctx.guild is None:
             return False
 
         start = ctx.message.content.split(' ')
         if self.bot.user.mention == start[0]:
             start.pop(0)
 
-        await self.markov(ctx, *start)
+        await self.markov(cast(GuildContext, ctx), *start)
         return True
 
 
     @staticmethod
     def _can_run_markov(ctx: Context) -> bool:
-        return bool(ctx.command) or (ctx.bot.user not in ctx.message.mentions) or ctx.author.bot
+        return (
+                (bool(ctx.command)
+                 or (ctx.bot.user is not None and ctx.bot.user.id not in map(lambda u: u.id, ctx.message.mentions)))
+                and not ctx.author.bot
+        )
 
 
 

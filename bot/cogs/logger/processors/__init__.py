@@ -1,5 +1,12 @@
 import inject
 
+__all__ = [
+    'AttachmentBackup', 'BotBackup', 'CategoryBackup', 'EmojiBackup',
+    'GuildBackup', 'MessageBackup', 'MessageEmojiBackup',
+    'ReactionBackup', 'RoleBackup', 'TextChannelBackup', 'UserBackup',
+    'inject_backups'
+]
+
 from .attachment import AttachmentBackup
 from .bot import BotBackup
 from .category import CategoryBackup

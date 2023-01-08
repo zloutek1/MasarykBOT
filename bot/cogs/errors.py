@@ -106,7 +106,7 @@ class ErrorCog(commands.Cog):
 
 
     @staticmethod
-    def _format_error(ctx: commands.Context, error: Exception) -> str:
+    def _format_error(ctx: commands.Context[commands.Bot], error: Exception) -> str:
         trace = "".join(traceback.format_exception(type(error), error, error.__traceback__))
         if ctx.command:
             user = ctx.author.name

@@ -9,6 +9,7 @@ from .dbtypes import DBConnection, Id
 
 TEntity = TypeVar('TEntity', bound=Entity)
 
+__all__ = ['Crud']
 
 
 class Crud(ABC, Table[TEntity]):

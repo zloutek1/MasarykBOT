@@ -1,4 +1,4 @@
-from bot.utils import logging
+import logging
 
 log = logging.getLogger(__name__)
 

@@ -1,10 +1,12 @@
-from collections import namedtuple
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional, Tuple, NamedTuple, List
 
 from bot.db.utils import Id, Entity, Table, DBConnection, inject_conn
 
+__all__ = [
+    'LoggerEntity', 'LoggerRepository'
+]
 
 
 @dataclass

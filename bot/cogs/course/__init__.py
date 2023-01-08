@@ -27,8 +27,8 @@ class NotInRegistrationChannel(commands.UserInputError):
 
 def in_registration_channel() -> Check[GuildContext]:
     async def predicate(ctx: GuildContext) -> bool:
-        assert isinstance(ctx.cog, CourseCog)
-        cog = cast(CourseCog, ctx.cog)
+        cog = ctx.cog
+        assert isinstance(cog, CourseCog)
         if ctx.channel.id not in cog.course_registration_channels:
             raise NotInRegistrationChannel(fmt_error(ctx, cog))
         return True
@@ -46,7 +46,7 @@ def in_registration_channel() -> Check[GuildContext]:
 
 
 
-class Course(commands.Converter, CourseEntity):
+class Course(commands.Converter[CourseEntity], CourseEntity):
     @classmethod
     @inject.autoparams('course_repository')
     async def convert(cls, ctx: Context, argument: str, course_repository: CourseRepository) -> CourseEntity:

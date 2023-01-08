@@ -1,5 +1,11 @@
 import inject
 
+__all__ = [
+    'CourseRepository', 'CourseEntity',
+    'StudentRepository', 'StudentEntity',
+    'setup_injections'
+]
+
 from .course import CourseRepository, CourseEntity
 from .student import StudentRepository, StudentEntity
 

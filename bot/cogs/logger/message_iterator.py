@@ -30,9 +30,9 @@ class MessageIterator:
         if last_process is None:
             return self.text_channel.created_at
         elif last_process.finished_at is None:
-            return cast(datetime, last_process.from_date)
+            return last_process.from_date
         else:
-            return cast(datetime, last_process.to_date)
+            return last_process.to_date
 
 
     async def history(self) -> AsyncIterator[Message]:

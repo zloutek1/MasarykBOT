@@ -1,14 +1,14 @@
 import logging
-from typing import TYPE_CHECKING, Any, Optional, Union, Type, cast, overload
+from typing import Any, Optional, Union, Type, cast
 
+import discord
 from discord import Message, Activity, ActivityType, Interaction, Member
-from discord.abc import MISSING
+from discord.utils import MISSING
 from discord.ext import commands
 from discord.ext.commands._types import ContextT
 
-from bot.utils import Context
 from bot.constants import CONFIG
-from typing_extensions import Self
+from bot.utils import Context
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +31,10 @@ class MasarykBOT(commands.Bot):
 
 
     async def process_commands(self, message: Message) -> None:
-        if CONFIG.bot.DEBUG and isinstance(message.author, Member) and not message.author.guild_permissions.administrator:
+        def is_admin(user: discord.User | discord.Member) -> bool:
+            return isinstance(user, Member) and user.guild_permissions.administrator
+
+        if CONFIG.bot.DEBUG and not is_admin(message.author):
             return
 
         from bot.cogs.markov import MarkovCog

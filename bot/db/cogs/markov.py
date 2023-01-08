@@ -4,6 +4,9 @@ from typing import NamedTuple, List
 from bot.db.discord.messages import MessageEntity
 from bot.db.utils import Id, Entity, Table, DBConnection, inject_conn, Page
 
+__all__ = [
+    'MarkovEntity', 'MarkovRepository'
+]
 
 
 @dataclass

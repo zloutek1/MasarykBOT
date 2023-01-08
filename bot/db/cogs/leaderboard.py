@@ -3,7 +3,9 @@ from typing import List, Tuple
 
 from bot.db.utils import DBConnection, Id, Entity, Table, inject_conn
 
-
+__all__ = [
+    'LeaderboardEntity', 'LeaderboardRepository'
+]
 
 @dataclass
 class LeaderboardFilter:

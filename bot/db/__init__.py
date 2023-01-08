@@ -6,6 +6,23 @@ from typing import Optional
 import asyncpg
 import inject
 
+__all__ = [
+    "UnitOfWork", "Url", "Page", "Pool", "Record",
+    "AttachmentMapper", "CategoryMapper", "ChannelMapper", "EmojiMapper",
+                          "GuildMapper", "MessageMapper", "MessageEmojiMapper", "ReactionMapper",
+                          "RoleMapper", "UserMapper",
+    "AttachmentRepository", "CategoryRepository", "ChannelRepository", "EmojiRepository",
+                          "GuildRepository", "MessageRepository", "MessageEmojiRepository", "ReactionRepository",
+                          "RoleRepository", "UserRepository",
+    "AttachmentEntity", "CategoryEntity", "ChannelEntity", "EmojiEntity",
+                          "GuildEntity", "MessageEntity", "MessageEmojiEntity", "ReactionEntity",
+                          "RoleEntity", "UserEntity",
+    "CourseRepository", "StudentRepository", "CourseEntity", "StudentEntity",
+    "LeaderboardRepository", "LoggerRepository", "LeaderboardEntity", "LoggerEntity",
+    "setup_injections",
+    "connect_db"
+]
+
 # ---- utils ----
 from .utils import UnitOfWork, Url, Page, Pool, Record
 
