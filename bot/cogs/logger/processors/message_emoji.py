@@ -1,16 +1,15 @@
-from typing import Tuple
+import discord
 import inject
-
-from discord import Message
 from discord.ext import commands
 
+from bot.cogs.logger.processors._base import Backup
 from bot.db.discord import MessageEmojiEntity, MessageEmojiMapper, MessageEmojiRepository
-from ._base import Backup
+from bot.utils import MessageEmote, AnyEmote
 
 
 
-class MessageEmojiBackup(Backup[Message]):
-    @inject.autoparams('bot', 'repository', 'mapper')
+class MessageEmojiBackup(Backup[MessageEmote]):
+    @inject.autoparams()
     def __init__(self, bot: commands.Bot, repository: MessageEmojiRepository, mapper: MessageEmojiMapper) -> None:
         super().__init__()
         self.bot = bot
@@ -18,24 +17,22 @@ class MessageEmojiBackup(Backup[Message]):
         self.mapper = mapper
 
 
-    async def traverse_up(self, message: Message) -> None:
-        from .emoji import EmojiBackup
-        for emoji in await self.mapper.map_emojis(self.bot, message):
-            await EmojiBackup().traverse_up(emoji)
-
-        from .message import MessageBackup
-        await MessageBackup().traverse_up(message)
-
-        await super().traverse_up(message)
-
-
-    async def backup(self, message: Message) -> None:
-        await super().backup(message)
-
-        entities: Tuple[MessageEmojiEntity, ...] = await self.mapper.map(message)
-        for entity in entities:
-            await self.repository.insert(entity)
+    @inject.autoparams()
+    async def traverse_up(
+            self,
+            message_emoji: MessageEmote,
+            message_backup: Backup[discord.Message],
+            emoji_backup: Backup[AnyEmote]
+    ) -> None:
+        await message_backup.backup(message_emoji.message)
+        await emoji_backup.backup(message_emoji.emoji)
+        await super().traverse_up(message_emoji)
 
 
-    async def traverse_down(self, message: Message) -> None:
-        await super().traverse_down(message)
+    async def backup(self, emoji: MessageEmote) -> None:
+        entity: MessageEmojiEntity = await self.mapper.map(emoji)
+        await self.repository.insert(entity)
+
+
+    async def traverse_down(self, emoji: MessageEmote) -> None:
+        await super().traverse_down(emoji)

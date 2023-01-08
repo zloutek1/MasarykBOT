@@ -1,25 +1,26 @@
 import logging
 
+import discord
 import inject
 from discord import Role
 
 from bot.db import RoleRepository, RoleMapper, RoleEntity
-from ._base import Backup
+from bot.cogs.logger.processors._base import Backup
 
 log = logging.getLogger(__name__)
 
 
 class RoleBackup(Backup[Role]):
-    @inject.autoparams('role_repository', 'mapper')
+    @inject.autoparams()
     def __init__(self, role_repository: RoleRepository, mapper: RoleMapper) -> None:
         super().__init__()
         self.role_repository = role_repository
         self.mapper = mapper
 
 
-    async def traverse_up(self, role: Role) -> None:
-        from .guild import GuildBackup
-        await GuildBackup().traverse_up(role.guild)
+    @inject.autoparams()
+    async def traverse_up(self, role: Role, guild_backup: Backup[discord.Guild]) -> None:
+        await guild_backup.traverse_up(role.guild)
         await self.backup(role)
 
 

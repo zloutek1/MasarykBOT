@@ -1,26 +1,23 @@
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar, Type
+from typing import Generic, TypeVar
 
 T = TypeVar('T')
 R = TypeVar('R')
 
 
 class Backup(ABC, Generic[T]):
-    _backedUp: dict[Type["Backup[T]"], set[T]] = {}
-
     def __init__(self) -> None:
-        self._backedUp.setdefault(type(self), set())
+        self._backedUp: set[T] = set()
 
     @abstractmethod
     async def traverse_up(self, obj: T) -> None:
-        if obj in self._backedUp[type(self)]:
-            return
         await self.backup(obj)
+        self._backedUp.add(obj)
 
 
     @abstractmethod
     async def backup(self, obj: T) -> None:
-        self._backedUp[type(self)].add(obj)
+        raise NotImplementedError("Backup method is not implemented")
 
 
     @abstractmethod

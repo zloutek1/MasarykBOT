@@ -1,9 +1,8 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from discord import Attachment
-
 from bot.db.utils import Entity, Mapper, Id, Crud, inject_conn, DBConnection
+from bot.utils import MessageAttachment
 
 
 
@@ -18,9 +17,9 @@ class AttachmentEntity(Entity):
 
 
 
-class AttachmentMapper(Mapper[Attachment, AttachmentEntity]):
-    async def map(self, obj: Attachment) -> AttachmentEntity:
-        attachment = obj
+class AttachmentMapper(Mapper[MessageAttachment, AttachmentEntity]):
+    async def map(self, obj: MessageAttachment) -> AttachmentEntity:
+        message, attachment = obj.message, obj.attachment
         return AttachmentEntity(None, attachment.id, attachment.filename, attachment.url)
 
 

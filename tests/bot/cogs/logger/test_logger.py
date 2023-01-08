@@ -10,7 +10,7 @@ from discord.ext import commands
 import bot.db
 import tests.helpers as helpers
 from bot.cogs import logger
-from bot.cogs.logger.processors import inject_backups
+from bot.cogs.logger.processors import setup_injections
 from tests.bot.utils import mock_database
 
 
@@ -51,7 +51,7 @@ class LoggerTests(unittest.IsolatedAsyncioTestCase):
     def _mock_injections(self) -> None:
         def setup_injections(binder: inject.Binder) -> None:
             binder.install(mock_database)
-            binder.install(inject_backups)
+            binder.install(setup_injections)
             binder.bind(commands.Bot, self.bot)
             binder.bind(bot.db.LoggerRepository, self.logger_repository)
         inject.clear_and_configure(setup_injections)

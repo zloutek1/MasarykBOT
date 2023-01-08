@@ -1,8 +1,10 @@
+from dataclasses import dataclass
 from typing import Union
 
 import discord
 
 from .context import Context
+
 
 
 class GuildContext(Context):
@@ -13,5 +15,13 @@ class GuildContext(Context):
     prefix: str
 
 
+
 class GuildMessage(discord.Message):
     guild: discord.Guild
+
+
+
+@dataclass(frozen=True)
+class MessageAttachment:
+    message: discord.Message
+    attachment: discord.Attachment

@@ -10,7 +10,8 @@ from discord.ext.commands import ExtensionFailed
 from dotenv import load_dotenv
 
 from bot.bot import MasarykBOT
-from bot.db import connect_db, Pool, Record, setup_injections as setup_db_injections
+from bot.cogs import setup_injections as setup_cog_injections
+from bot.db import connect_db, Pool, setup_injections as setup_db_injections
 from bot.utils import setup_logging, DatabaseRequiredException
 
 # TODO: implement Seasonal
@@ -66,6 +67,7 @@ def setup_injections(db_pool: Optional[Pool], bot: commands.Bot) -> Callable[...
         if db_pool:
             binder.bind(Pool, db_pool)  # type: ignore[misc]
             binder.install(setup_db_injections)
+            binder.install(setup_cog_injections)
     return inner
 
 

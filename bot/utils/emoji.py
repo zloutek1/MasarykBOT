@@ -1,12 +1,17 @@
+from dataclasses import dataclass
+
 import discord
 from discord.ext import commands
 
 from bot.utils.context import Context
 
-
-
 AnyEmote = discord.Emoji | discord.PartialEmoji | str
 
+
+@dataclass(frozen=True)
+class MessageEmote:
+    message: discord.Message
+    emoji: AnyEmote
 
 
 def get_emoji_id(emoji: AnyEmote) -> int:
@@ -16,10 +21,12 @@ def get_emoji_id(emoji: AnyEmote) -> int:
     return emoji.id
 
 
+
 def get_emoji_name(emoji: AnyEmote) -> str:
     if isinstance(emoji, str):
         return emoji
     return emoji.name
+
 
 
 async def convert_emoji(ctx: Context, emoji: str) -> AnyEmote:
@@ -32,5 +39,5 @@ async def convert_emoji(ctx: Context, emoji: str) -> AnyEmote:
         return await commands.PartialEmojiConverter().convert(ctx, emoji)
     except Exception:
         pass
-    
+
     return emoji

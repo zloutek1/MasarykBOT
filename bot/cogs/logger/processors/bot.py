@@ -1,8 +1,10 @@
+import discord
+import inject
 from discord.ext import commands
 
-from ._base import Backup
-
+from . import Backup
 from ..history_iterator import HistoryIterator
+
 
 
 class BotBackup(Backup[commands.Bot]):
@@ -18,14 +20,18 @@ class BotBackup(Backup[commands.Bot]):
         pass
 
 
-    async def traverse_down(self, bot: commands.Bot) -> None:
+    @inject.autoparams('guild_backup', 'message_backup')
+    async def traverse_down(
+            self,
+            bot: commands.Bot,
+            guild_backup: Backup[discord.Guild],
+            message_backup: Backup[discord.Message]
+    ) -> None:
         await super().traverse_down(bot)
 
-        from .guild import GuildBackup
         for guild in bot.guilds:
-            await GuildBackup().traverse_down(guild)
+            await guild_backup.traverse_down(guild)
 
-        from .message import MessageBackup
         async for week in HistoryIterator(bot):
             async for message in await week.history():
-                await MessageBackup().traverse_down(message)
+                await message_backup.traverse_down(message)

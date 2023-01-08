@@ -2,31 +2,27 @@ import inject
 from discord import Attachment
 
 from bot.db import AttachmentEntity, AttachmentMapper, AttachmentRepository
-from ._base import Backup
+from bot.utils import MessageAttachment
+from bot.cogs.logger.processors._base import Backup
 
 
 
-class AttachmentBackup(Backup[Attachment]):
-    @inject.autoparams('attachment_repository', 'mapper')
-    def __init__(self, message_id: int | None, attachment_repository: AttachmentRepository, mapper: AttachmentMapper) -> None:
+class AttachmentBackup(Backup[MessageAttachment]):
+    @inject.autoparams()
+    def __init__(self, attachment_repository: AttachmentRepository, mapper: AttachmentMapper) -> None:
         super().__init__()
-        self.message_id = message_id
         self.attachment_repository = attachment_repository
         self.mapper = mapper
 
 
-    async def traverse_up(self, attachment: Attachment) -> None:
+    async def traverse_up(self, attachment: MessageAttachment) -> None:
         await super().traverse_up(attachment)
 
 
-    async def backup(self, attachment: Attachment) -> None:
-        await super().backup(attachment)
-
+    async def backup(self, attachment: MessageAttachment) -> None:
         entity: AttachmentEntity = await self.mapper.map(attachment)
-        entity.message_id = self.message_id
-
         await self.attachment_repository.insert(entity)
 
 
-    async def traverse_down(self, attachment: Attachment) -> None:
+    async def traverse_down(self, attachment: MessageAttachment) -> None:
         await super().traverse_down(attachment)

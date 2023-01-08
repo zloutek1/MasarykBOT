@@ -10,7 +10,7 @@ import inject
 from emoji import emoji_list
 
 from bot.db.utils import Entity, Mapper, Id, Crud, inject_conn, DBConnection
-from bot.utils import Context, get_emoji_id, convert_emoji, AnyEmote
+from bot.utils import Context, get_emoji_id, convert_emoji, AnyEmote, MessageEmote
 
 
 
@@ -24,26 +24,22 @@ class MessageEmojiEntity(Entity):
 
 
 
-class MessageEmojiMapper(Mapper[Message, Tuple[MessageEmojiEntity, ...]]):
+class MessageEmojiMapper(Mapper[MessageEmote, Tuple[MessageEmojiEntity, ...]]):
     @inject.autoparams('bot')
-    async def map(self, obj: Message, bot: commands.Bot) -> Tuple[MessageEmojiEntity, ...]:
-        message = obj
-        emoji_counts = Counter(await self.map_emojis(bot, message))
-        
-        return tuple(
-            MessageEmojiEntity(message.id, get_emoji_id(emoji), count)
-            for emoji, count in emoji_counts.items()
-        )
+    async def map(self, obj: MessageEmote, bot: commands.Bot) -> MessageEmojiEntity:
+        message, emoji = obj.message, obj.emoji
+        return MessageEmojiEntity(message.id, get_emoji_id(emoji), 1)
 
 
-    async def map_emojis(self, bot: commands.Bot, obj: Message) -> Tuple[AnyEmote, ...]:
+    @staticmethod
+    async def map_emojis(bot: commands.Bot, obj: Message) -> Tuple[MessageEmote, ...]:
         message = obj
         ctx = await bot.get_context(message, cls=Context)
-        
+
         unicode_emojis = [item['emoji'] for item in emoji_list(message.content)]
         discord_emojis = [await convert_emoji(ctx, emoji) for emoji in re.findall(r"<a?:\w+:\d+>", message.content)]
-        
-        return tuple(unicode_emojis + discord_emojis)
+
+        return tuple(MessageEmote(message, emoji) for emoji in unicode_emojis + discord_emojis)
 
 
 
