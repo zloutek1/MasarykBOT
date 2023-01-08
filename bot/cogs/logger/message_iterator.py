@@ -60,7 +60,7 @@ class MessageIterator:
 
     async def _try_to_skip_empty_channel(self, from_date: datetime, to_date: datetime) -> Optional[AsyncIterator[Message]]:
         if self.text_channel.last_message_id is None:
-            new_to_date = datetime.now(tz=UTC) - timedelta(days=2)
+            new_to_date = datetime.now(tz=UTC) - timedelta(weeks=2)
             if to_date >= new_to_date:
                 return None
             await self.logger_repository.insert_process((self.text_channel.id, from_date, new_to_date))
@@ -75,7 +75,7 @@ class MessageIterator:
             if from_date < last_message_sent_at:
                 return None
 
-            new_to_date = datetime.now(tz=UTC) - timedelta(days=2)
+            new_to_date = datetime.now(tz=UTC) - timedelta(weeks=2)
             if to_date >= new_to_date:
                 return None
 
