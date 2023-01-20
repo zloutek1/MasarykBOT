@@ -13,13 +13,12 @@ from bot.utils.extra_types import GuildContext, GuildMessage
 log = logging.getLogger(__name__)
 
 
-
 class MarkovCog(commands.Cog):
     def __init__(
-            self,
-            bot: commands.Bot,
-            generation_service: Optional[MarkovGenerationService] = None,
-            training_service: Optional[MarkovTrainingService] = None
+        self,
+        bot: commands.Bot,
+        generation_service: Optional[MarkovGenerationService] = None,
+        training_service: Optional[MarkovTrainingService] = None
     ) -> None:
         self.bot = bot
         self.generation_service = generation_service or MarkovGenerationService()
@@ -27,7 +26,6 @@ class MarkovCog(commands.Cog):
 
         self.training_queue = deque[GuildMessage]()
         self.train_message_task.start()
-
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
@@ -38,7 +36,6 @@ class MarkovCog(commands.Cog):
             await ctx.reply(message or "no response")
         log.debug("generated markov message %s", message or "no response")
 
-
     @markov.command(name='train', aliases=['retrain', 'grind'])  # type: ignore[arg-type]
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
@@ -46,19 +43,16 @@ class MarkovCog(commands.Cog):
         await self.training_service.train(ctx.guild.id)
         await ctx.reply("[markov] Finished training", mention_author=True)
 
-
     @commands.Cog.listener()
     async def on_message_backup(self, message: discord.Message) -> None:
         if self.training_service.should_learn_message(message):
             self.training_queue.append(cast(GuildMessage, message))
-
 
     @tasks.loop(minutes=1)
     async def train_message_task(self) -> None:
         while self.training_queue:
             message = self.training_queue.popleft()
             await self.training_service.train_message(message.guild.id, message.content)
-
 
     async def markov_from_message(self, message: discord.Message) -> bool:
         assert self.bot.user, "bot must be signed in"
@@ -78,7 +72,6 @@ class MarkovCog(commands.Cog):
         await self.markov(cast(GuildContext, ctx), *start)
         return True
 
-
     @staticmethod
     def _can_run_markov(ctx: Context) -> bool:
         assert ctx.bot.user, "bot must be signed in"
@@ -88,7 +81,6 @@ class MarkovCog(commands.Cog):
             and not ctx.author.bot
             and (ctx.bot.user.id in map(lambda u: u.id, ctx.message.mentions))
         )
-
 
 
 @requires_database

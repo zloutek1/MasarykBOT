@@ -63,9 +63,9 @@ class Context(commands.Context["MasarykBOT"]):
             await self.message.delete(**kwargs)
 
     async def send(
-            self,
-            content: Optional[str] = None, *args: Any,
-            escape_mentions: bool = True, reply: bool = False, **kwargs: Any
+        self,
+        content: Optional[str] = None, *args: Any,
+        escape_mentions: bool = True, reply: bool = False, **kwargs: Any
     ) -> discord.Message:
         if reply:
             message = await self._safe_reply(content, *args, escape_mentions=escape_mentions, **kwargs)
@@ -85,9 +85,9 @@ class Context(commands.Context["MasarykBOT"]):
             return await self.send(*args, **kwargs)
 
     async def _safe_send(
-            self,
-            content: Optional[str] = None, *args: Any,
-            escape_mentions: bool = True, **kwargs: Any
+        self,
+        content: Optional[str] = None, *args: Any,
+        escape_mentions: bool = True, **kwargs: Any
     ) -> discord.Message:
         if not content:
             return await super().send(*args, **kwargs)
@@ -104,9 +104,9 @@ class Context(commands.Context["MasarykBOT"]):
         return await super().send(content, *args, **kwargs)
 
     async def _safe_reply(
-            self,
-            content: Optional[str] = None, *args: Any,
-            escape_mentions: bool = True, **kwargs: Any
+        self,
+        content: Optional[str] = None, *args: Any,
+        escape_mentions: bool = True, **kwargs: Any
     ) -> discord.Message:
         if not content:
             return await super().reply(*args, **kwargs)
@@ -123,11 +123,11 @@ class Context(commands.Context["MasarykBOT"]):
         return await super().reply(content, **kwargs)
 
     async def send_embed(
-            self,
-            content: str,
-            name: str = "Message",
-            delete_after: Optional[float] = None,
-            **kwargs: Any
+        self,
+        content: str,
+        name: str = "Message",
+        delete_after: Optional[float] = None,
+        **kwargs: Any
     ) -> discord.Message:
 
         timezone = tz.gettz('Europe/Bratislava')

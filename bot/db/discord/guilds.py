@@ -7,7 +7,6 @@ from discord import Guild
 from bot.db.utils import Crud, DBConnection, Id, Mapper, Url, inject_conn, Entity
 
 
-
 @dataclass
 class GuildEntity(Entity):
     __table_name__ = "server.guilds"
@@ -20,7 +19,6 @@ class GuildEntity(Entity):
     deleted_at: Optional[datetime] = None
 
 
-
 class GuildMapper(Mapper[Guild, GuildEntity]):
     async def map(self, obj: Guild) -> GuildEntity:
         guild = obj
@@ -29,11 +27,9 @@ class GuildMapper(Mapper[Guild, GuildEntity]):
         return GuildEntity(guild.id, guild.name, icon_url, created_at)
 
 
-
 class GuildRepository(Crud[GuildEntity]):
     def __init__(self) -> None:
         super().__init__(entity=GuildEntity)
-
 
     @inject_conn
     async def insert(self, conn: DBConnection, data: GuildEntity) -> None:

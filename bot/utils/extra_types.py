@@ -6,7 +6,6 @@ import discord
 from .context import Context
 
 
-
 class GuildContext(Context):
     author: discord.Member
     guild: discord.Guild
@@ -15,10 +14,8 @@ class GuildContext(Context):
     prefix: str
 
 
-
 class GuildMessage(discord.Message):
     guild: discord.Guild
-
 
 
 @dataclass(frozen=True)

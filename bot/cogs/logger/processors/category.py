@@ -17,18 +17,15 @@ class CategoryBackup(Backup[CategoryChannel]):
         self.category_repository = category_repository
         self.mapper = mapper
 
-
     @inject.autoparams()
     async def traverse_up(self, category: CategoryChannel, guild_backup: Backup[discord.Guild]) -> None:
         await guild_backup.traverse_up(category.guild)
         await super().traverse_up(category)
 
-
     async def backup(self, category: CategoryChannel) -> None:
         log.debug('backing up category %s', category.name)
         entity: CategoryEntity = await self.mapper.map(category)
         await self.category_repository.insert(entity)
-
 
     @inject.autoparams()
     async def traverse_down(self, category: CategoryChannel, channel_backup: Backup[discord.abc.GuildChannel]) -> None:

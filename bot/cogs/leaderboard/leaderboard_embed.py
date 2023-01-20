@@ -7,14 +7,13 @@ from bot.utils import right_justify
 from bot.db.cogs import LeaderboardEntity
 
 
-
 class LeaderboardEmbed(discord.Embed):
     def __init__(
-            self,
-            top10: List[LeaderboardEntity],
-            around: List[LeaderboardEntity],
-            medals: Dict[int | None, discord.Emoji],
-            user: discord.Member
+        self,
+        top10: List[LeaderboardEntity],
+        around: List[LeaderboardEntity],
+        medals: Dict[int | None, discord.Emoji],
+        user: discord.Member
     ) -> None:
         super().__init__(color=0x53acf2)
 

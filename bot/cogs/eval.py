@@ -10,7 +10,6 @@ from discord.ext import commands
 from bot.utils import Context
 
 
-
 class CodeBlock:
     missing_error = ('Missing code block. Please use the following markdown\n' +
                      '\\`\\`\\`language\ncode here\n\\`\\`\\`')
@@ -93,8 +92,7 @@ class ColiruService(EvalService):
 
 
 class AplCompilingService(EvalService):
-    @staticmethod
-    def supports_language(language: str) -> bool:
+    def supports_language(self, language: str) -> bool:
         return language == "apl"
 
     async def eval(self, ctx: Context, *, code: CodeBlock) -> str:
@@ -125,10 +123,10 @@ class AplCompilingService(EvalService):
 
 class EvalCog(commands.Cog):
     def __init__(
-            self,
-            bot: commands.Bot,
-            coliru_service: ColiruService = ColiruService(),
-            apl_service: AplCompilingService = AplCompilingService()
+        self,
+        bot: commands.Bot,
+        coliru_service: ColiruService = ColiruService(),
+        apl_service: AplCompilingService = AplCompilingService()
     ) -> None:
         self.bot = bot
         self.coliru_service = coliru_service

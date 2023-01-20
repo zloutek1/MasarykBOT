@@ -7,7 +7,6 @@ from discord import Role
 from bot.db.utils import (Crud, DBConnection, Id, Mapper, inject_conn, Entity)
 
 
-
 @dataclass
 class RoleEntity(Entity):
     __table_name__ = "server.role"
@@ -21,7 +20,6 @@ class RoleEntity(Entity):
     deleted_at: Optional[datetime] = None
 
 
-
 class RoleMapper(Mapper[Role, RoleEntity]):
     async def map(self, obj: Role) -> RoleEntity:
         role = obj
@@ -32,7 +30,6 @@ class RoleMapper(Mapper[Role, RoleEntity]):
 class RoleRepository(Crud[RoleEntity]):
     def __init__(self) -> None:
         super().__init__(entity=RoleEntity)
-
 
     @inject_conn
     async def insert(self, conn: DBConnection, data: RoleEntity) -> None:

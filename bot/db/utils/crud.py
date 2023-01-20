@@ -21,7 +21,6 @@ class Crud(ABC, Table[TEntity]):
         """)
         return Page(cursor, self.entity)
 
-
     @inject_conn
     async def find_by_id(self, conn: DBConnection, id: Id) -> TEntity | None:
         row = await conn.fetchrow(f"""
@@ -31,15 +30,12 @@ class Crud(ABC, Table[TEntity]):
         """, (id,))
         return self.entity.convert(row) if row else None
 
-
     @abstractmethod
     async def insert(self, data: TEntity) -> None:
         raise NotImplementedError
 
-
     async def update(self, data: TEntity) -> None:
         return await self.insert(data)
-
 
     @inject_conn
     async def soft_delete(self, conn: DBConnection, id: Id) -> None:

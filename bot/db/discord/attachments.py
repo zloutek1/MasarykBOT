@@ -5,7 +5,6 @@ from bot.db.utils import Entity, Mapper, Id, Crud, inject_conn, DBConnection
 from bot.utils import MessageAttachment
 
 
-
 @dataclass
 class AttachmentEntity(Entity):
     __table_name__ = "server.attachment"
@@ -16,18 +15,15 @@ class AttachmentEntity(Entity):
     url: str
 
 
-
 class AttachmentMapper(Mapper[MessageAttachment, AttachmentEntity]):
     async def map(self, obj: MessageAttachment) -> AttachmentEntity:
         message, attachment = obj.message, obj.attachment
         return AttachmentEntity(None, attachment.id, attachment.filename, attachment.url)
 
 
-
 class AttachmentRepository(Crud[AttachmentEntity]):
     def __init__(self) -> None:
         super().__init__(entity=AttachmentEntity)
-
 
     @inject_conn
     async def insert(self, conn: DBConnection, data: AttachmentEntity) -> None:
@@ -40,7 +36,6 @@ class AttachmentRepository(Crud[AttachmentEntity]):
                 WHERE a.filename<>excluded.filename OR
                         a.url<>excluded.url
         """, data.message_id, data.id, data.filename, data.url)
-
 
     @inject_conn
     async def soft_delete(self, conn: DBConnection, id: Id) -> None:

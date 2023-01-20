@@ -24,17 +24,14 @@ REPLY_ON_ERRORS = (
 )
 
 
-
 class ErrorCog(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-
 
     @commands.Cog.listener()
     async def on_error(self, _event: str) -> None:
         trace = "".join(traceback.format_exception(*sys.exc_info()))
         await self.log_error(trace)
-
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx: Context, error: commands.CommandError) -> None:
@@ -56,12 +53,12 @@ class ErrorCog(commands.Cog):
             return
 
         exception: Exception = error
-        while isinstance(exception, (commands.CommandInvokeError, commands.errors.HybridCommandError, app_commands.errors.CommandInvokeError)):
+        while isinstance(exception, (
+        commands.CommandInvokeError, commands.errors.HybridCommandError, app_commands.errors.CommandInvokeError)):
             exception = exception.original
 
         trace = self._format_error(ctx, exception)
         await self.log_error(trace, guild=ctx.guild)
-
 
     async def log_error(self, message: str, guild: Optional[discord.Guild] = None) -> None:
         log.error(message)
@@ -72,7 +69,6 @@ class ErrorCog(commands.Cog):
         else:
             await self.log_error_to_all_guilds(message)
 
-
     @staticmethod
     async def log_error_to_channel(error_channel: discord.abc.Messageable, message: str) -> None:
         if len(message) < 1990:
@@ -80,7 +76,6 @@ class ErrorCog(commands.Cog):
         else:
             fp = io.BytesIO(message.encode('utf-8'))
             await error_channel.send(file=File(fp=fp, filename=f"error.txt"))
-
 
     async def log_error_to_all_guilds(self, message: str) -> None:
         for guild_config in CONFIG.guilds:
@@ -92,7 +87,6 @@ class ErrorCog(commands.Cog):
                 continue
             await self.log_error_to_channel(error_channel, message)
 
-
     def get_guild_error_channel(self, guild: discord.Guild) -> Optional[discord.abc.Messageable]:
         if not (guild_config := get(CONFIG.guilds, id=guild.id)):
             return None
@@ -103,7 +97,6 @@ class ErrorCog(commands.Cog):
         if not isinstance(channel, discord.abc.Messageable):
             return None
         return channel
-
 
     @staticmethod
     def _format_error(ctx: commands.Context[commands.Bot], error: Exception) -> str:
@@ -118,7 +111,6 @@ class ErrorCog(commands.Cog):
                 command = f"{ctx.prefix}{ctx.command} {params}"
                 return f'In #{ctx.channel} @{user} executed:\n   {command}\n\n{trace}'
         return trace
-
 
 
 async def setup(bot: commands.Bot) -> None:

@@ -18,12 +18,10 @@ class MessageIterator:
     _from_date: datetime
     _iterator: AsyncIterator[Message]
 
-
     @inject.autoparams('logger_repository')
     def __init__(self, channel: Union[TextChannel, Thread], logger_repository: bot.db.LoggerRepository) -> None:
         self.channel = channel
         self.logger_repository = logger_repository
-
 
     async def _get_from_date(self) -> datetime:
         last_process = await self.logger_repository.find_last_process(self.channel.id)
@@ -36,7 +34,6 @@ class MessageIterator:
             return last_process.from_date
         else:
             return last_process.to_date
-
 
     async def history(self) -> AsyncIterator[Message]:
         from_date = min(await self._get_from_date(), datetime.now(tz=UTC))
@@ -60,18 +57,27 @@ class MessageIterator:
         self._to_date = to_date
         return self
 
-    async def _try_to_skip_empty_channel(self, from_date: datetime, to_date: datetime) -> Optional[AsyncIterator[Message]]:
+    async def _try_to_skip_empty_channel(
+            self,
+            from_date: datetime,
+            to_date: datetime
+    ) -> Optional[AsyncIterator[Message]]:
         if self.channel.last_message_id is None:
             new_to_date = datetime.now(tz=UTC) - timedelta(weeks=2)
             if to_date >= new_to_date:
                 return None
             await self.logger_repository.insert_process((self.channel.id, from_date, new_to_date))
-            log.info("skipping forward messages in empty channel from %s to %s in %s (%s)", from_date.date(), new_to_date.date(),
+            log.info("skipping forward messages in empty channel from %s to %s in %s (%s)", from_date.date(),
+                     new_to_date.date(),
                      self.channel.name, self.channel.guild.name)
             return EmptyAsyncIterator()
         return None
 
-    async def _try_to_skip_after_last_message(self, from_date: datetime, to_date: datetime) -> Optional[AsyncIterator[Message]]:
+    async def _try_to_skip_after_last_message(
+            self,
+            from_date: datetime,
+            to_date: datetime
+    ) -> Optional[AsyncIterator[Message]]:
         if self.channel.last_message_id is not None:
             last_message_sent_at = snowflake_time(self.channel.last_message_id)
             if from_date < last_message_sent_at:
@@ -89,7 +95,6 @@ class MessageIterator:
 
     def __aiter__(self) -> "MessageIterator":
         return self
-
 
     async def __anext__(self) -> Message:
         try:

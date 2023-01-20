@@ -20,10 +20,8 @@ __all__ = [
 log = logging.getLogger(__name__)
 
 
-
 class BackupAlreadyRunning(RuntimeError):
     pass
-
 
 
 class LoggerCog(commands.Cog):
@@ -33,25 +31,21 @@ class LoggerCog(commands.Cog):
         self.backup_running: bool = False
         self.bot_backup = bot_backup
 
-
     @commands.Cog.listener()
     async def on_ready(self) -> None:
         self.backup_running = False
         self.backup_task.start()
-
 
     @commands.hybrid_command()
     @commands.has_permissions(administrator=True)
     async def backup(self, _ctx: Context) -> None:
         await self._backup()
 
-
     @tasks.loop(hours=24)
     async def backup_task(self) -> None:
         log.info("running routine processors")
         with suppress(BackupAlreadyRunning):
             await self._backup()
-
 
     async def _backup(self) -> None:
         if self.backup_running:
@@ -61,7 +55,6 @@ class LoggerCog(commands.Cog):
         await self.bot_backup.traverse_down(self.bot)
         self.backup_running = False
         log.info("processors finished")
-
 
 
 @requires_database

@@ -13,7 +13,6 @@ class Entity:
         # noinspection PyArgumentList
         return cls(**{k: v for (k, v) in record.items()})
 
-
     @classmethod
     def convert_many(cls: Type[TEntity], records: List[Record]) -> List[TEntity]:
         return [cls.convert(record) for record in records]

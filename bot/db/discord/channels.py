@@ -9,7 +9,6 @@ from discord.abc import GuildChannel
 from bot.db.utils import Crud, DBConnection, Id, Mapper, inject_conn, Entity
 
 
-
 class ChannelType(enum.Enum):
     TEXT = "text"
     FORUM = "forum"
@@ -29,7 +28,6 @@ class ChannelEntity(Entity):
     deleted_at: Optional[datetime] = None
 
 
-
 class ChannelMapper(Mapper[GuildChannel, ChannelEntity]):
     async def map(self, obj: GuildChannel) -> ChannelEntity:
         channel = obj
@@ -45,16 +43,16 @@ class ChannelMapper(Mapper[GuildChannel, ChannelEntity]):
     @staticmethod
     def get_channel_type(channel: GuildChannel) -> ChannelType:
         match channel.type:
-            case discord.ChannelType.text: return ChannelType.TEXT
-            case discord.ChannelType.forum: return ChannelType.FORUM
+            case discord.ChannelType.text:
+                return ChannelType.TEXT
+            case discord.ChannelType.forum:
+                return ChannelType.FORUM
         raise NotImplementedError(f"unsupported channel type {channel.type}")
-
 
 
 class ChannelRepository(Crud[ChannelEntity]):
     def __init__(self) -> None:
         super().__init__(entity=ChannelEntity)
-
 
     @inject_conn
     async def insert(self, conn: DBConnection, data: ChannelEntity) -> None:

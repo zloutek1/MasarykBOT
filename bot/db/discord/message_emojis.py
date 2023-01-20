@@ -13,7 +13,6 @@ from bot.db.utils import Entity, Mapper, Id, Crud, inject_conn, DBConnection
 from bot.utils import Context, get_emoji_id, convert_emoji, AnyEmote, MessageEmote
 
 
-
 @dataclass
 class MessageEmojiEntity(Entity):
     __table_name__ = "server.message_emoji"
@@ -23,13 +22,11 @@ class MessageEmojiEntity(Entity):
     count: int
 
 
-
 class MessageEmojiMapper(Mapper[MessageEmote, Tuple[MessageEmojiEntity, ...]]):
     @inject.autoparams('bot')
     async def map(self, obj: MessageEmote, bot: commands.Bot) -> MessageEmojiEntity:
         message, emoji = obj.message, obj.emoji
         return MessageEmojiEntity(message.id, get_emoji_id(emoji), 1)
-
 
     @staticmethod
     async def map_emojis(bot: commands.Bot, obj: Message) -> Tuple[MessageEmote, ...]:
@@ -42,11 +39,9 @@ class MessageEmojiMapper(Mapper[MessageEmote, Tuple[MessageEmojiEntity, ...]]):
         return tuple(MessageEmote(message, emoji) for emoji in unicode_emojis + discord_emojis)
 
 
-
 class MessageEmojiRepository(Crud[MessageEmojiEntity]):
     def __init__(self) -> None:
         super().__init__(entity=MessageEmojiEntity)
-
 
     @inject_conn
     async def insert(self, conn: DBConnection, data: MessageEmojiEntity) -> None:
@@ -56,7 +51,6 @@ class MessageEmojiRepository(Crud[MessageEmojiEntity]):
             ON CONFLICT (message_id, emoji_id) DO UPDATE
                 SET count = em.count + $3
         """, data.message_id, data.emoji_id, data.count)
-
 
     @inject_conn
     async def soft_delete(self, conn: DBConnection, id: Id) -> None:

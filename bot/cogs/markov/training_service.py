@@ -14,7 +14,6 @@ log = logging.getLogger(__name__)
 DEFAULT_CONTEXT_SIZE = 8
 
 
-
 class MarkovTrainingService:
     @inject.autoparams('message_repository', 'markov_repository', 'uow')
     def __init__(self, message_repository: MessageRepository, markov_repository: MarkovRepository,
@@ -23,15 +22,13 @@ class MarkovTrainingService:
         self.markov_repository = markov_repository
         self.uow = uow
 
-
     @staticmethod
     def should_learn_message(message: discord.Message) -> bool:
         return (
-            not message.author.bot and 
+            not message.author.bot and
             not message.content.startswith(('!', 'pls')) and
             message.guild is not None
         )
-
 
     async def train(self, guild_id: int) -> None:
         await self.markov_repository.truncate()
@@ -51,7 +48,6 @@ class MarkovTrainingService:
                     progress.increment()
         log.info("training in guild %d finished", guild_id)
 
-
     async def train_message(self, guild_id: int, message: str) -> None:
         context_size = self._get_context_size(guild_id)
         async with self.uow.transaction() as transaction:
@@ -61,7 +57,6 @@ class MarkovTrainingService:
 
                 entity = MarkovEntity(guild_id, context, follows)
                 await self.markov_repository.insert(entity, conn=transaction.conn)
-
 
     @staticmethod
     def _get_context_size(guild_id: int) -> int:

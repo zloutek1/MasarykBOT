@@ -33,13 +33,11 @@ def inject_conn(fn: Callable[Concatenate[S, DBConnection, P], Awaitable[R]]) -> 
     """
     assert iscoroutinefunction(fn), f"{fn} is not async"
 
-
     @wraps(fn)
     async def wrapper(self: S, *args: P.args, conn: Optional[DBConnection] = None, **kwargs: P.kwargs) -> R:
         if conn is not None:
             return await fn(self, conn, *args, **kwargs)
         async with self.pool.acquire() as connection:
             return await fn(self, connection, *args, **kwargs)
-
 
     return wrapper

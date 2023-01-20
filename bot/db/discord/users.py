@@ -7,7 +7,6 @@ from discord import Member, User
 from bot.db.utils import (Crud, DBConnection, Id, Mapper, Url, inject_conn, Entity)
 
 
-
 @dataclass
 class UserEntity(Entity):
     __table_name__ = "server.user"
@@ -21,7 +20,6 @@ class UserEntity(Entity):
     deleted_at: Optional[datetime] = None
 
 
-
 class UserMapper(Mapper[Union[User, Member], UserEntity]):
     async def map(self, obj: Union[User, Member]) -> UserEntity:
         user = obj
@@ -30,11 +28,9 @@ class UserMapper(Mapper[Union[User, Member], UserEntity]):
         return UserEntity(user.id, user.name, avatar_url, user.bot, created_at)
 
 
-
 class UserRepository(Crud[UserEntity]):
     def __init__(self) -> None:
         super().__init__(entity=UserEntity)
-
 
     @inject_conn
     async def insert(self, conn: DBConnection, data: UserEntity) -> None:

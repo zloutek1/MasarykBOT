@@ -13,22 +13,18 @@ from bot.utils import Context
 log = logging.getLogger(__name__)
 
 
-
 class MasarykBOT(commands.Bot):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.activity = self.activity or Activity(type=ActivityType.listening, name="!help")
 
-
     async def on_ready(self) -> None:
         log.info("Bot is now all ready to go")
         self.introduce()
 
-
     async def get_context(self, origin: Union[Message, Interaction], /, *, cls: Type[ContextT] = MISSING) -> Any:
         cls = cast(Type[ContextT], Context) if cls is MISSING else cls
         return await super(MasarykBOT, self).get_context(origin, cls=cls)
-
 
     async def process_commands(self, message: Message) -> None:
         def is_admin(user: discord.User | discord.Member) -> bool:
@@ -44,7 +40,6 @@ class MasarykBOT(commands.Bot):
 
         await super(MasarykBOT, self).process_commands(message)
 
-
     @staticmethod
     async def on_command(ctx: Context) -> None:
         if ctx.message.content:
@@ -55,16 +50,13 @@ class MasarykBOT(commands.Bot):
             command = f"{ctx.prefix}{ctx.command} {params}"
             log.info(f'in #{ctx.channel} @{ctx.author} used slash command: {command}')
 
-
     async def add_cog(self, cog: commands.Cog, *args: Any, **kwargs: Any) -> None:
         log.info("loading cog: %s", cog.qualified_name)
         return await super().add_cog(cog, *args, **kwargs)
 
-
     async def remove_cog(self, name: str, *args: Any, **kwargs: Any) -> Optional[commands.Cog]:
         log.info("unloading cog: %s", name)
         return await super().remove_cog(name, *args, **kwargs)
-
 
     def introduce(self) -> None:
         assert self.user, "no user"

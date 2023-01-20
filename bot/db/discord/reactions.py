@@ -8,7 +8,6 @@ from bot.db.utils import Crud, DBConnection, Id, Mapper, inject_conn, Entity
 from bot.utils import get_emoji_id
 
 
-
 @dataclass
 class ReactionEntity(Entity):
     __table_name__ = "server.reactions"
@@ -21,7 +20,6 @@ class ReactionEntity(Entity):
     deleted_at: Optional[datetime] = None
 
 
-
 class ReactionMapper(Mapper[Reaction, ReactionEntity]):
     async def map(self, obj: Reaction) -> ReactionEntity:
         reaction = obj
@@ -31,11 +29,9 @@ class ReactionMapper(Mapper[Reaction, ReactionEntity]):
         return ReactionEntity(reaction.message.id, emoji_id, user_ids, created_at)
 
 
-
 class ReactionRepository(Crud[ReactionEntity]):
     def __init__(self) -> None:
         super().__init__(entity=ReactionEntity)
-
 
     @inject_conn
     async def insert(self, conn: DBConnection, data: ReactionEntity) -> None:
@@ -49,7 +45,6 @@ class ReactionRepository(Crud[ReactionEntity]):
                 WHERE r.member_ids<>excluded.member_ids OR
                       r.created_at<>excluded.created_at
         """, data.message_id, data.emoji_id, data.user_ids, data.created_at)
-
 
     @inject_conn
     async def soft_delete(self, conn: DBConnection, id: Id) -> None:

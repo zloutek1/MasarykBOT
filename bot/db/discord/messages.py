@@ -27,7 +27,6 @@ class MessageEntity(Entity):
     deleted_at: Optional[datetime] = None
 
 
-
 class MessageMapper(Mapper[Message, MessageEntity]):
     async def map(self, obj: Message) -> MessageEntity:
         message = obj
@@ -53,7 +52,6 @@ class MessageRepository(Crud[MessageEntity]):
     def __init__(self) -> None:
         super().__init__(entity=MessageEntity)
 
-
     @inject_conn
     async def insert(self, conn: DBConnection, data: MessageEntity) -> None:
         await conn.execute(f"""
@@ -69,7 +67,6 @@ class MessageRepository(Crud[MessageEntity]):
                       m.created_at<>excluded.created_at OR
                       m.edited_at<>excluded.edited_at
         """, data.channel_id, data.thread_id, data.author_id, data.id, data.content, data.is_command, data.created_at)
-
 
     @inject_conn
     async def count(self, conn: DBConnection) -> int:

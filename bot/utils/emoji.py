@@ -21,23 +21,21 @@ def get_emoji_id(emoji: AnyEmote) -> int:
     return emoji.id
 
 
-
 def get_emoji_name(emoji: AnyEmote) -> str:
     if isinstance(emoji, str):
         return emoji
     return emoji.name
 
 
-
 async def convert_emoji(ctx: Context, emoji: str) -> AnyEmote:
     try:
         return await commands.EmojiConverter().convert(ctx, emoji)
-    except Exception:
+    except commands.BadArgument:
         pass
 
     try:
         return await commands.PartialEmojiConverter().convert(ctx, emoji)
-    except Exception:
+    except commands.BadArgument:
         pass
 
     return emoji

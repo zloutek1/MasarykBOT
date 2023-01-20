@@ -11,7 +11,6 @@ from bot.db import LeaderboardRepository
 from bot.db.cogs.leaderboard import LeaderboardFilter
 
 
-
 class LeaderboardCog(commands.Cog):
     @inject.autoparams('leaderboard_repository')
     def __init__(self, bot: commands.Bot, leaderboard_repository: LeaderboardRepository) -> None:
@@ -24,7 +23,7 @@ class LeaderboardCog(commands.Cog):
             if not (emoji := get(lst, name=name)):
                 raise AssertionError(f"Emoji with name {name} not found")
             return emoji
-            
+
         return {
             None: try_to_get(self.bot.emojis, name="BLANK"),
             1: try_to_get(self.bot.emojis, name="gold_medal"),
@@ -37,10 +36,10 @@ class LeaderboardCog(commands.Cog):
     @commands.guild_only()
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def leaderboard(
-            self, ctx: GuildContext,
-            include_channels: commands.Greedy[discord.TextChannel | discord.Thread] = [],  # type: ignore[assignment]
-            member: Optional[discord.Member] = None,
-            exclude_channels: commands.Greedy[discord.TextChannel | discord.Thread] = []  # type: ignore[assignment]
+        self, ctx: GuildContext,
+        include_channels: commands.Greedy[discord.TextChannel | discord.Thread] = [],  # type: ignore[assignment]
+        member: Optional[discord.Member] = None,
+        exclude_channels: commands.Greedy[discord.TextChannel | discord.Thread] = []  # type: ignore[assignment]
     ) -> None:
         async with ctx.typing():
             member = member if member else ctx.author
@@ -53,7 +52,6 @@ class LeaderboardCog(commands.Cog):
 
             embed = LeaderboardEmbed(top10, around, self.medals, member)
             await ctx.send(embed=embed)
-
 
 
 @requires_database

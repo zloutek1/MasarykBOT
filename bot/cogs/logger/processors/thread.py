@@ -18,14 +18,12 @@ class ThreadBackup(Backup[Thread]):
         self.repository = repository
         self.mapper = mapper
 
-
     @inject.autoparams()
     async def traverse_up(self, thread: Thread, channel_backup: Backup[discord.abc.GuildChannel]) -> None:
         if not thread.parent:
             return
         await channel_backup.traverse_up(thread.parent)
         await super().traverse_up(thread)
-
 
     async def backup(self, thread: Thread) -> None:
         if not thread.parent:
@@ -34,7 +32,6 @@ class ThreadBackup(Backup[Thread]):
         log.debug('backing up thread %s', thread.name)
         entity: ThreadEntity = await self.mapper.map(thread)
         await self.repository.insert(entity)
-
 
     @inject.autoparams()
     async def traverse_down(self, thread: Thread, message_backup: Backup[discord.Message]) -> None:

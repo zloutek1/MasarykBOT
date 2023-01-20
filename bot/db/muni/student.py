@@ -4,7 +4,6 @@ from typing import Tuple, Optional, Iterable, cast
 from bot.db.utils import inject_conn, DBConnection, Id, Crud, Entity
 
 
-
 @dataclass
 class StudentEntity(Entity):
     __table_name__ = "muni.students"
@@ -15,11 +14,9 @@ class StudentEntity(Entity):
     member_id: Id
 
 
-
 class StudentRepository(Crud[StudentEntity]):
     def __init__(self) -> None:
         super().__init__(entity=StudentEntity)
-
 
     @inject_conn
     async def insert(self, conn: DBConnection, data: StudentEntity) -> None:
@@ -29,7 +26,6 @@ class StudentRepository(Crud[StudentEntity]):
             ON CONFLICT (faculty, code, guild_id, member_id) DO UPDATE 
                 SET left_at=NULL
         """, astuple(data))
-
 
     @inject_conn
     async def count_course_students(self, conn: DBConnection, data: Tuple[str, str, Id]) -> int:
@@ -41,7 +37,6 @@ class StudentRepository(Crud[StudentEntity]):
         assert row
         return cast(int, row['count'])
 
-
     @inject_conn
     async def find_all_students_courses(self, conn: DBConnection, data: Tuple[Id, Id]) -> Iterable[str]:
         rows = await conn.fetch("""
@@ -50,7 +45,6 @@ class StudentRepository(Crud[StudentEntity]):
                 WHERE guild_id=$1 AND member_id=$2 AND left_at IS NULL
             """, *data)
         return map(lambda row: cast(str, row['result']), rows)
-
 
     @inject_conn
     async def soft_delete(self, conn: DBConnection, data: StudentEntity) -> None:

@@ -14,34 +14,29 @@ from .trie import Trie
 DISCORD_CATEGORY_MAX_CHANNELS_LIMIT = 50
 
 
-
 class Status(Enum):
     REGISTERED = auto()
     SHOWN = auto()
     UNSIGNED = auto()
 
 
-
 class CourseService:
     category_trie = Trie()
 
-
     @inject.autoparams('course_repository', 'student_repository')
     def __init__(
-            self,
-            bot: commands.Bot,
-            course_repository: CourseRepository,
-            student_repository: StudentRepository
+        self,
+        bot: commands.Bot,
+        course_repository: CourseRepository,
+        student_repository: StudentRepository
     ) -> None:
         self.bot = bot
         self._course_repository = course_repository
         self._student_repository = student_repository
 
-
     async def load_category_trie(self) -> None:
         courses = await self._course_repository.find_all_courses()
         self.category_trie.insert_all(courses)
-
 
     def load_course_registration_channels(self) -> Dict[int, discord.abc.Messageable]:
         result: Dict[int, discord.abc.Messageable] = {}
@@ -56,10 +51,8 @@ class CourseService:
             result[channel.id] = channel
         return result
 
-
     async def autocomplete(self, pattern: str) -> List[CourseEntity]:
         return await self._course_repository.autocomplete(f'%{pattern}%')
-
 
     @staticmethod
     async def get_course_info(course: CourseEntity) -> discord.Embed:
@@ -69,7 +62,6 @@ class CourseService:
             description=f"{course.name}\n\n{course.url}"
         )
 
-
     async def get_user_info(self, guild: discord.Guild, user: discord.Member) -> discord.Embed:
         course_codes = await self._student_repository.find_all_students_courses((guild.id, user.id))
 
@@ -78,7 +70,6 @@ class CourseService:
             title=f"{user.display_name}'s courses",
             description=', '.join(course_codes) or "no courses registered"
         )
-
 
     async def search_courses(self, pattern: str) -> discord.Embed:
         results = await self.autocomplete(pattern)
@@ -92,18 +83,17 @@ class CourseService:
             ) or 'no courses found'
         )
 
-
     async def join_course(self, guild: discord.Guild, user: discord.Member, course: CourseEntity) -> Status:
         context = CourseRegistrationContext(guild, user, course)
         await context.register_course()
         if not (channel := context.find_course_channel()):
             if not await context.should_create_course_channel():
                 return Status.REGISTERED
-            category = await context.create_or_get_course_category(self.category_trie, DISCORD_CATEGORY_MAX_CHANNELS_LIMIT)
+            category = await context.create_or_get_course_category(self.category_trie,
+                                                                   DISCORD_CATEGORY_MAX_CHANNELS_LIMIT)
             channel = await context.create_course_channel(category)
         await context.show_course_channel(channel)
         return Status.SHOWN
-
 
     @staticmethod
     async def leave_course(guild: discord.Guild, user: discord.Member, course: CourseEntity) -> None:
@@ -112,11 +102,9 @@ class CourseService:
         if channel := context.find_course_channel():
             await context.hide_course_channel(channel)
 
-
     async def leave_all_courses(self, guild: discord.Guild, user: discord.Member) -> None:
         for course in await self.find_students_courses(guild, user):
             await self.leave_course(guild, user, course)
-
 
     async def find_students_courses(self, guild: discord.Guild, user: discord.Member) -> Iterable[CourseEntity]:
         course_codes = list(await self._student_repository.find_all_students_courses((guild.id, user.id)))

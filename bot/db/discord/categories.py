@@ -7,7 +7,6 @@ from discord import CategoryChannel
 from bot.db.utils import Crud, DBConnection, Id, Mapper, inject_conn, Entity
 
 
-
 @dataclass
 class CategoryEntity(Entity):
     __table_name__ = "server.category"
@@ -21,7 +20,6 @@ class CategoryEntity(Entity):
     deleted_at: Optional[datetime] = None
 
 
-
 class CategoryMapper(Mapper[CategoryChannel, CategoryEntity]):
     async def map(self, obj: CategoryChannel) -> CategoryEntity:
         category = obj
@@ -29,11 +27,9 @@ class CategoryMapper(Mapper[CategoryChannel, CategoryEntity]):
         return CategoryEntity(category.guild.id, category.id, category.name, category.position, created_at)
 
 
-
 class CategoryRepository(Crud[CategoryEntity]):
     def __init__(self) -> None:
         super().__init__(entity=CategoryEntity)
-
 
     @inject_conn
     async def insert(self, conn: DBConnection, data: CategoryEntity) -> None:

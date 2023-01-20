@@ -5,7 +5,6 @@ from typing import List, Optional, Iterable, cast
 from bot.db.utils import inject_conn, DBConnection, Url, Entity, Table
 
 
-
 @dataclass
 class CourseEntity(Entity):
     __table_name__ = "muni.courses"
@@ -20,11 +19,9 @@ class CourseEntity(Entity):
     deleted_at: Optional[datetime] = None
 
 
-
 class CourseRepository(Table[CourseEntity]):
     def __init__(self) -> None:
         super().__init__(entity=CourseEntity)
-
 
     @inject_conn
     async def autocomplete(self, conn: DBConnection, pattern: str) -> List[CourseEntity]:
@@ -36,7 +33,6 @@ class CourseRepository(Table[CourseEntity]):
         """, pattern)
         return CourseEntity.convert_many(rows)
 
-
     @inject_conn
     async def find_by_code(self, conn: DBConnection, faculty: str, code: str) -> Optional[CourseEntity]:
         row = await conn.fetchrow(f"""
@@ -46,7 +42,6 @@ class CourseRepository(Table[CourseEntity]):
         """, faculty, code)
         return CourseEntity.convert(row) if row else None
 
-
     @inject_conn
     async def find_all_courses(self, conn: DBConnection) -> Iterable[str]:
         rows = await conn.fetch(f"""
@@ -54,7 +49,6 @@ class CourseRepository(Table[CourseEntity]):
             FROM muni.courses
         """)
         return map(lambda row: cast(str, row['result']), rows)
-
 
     @inject_conn
     async def find_courses(self, conn: DBConnection, data: List[str]) -> Iterable[CourseEntity]:

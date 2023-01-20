@@ -13,7 +13,6 @@ from .message_iterator import MessageIterator
 log = logging.getLogger(__name__)
 
 
-
 class HistoryIterator(AsyncIterator[MessageIterator]):
     @inject.autoparams('logger_repository', 'channel_repository')
     def __init__(self, bot: commands.Bot, logger_repository: LoggerRepository,
@@ -23,10 +22,8 @@ class HistoryIterator(AsyncIterator[MessageIterator]):
         self._channel_repository = channel_repository
         self.updatable_processes: list[LoggerRepository.UpdatableProcesses] = []
 
-
     def __aiter__(self) -> "HistoryIterator":
         return self
-
 
     async def __anext__(self) -> "MessageIterator":
         if not self.updatable_processes:
@@ -38,7 +35,6 @@ class HistoryIterator(AsyncIterator[MessageIterator]):
             channel = await self.get_next_channel_to_process()
 
         return cast("MessageIterator", MessageIterator(channel))
-
 
     async def get_next_channel_to_process(self) -> Optional[TextChannel]:
         if not self.updatable_processes:
@@ -53,7 +49,6 @@ class HistoryIterator(AsyncIterator[MessageIterator]):
             log.info(f"Channel {process.channel_id} not longer exists, marking as deleted")
             await self.mark_channel_as_deleted(process.channel_id)
             return None
-
 
     async def mark_channel_as_deleted(self, channel_id: int) -> None:
         await self._channel_repository.soft_delete([(channel_id,)])

@@ -5,8 +5,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Type, TypeVar, Hashable
 
 import yaml
-from enforce_typing import enforce_types # type: ignore[import]
-
+from enforce_typing import enforce_types  # type: ignore[import]
 
 
 @enforce_types
@@ -18,7 +17,6 @@ class BotConfig(yaml.YAMLObject):
     DEBUG: bool = False
 
 
-
 @enforce_types
 @dataclass(frozen=True)
 class StarboardChannelConfig(yaml.YAMLObject):
@@ -26,7 +24,6 @@ class StarboardChannelConfig(yaml.YAMLObject):
 
     ignored: List[str | int]
     penalised: List[str | int]
-
 
 
 @enforce_types
@@ -38,7 +35,6 @@ class StarboardEmojiConfig(yaml.YAMLObject):
     penalised: List[str | int]
 
 
-
 @enforce_types
 @dataclass(frozen=True)
 class CourseConfig(yaml.YAMLObject):
@@ -46,7 +42,6 @@ class CourseConfig(yaml.YAMLObject):
 
     MINIMUM_REGISTRATIONS: int
     registration_channel: int
-
 
 
 @enforce_types
@@ -62,7 +57,6 @@ class StarboardConfig(yaml.YAMLObject):
     best_of_masaryk: Optional[int] = None
 
 
-
 @enforce_types
 @dataclass(frozen=True)
 class ChannelConfig(yaml.YAMLObject):
@@ -75,7 +69,6 @@ class ChannelConfig(yaml.YAMLObject):
     threaded: List[int] = field(default_factory=list)
 
 
-
 @enforce_types
 @dataclass(frozen=True)
 class MarkovConfig(yaml.YAMLObject):
@@ -84,14 +77,12 @@ class MarkovConfig(yaml.YAMLObject):
     context_size: int
 
 
-
 @enforce_types
 @dataclass(frozen=True)
 class CogsConfig(yaml.YAMLObject):
     yaml_tag = u'!cogs'
 
     markov: Optional[MarkovConfig] = None
-
 
 
 @enforce_types
@@ -105,7 +96,6 @@ class LogsConfig(yaml.YAMLObject):
     webhook: Optional[str] = None
 
 
-
 @enforce_types
 @dataclass(frozen=True)
 class RoleConfig(yaml.YAMLObject):
@@ -116,7 +106,6 @@ class RoleConfig(yaml.YAMLObject):
     moderator: Optional[int] = None
     admin: Optional[int] = None
     show_all: Optional[int] = None
-
 
 
 @enforce_types
@@ -132,7 +121,6 @@ class GuildConfig(yaml.YAMLObject):
     roles: RoleConfig
 
 
-
 @enforce_types
 @dataclass(frozen=True)
 class EmojiConfig(yaml.YAMLObject):
@@ -141,14 +129,12 @@ class EmojiConfig(yaml.YAMLObject):
     Verification: Optional[int] = None
 
 
-
 @enforce_types
 @dataclass(frozen=True)
 class ColorConfig(yaml.YAMLObject):
     yaml_tag = u'!colors'
 
     MUNI_YELLOW: Optional[int] = None
-
 
 
 @enforce_types
@@ -162,9 +148,7 @@ class Config(yaml.YAMLObject):
     guilds: List[GuildConfig]
 
 
-
 T = TypeVar('T', bound=yaml.YAMLObject)
-
 
 
 def class_loader(clazz: Type[T]) -> Callable[[yaml.SafeLoader, yaml.nodes.MappingNode], T]:
@@ -174,9 +158,7 @@ def class_loader(clazz: Type[T]) -> Callable[[yaml.SafeLoader, yaml.nodes.Mappin
         obj.__init__(**mapping)  # type: ignore
         return obj
 
-
     return constructor
-
 
 
 def get_loader() -> Type[yaml.Loader]:
@@ -197,7 +179,6 @@ def get_loader() -> Type[yaml.Loader]:
     loader.add_constructor("!colors", class_loader(ColorConfig))
     loader.add_constructor("!Config", class_loader(Config))
     return loader
-
 
 
 path = Path(__file__).parent.parent.joinpath('config.yml')

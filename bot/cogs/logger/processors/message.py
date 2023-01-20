@@ -13,18 +13,16 @@ from bot.cogs.logger.processors._base import Backup
 log = logging.getLogger(__name__)
 
 
-
 class MessageBackup(Backup[Message]):
     rate_limiter = 0
 
-
     @inject.autoparams()
     def __init__(
-            self,
-            bot: commands.Bot,
-            message_repository: MessageRepository,
-            mapper: MessageMapper,
-            emoji_mapper: MessageEmojiMapper
+        self,
+        bot: commands.Bot,
+        message_repository: MessageRepository,
+        mapper: MessageMapper,
+        emoji_mapper: MessageEmojiMapper
     ) -> None:
         super().__init__()
         self.bot = bot
@@ -32,14 +30,13 @@ class MessageBackup(Backup[Message]):
         self.mapper = mapper
         self.emoji_mapper = emoji_mapper
 
-
     @inject.autoparams()
     async def traverse_up(
-            self,
-            message: Message,
-            thread_backup: Backup[discord.Thread],
-            channel_backup: Backup[discord.abc.GuildChannel],
-            user_backup: Backup[discord.User | discord.Member]
+        self,
+        message: Message,
+        thread_backup: Backup[discord.Thread],
+        channel_backup: Backup[discord.abc.GuildChannel],
+        user_backup: Backup[discord.User | discord.Member]
     ) -> None:
         if not isinstance(message.channel, (discord.abc.GuildChannel, discord.Thread)):
             return
@@ -52,7 +49,6 @@ class MessageBackup(Backup[Message]):
         await user_backup.traverse_up(message.author)
         await super().traverse_up(message)
 
-
     async def backup(self, message: Message) -> None:
         if not isinstance(message.channel, (discord.abc.GuildChannel, discord.Thread)):
             return
@@ -63,14 +59,13 @@ class MessageBackup(Backup[Message]):
         self.bot.dispatch("message_backup", message)
         await self._prevent_rate_limit()
 
-
     @inject.autoparams()
     async def traverse_down(
-            self,
-            message: Message,
-            reaction_backup: Backup[discord.Reaction],
-            attachment_backup: Backup[MessageAttachment],
-            message_emoji_backup: Backup[MessageEmote]
+        self,
+        message: Message,
+        reaction_backup: Backup[discord.Reaction],
+        attachment_backup: Backup[MessageAttachment],
+        message_emoji_backup: Backup[MessageEmote]
     ) -> None:
         if not isinstance(message.channel, (discord.abc.GuildChannel, discord.Thread)):
             return
@@ -85,7 +80,6 @@ class MessageBackup(Backup[Message]):
 
         for emoji in await self.emoji_mapper.map_emojis(self.bot, message):
             await message_emoji_backup.traverse_down(emoji)
-
 
     async def _prevent_rate_limit(self) -> None:
         self.rate_limiter += 1

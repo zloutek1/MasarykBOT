@@ -9,7 +9,6 @@ from bot.db.utils import Crud, DBConnection, Id, Mapper, Url, inject_conn, Entit
 from bot.utils import AnyEmote, get_emoji_id
 
 
-
 @dataclass
 class EmojiEntity(Entity):
     __table_name__ = "server.emojis"
@@ -23,14 +22,12 @@ class EmojiEntity(Entity):
     deleted_at: Optional[datetime] = None
 
 
-
 class EmojiMapper(Mapper[AnyEmote, EmojiEntity]):
     async def map(self, obj: AnyEmote) -> EmojiEntity:
         if isinstance(obj, str):
             return self._map_unicode(obj)
         else:
             return self._map_discord(obj)
-
 
     @staticmethod
     def _map_unicode(emoji: str) -> EmojiEntity:
@@ -39,17 +36,14 @@ class EmojiMapper(Mapper[AnyEmote, EmojiEntity]):
         url = "https://unicode.org/emoji/charts/full-emoji-list.html#{hex}".format(hex=hex_id)
         return EmojiEntity(emoji_id, demojize(emoji).strip(':'), url, False, datetime.min)
 
-
     @staticmethod
     def _map_discord(emoji: Emoji | PartialEmoji) -> EmojiEntity:
-        return EmojiEntity(get_emoji_id(emoji), emoji.name, str(emoji.url), emoji.animated, emoji.created_at)        
-
+        return EmojiEntity(get_emoji_id(emoji), emoji.name, str(emoji.url), emoji.animated, emoji.created_at)
 
 
 class EmojiRepository(Crud[EmojiEntity]):
     def __init__(self) -> None:
         super().__init__(entity=EmojiEntity)
-
 
     @inject_conn
     async def insert(self, conn: DBConnection, data: EmojiEntity) -> None:

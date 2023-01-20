@@ -14,11 +14,9 @@ class Backup(ABC, Generic[T]):
         await self.backup(obj)
         self._backedUp.add(obj)
 
-
     @abstractmethod
     async def backup(self, obj: T) -> None:
         raise NotImplementedError("Backup method is not implemented")
-
 
     @abstractmethod
     async def traverse_down(self, obj: T) -> None:

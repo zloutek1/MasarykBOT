@@ -18,19 +18,16 @@ class EmojiBackup(Backup[AnyEmote]):
         self.emoji_repository = emoji_repository
         self.mapper = mapper
 
-
     @inject.autoparams()
     async def traverse_up(self, emoji: AnyEmote, guild_backup: Backup[discord.Guild]) -> None:
         if isinstance(emoji, Emoji) and emoji.guild:
             await guild_backup.traverse_up(emoji.guild)
         await super().traverse_up(emoji)
 
-
     async def backup(self, emoji: AnyEmote) -> None:
         log.debug('backing up emoji %s', emoji.name if hasattr(emoji, 'name') else emoji)
         entity: EmojiEntity = await self.mapper.map(emoji)
         await self.emoji_repository.insert(entity)
-
 
     async def traverse_down(self, emoji: AnyEmote) -> None:
         await super().traverse_down(emoji)

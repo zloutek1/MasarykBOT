@@ -26,7 +26,6 @@ from bot.cogs.logger.processors.user import UserBackup
 from bot.utils import MessageAttachment, MessageEmote, AnyEmote
 
 
-
 def setup_injections(binder: inject.Binder) -> None:
     binder.bind_to_constructor(Backup[MessageAttachment], AttachmentBackup)
     binder.bind_to_constructor(Backup[commands.Bot], BotBackup)
