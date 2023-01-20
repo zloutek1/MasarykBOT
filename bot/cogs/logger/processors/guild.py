@@ -37,7 +37,7 @@ class GuildBackup(Backup[Guild]):
             user_backup: Backup[discord.User | discord.Member],
             role_backup: Backup[discord.Role],
             emoji_backup: Backup[AnyEmote],
-            text_channel_backup: Backup[discord.TextChannel],
+            channel_backup: Backup[discord.abc.GuildChannel],
             category_backup: Backup[discord.CategoryChannel]
     ) -> None:
         await super().traverse_down(guild)
@@ -51,8 +51,8 @@ class GuildBackup(Backup[Guild]):
         for emoji in guild.emojis:
             await emoji_backup.traverse_down(emoji)
 
-        for text_channel in filter(lambda ch: ch.category is None, guild.text_channels):
-            await text_channel_backup.traverse_down(text_channel)
+        for channel in filter(lambda ch: ch.category is None, guild.channels):
+            await channel_backup.traverse_down(channel)
 
         for category in guild.categories:
             await category_backup.traverse_down(category)

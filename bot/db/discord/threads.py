@@ -7,7 +7,6 @@ from discord import Thread
 from bot.db.utils import Entity, Id, Mapper, Crud, inject_conn, DBConnection
 
 
-
 @dataclass
 class ThreadEntity(Entity):
     __table_name__ = "server.messages"
@@ -19,7 +18,6 @@ class ThreadEntity(Entity):
     archived_at: Optional[datetime] = None
     edited_at: Optional[datetime] = None
     deleted_at: Optional[datetime] = None
-
 
 
 class ThreadMapper(Mapper[Thread, ThreadEntity]):
@@ -34,11 +32,9 @@ class ThreadMapper(Mapper[Thread, ThreadEntity]):
         return ThreadEntity(thread.parent_id, thread.id, thread.name, created_at, archived_at)
 
 
-
 class ThreadRepository(Crud[ThreadEntity]):
     def __init__(self) -> None:
         super().__init__(entity=ThreadEntity)
-
 
     @inject_conn
     async def insert(self, conn: DBConnection, data: ThreadEntity) -> None:
