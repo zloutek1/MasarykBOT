@@ -106,6 +106,9 @@ ENV/
 # VSCode
 .vscode/
 
+# Fleet
+.fleet/
+
 # Vagrant
 .vagrant
 
