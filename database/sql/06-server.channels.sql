@@ -1,3 +1,13 @@
+-- Type: channel_type
+
+-- DROP TYPE IF EXISTS server.channel_type;
+
+CREATE TYPE server.channel_type AS ENUM
+    ('text', 'forum');
+
+ALTER TYPE server.channel_type
+    OWNER TO masaryk;
+
 -- Table: server.channels
 
 -- DROP TABLE server.channels;
@@ -7,8 +17,8 @@ CREATE TABLE server.channels
     guild_id bigint NOT NULL,
     category_id bigint,
     id bigint NOT NULL,
-    name character varying(100) COLLATE pg_catalog."default" NOT NULL,
-    "position" integer,
+    "name" character varying(100) COLLATE pg_catalog."default" NOT NULL,
+    "type" server.channel_type NOT NULL,
     created_at timestamp with time zone NOT NULL DEFAULT now(),
     edited_at timestamp with time zone,
     deleted_at timestamp with time zone,
@@ -27,14 +37,6 @@ TABLESPACE pg_default;
 
 ALTER TABLE server.channels
     OWNER to masaryk;
--- Index: channels_idx_position
-
--- DROP INDEX server.channels_idx_position;
-
-CREATE INDEX channels_idx_position
-    ON server.channels USING btree
-    (guild_id ASC NULLS LAST, category_id ASC NULLS LAST, "position" ASC NULLS LAST)
-    TABLESPACE pg_default;
 -- Index: fki_channels_fkey_category
 
 -- DROP INDEX server.fki_channels_fkey_category;

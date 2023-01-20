@@ -4,6 +4,7 @@ __all__ = [
     "AttachmentRepository", "AttachmentMapper", "AttachmentEntity",
     "CategoryRepository", "CategoryMapper", "CategoryEntity",
     "ChannelRepository", "ChannelMapper", "ChannelEntity",
+    "ThreadRepository", "ThreadMapper", "ThreadEntity",
     "EmojiRepository", "EmojiMapper", "EmojiEntity",
     "GuildRepository", "GuildMapper", "GuildEntity",
     "MessageEmojiRepository", "MessageEmojiMapper", "MessageEmojiEntity",
@@ -14,23 +15,24 @@ __all__ = [
     "setup_injections"
 ]
 
-from .attachments import AttachmentRepository, AttachmentMapper, AttachmentEntity
-from .categories import CategoryRepository, CategoryMapper, CategoryEntity
-from .channels import ChannelRepository, ChannelMapper, ChannelEntity
-from .emojis import EmojiRepository, EmojiMapper, EmojiEntity
-from .guilds import GuildRepository, GuildMapper, GuildEntity
-from .message_emojis import MessageEmojiRepository, MessageEmojiMapper, MessageEmojiEntity
-from .messages import MessageRepository, MessageMapper, MessageEntity
-from .reactions import ReactionRepository, ReactionMapper, ReactionEntity
-from .roles import RoleRepository, RoleMapper, RoleEntity
-from .users import UserRepository, UserMapper, UserEntity
+from bot.db.discord.attachments import AttachmentRepository, AttachmentMapper, AttachmentEntity
+from bot.db.discord.categories import CategoryRepository, CategoryMapper, CategoryEntity
+from bot.db.discord.channels import ChannelRepository, ChannelMapper, ChannelEntity
+from bot.db.discord.threads import ThreadRepository, ThreadMapper, ThreadEntity
+from bot.db.discord.emojis import EmojiRepository, EmojiMapper, EmojiEntity
+from bot.db.discord.guilds import GuildRepository, GuildMapper, GuildEntity
+from bot.db.discord.message_emojis import MessageEmojiRepository, MessageEmojiMapper, MessageEmojiEntity
+from bot.db.discord.messages import MessageRepository, MessageMapper, MessageEntity
+from bot.db.discord.reactions import ReactionRepository, ReactionMapper, ReactionEntity
+from bot.db.discord.roles import RoleRepository, RoleMapper, RoleEntity
+from bot.db.discord.users import UserRepository, UserMapper, UserEntity
 
 REPOSITORIES = (GuildRepository, RoleRepository, UserRepository, EmojiRepository, CategoryRepository, ChannelRepository,
-                MessageRepository, AttachmentRepository, ReactionRepository, MessageEmojiRepository)
+                ThreadRepository, MessageRepository, AttachmentRepository, ReactionRepository, MessageEmojiRepository)
 MAPPERS = (GuildMapper, RoleMapper, UserMapper, EmojiMapper, CategoryMapper, ChannelMapper, MessageMapper,
-           AttachmentMapper, ReactionMapper, MessageEmojiMapper)
+           ThreadMapper, AttachmentMapper, ReactionMapper, MessageEmojiMapper)
 ENTITIES = (GuildEntity, RoleEntity, UserEntity, EmojiEntity, CategoryEntity, ChannelEntity,
-            MessageEntity, AttachmentEntity, ReactionEntity, MessageEmojiEntity)
+            ThreadEntity, MessageEntity, AttachmentEntity, ReactionEntity, MessageEmojiEntity)
 
 
 

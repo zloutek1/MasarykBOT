@@ -6,9 +6,12 @@ from discord.ext import commands, tasks
 
 from bot.cogs.logger.processors import Backup, setup_injections
 from bot.cogs.logger.message_iterator import MessageIterator
+from bot.cogs.logger.history_iterator import HistoryIterator
 from bot.utils import requires_database, Context
 
 __all__ = [
+    'MessageIterator',
+    'HistoryIterator',
     'LoggerCog', 'setup',
     'BackupAlreadyRunning',
     'setup_injections'

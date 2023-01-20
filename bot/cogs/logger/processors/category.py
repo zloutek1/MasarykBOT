@@ -5,7 +5,7 @@ import inject
 from discord import CategoryChannel
 
 from bot.db import CategoryMapper, CategoryRepository, CategoryEntity
-from ._base import Backup
+from bot.cogs.logger.processors._base import Backup
 
 log = logging.getLogger(__name__)
 
@@ -31,8 +31,8 @@ class CategoryBackup(Backup[CategoryChannel]):
 
 
     @inject.autoparams()
-    async def traverse_down(self, category: CategoryChannel, text_channel_backup: Backup[discord.TextChannel]) -> None:
+    async def traverse_down(self, category: CategoryChannel, channel_backup: Backup[discord.abc.GuildChannel]) -> None:
         await super().traverse_down(category)
 
-        for text_channel in category.text_channels:
-            await text_channel_backup.traverse_down(text_channel)
+        for channel in category.channels:
+            await channel_backup.traverse_down(channel)

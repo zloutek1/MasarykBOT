@@ -4,7 +4,8 @@
 
 CREATE TABLE server.messages
 (
-    channel_id bigint NOT NULL,
+    channel_id bigint,
+    thread_id bigint,
     author_id bigint NOT NULL,
     id bigint NOT NULL,
     content text COLLATE pg_catalog."default" NOT NULL,
@@ -15,6 +16,10 @@ CREATE TABLE server.messages
     CONSTRAINT messages_pkey PRIMARY KEY (id),
     CONSTRAINT messages_fkey_channel FOREIGN KEY (channel_id)
         REFERENCES server.channels (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION,
+    CONSTRAINT messages_fkey_thread FOREIGN KEY (thread_id)
+        REFERENCES server.threads (id) MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION,
     CONSTRAINT messages_fkey_user FOREIGN KEY (author_id)
@@ -34,6 +39,14 @@ ALTER TABLE server.messages
 CREATE INDEX fki_messages_fkey_channel
     ON server.messages USING btree
     (channel_id ASC NULLS LAST)
+    TABLESPACE pg_default;
+-- Index: fki_messages_fkey_thread
+
+-- DROP INDEX server.fki_messages_fkey_thread;
+
+CREATE INDEX fki_messages_fkey_thread
+    ON server.messages USING btree
+    (thread_id ASC NULLS LAST)
     TABLESPACE pg_default;
 -- Index: fki_messages_fkey_user
 

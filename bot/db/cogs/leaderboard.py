@@ -7,13 +7,13 @@ __all__ = [
     'LeaderboardEntity', 'LeaderboardRepository'
 ]
 
+
 @dataclass
 class LeaderboardFilter:
     guild_id: Id
     ignored_users: List[Id]
     include_channel_ids: List[Id]
     exclude_channel_ids: List[Id]
-
 
 
 @dataclass
@@ -26,23 +26,24 @@ class LeaderboardEntity(Entity):
     sent_total: int
 
 
-
 class LeaderboardRepository(Table[LeaderboardEntity]):
     tmp_table = "ldb_lookup"
-
 
     def __init__(self) -> None:
         super().__init__(entity=LeaderboardEntity)
 
-
     @inject_conn
-    async def get_data(self, conn: DBConnection, user_id: int, filters: LeaderboardFilter) -> Tuple[List[LeaderboardEntity], List[LeaderboardEntity]]:
+    async def get_data(
+            self,
+            conn: DBConnection,
+            user_id: int,
+            filters: LeaderboardFilter
+    ) -> Tuple[List[LeaderboardEntity], List[LeaderboardEntity]]:
         await self.preselect(filters, conn=conn)
         return (
             await self.get_top10(conn=conn),
             await self.get_around(user_id, conn=conn)
         )
-
 
     @inject_conn
     async def preselect(self, conn: DBConnection, filters: LeaderboardFilter) -> None:
@@ -73,12 +74,10 @@ class LeaderboardRepository(Table[LeaderboardEntity]):
                 ) AS lookup
         """, filters.guild_id, filters.ignored_users, filters.include_channel_ids, filters.exclude_channel_ids)
 
-
     @inject_conn
     async def get_top10(self, conn: DBConnection) -> List[LeaderboardEntity]:
         rows = await conn.fetch(f"SELECT * FROM ldb_lookup LIMIT 10")
         return [LeaderboardEntity.convert(row) for row in rows]
-
 
     @inject_conn
     async def get_around(self, conn: DBConnection, id: Id) -> List[LeaderboardEntity]:

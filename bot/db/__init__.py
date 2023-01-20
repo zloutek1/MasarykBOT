@@ -8,15 +8,19 @@ import inject
 
 __all__ = [
     "UnitOfWork", "Url", "Page", "Pool", "Record",
-    "AttachmentMapper", "CategoryMapper", "ChannelMapper", "EmojiMapper",
-                          "GuildMapper", "MessageMapper", "MessageEmojiMapper", "ReactionMapper",
-                          "RoleMapper", "UserMapper",
-    "AttachmentRepository", "CategoryRepository", "ChannelRepository", "EmojiRepository",
-                          "GuildRepository", "MessageRepository", "MessageEmojiRepository", "ReactionRepository",
-                          "RoleRepository", "UserRepository",
-    "AttachmentEntity", "CategoryEntity", "ChannelEntity", "EmojiEntity",
-                          "GuildEntity", "MessageEntity", "MessageEmojiEntity", "ReactionEntity",
-                          "RoleEntity", "UserEntity",
+
+    "AttachmentMapper", "CategoryMapper", "ChannelMapper", "ThreadMapper", "EmojiMapper",
+    "GuildMapper", "MessageMapper", "MessageEmojiMapper", "ReactionMapper",
+    "RoleMapper", "UserMapper",
+
+    "AttachmentRepository", "CategoryRepository", "ChannelRepository", "ThreadRepository", "EmojiRepository",
+    "GuildRepository", "MessageRepository", "MessageEmojiRepository", "ReactionRepository",
+    "RoleRepository", "UserRepository",
+
+    "AttachmentEntity", "CategoryEntity", "ChannelEntity", "ThreadEntity", "EmojiEntity",
+    "GuildEntity", "MessageEntity", "MessageEmojiEntity", "ReactionEntity",
+    "RoleEntity", "UserEntity",
+
     "CourseRepository", "StudentRepository", "CourseEntity", "StudentEntity",
     "LeaderboardRepository", "LoggerRepository", "LeaderboardEntity", "LoggerEntity",
     "setup_injections",
@@ -24,34 +28,31 @@ __all__ = [
 ]
 
 # ---- utils ----
-from .utils import UnitOfWork, Url, Page, Pool, Record
+from bot.db.utils import UnitOfWork, Url, Page, Pool, Record
 
 # ---- discord ----
-from .discord import (AttachmentMapper, CategoryMapper, ChannelMapper, EmojiMapper,
-                      GuildMapper, MessageMapper, MessageEmojiMapper, ReactionMapper,
-                      RoleMapper, UserMapper)
-from .discord import (AttachmentRepository, CategoryRepository, ChannelRepository, EmojiRepository,
-                      GuildRepository, MessageRepository, MessageEmojiRepository, ReactionRepository,
-                      RoleRepository, UserRepository)
-from .discord import (AttachmentEntity, CategoryEntity, ChannelEntity, EmojiEntity,
-                      GuildEntity, MessageEntity, MessageEmojiEntity, ReactionEntity,
-                      RoleEntity, UserEntity)
-from .discord import setup_injections as setup_discord_injections
-
+from bot.db.discord import (AttachmentMapper, CategoryMapper, ChannelMapper, EmojiMapper,
+                            GuildMapper, MessageMapper, MessageEmojiMapper, ReactionMapper,
+                            ThreadMapper, RoleMapper, UserMapper)
+from bot.db.discord import (AttachmentRepository, CategoryRepository, ChannelRepository, EmojiRepository,
+                            GuildRepository, MessageRepository, MessageEmojiRepository, ReactionRepository,
+                            ThreadRepository, RoleRepository, UserRepository)
+from bot.db.discord import (AttachmentEntity, CategoryEntity, ChannelEntity, EmojiEntity,
+                            GuildEntity, MessageEntity, MessageEmojiEntity, ReactionEntity,
+                            ThreadEntity, RoleEntity, UserEntity)
+from bot.db.discord import setup_injections as setup_discord_injections
 
 # ---- muni ----
-from .muni import (CourseRepository, StudentRepository)
-from .muni import (CourseEntity, StudentEntity)
-from .muni import setup_injections as setup_muni_injections
-
+from bot.db.muni import (CourseRepository, StudentRepository)
+from bot.db.muni import (CourseEntity, StudentEntity)
+from bot.db.muni import setup_injections as setup_muni_injections
 
 # ---- cogs ----
-from .cogs import (LeaderboardRepository, LoggerRepository)
-from .cogs import (LeaderboardEntity, LoggerEntity)
-from .cogs import setup_injections as setup_cogs_injections
+from bot.db.cogs import (LeaderboardRepository, LoggerRepository)
+from bot.db.cogs import (LeaderboardEntity, LoggerEntity)
+from bot.db.cogs import setup_injections as setup_cogs_injections
 
 log = logging.getLogger(__name__)
-
 
 
 def setup_injections(binder: inject.Binder) -> None:
@@ -60,7 +61,6 @@ def setup_injections(binder: inject.Binder) -> None:
     binder.install(setup_cogs_injections)
 
     binder.bind_to_constructor(UnitOfWork, UnitOfWork)
-
 
 
 async def connect_db(url: Url) -> Optional[Pool]:

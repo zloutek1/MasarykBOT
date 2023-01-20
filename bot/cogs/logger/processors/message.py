@@ -37,16 +37,26 @@ class MessageBackup(Backup[Message]):
     async def traverse_up(
             self,
             message: Message,
-            text_channel_backup: Backup[discord.TextChannel],
+            thread_backup: Backup[discord.Thread],
+            channel_backup: Backup[discord.abc.GuildChannel],
             user_backup: Backup[discord.User | discord.Member]
     ) -> None:
-        if isinstance(message.channel, discord.TextChannel):
-            await text_channel_backup.traverse_up(message.channel)
+        if not isinstance(message.channel, (discord.abc.GuildChannel, discord.Thread)):
+            return
+
+        if isinstance(message.channel, discord.abc.GuildChannel):
+            await channel_backup.traverse_up(message.channel)
+        elif isinstance(message.channel, discord.Thread):
+            await thread_backup.traverse_up(message.channel)
+
         await user_backup.traverse_up(message.author)
         await super().traverse_up(message)
 
 
     async def backup(self, message: Message) -> None:
+        if not isinstance(message.channel, (discord.abc.GuildChannel, discord.Thread)):
+            return
+
         entity: MessageEntity = await self.mapper.map(message)
         await self.message_repository.insert(entity)
 
@@ -62,6 +72,9 @@ class MessageBackup(Backup[Message]):
             attachment_backup: Backup[MessageAttachment],
             message_emoji_backup: Backup[MessageEmote]
     ) -> None:
+        if not isinstance(message.channel, (discord.abc.GuildChannel, discord.Thread)):
+            return
+
         await super().traverse_down(message)
 
         for reaction in message.reactions:
