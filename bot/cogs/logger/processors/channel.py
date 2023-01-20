@@ -52,9 +52,6 @@ class ChannelBackup(Backup[GuildChannel]):
         if not self.mapper.can_map(channel):
             return
 
-        if channel.name != "threader":
-            return
-
         await super().traverse_down(channel)
 
         if isinstance(channel, (discord.TextChannel, discord.ForumChannel)):
