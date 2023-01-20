@@ -59,20 +59,5 @@ services:
     profiles:
       - prod
 
-  pgadmin:
-    container_name: pgadmin
-    image: dpage/pgadmin4:6.16
-    ports:
-      - "8832:80"
-    links:
-      - database
-    depends_on:
-      - database
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=masaryk@gmail.com
-      - PGADMIN_DEFAULT_PASSWORD=pass
-    #volumes:
-    #  - ~/Documents/database/imports:/var/lib/pgadmin/storage
-
 volumes:
   postgres:
