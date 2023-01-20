@@ -38,9 +38,9 @@ class LeaderboardCog(commands.Cog):
     @commands.cooldown(1, 10, commands.BucketType.user)
     async def leaderboard(
             self, ctx: GuildContext,
-            include_channels: commands.Greedy[discord.TextChannel] = [],  # type: ignore[assignment]
+            include_channels: commands.Greedy[discord.TextChannel | discord.Thread] = [],  # type: ignore[assignment]
             member: Optional[discord.Member] = None,
-            exclude_channels: commands.Greedy[discord.TextChannel] = []  # type: ignore[assignment]
+            exclude_channels: commands.Greedy[discord.TextChannel | discord.Thread] = []  # type: ignore[assignment]
     ) -> None:
         async with ctx.typing():
             member = member if member else ctx.author
