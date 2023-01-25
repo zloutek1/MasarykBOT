@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple, cast
 
 from bot.constants import Config
 from disnake import (Embed, Emoji, Guild, Message, PartialEmoji,
-                     RawReactionActionEvent, Reaction, TextChannel, Thread)
+                     RawReactionActionEvent, Reaction, TextChannel, Thread, ChannelType)
 from disnake.errors import NotFound
 from disnake.ext import commands
 from disnake.utils import find, get
@@ -160,6 +160,9 @@ class Starboard(commands.Cog):
             return math.inf
 
         if isinstance(message.channel, Thread) and message.channel.parent_id in guild_config.channels.starboard_igone:
+            return math.inf
+
+        if isinstance(message.channel, Thread) and message.channel.type == ChannelType.private_thread:
             return math.inf
 
         common_rooms = ['memes']
