@@ -6,8 +6,8 @@ import inject
 from discord.ext import commands
 
 from bot.constants import CONFIG
-from bot.db import CourseRepository, StudentRepository
-from bot.db.muni.course import CourseEntity
+from bot.utils import GuildContext
+from bot.db import CourseRepository, StudentRepository, CourseEntity
 from .registration_context import CourseRegistrationContext
 from .trie import Trie
 
@@ -23,7 +23,7 @@ class Status(Enum):
 class CourseService:
     category_trie = Trie()
 
-    @inject.autoparams('course_repository', 'student_repository')
+    @inject.autoparams('course_repository', 'student_repository', 'faculty_repository')
     def __init__(
         self,
         bot: commands.Bot,
@@ -39,14 +39,14 @@ class CourseService:
         self.category_trie.insert_all(courses)
 
     def load_course_registration_channels(self) -> Dict[int, discord.abc.Messageable]:
-        result: Dict[int, discord.abc.Messageable] = {}
+        result: Dict[int, discord.TextChannel | discord.Thread] = {}
         for guild_config in CONFIG.guilds:
             if not guild_config.channels.course:
                 continue
             channel_id = guild_config.channels.course.registration_channel
             if not (channel := self.bot.get_channel(channel_id)):
                 continue
-            if not isinstance(channel, discord.abc.Messageable):
+            if not isinstance(channel, (discord.TextChannel, discord.Thread)):
                 continue
             result[channel.id] = channel
         return result
@@ -54,13 +54,17 @@ class CourseService:
     async def autocomplete(self, pattern: str) -> List[CourseEntity]:
         return await self._course_repository.autocomplete(f'%{pattern}%')
 
-    @staticmethod
-    async def get_course_info(course: CourseEntity) -> discord.Embed:
-        return discord.Embed(
+    async def get_course_info(self, ctx: GuildContext, course: CourseEntity) -> discord.Embed:
+        student_count = await self._student_repository.count_course_students(data=(course.faculty, course.code, ctx.guild.id))
+
+        embed = discord.Embed(
             color=CONFIG.colors.MUNI_YELLOW,
             title=f"{course.faculty}:{course.code}",
             description=f"{course.name}\n\n{course.url}"
         )
+        embed.add_field(name="Students", value=student_count)
+        embed.add_field(name="Channel", value=ctx.guild)
+        return embed
 
     async def get_user_info(self, guild: discord.Guild, user: discord.Member) -> discord.Embed:
         course_codes = await self._student_repository.find_all_students_courses((guild.id, user.id))
