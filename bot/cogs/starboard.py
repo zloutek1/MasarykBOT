@@ -126,7 +126,8 @@ class StarboardProcessingService:
         return (
             self._is_recently_starred()
             or self.channel.id in ignore_channels
-            or isinstance(self.channel, discord.Thread) and self.channel.parent_id in ignore_channels
+            or (isinstance(self.channel, discord.Thread) and self.channel.parent_id in ignore_channels)
+            or self.channel.type == discord.ChannelType.private_thread
             or self._should_ignore_emoji(cfg)
             or self.reaction.count < star_cfg.REACT_LIMIT
             or self.reaction.count < self._calculate_ignore_score()
