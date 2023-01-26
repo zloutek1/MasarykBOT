@@ -21,7 +21,8 @@ __all__ = [
     "GuildEntity", "MessageEntity", "MessageEmojiEntity", "ReactionEntity",
     "RoleEntity", "UserEntity",
 
-    "CourseRepository", "StudentRepository", "CourseEntity", "StudentEntity",
+    "CourseRepository", "StudentRepository", "CourseEntity", "StudentEntity", "FacultyRepository", "FacultyEntity",
+
     "LeaderboardRepository", "LoggerRepository", "LeaderboardEntity", "LoggerEntity",
     "setup_injections",
     "connect_db"
@@ -43,8 +44,8 @@ from bot.db.discord import (AttachmentEntity, CategoryEntity, ChannelEntity, Emo
 from bot.db.discord import setup_injections as setup_discord_injections
 
 # ---- muni ----
-from bot.db.muni import (CourseRepository, StudentRepository)
-from bot.db.muni import (CourseEntity, StudentEntity)
+from bot.db.muni import (CourseRepository, StudentRepository, FacultyRepository)
+from bot.db.muni import (CourseEntity, StudentEntity, FacultyEntity)
 from bot.db.muni import setup_injections as setup_muni_injections
 
 # ---- cogs ----

@@ -14,6 +14,7 @@ from bot.db import CourseRepository
 from bot.db.muni.course import CourseEntity
 from bot.utils import Context, GuildContext, requires_database
 from .course_service import CourseService
+from .fetching import FacultyFetchingService, CourseFetchingService
 
 _reg_msg_path = Path(__file__).parent.parent.parent.joinpath('assets/course_registration_message.txt')
 with open(_reg_msg_path, 'r') as file:
@@ -54,9 +55,17 @@ class Course(commands.Converter[CourseEntity], CourseEntity):
 
 
 class CourseCog(commands.Cog):
-    def __init__(self, bot: commands.Bot, subject_service: Optional[CourseService] = None) -> None:
+    def __init__(
+            self,
+            bot: commands.Bot,
+            course_service: Optional[CourseService] = None,
+            faculty_fetching_service: Optional[FacultyFetchingService] = None,
+            course_fetching_service: Optional[CourseFetchingService] = None
+    ) -> None:
         self.bot = bot
-        self._service = subject_service or CourseService(bot)
+        self._service = course_service or CourseService(bot)
+        self._faculty_fetching_service = faculty_fetching_service or FacultyFetchingService()
+        self._course_fetching_service = course_fetching_service or CourseFetchingService()
         self.course_registration_channels: Dict[int, discord.abc.Messageable] = {}
 
     @commands.Cog.listener()
@@ -69,7 +78,7 @@ class CourseCog(commands.Cog):
     async def course(self, ctx: GuildContext) -> None:
         await ctx.send_help("course")
 
-    @course.command(aliases=['add', 'show'])
+    @course.command(aliases=['add', 'show'], description="Join a course channel or register as interested")
     @in_registration_channel()
     async def join(self, ctx: GuildContext, courses: commands.Greedy[Course]) -> None:
         if len(courses) > 10:
@@ -82,7 +91,7 @@ class CourseCog(commands.Cog):
                 case status.SHOWN:
                     await ctx.send_success(f"Shown course {course.faculty}:{course.code}")
 
-    @course.command(aliases=['remove', 'hide'])
+    @course.command(aliases=['remove', 'hide'], description="Leave course channel or unregister")
     @in_registration_channel()
     async def leave(self, ctx: GuildContext, courses: commands.Greedy[Course]) -> None:
         if len(courses) > 10:
@@ -92,23 +101,23 @@ class CourseCog(commands.Cog):
             await self._service.leave_course(ctx.guild, ctx.author, course)
             await ctx.send(f'Left course {course.faculty}:{course.code}')
 
-    @course.command(aliases=['remove_all', 'hide_all'])
+    @course.command(aliases=['remove_all', 'hide_all'], description="Leave all your course channels")
     @in_registration_channel()
     async def leave_all(self, ctx: GuildContext) -> None:
         await self._service.leave_all_courses(ctx.guild, ctx.author)
         await ctx.send(f'Left all courses')
 
-    @course.command()
+    @course.command(description="Search courses by partial code")
     async def search(self, ctx: GuildContext, pattern: str) -> None:
         embed = await self._service.search_courses(pattern)
         await ctx.send(embed=embed)
 
-    @course.command()
-    async def find(self, ctx: GuildContext, course: Course) -> None:
-        embed = await self._service.get_course_info(course)
+    @course.command(description="Get info about a course")
+    async def info(self, ctx: GuildContext, course: Course) -> None:
+        embed = await self._service.get_course_info(course, ctx.guild.id)
         await ctx.send(embed=embed)
 
-    @course.command()
+    @course.command(description="Get student's registered courses")
     async def profile(self, ctx: GuildContext, member: Optional[discord.Member]) -> None:
         member = ctx.author if member is None else member
         embed = await self._service.get_user_info(ctx.guild, member)
@@ -116,7 +125,7 @@ class CourseCog(commands.Cog):
 
     @join.autocomplete('courses')
     @leave.autocomplete('courses')
-    @find.autocomplete('course')
+    @info.autocomplete('course')
     async def course_autocomplete(self, _interaction: discord.Interaction, current: str) -> List[Choice[str]]:
         return [
             Choice(
@@ -143,6 +152,18 @@ class CourseCog(commands.Cog):
             return
         with contextlib.suppress(discord.errors.NotFound):
             await message.delete(delay=5.2 if message.embeds else 0.2)
+
+    @course.command()
+    @commands.is_owner()
+    async def fetch_faculties(self, ctx: Context):
+        faculties = await self._faculty_fetching_service.fetch()
+        await ctx.reply(f"fetched {len(faculties)} faculties")
+
+    @course.command()
+    @commands.is_owner()
+    async def fetch_courses(self, ctx: Context):
+        courses = await self._course_fetching_service.fetch()
+        await ctx.reply(f"fetched {len(courses)} courses")
 
 
 @requires_database

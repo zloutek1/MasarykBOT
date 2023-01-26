@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional, Iterable, cast
 
-from bot.db.utils import inject_conn, DBConnection, Url, Entity, Table
+from bot.db.utils import inject_conn, DBConnection, Url, Entity, Crud
 
 
 @dataclass
@@ -19,9 +19,30 @@ class CourseEntity(Entity):
     deleted_at: Optional[datetime] = None
 
 
-class CourseRepository(Table[CourseEntity]):
+class CourseRepository(Crud[CourseEntity]):
     def __init__(self) -> None:
         super().__init__(entity=CourseEntity)
+
+    @inject_conn
+    async def insert(self, conn: DBConnection, data: CourseEntity) -> None:
+        await conn.execute("""
+            INSERT INTO muni.courses (faculty, code, name, url, terms)
+            VALUES ($1, $2, $3, $4, ARRAY[$5])
+            ON CONFLICT (faculty, code) DO UPDATE
+                SET name=$3,
+                    url=$4,
+                    terms=ARRAY[$5],
+                    edited_at=NOW()
+        """, data.faculty, data.code, data.name, data.url, data.terms)
+
+    @inject_conn
+    async def soft_delete(self, conn: DBConnection, data: CourseEntity) -> None:
+        await conn.execute("""
+            UPDATE muni.faculties
+            SET deleted_at=NOW()
+            WHERE faculty=$1 AND code=$2
+        """, data.faculty, data.code)
+
 
     @inject_conn
     async def autocomplete(self, conn: DBConnection, pattern: str) -> List[CourseEntity]:

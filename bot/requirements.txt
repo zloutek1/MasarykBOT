@@ -17,23 +17,26 @@ asyncpg==0.27.0
 asyncpg-stubs==0.27.0
 
 # cogs
-    # activity
+## courses
+beautifulsoup4==4.11.1
+
+## activity
 numpy==1.23.5
 matplotlib==3.6.2
 pandas==1.5.2
 Pillow==9.3.0
 types-Pillow==9.3.0.2
 
-    # fun
+## fun
 emoji==2.2.0
 types-emoji==2.1.0.1
 requests==2.28.1
 types-requests==2.28.11.5
 
-    # math
+## math
 sympy==1.11.1
 
-    # auto_thread
+## auto_thread
 lxml==4.9.1
 lxml-stubs==0.4.0
 

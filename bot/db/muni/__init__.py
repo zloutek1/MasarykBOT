@@ -3,14 +3,16 @@ import inject
 __all__ = [
     'CourseRepository', 'CourseEntity',
     'StudentRepository', 'StudentEntity',
+    'FacultyRepository', 'FacultyEntity',
     'setup_injections'
 ]
 
 from .course import CourseRepository, CourseEntity
 from .student import StudentRepository, StudentEntity
+from .faculty import FacultyRepository, FacultyEntity
 
-REPOSITORIES = (CourseRepository, StudentRepository)
-ENTITIES = (CourseEntity, StudentEntity)
+REPOSITORIES = (CourseRepository, StudentRepository, FacultyRepository)
+ENTITIES = (CourseEntity, StudentEntity, FacultyEntity)
 
 
 def setup_injections(binder: inject.Binder) -> None:
