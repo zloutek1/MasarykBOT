@@ -6,12 +6,10 @@ from discord.utils import get
 
 from bot.cogs.course.trie import Trie
 from bot.db.muni.student import StudentEntity
-from bot.utils import sanitize_channel_name
+from bot.utils import sanitize_channel_name, DiscordLimit
 from bot.constants import CONFIG
 from bot.db import StudentRepository
 from bot.db.muni.course import CourseEntity
-
-MAX_CHANNEL_OVERWRITES = 500
 
 
 class CourseRegistrationContext:
@@ -59,7 +57,7 @@ class CourseRegistrationContext:
     async def show_course_channel(self, channel: discord.TextChannel) -> None:
         if role := get(channel.guild.roles, name=f"📖{self.course.code}"):
             await self.user.add_roles(role)
-        elif len(channel.overwrites) < MAX_CHANNEL_OVERWRITES:
+        elif len(channel.overwrites) < DiscordLimit.MAX_CHANNEL_OVERWRITES:
             await channel.set_permissions(self.user, overwrite=discord.PermissionOverwrite(read_messages=True))
         else:
             raise NotImplementedError

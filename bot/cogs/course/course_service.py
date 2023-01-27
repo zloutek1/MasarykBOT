@@ -11,8 +11,6 @@ from bot.db import CourseRepository, StudentRepository, CourseEntity
 from .registration_context import CourseRegistrationContext
 from .trie import Trie
 
-DISCORD_CATEGORY_MAX_CHANNELS_LIMIT = 50
-
 
 class Status(Enum):
     REGISTERED = auto()
@@ -93,8 +91,10 @@ class CourseService:
         if not (channel := context.find_course_channel()):
             if not await context.should_create_course_channel():
                 return Status.REGISTERED
-            category = await context.create_or_get_course_category(self.category_trie,
-                                                                   DISCORD_CATEGORY_MAX_CHANNELS_LIMIT)
+            category = await context.create_or_get_course_category(
+                self.category_trie,
+                DiscordLimit.CATEGORY_MAX_CHANNELS
+            )
             channel = await context.create_course_channel(category)
         await context.show_course_channel(channel)
         return Status.SHOWN
