@@ -57,10 +57,12 @@ class CourseRegistrationContext:
     async def show_course_channel(self, channel: discord.TextChannel) -> None:
         if role := get(channel.guild.roles, name=f"📖{self.course.code}"):
             await self.user.add_roles(role)
-        elif len(channel.overwrites) < DiscordLimit.MAX_CHANNEL_OVERWRITES:
+        elif len(channel.overwrites) < DiscordLimit.MAX_CHANNEL_OVERWRITES / 100 * 99:
             await channel.set_permissions(self.user, overwrite=discord.PermissionOverwrite(read_messages=True))
         else:
-            raise NotImplementedError
+            role = await self.guild.create_role(name=f"📖{self.course.code}")
+            await channel.set_permissions(role, overwrite=discord.PermissionOverwrite(read_messages=True))
+            await self.user.add_roles(role)
 
     async def hide_course_channel(self, channel: discord.TextChannel) -> None:
         if role := get(channel.guild.roles, name=f"📖{self.course.code}"):
