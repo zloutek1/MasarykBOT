@@ -58,12 +58,12 @@ class CourseCog(commands.Cog):
     def __init__(
             self,
             bot: commands.Bot,
-            course_service: Optional[CourseService] = None,
+            service: Optional[CourseService] = None,
             faculty_fetching_service: Optional[FacultyFetchingService] = None,
             course_fetching_service: Optional[CourseFetchingService] = None
     ) -> None:
         self.bot = bot
-        self._service = course_service or CourseService(bot)
+        self._service = service or CourseService(bot)
         self._faculty_fetching_service = faculty_fetching_service or FacultyFetchingService()
         self._course_fetching_service = course_fetching_service or CourseFetchingService()
         self.course_registration_channels: Dict[int, discord.abc.Messageable] = {}
@@ -99,22 +99,22 @@ class CourseCog(commands.Cog):
                 'You can only leave 10 courses with one command, consider using `!course leave_all`')
         for course in courses:
             await self._service.leave_course(ctx.guild, ctx.author, course)
-            await ctx.send(f'Left course {course.faculty}:{course.code}')
+            await ctx.send_success(f'Left course {course.faculty}:{course.code}')
 
     @course.command(aliases=['remove_all', 'hide_all'], description="Leave all your course channels")
     @in_registration_channel()
     async def leave_all(self, ctx: GuildContext) -> None:
         await self._service.leave_all_courses(ctx.guild, ctx.author)
-        await ctx.send(f'Left all courses')
+        await ctx.send_success(f'Left all courses')
 
-    @course.command(description="Search courses by partial code")
+    @course.command(description="Search courses by partial code", aliases=['find'])
     async def search(self, ctx: GuildContext, pattern: str) -> None:
         embed = await self._service.search_courses(pattern)
         await ctx.send(embed=embed)
 
     @course.command(description="Get info about a course")
     async def info(self, ctx: GuildContext, course: Course) -> None:
-        embed = await self._service.get_course_info(course, ctx.guild.id)
+        embed = await self._service.get_course_info(ctx.guild, course)
         await ctx.send(embed=embed)
 
     @course.command(description="Get student's registered courses")
@@ -164,6 +164,12 @@ class CourseCog(commands.Cog):
     async def fetch_courses(self, ctx: Context):
         courses = await self._course_fetching_service.fetch()
         await ctx.reply(f"fetched {len(courses)} courses")
+
+    @course.command()
+    @commands.is_owner()
+    async def recover_database(self, ctx: Context):
+        recovered_count = await self._service.recover_database(ctx.guild)
+        await ctx.reply(f"recovered {recovered_count} courses")
 
 
 @requires_database
