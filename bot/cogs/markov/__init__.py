@@ -40,6 +40,7 @@ class MarkovCog(commands.Cog):
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
     async def train(self, ctx: GuildContext) -> None:
+        await ctx.reply("[markov] Starting training")
         await self.training_service.train(ctx.guild.id)
         await ctx.reply("[markov] Finished training", mention_author=True)
 

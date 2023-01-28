@@ -7,7 +7,7 @@ import asyncpg
 import inject
 
 __all__ = [
-    "UnitOfWork", "Url", "Page", "Pool", "Record",
+    "UnitOfWork", "Url", "Page", "Pool", "Record", "DBConnection",
 
     "AttachmentMapper", "CategoryMapper", "ChannelMapper", "ThreadMapper", "EmojiMapper",
     "GuildMapper", "MessageMapper", "MessageEmojiMapper", "ReactionMapper",
@@ -23,13 +23,13 @@ __all__ = [
 
     "CourseRepository", "StudentRepository", "CourseEntity", "StudentEntity", "FacultyRepository", "FacultyEntity",
 
-    "LeaderboardRepository", "LoggerRepository", "LeaderboardEntity", "LoggerEntity",
+    "LeaderboardRepository", "LoggerRepository", "LeaderboardEntity", "LoggerEntity", "MarkovRepository", "MarkovEntity",
     "setup_injections",
     "connect_db"
 ]
 
 # ---- utils ----
-from bot.db.utils import UnitOfWork, Url, Page, Pool, Record
+from bot.db.utils import UnitOfWork, Url, Page, Pool, Record, DBConnection
 
 # ---- discord ----
 from bot.db.discord import (AttachmentMapper, CategoryMapper, ChannelMapper, EmojiMapper,
@@ -49,8 +49,8 @@ from bot.db.muni import (CourseEntity, StudentEntity, FacultyEntity)
 from bot.db.muni import setup_injections as setup_muni_injections
 
 # ---- cogs ----
-from bot.db.cogs import (LeaderboardRepository, LoggerRepository)
-from bot.db.cogs import (LeaderboardEntity, LoggerEntity)
+from bot.db.cogs import (LeaderboardRepository, LoggerRepository, MarkovRepository)
+from bot.db.cogs import (LeaderboardEntity, LoggerEntity, MarkovEntity)
 from bot.db.cogs import setup_injections as setup_cogs_injections
 
 log = logging.getLogger(__name__)
