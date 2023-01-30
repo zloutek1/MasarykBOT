@@ -85,6 +85,9 @@ class VerificationCog(commands.Cog):
             await self.on_raw_reaction_update(payload)
 
     async def on_raw_reaction_update(self, payload: discord.RawReactionActionEvent) -> None:
+        if CONFIG.bot.DEBUG:
+            return
+        
         message = self.verification_messages[payload.message_id]
         assert message.guild, f"verification message must be in a guild, got {message}"
         member = await message.guild.fetch_member(payload.user_id)
