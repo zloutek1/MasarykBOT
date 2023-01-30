@@ -11,8 +11,9 @@ class Backup(ABC, Generic[T]):
 
     @abstractmethod
     async def traverse_up(self, obj: T) -> None:
-        await self.backup(obj)
-        self._backedUp.add(obj)
+        if obj not in self._backedUp:
+            await self.backup(obj)
+            self._backedUp.add(obj)
 
     @abstractmethod
     async def backup(self, obj: T) -> None:

@@ -53,6 +53,8 @@ class MessageBackup(Backup[Message]):
         if not isinstance(message.channel, (discord.abc.GuildChannel, discord.Thread)):
             return
 
+        log.debug('backing up message %s', message.content)
+
         entity: MessageEntity = await self.mapper.map(message)
         await self.message_repository.insert(entity)
 

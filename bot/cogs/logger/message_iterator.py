@@ -27,7 +27,11 @@ class MessageIterator:
         last_process = await self.logger_repository.find_last_process(self.channel.id)
         if last_process is None:
             if self.channel.created_at is None:
-                return (await self.channel.fetch_message(self.channel.id)).created_at
+                if self.channel.last_message_id is not None:
+                    oldest_message = await anext(self.channel.history(oldest_first=True, limit=1))
+                    return oldest_message.created_at
+                else:
+                    return (await self.channel.fetch_message(self.channel.id)).created_at.replace(tzinfo=None)
             else:
                 return self.channel.created_at
         elif last_process.finished_at is None:

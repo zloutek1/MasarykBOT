@@ -24,11 +24,15 @@ class ThreadMapper(Mapper[Thread, ThreadEntity]):
     async def map(self, obj: Thread) -> ThreadEntity:
         thread = obj
         archived_at = thread.archive_timestamp.replace(tzinfo=None) if thread.archived else None
-        created_at = (
-            thread.created_at.replace(tzinfo=None)
-            if thread.created_at else
-            (await thread.fetch_message(thread.id)).created_at.replace(tzinfo=None)
-        )
+
+        if thread.created_at:
+            created_at = thread.created_at.replace(tzinfo=None)
+        elif thread.last_message_id is not None:
+            oldest_message = await anext(thread.history(oldest_first=True, limit=1))
+            created_at = oldest_message.created_at
+        else:
+            created_at = (await thread.fetch_message(thread.id)).created_at.replace(tzinfo=None)
+
         return ThreadEntity(thread.parent_id, thread.id, thread.name, created_at, archived_at)
 
 

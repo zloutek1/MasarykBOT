@@ -11,7 +11,6 @@ from . import Backup
 log = logging.getLogger(__name__)
 
 
-
 class GuildBackup(Backup[Guild]):
     @inject.autoparams()
     def __init__(self, guild_repository: GuildRepository, mapper: GuildMapper) -> None:
@@ -19,16 +18,13 @@ class GuildBackup(Backup[Guild]):
         self.guild_repository = guild_repository
         self.mapper = mapper
 
-
     async def traverse_up(self, guild: Guild) -> None:
         await super().traverse_up(guild)
-
 
     async def backup(self, guild: Guild) -> None:
         log.debug('backing up guild %s', guild.name)
         entity: GuildEntity = await self.mapper.map(guild)
         await self.guild_repository.insert(entity)
-
 
     @inject.autoparams()
     async def traverse_down(
