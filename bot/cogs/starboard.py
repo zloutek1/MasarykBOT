@@ -286,6 +286,10 @@ class StarboardCog(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent) -> None:
         assert self.bot.user, "no user"
+
+        if CONFIG.bot.DEBUG:
+            return
+
         if payload.user_id == self.bot.user.id:
             self.bot_reactions_cache.append(payload.message_id)
 

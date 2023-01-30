@@ -5,6 +5,8 @@ from discord import (Message, RawReactionActionEvent, PartialEmoji, Embed, DMCha
 from discord.abc import Messageable, GuildChannel
 from discord.ext import commands
 
+from bot.constants import CONFIG
+
 DISCORD_ERROR_BADREQUEST = 50007
 
 
@@ -105,6 +107,9 @@ class BookmarkCog(commands.Cog):
             return await self.on_delete_reaction(payload)
 
     async def on_bookmark_reaction(self, payload: RawReactionActionEvent) -> None:
+        if CONFIG.bot.DEBUG:
+            return
+
         with suppress(discord.NotFound):
             message = await self.service.fetch_message(payload)
             user = await self.bot.fetch_user(payload.user_id)

@@ -46,6 +46,9 @@ class AutoThreadCog(commands.Cog):
     async def on_message(self, message: Message) -> None:
         assert message.guild, "can only be used in guilds"
 
+        if CONFIG.bot.DEBUG:
+            return
+
         if not self.service.is_threaded_channel(message.channel):
             return
 
