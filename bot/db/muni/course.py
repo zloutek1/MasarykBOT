@@ -64,12 +64,12 @@ class CourseRepository(Crud[CourseEntity]):
         return CourseEntity.convert(row) if row else None
 
     @inject_conn
-    async def find_all_courses(self, conn: DBConnection) -> Iterable[str]:
+    async def find_all_course_codes(self, conn: DBConnection) -> Iterable[str]:
         rows = await conn.fetch(f"""
             SELECT faculty||':'||code as result
             FROM muni.courses
         """)
-        return map(lambda row: cast(str, row['result']), rows)
+        return [cast(str, row['result']) for row in rows]
 
     @inject_conn
     async def find_courses(self, conn: DBConnection, data: List[str]) -> Iterable[CourseEntity]:

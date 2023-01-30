@@ -1,6 +1,6 @@
 zde si můžete "zapsat" (zobrazit) místnost na tomto discordu pro daný předmět
 
-:warning: tento bot nenxí nijak napojen na IS.MUNI
+:warning: tento bot není nijak napojen na IS.MUNI
 :warning: předmět si můžeš zapsat/zrušit každých 5 sekund
 :information_source: pomocí `!course join` lze zapsat až 10 předmetů najednou
 
@@ -18,6 +18,3 @@ např.
 !course search FI:IB00
 ```
 pro odregistrování všech předmětů lze použít `/course leave_all`
-
-Podporované fakulty:
-informatika (FI), filozofická (FF), sociálních studií (FSS), Sportovních studií (FSpS), Přírodovědecká (PřF), Právnická (PrF)

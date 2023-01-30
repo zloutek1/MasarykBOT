@@ -1,3 +1,4 @@
+import logging
 from enum import auto, Enum
 from typing import List, Dict, Iterable, Optional
 
@@ -8,10 +9,12 @@ from discord.utils import get
 
 from bot.constants import CONFIG
 from bot.utils import DiscordLimit
-from bot.db import CourseRepository, StudentRepository, CourseEntity, StudentEntity, UnitOfWork
+from bot.db import CourseRepository, StudentRepository, CourseEntity, StudentEntity, UnitOfWork, FacultyRepository, FacultyEntity
 from bot.utils import sanitize_channel_name
 from .registration_context import CourseRegistrationContext
 from .trie import Trie
+
+log = logging.getLogger(__name__)
 
 
 class Status(Enum):
@@ -23,22 +26,25 @@ class Status(Enum):
 class CourseService:
     category_trie = Trie()
 
-    @inject.autoparams('course_repository', 'student_repository', 'faculty_repository', 'uow')
+    @inject.autoparams('course_repository', 'student_repository', 'faculty_repository', 'faculty_repository', 'uow')
     def __init__(
         self,
         bot: commands.Bot,
         course_repository: CourseRepository,
         student_repository: StudentRepository,
+        faculty_repository: FacultyRepository,
         uow: UnitOfWork
     ) -> None:
         self.bot = bot
         self._course_repository = course_repository
         self._student_repository = student_repository
+        self._faculty_repository = faculty_repository
         self._uow = uow
 
     async def load_category_trie(self) -> None:
-        courses = await self._course_repository.find_all_courses()
+        courses = await self._course_repository.find_all_course_codes()
         self.category_trie.insert_all(courses)
+        log.info(f'loaded {len(courses)} courses')
 
     def load_course_registration_channels(self) -> Dict[int, discord.abc.Messageable]:
         result: Dict[int, discord.TextChannel | discord.Thread] = {}
@@ -116,6 +122,13 @@ class CourseService:
     async def find_students_courses(self, guild: discord.Guild, user: discord.Member) -> Iterable[CourseEntity]:
         course_codes = list(await self._student_repository.find_all_students_courses((guild.id, user.id)))
         return await self._course_repository.find_courses(course_codes)
+
+    async def find_all_faculties(self) -> Iterable[FacultyEntity]:
+        result = []
+        async with self._uow.transaction(readonly=True) as trans:
+            async for faculties in await self._faculty_repository.find_all(conn=trans.conn):
+                result.extend(faculties)
+        return result
 
     async def recover_database(self, guild: discord.Guild) -> int:
         recovered = 0

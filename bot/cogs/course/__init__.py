@@ -90,13 +90,17 @@ class CourseCog(commands.Cog):
                     await ctx.send_success(f"Registered course {course.faculty}:{course.code}")
                 case status.SHOWN:
                     await ctx.send_success(f"Shown course {course.faculty}:{course.code}")
+                case _:
+                    await ctx.send_error(f"Could not join course {course.faculty}:{course.code}")
 
     @course.command(aliases=['remove', 'hide'], description="Leave course channel or unregister")
     @in_registration_channel()
     async def leave(self, ctx: GuildContext, courses: commands.Greedy[Course]) -> None:
         if len(courses) > 10:
             raise commands.BadArgument(
-                'You can only leave 10 courses with one command, consider using `!course leave_all`')
+                'You can only leave 10 courses with one command, '
+                'consider using `!course leave_all`'
+            )
         for course in courses:
             await self._service.leave_course(ctx.guild, ctx.author, course)
             await ctx.send_success(f'Left course {course.faculty}:{course.code}')
@@ -132,7 +136,8 @@ class CourseCog(commands.Cog):
                 name=f"{subject.faculty}:{subject.code} {subject.name}"[:95],
                 value=f"{subject.faculty}:{subject.code}"
             )
-            for subject in await self._service.autocomplete(current)]
+            for subject in await self._service.autocomplete(current)
+        ]
 
     @course.command()
     @commands.has_permissions(administrator=True)
@@ -152,6 +157,11 @@ class CourseCog(commands.Cog):
             return
         with contextlib.suppress(discord.errors.NotFound):
             await message.delete(delay=5.2 if message.embeds else 0.2)
+
+    @course.command()
+    async def faculties(self, ctx: Context):
+        faculties = await self._service.find_all_faculties()
+        await ctx.reply('\n'.join(f"- `{faculty.code}` {faculty.name}" for faculty in faculties))
 
     @course.command()
     @commands.is_owner()
