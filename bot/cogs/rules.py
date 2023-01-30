@@ -1,5 +1,5 @@
 from textwrap import dedent
-from typing import Dict, Union
+from typing import Dict, Union, Tuple
 
 from discord import Color, Embed, Emoji, Member, TextChannel
 from discord.ext import commands
@@ -38,10 +38,7 @@ class RulesCog(commands.Cog):
         await ctx.send_help("rules")
 
     @rules.command(name="setup") # type: ignore[arg-type]
-    async def setup_rules(self,
-                          ctx: Context,
-                          channel_name: str = "pravidla"
-                          ) -> None:
+    async def setup_rules(self, ctx: Context, channel_name: str = "pravidla") -> None:
         rules_channel = await self._get_channel(ctx, channel_name)
         await self._set_permissions(ctx, rules_channel)
 
@@ -55,10 +52,10 @@ class RulesCog(commands.Cog):
                 i += 1
 
         if i == 0:
-            for i in list(embeds.keys())[:-1]:
+            for i in embeds[:-1]:
                 await rules_channel.send(embed=embeds[i])
 
-            msg_to_react_to = await rules_channel.send(embed=embeds[list(embeds.keys())[-1]])
+            msg_to_react_to = await rules_channel.send(embed=embeds[-1])
 
             verify_emoji = get(self.bot.emojis, name="Verification")
             if verify_emoji is None:
@@ -87,7 +84,7 @@ class RulesCog(commands.Cog):
                                       add_reactions=False, send_messages=False, read_messages=True)
 
     @staticmethod
-    async def _get_rules(ctx: Context) -> Dict[int, Embed]:
+    async def _get_rules(ctx: Context) -> Tuple[Embed, ...]:
         # noinspection PyUnusedLocal
         def role(name: str) -> str:
             obj = ctx.get_role(name)
@@ -97,79 +94,30 @@ class RulesCog(commands.Cog):
             obj = ctx.get_channel(name)
             return "#" + name if obj is None else obj.mention
 
-        embeds: Dict[int, Embed] = {
-            0: Embed(color=Color.blurple())
-        }
+        with open('bot/assets/rules.txt') as file:
+            rules = file.read()
+            sections = rules.split("\n\n")
 
-        embeds[0].set_image(
+        cover = Embed(color=Color.blurple())
+        cover.set_image(
             url="https://www.fi.muni.cz/files/news-img/2168-9l6ttGALboD3Vj-jcgWlcA.jpg"
         )
 
-        embeds[1] = Embed(
-            title="{fi_muni} Vítejte na discordu Fakulty Informatiky Masarykovy Univerzity v Brně".format(
-                fi_muni=ctx.get_emoji("fi_logo")
-            ),
-            description="⁣",
-            color=Color.blurple())
+        rule_embed = Embed(
+            title=sections[0].format(fi_logo=ctx.get_emoji("fi_logo")),
+            color=Color.blurple()
+        )
 
-        embeds[1].add_field(
-            inline=False,
-            name="**__Na úvod__**",
-            value="• Před vstupem na náš server se prosím seznamte s pravidly, která budete muset dodržovat při "
-                  "interakci s ostatními uživateli a boty. Prosím berte na vědomí, že tyto pravidla nepokrývají vše "
-                  "za co můžete být potrestáni.")
+        for section in sections[1:]:
+            name, value = section.split('\n', 1)
+            rule_embed.add_field(inline=False, name="\n\u200b\n" + name, value=value.format(
+                shitposting=channel("shitposting"),
+                off_topic=channel("off-topic"),
+                vyber_roli=channel("výběr-rolí"),
+                vvber_predmetu=channel("výběr-předmětů"),
+            ))
 
-        embeds[1].add_field(
-            inline=False,
-            name="​\n**__Pravidla__**",
-            value=dedent(f"""
-                **#1** - Neurážejte se, neznevažujte ostatní, nenadávejte.
-                **#2** - Poznejte, kdy je něco debata a kdy to je už hádka.
-                **#3** - Držte volnou komunikaci v {channel("shitposting")} roomce.
-                **#4** - Nezatěžujte a neubližujte botům, i oni mají duši.
-                **#5** - Používejte channely pro jejich daný účel.
-                **#6** - Dodržujte [Discord's Terms of Service](https://discordapp.com/terms) a [Discord guidlines](https://discordapp.com/guidelines).
-                **#7** - Nementionujte zbytečně role. Obzvlášť @everyone a @here. (To platí i pro adminy)
-                **#8** - Chovejte se stejně, jak chcete, aby se ostatní chovali k vám."""))
-
-        embeds[1].add_field(
-            inline=False,
-            name="​\n**Disclaimer**",
-            value=dedent("""
-                Tento server není nijak spřízněn s FI jako takovou, je to čistě studentská iniciativa bez oficiálního dohledu.
-                To ovšem neznamená, že tu nejsou zaměstnanci FI - právě naopak. Z toho důvodu **důrazně doporučujeme veřejně nesdílet** příspěvky, které
-                porušují školní řád, např. screeny vyplněných odpovědníků, zadání písemek atd. Pokud už se rozhodnete tak učinit, tak zodpovědnost
-                nesete **sami**. Tento bot zálohuje aktivitu na tomto serveru pro analytické účely."""))
-
-        embeds[1].add_field(
-            inline=False,
-            name="​\n**__Speciální místnosti__**",
-            value=dedent(f"""
-                Odemkni si tématické místnosti ve {channel("výběr-rolí")} a
-                odemkni si předmětové místnosti ve {channel("výběr-předmětů")}."""))
-
-        embeds[1].add_field(
-            inline=False,
-            name="​\n**__Užitečné linky__**",
-            value=dedent("""
-                ❯ [IS MUNI](https://is.muni.cz/auth)
-                ❯ [ISKAM koleje]( https://iskam.skm.muni.cz/PrehledUbytovani)
-                ❯ [SUPO účet (banka)](https://inet.muni.cz/app/supo/vypis)
-                ❯ [katalog předmětů od 2018/2019](https://www.fi.muni.cz/catalogue2018/index.html.cs)
-                ❯ [katalog předmětů od 2019/2020](https://www.fi.muni.cz/catalogue2019/)
-                ❯ [harmonogram fakult](https://is.muni.cz/predmety/obdobi)
-                ❯ [fi.muny.cz](http://fi.muny.cz/)
-                ❯ [statistika studia](https://is.muni.cz/studium/statistika)
-                ❯ [statistika kreditů](https://is.muni.cz/auth/ucitel/statistika_kreditu)
-                ❯ [statistika bodů](https://is.muni.cz/auth/student/poznamkove_bloky_statistika)
-                ❯ [záznamy přednášek](http://www.video.muni.cz)"""))
-
-        embeds[1].add_field(
-            inline=False,
-            name="​\n**Ready?**",
-            value="• Připraveni vstoupit?")
-
-        return embeds
+        return cover, rule_embed
 
 
 async def setup(bot: commands.Bot) -> None:

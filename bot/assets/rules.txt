@@ -1,0 +1,40 @@
+{fi_logo} Vítejte na discordu Fakulty Informatiky Masarykovy Univerzity v Brně
+
+**__Na úvod__**
+• Před vstupem na náš server se prosím seznamte s pravidly, která budete muset dodržovat při interakci s ostatními uživateli a boty. Prosím berte na vědomí, že tyto pravidla nepokrývají vše za co můžete být potrestáni.
+​
+**__Pravidla__**
+#1 - Neurážejte se, neznevažujte ostatní, nenadávejte.
+#2 - Poznejte, kdy je něco debata a kdy to je už hádka.
+#3 - Držte volnou komunikaci v {shitposting} a {off_topic}.
+#4 - Nezatěžujte a neubližujte botům, i oni mají duši.
+#5 - Používejte channely pro jejich daný účel.
+#6 - Dodržujte Discord's Terms of Service a Discord guidlines.
+#7 - Nementionujte zbytečně role. Obzvlášť @everyone a @here. (To platí i pro adminy)
+#8 - Chovejte se stejně, jak chcete, aby se ostatní chovali k vám.
+
+**Disclaimer**
+Tento server není nijak spřízněn s FI jako takovou, je to čistě studentská iniciativa bez oficiálního dohledu.
+To ovšem neznamená, že tu nejsou zaměstnanci FI - právě naopak. Z toho důvodu důrazně doporučujeme veřejně nesdílet příspěvky, které
+porušují školní řád, např. screeny vyplněných odpovědníků, zadání písemek atd. Pokud už se rozhodnete tak učinit, tak zodpovědnost
+nesete sami. Tento bot zároveň zálohuje aktivitu na tomto serveri pre analytické účeli.
+
+**__Speciální místnosti__**
+Odemkni si tématické místnosti ve {vyber_roli} a
+odemkni si předmětové místnosti ve {vvber_predmetu}.
+
+**Užitečné linky**
+❯ [IS MUNI](https://is.muni.cz/auth)
+❯ [ISKAM koleje]( https://iskam.skm.muni.cz/PrehledUbytovani)
+❯ [SUPO účet (banka)](https://inet.muni.cz/app/supo/vypis)
+❯ [katalog předmětů od 2018/2019](https://www.fi.muni.cz/catalogue2018/index.html.cs)
+❯ [katalog předmětů od 2019/2020](https://www.fi.muni.cz/catalogue2019/)
+❯ [harmonogram fakult](https://is.muni.cz/predmety/obdobi)
+❯ [fi.muny.cz](http://fi.muny.cz/)
+❯ [statistika studia](https://is.muni.cz/studium/statistika)
+❯ [statistika kreditů](https://is.muni.cz/auth/ucitel/statistika_kreditu)
+❯ [statistika bodů](https://is.muni.cz/auth/student/poznamkove_bloky_statistika)
+❯ [záznamy přednášek](http://www.video.muni.cz)
+
+**Ready?**
+• Připraveni vstoupit?
