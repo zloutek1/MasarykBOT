@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   database:
-    container_name: db
+    container_name: bot.db
     image: postgres:13
     ports:
       - "5432:5432"
@@ -17,7 +17,7 @@ services:
     restart: unless-stopped
 
   bot:
-    container_name: bot
+    container_name: bot.bot
     build:
       context: .
       dockerfile: Dockerfile.bot
@@ -30,7 +30,7 @@ services:
     restart: unless-stopped
 
   tests:
-    container_name: tests
+    container_name: bot.tests
     build:
       context: .
       dockerfile: tests/Dockerfile.test
@@ -40,7 +40,7 @@ services:
       - test
 
   database_backup:
-    container_name: db_backup
+    container_name: bot.db_backup
     image: prodrigestivill/postgres-backup-local
     volumes:
       - ./database/backup:/backups
