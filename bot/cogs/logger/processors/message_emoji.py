@@ -1,3 +1,5 @@
+import logging
+
 import discord
 import inject
 from discord.ext import commands
@@ -5,6 +7,8 @@ from discord.ext import commands
 from bot.cogs.logger.processors._base import Backup
 from bot.db.discord import MessageEmojiEntity, MessageEmojiMapper, MessageEmojiRepository
 from bot.utils import MessageEmote, AnyEmote
+
+log = logging.getLogger(__name__)
 
 
 class MessageEmojiBackup(Backup[MessageEmote]):
@@ -22,11 +26,13 @@ class MessageEmojiBackup(Backup[MessageEmote]):
         message_backup: Backup[discord.Message],
         emoji_backup: Backup[AnyEmote]
     ) -> None:
-        await message_backup.backup(message_emoji.message)
-        await emoji_backup.backup(message_emoji.emoji)
+        await message_backup.traverse_up(message_emoji.message)
+        await emoji_backup.traverse_up(message_emoji.emoji)
         await super().traverse_up(message_emoji)
 
     async def backup(self, emoji: MessageEmote) -> None:
+        log.debug("Backung up message_emoji %s", emoji.emoji)
+
         entity: MessageEmojiEntity = await self.mapper.map(emoji)
         await self.repository.insert(entity)
 

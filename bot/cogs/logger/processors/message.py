@@ -59,7 +59,6 @@ class MessageBackup(Backup[Message]):
         await self.message_repository.insert(entity)
 
         self.bot.dispatch("message_backup", message)
-        await self._prevent_rate_limit()
 
     @inject.autoparams()
     async def traverse_down(
@@ -82,10 +81,3 @@ class MessageBackup(Backup[Message]):
 
         for emoji in await self.emoji_mapper.map_emojis(self.bot, message):
             await message_emoji_backup.traverse_down(emoji)
-
-    async def _prevent_rate_limit(self) -> None:
-        self.rate_limiter += 1
-        if self.rate_limiter > 8_000:
-            log.info('sleeping for 8 minutes to reduce rate limit')
-            await asyncio.sleep(60 * 8)
-            self.rate_limiter = 0

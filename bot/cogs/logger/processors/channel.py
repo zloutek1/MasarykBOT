@@ -60,5 +60,6 @@ class ChannelBackup(Backup[GuildChannel]):
             async for thread in channel.archived_threads(limit=None):
                 await thread_backup.traverse_down(thread)
 
-        async for message in await MessageIterator(channel).history():
-            await message_backup.traverse_down(message)
+        if isinstance(channel, discord.TextChannel):
+            async for message in await MessageIterator(channel).history():
+                await message_backup.traverse_down(message)

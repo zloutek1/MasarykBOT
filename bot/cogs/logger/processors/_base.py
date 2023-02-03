@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Generic, TypeVar
+from collections import deque
 
 T = TypeVar('T')
 R = TypeVar('R')
@@ -7,13 +8,13 @@ R = TypeVar('R')
 
 class Backup(ABC, Generic[T]):
     def __init__(self) -> None:
-        self._backedUp: set[T] = set()
+        self._backedUp: deque[T] = deque(maxlen=200)
 
     @abstractmethod
     async def traverse_up(self, obj: T) -> None:
         if obj not in self._backedUp:
+            self._backedUp.append(obj)
             await self.backup(obj)
-            self._backedUp.add(obj)
 
     @abstractmethod
     async def backup(self, obj: T) -> None:

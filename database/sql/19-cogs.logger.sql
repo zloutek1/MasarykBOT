@@ -6,7 +6,7 @@ CREATE TABLE cogs.logger
 (
     channel_id bigint NOT NULL,
     from_date timestamp with time zone NOT NULL,
-    to_date timestamp with time zone NOT NULL,
+    to_date timestamp with time zone,
     finished_at timestamp with time zone
 )
 

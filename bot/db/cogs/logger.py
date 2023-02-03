@@ -15,34 +15,30 @@ class LoggerEntity(Entity):
 
     channel_id: Id
     from_date: datetime
-    to_date: datetime
+    to_date: Optional[datetime] = None
     finished_at: Optional[datetime] = None
-
 
 
 class LoggerRepository(Table[LoggerEntity]):
     def __init__(self) -> None:
         super().__init__(entity=LoggerEntity)
 
-
     @inject_conn
-    async def begin_process(self, conn: DBConnection, data: Tuple[Id, datetime, datetime]) -> None:
-        channel_id, from_date, to_date = data
+    async def begin_process(self, conn: DBConnection, data: Tuple[Id, datetime]) -> None:
+        channel_id, from_date = data
         await conn.execute(f"""
-            INSERT INTO cogs.logger VALUES ($1, $2, $3, NULL)
+            INSERT INTO cogs.logger VALUES ($1, $2, NULL, NULL)
             ON CONFLICT (channel_id, from_date) DO NOTHING
-        """, channel_id, from_date, to_date)
-
+        """, channel_id, from_date)
 
     @inject_conn
     async def end_process(self, conn: DBConnection, data: Tuple[Id, datetime, datetime]) -> None:
         channel_id, from_date, to_date = data
         await conn.execute(f"""
             UPDATE cogs.logger
-            SET finished_at=NOW()
-            WHERE channel_id=$1 AND from_date=$2 AND to_date=$3
+            SET to_date=$3, finished_at=NOW()
+            WHERE channel_id=$1 AND from_date=$2
         """, channel_id, from_date, to_date)
-
 
     @inject_conn
     async def insert_process(self, conn: DBConnection, data: Tuple[Id, datetime, datetime]) -> None:
@@ -51,7 +47,6 @@ class LoggerRepository(Table[LoggerEntity]):
                INSERT INTO cogs.logger VALUES ($1, $2, $3, NOW())
                ON CONFLICT (channel_id, from_date) DO NOTHING
            """, channel_id, from_date, to_date)
-
 
     @inject_conn
     async def find_last_process(self, conn: DBConnection, channel_id: Id) -> Optional[LoggerEntity]:
@@ -63,9 +58,7 @@ class LoggerRepository(Table[LoggerEntity]):
         """, channel_id)
         return LoggerEntity.convert(row) if row else None
 
-
     UpdatableProcesses = NamedTuple('UpdatableProcesses', [('channel_id', Id), ('to_date', datetime)])
-
 
     @inject_conn
     async def find_updatable_processes(self, conn: DBConnection) -> List["LoggerRepository.UpdatableProcesses"]:
