@@ -13,6 +13,7 @@ from bot.bot import MasarykBOT
 from bot.cogs import setup_injections as setup_cog_injections
 from bot.db import connect_db, Pool, setup_injections as setup_db_injections
 from bot.utils import setup_logging, DatabaseRequiredException
+from bot.constants import CONFIG
 
 # TODO: implement Seasonal
 # TODO: implement LaTeX
@@ -49,7 +50,7 @@ intents = discord.Intents(
 )
 
 bot = MasarykBOT(
-    command_prefix=commands.when_mentioned_or("!"),
+    command_prefix=commands.when_mentioned_or(CONFIG.bot.prefix),
     intents=intents,
     allowed_mentions=discord.AllowedMentions(
         roles=False,

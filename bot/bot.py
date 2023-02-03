@@ -16,7 +16,7 @@ log = logging.getLogger(__name__)
 class MasarykBOT(commands.Bot):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
-        self.activity = self.activity or Activity(type=ActivityType.listening, name="!help")
+        self.activity = self.activity or Activity(type=ActivityType.listening, name=CONFIG.bot.prefix + "help")
 
     async def on_ready(self) -> None:
         log.info("Bot is now all ready to go")
