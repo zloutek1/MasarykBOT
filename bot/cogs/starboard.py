@@ -250,10 +250,10 @@ class StarboardEmbed(discord.Embed):
 
         assert isinstance(message.channel, (discord.TextChannel, discord.Thread))
         reactions = self._format_reactions(message)
-        replies_str = '\n'.join(replies)
 
+        content = '\n'.join(replies + [message.content])
         self.description = (
-            f"{replies_str}{message.content}\n{reactions}\n" +
+            f"{content}\n{reactions}\n" +
             f"[Jump to original!]({message.jump_url}) in {message.channel.mention}"
         )
 
