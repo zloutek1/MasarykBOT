@@ -49,6 +49,8 @@ class HistoryIterator(AsyncIterator[MessageIterator]):
             log.info(f"Channel {process.channel_id} not longer exists, marking as deleted")
             await self.mark_channel_as_deleted(process.channel_id)
             return None
+        except discord.Forbidden:
+            return None
 
     async def mark_channel_as_deleted(self, channel_id: int) -> None:
         await self._channel_repository.soft_delete([(channel_id,)])

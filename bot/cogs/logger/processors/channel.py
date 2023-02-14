@@ -54,12 +54,16 @@ class ChannelBackup(Backup[GuildChannel]):
 
         await super().traverse_down(channel)
 
-        if isinstance(channel, (discord.TextChannel, discord.ForumChannel)):
-            for thread in channel.threads:
-                await thread_backup.traverse_down(thread)
-            async for thread in channel.archived_threads(limit=None):
-                await thread_backup.traverse_down(thread)
+        try:
+            if isinstance(channel, (discord.TextChannel, discord.ForumChannel)):
+                for thread in channel.threads:
+                    await thread_backup.traverse_down(thread)
 
-        if isinstance(channel, discord.TextChannel):
-            async for message in await MessageIterator(channel).history():
-                await message_backup.traverse_down(message)
+                async for thread in channel.archived_threads(limit=None):
+                    await thread_backup.traverse_down(thread)
+
+            if isinstance(channel, discord.TextChannel):
+                async for message in await MessageIterator(channel).history():
+                    await message_backup.traverse_down(message)
+        except Exception as ex:
+            log.error("Could not traverse_down channel %s, got %s", channel.name, ex)

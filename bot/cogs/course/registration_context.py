@@ -1,3 +1,4 @@
+import logging
 from typing import Optional, Dict
 
 import discord
@@ -10,6 +11,10 @@ from bot.utils import sanitize_channel_name, DiscordLimit
 from bot.constants import CONFIG
 from bot.db import StudentRepository
 from bot.db.muni.course import CourseEntity
+from bot.cogs.logger.processors import ChannelBackup, CategoryBackup
+
+
+log = logging.getLogger(__name__)
 
 
 class CourseRegistrationContext:
@@ -57,11 +62,14 @@ class CourseRegistrationContext:
     async def show_course_channel(self, channel: discord.TextChannel) -> None:
         if role := get(channel.guild.roles, name=f"📖{self.course.code}"):
             await self.user.add_roles(role)
+            log.info(f"Adding role {role} to {self.user}")
         elif len(channel.overwrites) < DiscordLimit.MAX_CHANNEL_OVERWRITES / 100 * 99:
             await channel.set_permissions(self.user, overwrite=discord.PermissionOverwrite(read_messages=True))
+            log.info(f"Adding read_messages overwrite to {self.user}")
         else:
             role = await self.guild.create_role(name=f"📖{self.course.code}")
             await channel.set_permissions(role, overwrite=discord.PermissionOverwrite(read_messages=True))
+            log.info(f"Adding course role overwrite to {self.user}")
             await self.user.add_roles(role)
 
     async def hide_course_channel(self, channel: discord.TextChannel) -> None:
@@ -70,13 +78,16 @@ class CourseRegistrationContext:
         else:
             await channel.set_permissions(self.user, overwrite=None)
 
-    async def create_course_channel(self, category: discord.CategoryChannel) -> discord.TextChannel:
-        return await self.guild.create_text_channel(
+    @inject.autoparams('channel_backup')
+    async def create_course_channel(self, category: discord.CategoryChannel, channel_backup: ChannelBackup) -> discord.TextChannel:
+        channel = await self.guild.create_text_channel(
             name=self.course_channel_name,
             category=category,
             overwrites=self._get_overwrites_for_new_channel(),
             topic=f"Místnost pro předmět {self.course.name}"
         )
+        await channel_backup.backup(channel)
+        return channel
 
     def _get_overwrites_for_new_channel(self) -> Dict[discord.Member | discord.Role, discord.PermissionOverwrite]:
         overwrites: Dict[discord.Member | discord.Role, discord.PermissionOverwrite] = {
@@ -96,10 +107,12 @@ class CourseRegistrationContext:
 
         return overwrites
 
+    @inject.autoparams('category_backup')
     async def create_or_get_course_category(
         self,
         category_trie: Trie,
-        category_max_channel_limit: int
+        category_max_channel_limit: int,
+        category_backup: CategoryBackup
     ) -> discord.CategoryChannel:
         course_code = f"{self.course.faculty}:{self.course.code}"
         if not (category_name := category_trie.find_prefix_for(course_code, category_max_channel_limit)):
@@ -107,4 +120,6 @@ class CourseRegistrationContext:
 
         if category := get(self.guild.categories, name=category_name):
             return category
-        return await self.guild.create_category(category_name)
+        category = await self.guild.create_category(category_name)
+        await category_backup.backup(category)
+        return category
