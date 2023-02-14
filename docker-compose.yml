@@ -4,8 +4,8 @@ services:
   database:
     container_name: bot.db
     image: postgres:13
-    ports:
-      - "5432:5432"
+    #ports:
+    #  - "5432:5432"
     environment:
       - POSTGRES_USER=masaryk
       - POSTGRES_PASSWORD=localdbpassword
