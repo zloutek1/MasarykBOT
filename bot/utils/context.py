@@ -18,6 +18,8 @@ from discord.utils import get
 if TYPE_CHECKING:
     from bot.bot import MasarykBOT
 
+DISCORD_UNKNOWN_INTERACTION_ERROR = 10062
+
 
 class Context(commands.Context["MasarykBOT"]):
     """
@@ -90,7 +92,7 @@ class Context(commands.Context["MasarykBOT"]):
         escape_mentions: bool = True, **kwargs: Any
     ) -> discord.Message:
         if not content:
-            return await super().send(*args, **kwargs)
+            return await self._send(*args, **kwargs)
 
         if escape_mentions:
             content = discord.utils.escape_mentions(content)
@@ -99,9 +101,17 @@ class Context(commands.Context["MasarykBOT"]):
             fp = io.BytesIO(content.encode())
             kwargs.pop('file', None)
             file = discord.File(fp, filename='message_too_long.txt')
-            return await super().send(file=file, *args, **kwargs)
+            return await self._send(file=file, *args, **kwargs)
 
-        return await super().send(content, *args, **kwargs)
+        return await self._send(content, *args, **kwargs)
+
+    async def _send(self, *args: Any, **kwargs: Any) -> discord.Message:
+        try:
+            return await super().send(*args, **kwargs)
+        except discord.NotFound as ex:
+            if ex.code == DISCORD_UNKNOWN_INTERACTION_ERROR:
+                return await self.channel.send(*args, **kwargs)
+            raise ex
 
     async def _safe_reply(
         self,
@@ -109,7 +119,7 @@ class Context(commands.Context["MasarykBOT"]):
         escape_mentions: bool = True, **kwargs: Any
     ) -> discord.Message:
         if not content:
-            return await super().reply(*args, **kwargs)
+            return await self._reply(*args, **kwargs)
 
         if escape_mentions:
             content = discord.utils.escape_mentions(content)
@@ -118,9 +128,17 @@ class Context(commands.Context["MasarykBOT"]):
             fp = io.BytesIO(content.encode())
             kwargs.pop('file', None)
             file = discord.File(fp, filename='message_too_long.txt')
-            return await super().reply(file=file, *args, **kwargs)
+            return await self._reply(file=file, *args, **kwargs)
 
-        return await super().reply(content, **kwargs)
+        return await self._reply(content, **kwargs)
+
+    async def _reply(self, *args: Any, **kwargs: Any) -> discord.Message:
+        try:
+            return await super().reply(*args, **kwargs)
+        except discord.NotFound as ex:
+            if ex.code == DISCORD_UNKNOWN_INTERACTION_ERROR:
+                return await self.channel.reply(*args, **kwargs)
+            raise ex
 
     async def send_embed(
         self,
