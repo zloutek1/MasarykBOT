@@ -262,6 +262,26 @@ class StarboardEmbed(discord.Embed):
         else:
             self.set_author(name=message.author.display_name, icon_url=message.author.default_avatar.url)
 
+        if message.embeds:
+            data = message.embeds[0]
+            assert isinstance(data.url, str)
+            if data.type == 'image' and not self.is_url_spoiler(message.content, data.url):
+                self.set_image(url=data.url)
+
+        if message.attachments:
+            file = message.attachments[0]
+            spoiler = file.is_spoiler()
+            if not spoiler and file.url.lower().endswith(('png', 'jpeg', 'jpg', 'gif', 'webp')):
+                self.set_image(url=file.url)
+            elif spoiler:
+                self.add_field(name='Attachment',
+                                value=f'||[{file.filename}]({file.url})||',
+                                inline=False)
+            else:
+                self.add_field(name='Attachment',
+                                value=f'[{file.filename}]({file.url})',
+                                inline=False)
+
     def _format_reactions(self, message: discord.Message) -> str:
         return " ".join(
             self._format_reaction(reaction)
@@ -274,6 +294,14 @@ class StarboardEmbed(discord.Embed):
             return f"{reaction} {reaction.count}"
         return f"<:{reaction.emoji.name}:{reaction.emoji.id}> {reaction.count}"
 
+    @staticmethod
+    def is_url_spoiler(text: str, url: str) -> bool:
+        spoiler_regex = re.compile(r'\|\|(.+?)\|\|')
+        spoilers = spoiler_regex.findall(text)
+        for spoiler in spoilers:
+            if url in spoiler:
+                return True
+            return False
 
 class StarboardCog(commands.Cog):
     starred_messages: Dict[Id, deque[Id]] = {}
