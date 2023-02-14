@@ -65,17 +65,18 @@ def setup_injections(binder: inject.Binder) -> None:
 
 
 async def connect_db(url: Url) -> Optional[Pool]:
-    try:
-        pool: Pool | None = None
-        attempts = 0
-        while pool is None:
+    pool: Pool | None = None
+    attempts = 0
+    while pool is None:
+        try:
             pool = await asyncpg.create_pool(url, command_timeout=1280)
-            await asyncio.sleep(1)
+        except (socket.gaierror, OSError) as ex:
+            log.error("Failed to connect to database: %s", ex)
+            return None
 
-            attempts += 1
-            if attempts > 1_000:
-                raise TimeoutError("tried to connect over 1000 times")
-        return pool
-    except (socket.gaierror, OSError) as ex:
-        log.error("Failed to connect to database: %s", ex)
-        return None
+        await asyncio.sleep(1)
+
+        attempts += 1
+        if attempts > 1_000:
+            raise TimeoutError("tried to connect over 1000 times")
+    return pool
