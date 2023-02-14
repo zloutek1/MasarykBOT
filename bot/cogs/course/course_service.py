@@ -133,16 +133,22 @@ class CourseService:
     async def recover_database(self, guild: discord.Guild) -> int:
         recovered = 0
         async with self._uow.transaction() as trans:
-            async for courses in await self._course_repository.find_all(conn=trans.conn):
-                for course in courses:
-                    if not (channel := await self._find_course_channel(guild, course)):
-                        continue
-                    for target in channel.overwrites.keys():
-                        if isinstance(target, discord.Member):
-                            student = StudentEntity(course.faculty, course.code, guild.id, target.id)
-                            await self._student_repository.insert(student, conn=trans.conn)
-                    recovered += 1
-            return recovered
+            for channel in guild.text_channels:
+                if not (course := await self._find_course_from_channel(channel)):
+                    continue
+
+                log.info("database recovery for subject %s started (%s)", channel, guild)
+
+                shown_to = [key.id
+                            for (key, value) in channel.overwrites.items()
+                            if value.read_messages and isinstance(key, discord.Member)]
+
+                for member_id in shown_to:
+                    student = StudentEntity(course.faculty, course.code, guild.id, member_id)
+                    await self._student_repository.insert(student, conn=trans.conn)
+
+                recovered += 1
+        return recovered
 
     @staticmethod
     async def _find_course_channel(guild: discord.Guild, course: CourseEntity) -> Optional[discord.TextChannel]:
@@ -152,3 +158,12 @@ class CourseService:
             sanitize_channel_name(f"{course.faculty}:{course.code} {course.name}")
         )
         return get(guild.text_channels, name=course_channel_name)
+
+    async def _find_course_from_channel(self, channel: discord.TextChannel) -> Optional[CourseEntity]:
+        if "-" not in channel.name:
+            return None
+
+        pattern = channel.name.split("-")[0]
+        faculty, code = pattern.split("꞉") if "꞉" in pattern else ["fi", pattern]
+
+        return await self._course_repository.find_by_code(faculty, code)
