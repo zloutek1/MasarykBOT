@@ -23,7 +23,6 @@ class FacultyRepository(Crud[FacultyEntity]):
 
     @inject_conn
     async def insert(self, conn: DBConnection, data: FacultyEntity) -> None:
-        print(data)
         await conn.execute("""
             INSERT INTO muni.faculties (id, code, name)
             VALUES ($1, $2, $3)
