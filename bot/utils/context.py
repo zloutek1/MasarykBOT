@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime
 import io
+from os.path import basename
 from contextlib import suppress
 from typing import Any, Optional, Union
 from dateutil import tz
@@ -165,7 +166,16 @@ class Context(commands.Context["MasarykBOT"]):
 
     async def send_asset(self, url: str) -> discord.Message:
         image = io.BytesIO(requests.get(url).content)
-        return await self.send(file=discord.File(image))
+        return await self.send(file=discord.File(image, filename=self._get_filename(url)))
+
+    @staticmethod
+    def _get_filename(url: str) -> str:
+        fragment_removed = url.split("#")[0]  # keep to left of first #
+        query_string_removed = fragment_removed.split("?")[0]
+        scheme_removed = query_string_removed.split("://")[-1].split(":")[-1]
+        if scheme_removed.find("/") == -1:
+            return ""
+        return basename(scheme_removed)
 
     async def _wait_for_reaction_or_clear(self, message: discord.Message) -> None:
         def react_check(reaction: discord.Reaction, user: discord.Member) -> bool:

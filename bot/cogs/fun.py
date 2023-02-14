@@ -135,14 +135,13 @@ class FunCog(commands.Cog):
 
     @commands.command(aliases=['emote'])
     async def emoji(self, ctx: Context, emoji: discord.PartialEmoji) -> None:
-        fp = io.BytesIO(requests.get(emoji.url).content)
-        await ctx.send(file=discord.File(fp))
+        await ctx.send_asset(emoji.url)
 
     @commands.command()
     @commands.guild_only()
     async def icon_url(self, ctx: GuildContext, fmt: Optional[IMG_EXTENSIONS] = None) -> None:
         url = self.service.get_guild_icon_url(ctx.guild, fmt)
-        await ctx.send(url or "no icon")
+        await ctx.send(f"`{url or 'no icon'}`")
 
     @commands.command(aliases=['icon'])
     @commands.guild_only()
@@ -156,7 +155,7 @@ class FunCog(commands.Cog):
     @commands.guild_only()
     async def banner_url(self, ctx: GuildContext, fmt: Optional[IMG_EXTENSIONS] = None) -> None:
         url = self.service.get_guild_banner_url(ctx.guild, fmt)
-        await ctx.send(url or "no banner")
+        await ctx.send(f"`{url or 'no banner'}`")
 
     @commands.command()
     @commands.guild_only()
@@ -169,7 +168,7 @@ class FunCog(commands.Cog):
     @commands.command()
     async def avatar_url(self, ctx: Context, fmt: Optional[IMG_EXTENSIONS] = None) -> None:
         url = self.service.get_user_avatar_url(ctx.author, fmt)
-        await ctx.send(url or ctx.author.default_avatar.url)
+        await ctx.send(f"`{url or ctx.author.default_avatar.url}`")
 
     @commands.command()
     async def avatar(self, ctx: Context, member: Optional[discord.User | discord.Member] = None) -> None:
