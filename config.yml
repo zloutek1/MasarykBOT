@@ -35,10 +35,15 @@ guilds:
                 - 504953215385600011
                 - 609086101511995422
                 penalised:
-                - 5041 9443 0560 1085 55    
+                - memes
             emojis: !starem
                 ignored: []
-                penalised: []
+                penalised:
+                - kek
+                - pepe
+                - pog
+                - peepo
+                - cringe
 
     cogs: !cogs
         markov: !markov
