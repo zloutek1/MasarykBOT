@@ -67,18 +67,18 @@ class StarboardService:
         processor = StarboardProcessingService(ctx)
         return await processor()
 
-    async def get_reply_thread(self, message: discord.Message, depth: int = 15) -> List[str]:
+    async def get_reply_thread(self, message: discord.Message, depth: int = 16) -> List[str]:
         reply_emoji = get(self.bot.emojis, name="reply")
 
         if not message.reference or not message.reference.message_id:
-            return []
+            return [message.content]
         if depth <= 0:
             return [f"{reply_emoji} [truncated]"]
 
         reply = await message.channel.fetch_message(message.reference.message_id)
         replies = await self.get_reply_thread(reply, depth - 1)
 
-        replies.append(f"{reply_emoji} {reply.content}" if replies else reply.content)
+        replies.append(f"{reply_emoji} {message.content}" if replies else message.content)
         return replies
 
 
@@ -249,9 +249,9 @@ class StarboardEmbed(discord.Embed):
         super().__init__(color=0xFFDF00)
 
         assert isinstance(message.channel, (discord.TextChannel, discord.Thread))
+        content = '\n'.join(replies)
         reactions = self._format_reactions(message)
 
-        content = '\n'.join(replies + [message.content])
         self.description = (
             f"{content}\n{reactions}\n" +
             f"[Jump to original!]({message.jump_url}) in {message.channel.mention}"
@@ -275,12 +275,12 @@ class StarboardEmbed(discord.Embed):
                 self.set_image(url=file.url)
             elif spoiler:
                 self.add_field(name='Attachment',
-                                value=f'||[{file.filename}]({file.url})||',
-                                inline=False)
+                               value=f'||[{file.filename}]({file.url})||',
+                               inline=False)
             else:
                 self.add_field(name='Attachment',
-                                value=f'[{file.filename}]({file.url})',
-                                inline=False)
+                               value=f'[{file.filename}]({file.url})',
+                               inline=False)
 
     def _format_reactions(self, message: discord.Message) -> str:
         return " ".join(
@@ -302,6 +302,7 @@ class StarboardEmbed(discord.Embed):
             if url in spoiler:
                 return True
             return False
+
 
 class StarboardCog(commands.Cog):
     starred_messages: Dict[Id, deque[Id]] = {}
