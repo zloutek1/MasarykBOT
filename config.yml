@@ -24,9 +24,9 @@ guilds:
         - 988839106656215041
         starboard: !starboard
             REACT_LIMIT: 10
-            starboard: 761552082159271936
-            best_of_memes: 836224046030520410
+            starboard: 1041587227748212776
             best_of_masaryk: 930957842356244530
+            best_of_memes: 836224046030520410
             channels: !starch
                 ignored:
                 - 988839106656215041
@@ -34,7 +34,8 @@ guilds:
                 - 621718588478324736
                 - 504953215385600011
                 - 609086101511995422
-                penalised: []
+                penalised:
+                - 5041 9443 0560 1085 55    
             emojis: !starem
                 ignored: []
                 penalised: []
