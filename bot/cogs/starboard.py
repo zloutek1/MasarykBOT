@@ -2,6 +2,7 @@ from __future__ import annotations
 import logging
 import math
 import re
+from datetime import timedelta, timezone
 from collections import deque
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, cast
 from dataclasses import dataclass
@@ -281,6 +282,9 @@ class StarboardEmbed(discord.Embed):
                 self.add_field(name='Attachment',
                                value=f'[{file.filename}]({file.url})',
                                inline=False)
+
+        cest = timezone(offset=timedelta(hours=+1))
+        self.set_footer(text=message.created_at.astimezone(cest).strftime("%d.%m.%Y %H:%M"))
 
     def _format_reactions(self, message: discord.Message) -> str:
         return " ".join(
