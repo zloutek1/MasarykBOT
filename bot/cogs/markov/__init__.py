@@ -29,7 +29,15 @@ class MarkovCog(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     @commands.guild_only()
-    async def markov(self, ctx: GuildContext, *start_of_message: str) -> None:
+    async def markov(self, ctx: GuildContext) -> None:
+        async with ctx.typing(ephemeral=True):
+            message = await self.generation_service.generate(ctx.guild.id, limit=1048)
+            await ctx.reply(message or "no response")
+        log.debug("generated markov message %s", message or "no response")
+
+    @markov.command(name='continue')
+    @commands.guild_only()
+    async def markov_continue(self, ctx: GuildContext, *start_of_message: str) -> None:
         start = ' '.join(start_of_message)
         async with ctx.typing(ephemeral=True):
             message = await self.generation_service.generate(ctx.guild.id, start, limit=1048)
@@ -65,12 +73,8 @@ class MarkovCog(commands.Cog):
         if ctx.guild is None:
             return False
 
-        start = ctx.message.content.split(' ')
-        if self.bot.user.mention == start[0]:
-            start.pop(0)
-
         log.info("in #%s @%s used markov by mention: %s", ctx.channel, ctx.author, message.content)
-        await self.markov(cast(GuildContext, ctx), *start)
+        await self.markov(cast(GuildContext, ctx))
         return True
 
     @staticmethod
