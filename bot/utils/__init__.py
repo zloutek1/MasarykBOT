@@ -56,4 +56,4 @@ def sanitize_channel_name(channel_name: str) -> str:
             .replace("(", "")
             .replace(")", "")
             .replace(":", "꞉")
-            .replace("?", "？")
+            .replace("?", "？"))
