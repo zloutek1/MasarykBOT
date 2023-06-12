@@ -16,7 +16,7 @@ class ChannelType(enum.Enum):
 
 @dataclass
 class ChannelEntity(Entity):
-    __table_name__ = "server.channel"
+    __table_name__ = "server.channels"
 
     guild_id: Id
     category_id: Optional[Id]
