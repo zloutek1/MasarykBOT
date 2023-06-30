@@ -40,24 +40,7 @@ Discord bot created mainly for the community of Faculty of Informatics, Masaryk'
 - [Postgresql 9.12](https://git-scm.com/downloads)
 
 
-
-## Heroku (recommended)
-
- [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/zloutek1/MasarykBOT/tree/v2)
-
-1. Sign up for a free account on https://www.heroku.com/
-2. Create an app by clicking the Deploy to Heroku button
-3. Fork this git repository
-4. Go to your app at https://dashboard.heroku.com/apps
-5. Click on your heroku profile > Account settings and copy the API Key
-5. Go to your git repository go to settings > secrets and create two keys `HEROKU_API_KEY` and `HEROKU_APP_NAME`
-5. Back in Heroku select *Deploy* tab > Deployment method: git > Enable automatic deploys
-6. Then select *Resources* tab > toggle the switch on the `python ./__main__.py` Dyno
-8. to see the progress you can go to *Activity* tab on Heroku to see the build process and *More > View logs* to see the stdout of the bot
-
-
-
-## Docker (optional)
+## Docker (recommended)
 
 1. clone this git repository
 ```
