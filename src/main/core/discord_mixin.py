@@ -1,7 +1,9 @@
-from tokenize import String
+from dataclasses import dataclass
 
-from sqlalchemy import Column
+from sqlalchemy import Column, String
+from sqlalchemy.orm import Mapped
 
 
+@dataclass
 class DiscordMixin:
-    discord_id = Column(String, nullable=False)
+    discord_id: Mapped[str] = Column(String, nullable=False)

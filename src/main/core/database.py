@@ -1,12 +1,15 @@
 import logging
-from contextlib import contextmanager, AbstractContextManager
-from typing import Callable
+from contextlib import asynccontextmanager
+from typing import AsyncContextManager
 
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession, AsyncAttrs
+from sqlalchemy.orm import DeclarativeBase
 
 log = logging.getLogger(__name__)
-Entity = declarative_base()
+
+
+class Entity(AsyncAttrs, DeclarativeBase):
+    pass
 
 
 class Database:
@@ -19,8 +22,8 @@ class Database:
         async with self._engine.begin() as conn:
             await conn.run_sync(Entity.metadata.create_all)
 
-    @contextmanager
-    async def session(self) -> Callable[..., AbstractContextManager[AsyncSession]]:
+    @asynccontextmanager
+    async def session(self) -> AsyncContextManager[AsyncSession]:
         session: AsyncSession = self._session_factory()
         try:
             yield session

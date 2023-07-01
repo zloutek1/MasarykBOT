@@ -1,7 +1,7 @@
 import abc
-from contextlib import AbstractContextManager
-from typing import Callable, TypeVar, Generic, Iterator
+from typing import TypeVar, Generic, Union, AsyncContextManager, Callable, Sequence, cast
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import Entity
@@ -9,11 +9,11 @@ from core.domain.mixin import DomainMixin
 
 __all__ = ['DomainRepository']
 
-T = TypeVar('T', bound=[Entity, DomainMixin])
+T = TypeVar('T', bound=Union[Entity, DomainMixin])
 
 
 class DomainRepository(abc.ABC, Generic[T]):
-    def __init__(self, session_factory: Callable[..., AbstractContextManager[AsyncSession]]) -> None:
+    def __init__(self, session_factory: Callable[..., AsyncContextManager[AsyncSession]]) -> None:
         self.session_factory = session_factory
 
     @property
@@ -21,36 +21,39 @@ class DomainRepository(abc.ABC, Generic[T]):
     def model(self):
         raise NotImplementedError
 
-    async def find_all(self) -> Iterator[T]:
+    async def find_all(self) -> Sequence[T]:
         async with self.session_factory() as session:
-            return await session.query(self.model).all()
+            statement = select(self.model)
+            result = await session.execute(statement)
+            session.expire_all()
+            return cast(Sequence[T], result.scalars().all())
 
     async def find(self, id: str) -> T | None:
         async with self.session_factory() as session:
-            return (
-                await session
-                .query(self.model)
-                .filter(self.model.id == id)
-                .first()
-            )
+            statement = select(self.model).where(self.model.id == id)
+            result = await session.execute(statement)
+            session.expire_all()
+            return result.scalars().one()
 
     async def create(self, entity: T) -> T:
         async with self.session_factory() as session:
-            await session.add(entity)
+            session.add(entity)
             await session.commit()
             await session.refresh(entity)
             return entity
 
     async def update(self, entity: T) -> T:
         async with self.session_factory() as session:
-            await session.add(entity)
+            await session.merge(entity)
             await session.commit()
             await session.refresh(entity)
+            session.expire_all()
             return entity
 
     async def delete(self, id: str) -> None:
         async with self.session_factory() as session:
-            entity = self.find(id)
-            if entity:
-                await session.delete(entity)
-                await session.commit()
+            if not (entity := self.find(id)):
+                return
+            await session.delete(entity)
+            await session.commit()
+            session.expire_all()
