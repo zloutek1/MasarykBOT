@@ -25,15 +25,15 @@ class DomainRepository(abc.ABC, Generic[T]):
         async with self.session_factory() as session:
             statement = select(self.model)
             result = await session.execute(statement)
-            session.expire_all()
+            session.expunge_all()
             return cast(Sequence[T], result.scalars().all())
 
     async def find(self, id: str) -> T | None:
         async with self.session_factory() as session:
             statement = select(self.model).where(self.model.id == id)
             result = await session.execute(statement)
-            session.expire_all()
-            return result.scalars().one()
+            session.expunge_all()
+            return result.scalars().first()
 
     async def create(self, entity: T) -> T:
         async with self.session_factory() as session:
@@ -46,14 +46,13 @@ class DomainRepository(abc.ABC, Generic[T]):
         async with self.session_factory() as session:
             await session.merge(entity)
             await session.commit()
-            await session.refresh(entity)
-            session.expire_all()
+            session.expunge_all()
             return entity
 
     async def delete(self, id: str) -> None:
         async with self.session_factory() as session:
-            if not (entity := self.find(id)):
+            if not (entity := await self.find(id)):
                 return
             await session.delete(entity)
             await session.commit()
-            session.expire_all()
+            session.expunge_all()
