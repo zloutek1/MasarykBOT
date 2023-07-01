@@ -5,7 +5,7 @@ from core.dated.mixin import DatedMixin
 from core.discord_mixin import DiscordMixin
 
 
-class Guild(Entity, DatedMixin, DiscordMixin):
-    __tablename__ = "guild"
+class Role(Entity, DatedMixin, DiscordMixin):
+    __tablename__ = "role"
 
-    name = Column(String, nullable=False)
+    name = Column(String)
