@@ -26,17 +26,23 @@ class Test(unittest.IsolatedAsyncioTestCase):
 
     async def test_create(self):
         # Call the method being tested
-        guild = MagicMock(spec=discord.Guild)
-        guild.id = "770041446911123456"
-        guild.name = "Mock Guild"
-
+        guild = self._create_guild('guild name')
         model = Guild.from_discord(guild)
 
         result = await self.repository.create(model)
 
         # Assert the expected result
         self.assertIsInstance(result, Guild)
-        assert_that(result.name).is_equal_to('Mock Guild')
+        assert_that(result.name).is_equal_to('guild name')
 
         results = await self.repository.find_all()
         assert_that(results).contains_only(result)
+
+    def _create_guild(self, name: str):
+        guild = MagicMock(spec=discord.Guild)
+        guild.id = "770041446911123456"
+        icon = MagicMock(spec=discord.Attachment)
+        icon.url = "https://google.com"
+        guild.icon = icon
+        guild.name = name
+        return guild
