@@ -1,6 +1,5 @@
 import logging
-
-from rich.logging import RichHandler
+import sys
 
 
 def setup_logging() -> None:
@@ -9,7 +8,7 @@ def setup_logging() -> None:
     logging.getLogger("asyncio").setLevel(logging.INFO)
 
     log = logging.getLogger()
-    shell_handler = RichHandler()
+    shell_handler = logging.StreamHandler(sys.stdout)  # RichHandler()
 
     log.setLevel(logging.DEBUG)
     shell_handler.setLevel(logging.INFO)
