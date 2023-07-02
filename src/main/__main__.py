@@ -1,12 +1,13 @@
 import asyncio
 import os
 
-from dependency_injector.wiring import Provide, inject, register_loader_containers
+from dependency_injector.wiring import Provide, inject
 from dotenv import load_dotenv
 
 from core.bot import MasarykBot
 from core.database import Database
-from core.inject import Inject
+from core.inject import Inject, setup_injections
+from core.logging import setup_logging
 
 
 @inject
@@ -28,10 +29,8 @@ async def main(cogs: list = Provide[Inject.cog.all]) -> None:
 
 if __name__ == "__main__":
     load_dotenv()
-
-    container = Inject()
-    container.wire(modules=[__name__])
-    register_loader_containers(container)
+    setup_logging()
+    setup_injections()
 
     try:
         asyncio.run(main())

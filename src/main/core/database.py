@@ -28,9 +28,9 @@ class Entity(AsyncAttrs, DeclarativeBase, metaclass=CombinedMeta):
 
 
 class Database:
-    def __init__(self, url: str):
+    def __init__(self, url: str, echo: bool):
         assert url, "Database connection url must be set"
-        self._engine = create_async_engine(url, echo=True)
+        self._engine = create_async_engine(url, echo=echo)
         self._session_factory = async_sessionmaker(bind=self._engine, expire_on_commit=False)
 
     async def create_database(self) -> None:
