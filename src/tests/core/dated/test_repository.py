@@ -1,23 +1,23 @@
 import unittest
 from dataclasses import dataclass
 
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, select
 from sqlalchemy.orm import Mapped
 
 from core.database import Entity, Database
-from core.domain.mixin import DomainMixin
-from core.domain.repository import DomainRepository
+from core.dated.mixin import DatedMixin
+from core.dated.repository import DatedRepository
 
 
 @dataclass
-class TestDomainItem(Entity, DomainMixin):
-    __tablename__ = "test_domain_item"
+class TestDatedItem(Entity, DatedMixin):
+    __tablename__ = "test_dated_item"
     name: Mapped[str] = Column(String)
 
 
-class TestDomainItemRepository(DomainRepository[TestDomainItem]):
+class TestDatedItemRepository(DatedRepository[TestDatedItem]):
     @property
-    def model(self): return TestDomainItem
+    def model(self): return TestDatedItem
 
 
 class Test(unittest.IsolatedAsyncioTestCase):
@@ -25,7 +25,7 @@ class Test(unittest.IsolatedAsyncioTestCase):
     def setUpClass(cls):
         database = Database('sqlite+aiosqlite:///:memory:')
         cls.database = database
-        cls.repository = TestDomainItemRepository(session_factory=database.session)
+        cls.repository = TestDatedItemRepository(session_factory=database.session)
 
     async def asyncSetUp(self) -> None:
         await self.database.create_database()
@@ -37,10 +37,10 @@ class Test(unittest.IsolatedAsyncioTestCase):
 
     async def test_find_all(self):
         # Create test records
-        item1 = TestDomainItem()
+        item1 = TestDatedItem()
         item1.name = 'Alice'
 
-        item2 = TestDomainItem()
+        item2 = TestDatedItem()
         item2.name = 'Bob'
 
         async with self.session.begin():
@@ -59,7 +59,7 @@ class Test(unittest.IsolatedAsyncioTestCase):
 
     async def test_find(self):
         # Create a test record
-        item = TestDomainItem()
+        item = TestDatedItem()
         item.name = 'John'
 
         async with self.session.begin():
@@ -75,17 +75,17 @@ class Test(unittest.IsolatedAsyncioTestCase):
 
     async def test_create(self):
         # Call the method being tested
-        item = TestDomainItem()
+        item = TestDatedItem()
         item.name = 'Josh'
         result = await self.repository.create(item)
 
         # Assert the expected result
-        self.assertIsInstance(result, TestDomainItem)
+        self.assertIsInstance(result, TestDatedItem)
         self.assertEqual(result.name, 'Josh')
 
     async def test_update(self):
         # Create a test record
-        item = TestDomainItem()
+        item = TestDatedItem()
         item.name = 'Amelia'
 
         async with self.session.begin():
@@ -103,7 +103,7 @@ class Test(unittest.IsolatedAsyncioTestCase):
 
     async def test_delete(self):
         # Create a test record
-        item = TestDomainItem()
+        item = TestDatedItem()
         item.name = 'Guy'
 
         async with self.session.begin():
@@ -116,4 +116,46 @@ class Test(unittest.IsolatedAsyncioTestCase):
 
         # Assert the record has been deleted
         result = await self.repository.find(item.id)
+        self.assertIsNone(result)
+
+        async with self.session.begin():
+            self.session.add(item)
+            await self.session.commit()
+            self.session.expunge_all()
+
+        statement = select(TestDatedItem).where(TestDatedItem.id == item.id)
+        result = await self.session.execute(statement)
+        self.session.expunge_all()
+        result = result.scalars().first()
+        print(result)
+        self.assertIsNotNone(result)
+        self.assertIsNotNone(result.deleted)
+
+    async def test_hard_delete(self):
+        # Create a test record
+        item = TestDatedItem()
+        item.name = 'Guy'
+
+        async with self.session.begin():
+            self.session.add(item)
+            await self.session.commit()
+            self.session.expunge_all()
+
+        # Call the method being tested
+        await self.repository.hard_delete(item.id)
+
+        # Assert the record has been deleted
+        result = await self.repository.find(item.id)
+        self.assertIsNone(result)
+
+        async with self.session.begin():
+            self.session.add(item)
+            await self.session.commit()
+            self.session.expunge_all()
+
+        statement = select(TestDatedItem).where(TestDatedItem.id == item.id)
+        result = await self.session.execute(statement)
+        self.session.expunge_all()
+        result = result.scalars().first()
+        print(result)
         self.assertIsNone(result)
