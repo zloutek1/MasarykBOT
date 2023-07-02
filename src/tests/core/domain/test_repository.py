@@ -1,6 +1,7 @@
 import unittest
 from dataclasses import dataclass
 
+from assertpy import assert_that
 from sqlalchemy import Column, String
 from sqlalchemy.orm import Mapped
 
@@ -52,10 +53,7 @@ class Test(unittest.IsolatedAsyncioTestCase):
         result = await self.repository.find_all()
 
         # Assert the expected results
-        print(result)
-        self.assertEqual(len(result), 2)
-        self.assertIn(item1, result)
-        self.assertIn(item2, result)
+        assert_that(result).contains_only(item1, item2)
 
     async def test_find(self):
         # Create a test record
@@ -71,7 +69,7 @@ class Test(unittest.IsolatedAsyncioTestCase):
         result = await self.repository.find(item.id)
 
         # Assert the expected result
-        self.assertEqual(result, item)
+        assert_that(result).is_equal_to(item)
 
     async def test_create(self):
         # Call the method being tested
@@ -80,8 +78,8 @@ class Test(unittest.IsolatedAsyncioTestCase):
         result = await self.repository.create(item)
 
         # Assert the expected result
-        self.assertIsInstance(result, TestDomainItem)
-        self.assertEqual(result.name, 'Josh')
+        assert_that(result).is_instance_of(TestDomainItem)
+        assert_that(result.name).is_equal_to('Josh')
 
     async def test_update(self):
         # Create a test record
@@ -95,11 +93,11 @@ class Test(unittest.IsolatedAsyncioTestCase):
 
         # Call the method being tested
         item.name = 'Alicia'
-        updated_user = await self.repository.update(item)
+        updated_item = await self.repository.update(item)
 
         # Assert the expected result
-        self.assertEqual(updated_user.name, 'Alicia')
-        self.assertEqual(item, await self.repository.find(item.id))
+        assert_that(updated_item.name).is_equal_to('Alicia')
+        assert_that(item).is_equal_to(await self.repository.find(item.id))
 
     async def test_delete(self):
         # Create a test record
@@ -116,4 +114,4 @@ class Test(unittest.IsolatedAsyncioTestCase):
 
         # Assert the record has been deleted
         result = await self.repository.find(item.id)
-        self.assertIsNone(result)
+        assert_that(result).is_none()
