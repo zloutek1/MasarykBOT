@@ -1,15 +1,30 @@
+import abc
 import logging
 from contextlib import asynccontextmanager
 from typing import AsyncContextManager
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession, AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm.decl_api import DeclarativeAttributeIntercept
 
 log = logging.getLogger(__name__)
 
 
-class Entity(AsyncAttrs, DeclarativeBase):
-    pass
+class CombinedMeta(DeclarativeAttributeIntercept, abc.ABCMeta):
+    """
+    The DelcarativeBase has a metaclass=DeclarativeAttributeIntercept
+    In order to allow Entity subclasses to also inherit other abstract classes
+    we need to add abc.ABCMeta to the Entity's metaclass
+    """
+
+
+class Entity(AsyncAttrs, DeclarativeBase, metaclass=CombinedMeta):
+    """
+    A base class for all database entities
+    ex.
+        class User(Entity):
+            __tablename__ = "user"
+    """
 
 
 class Database:

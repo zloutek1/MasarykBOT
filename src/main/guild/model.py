@@ -11,14 +11,14 @@ from core.discord_mixin import DiscordMixin
 
 
 @dataclass
-class Guild(Entity, DatedMixin, DiscordMixin):
+class Guild(Entity, DatedMixin, DiscordMixin[discord.Guild]):
     __tablename__ = "guild"
 
     name: Mapped[str] = Column(String, nullable=False)
 
     @classmethod
-    def from_discord(cls, guild: discord.Guild) -> Self:
-        entity = cls()
-        entity.discord_id = guild.id
-        entity.name = guild.name
+    def from_discord(cls, dto: discord.Guild) -> Self:
+        entity = Guild()
+        entity.discord_id = dto.id
+        entity.name = dto.name
         return entity
