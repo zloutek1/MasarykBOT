@@ -7,11 +7,13 @@ from core.database import Entity
 from core.dated.mixin import DatedMixin
 from core.discord_mixin import DiscordMixin
 
+__all__ = ["Role"]
+
 
 class Role(Entity, DatedMixin, DiscordMixin[discord.Role]):
     __tablename__ = "role"
 
-    name = Column(String)
+    name: str = Column(String)
 
     @classmethod
     def from_discord(cls, dto: discord.Role) -> Self:

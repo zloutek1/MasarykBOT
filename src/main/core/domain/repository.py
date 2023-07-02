@@ -1,5 +1,5 @@
 import abc
-from typing import TypeVar, Generic, Union, AsyncContextManager, Callable, Sequence, cast
+from typing import TypeVar, Generic, Union, AsyncContextManager, Callable, Sequence, cast, Type
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,7 +18,7 @@ class DomainRepository(abc.ABC, Generic[T]):
 
     @property
     @abc.abstractmethod
-    def model(self):
+    def model(self) -> Type:
         raise NotImplementedError
 
     async def find_all(self) -> Sequence[T]:
