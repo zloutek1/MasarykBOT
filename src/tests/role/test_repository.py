@@ -4,8 +4,8 @@ from assertpy import assert_that
 
 import helpers
 from core.database import Entity, Database
-from guild.model import Guild
-from guild.repository import GuildRepository
+from role.model import Role
+from role.repository import RoleRepository
 
 
 class Test(unittest.IsolatedAsyncioTestCase):
@@ -13,7 +13,7 @@ class Test(unittest.IsolatedAsyncioTestCase):
     def setUpClass(cls):
         database = Database('sqlite+aiosqlite:///:memory:')
         cls.database = database
-        cls.repository = GuildRepository(session_factory=database.session)
+        cls.repository = RoleRepository(session_factory=database.session)
 
     async def asyncSetUp(self) -> None:
         await self.database.create_database()
@@ -25,14 +25,14 @@ class Test(unittest.IsolatedAsyncioTestCase):
 
     async def test_create(self):
         # Call the method being tested
-        guild = helpers.create_guild('guild name')
-        model = Guild.from_discord(guild)
+        role = helpers.create_role('role name')
+        model = Role.from_discord(role)
 
         result = await self.repository.create(model)
 
         # Assert the expected result
-        self.assertIsInstance(result, Guild)
-        assert_that(result.name).is_equal_to('guild name')
+        self.assertIsInstance(result, Role)
+        assert_that(result.name).is_equal_to('role name')
 
         results = await self.repository.find_all()
         assert_that(results).contains_only(result)
