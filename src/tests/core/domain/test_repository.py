@@ -1,47 +1,38 @@
-import unittest
 from dataclasses import dataclass
 
 from assertpy import assert_that
 from sqlalchemy import Column, String
 from sqlalchemy.orm import Mapped
 
-from core.database import Entity, Database
+import helpers
+from core.database import Entity
 from core.domain.mixin import DomainMixin
 from core.domain.repository import DomainRepository
 
 
 @dataclass
-class TestDomainItem(Entity, DomainMixin):
+class DomainItem(Entity, DomainMixin):
     __tablename__ = "test_domain_item"
     name: Mapped[str] = Column(String)
 
 
-class TestDomainItemRepository(DomainRepository[TestDomainItem]):
+class DomainItemRepository(DomainRepository[DomainItem]):
     @property
-    def model(self): return TestDomainItem
+    def model(self): return DomainItem
 
 
-class Test(unittest.IsolatedAsyncioTestCase):
+class Test(helpers.RepositoryTest):
     @classmethod
     def setUpClass(cls):
-        database = Database('sqlite+aiosqlite:///:memory:')
-        cls.database = database
-        cls.repository = TestDomainItemRepository(session_factory=database.session)
-
-    async def asyncSetUp(self) -> None:
-        await self.database.create_database()
-        self.session = await self.database.session().__aenter__()
-
-    async def asyncTearDown(self) -> None:
-        async with self.database._engine.begin() as conn:
-            await conn.run_sync(Entity.metadata.drop_all)
+        super().setUpClass()
+        cls.repository = DomainItemRepository(session_factory=cls.database.session)
 
     async def test_find_all(self):
         # Create test records
-        item1 = TestDomainItem()
+        item1 = DomainItem()
         item1.name = 'Alice'
 
-        item2 = TestDomainItem()
+        item2 = DomainItem()
         item2.name = 'Bob'
 
         async with self.session.begin():
@@ -57,7 +48,7 @@ class Test(unittest.IsolatedAsyncioTestCase):
 
     async def test_find(self):
         # Create a test record
-        item = TestDomainItem()
+        item = DomainItem()
         item.name = 'John'
 
         async with self.session.begin():
@@ -73,17 +64,17 @@ class Test(unittest.IsolatedAsyncioTestCase):
 
     async def test_create(self):
         # Call the method being tested
-        item = TestDomainItem()
+        item = DomainItem()
         item.name = 'Josh'
         result = await self.repository.create(item)
 
         # Assert the expected result
-        assert_that(result).is_instance_of(TestDomainItem)
+        assert_that(result).is_instance_of(DomainItem)
         assert_that(result.name).is_equal_to('Josh')
 
     async def test_update(self):
         # Create a test record
-        item = TestDomainItem()
+        item = DomainItem()
         item.name = 'Amelia'
 
         async with self.session.begin():
@@ -101,7 +92,7 @@ class Test(unittest.IsolatedAsyncioTestCase):
 
     async def test_delete(self):
         # Create a test record
-        item = TestDomainItem()
+        item = DomainItem()
         item.name = 'Guy'
 
         async with self.session.begin():

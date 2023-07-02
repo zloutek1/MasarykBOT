@@ -1,19 +1,16 @@
-import unittest
-
 from assertpy import assert_that
 
 import helpers
-from core.database import Entity, Database
+from core.database import Entity
 from guild.model import Guild
 from guild.repository import GuildRepository
 
 
-class Test(unittest.IsolatedAsyncioTestCase):
+class Test(helpers.RepositoryTest):
     @classmethod
     def setUpClass(cls):
-        database = Database('sqlite+aiosqlite:///:memory:')
-        cls.database = database
-        cls.repository = GuildRepository(session_factory=database.session)
+        super().setUpClass()
+        cls.repository = GuildRepository(session_factory=cls.database.session)
 
     async def asyncSetUp(self) -> None:
         await self.database.create_database()

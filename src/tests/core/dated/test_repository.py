@@ -1,47 +1,38 @@
-import unittest
 from dataclasses import dataclass
 
 from assertpy import assert_that
 from sqlalchemy import Column, String, select
 from sqlalchemy.orm import Mapped
 
-from core.database import Entity, Database
+import helpers
+from core.database import Entity
 from core.dated.mixin import DatedMixin
 from core.dated.repository import DatedRepository
 
 
 @dataclass
-class TestDatedItem(Entity, DatedMixin):
+class DatedItem(Entity, DatedMixin):
     __tablename__ = "test_dated_item"
     name: Mapped[str] = Column(String)
 
 
-class TestDatedItemRepository(DatedRepository[TestDatedItem]):
+class DatedItemRepository(DatedRepository[DatedItem]):
     @property
-    def model(self): return TestDatedItem
+    def model(self): return DatedItem
 
 
-class Test(unittest.IsolatedAsyncioTestCase):
+class Test(helpers.RepositoryTest):
     @classmethod
     def setUpClass(cls):
-        database = Database('sqlite+aiosqlite:///:memory:')
-        cls.database = database
-        cls.repository = TestDatedItemRepository(session_factory=database.session)
-
-    async def asyncSetUp(self) -> None:
-        await self.database.create_database()
-        self.session = await self.database.session().__aenter__()
-
-    async def asyncTearDown(self) -> None:
-        async with self.database._engine.begin() as conn:
-            await conn.run_sync(Entity.metadata.drop_all)
+        super().setUpClass()
+        cls.repository = DatedItemRepository(session_factory=cls.database.session)
 
     async def test_find_all(self):
         # Create test records
-        item1 = TestDatedItem()
+        item1 = DatedItem()
         item1.name = 'Alice'
 
-        item2 = TestDatedItem()
+        item2 = DatedItem()
         item2.name = 'Bob'
 
         async with self.session.begin():
@@ -57,7 +48,7 @@ class Test(unittest.IsolatedAsyncioTestCase):
 
     async def test_find(self):
         # Create a test record
-        item = TestDatedItem()
+        item = DatedItem()
         item.name = 'John'
 
         async with self.session.begin():
@@ -73,17 +64,17 @@ class Test(unittest.IsolatedAsyncioTestCase):
 
     async def test_create(self):
         # Call the method being tested
-        item = TestDatedItem()
+        item = DatedItem()
         item.name = 'Josh'
         result = await self.repository.create(item)
 
         # Assert the expected result
-        assert_that(result).is_instance_of(TestDatedItem)
+        assert_that(result).is_instance_of(DatedItem)
         assert_that(result.name).is_equal_to('Josh')
 
     async def test_update(self):
         # Create a test record
-        item = TestDatedItem()
+        item = DatedItem()
         item.name = 'Amelia'
 
         async with self.session.begin():
@@ -101,7 +92,7 @@ class Test(unittest.IsolatedAsyncioTestCase):
 
     async def test_delete(self):
         # Create a test record
-        item = TestDatedItem()
+        item = DatedItem()
         item.name = 'Guy'
 
         async with self.session.begin():
@@ -117,7 +108,7 @@ class Test(unittest.IsolatedAsyncioTestCase):
         assert_that(result).is_none()
 
         async with self.session.begin():
-            statement = select(TestDatedItem).where(TestDatedItem.id == item.id)
+            statement = select(DatedItem).where(DatedItem.id == item.id)
             result = await self.session.execute(statement)
             result = result.scalars().first()
             self.session.expunge_all()
@@ -127,7 +118,7 @@ class Test(unittest.IsolatedAsyncioTestCase):
 
     async def test_hard_delete(self):
         # Create a test record
-        item = TestDatedItem()
+        item = DatedItem()
         item.name = 'Guy'
 
         async with self.session.begin():
@@ -143,7 +134,7 @@ class Test(unittest.IsolatedAsyncioTestCase):
         assert_that(result).is_none()
 
         async with self.session.begin():
-            statement = select(TestDatedItem).where(TestDatedItem.id == item.id)
+            statement = select(DatedItem).where(DatedItem.id == item.id)
             result = await self.session.execute(statement)
             result = result.scalars().first()
             self.session.expunge_all()
