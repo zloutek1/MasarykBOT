@@ -1,0 +1,10 @@
+database:
+  url: 'postgresql+asyncpg://masaryk:changeit@localhost:5432/discord'
+
+bot:
+  prefix: '!'
+
+  cogs:
+    sync:
+      guilds:
+        - 573528762843660299
