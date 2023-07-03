@@ -36,5 +36,9 @@ class MasarykBot(commands.Bot):
 
     async def get_context(self, origin: discord.Message | discord.Interaction, /, *,
                           cls: Type[commands._types.ContextT] = discord.utils.MISSING) -> Any:
+        """
+        Provides all commands with our custom context, instead of the default commands.Context
+        """
+
         cls = cast(Type[commands._types.ContextT], Context) if cls is discord.utils.MISSING else cls
         return await super().get_context(origin, cls=cls)

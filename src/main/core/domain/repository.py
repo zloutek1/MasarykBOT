@@ -13,6 +13,10 @@ T = TypeVar('T', bound=Union[Entity, DomainMixin])
 
 
 class DomainRepository(abc.ABC, Generic[T]):
+    """
+    A CRUD repository for DomainMixin entities
+    """
+
     def __init__(self, session_factory: Callable[..., AsyncContextManager[AsyncSession]]) -> None:
         self.session_factory = session_factory
 

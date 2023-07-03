@@ -8,6 +8,10 @@ from core.inject.syncer import Syncer
 
 
 class Inject(containers.DeclarativeContainer):
+    """
+    Setup dependency injections for the application
+    """
+
     config = providers.Configuration(yaml_files=["resources/application.yaml"])
 
     database: Database = providers.Singleton(
@@ -24,6 +28,10 @@ class Inject(containers.DeclarativeContainer):
 
 
 def setup_injections():
+    """
+    Initialize injection for the application
+    """
+
     container = Inject()
     container.wire(modules=['__main__'])
     register_loader_containers(container)

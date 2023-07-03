@@ -9,6 +9,12 @@ __all__ = ["DatedMixin"]
 
 
 class DatedMixin(DomainMixin):
+    """
+    An addition to the Entity class
+    provides the database entity datetime tracking
+    as well as implements a soft-delete
+    """
+
     created: Mapped[datetime | None] = Column(DateTime, default=func.now())
     updated: Mapped[datetime | None] = Column(DateTime, default=None)
     deleted: Mapped[datetime | None] = Column(DateTime, default=None)

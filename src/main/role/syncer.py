@@ -24,8 +24,6 @@ class RoleSyncer(Syncer[Role]):
         db_roles = set(await self.repository.find_all())
         discord_roles = {Role.from_discord(role) for role in guild.roles}
 
-        # New roles are those which are on the cached guild but not on the
-        # DB guild, going by the role ID. We need to send them in for creation.
         roles_to_create = discord_roles - db_roles
 
         roles_to_update = set()

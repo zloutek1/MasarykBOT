@@ -14,6 +14,11 @@ T = TypeVar('T', bound=Union[Entity, DatedMixin])
 
 
 class DatedRepository(DomainRepository[T], abc.ABC):
+    """
+    A CRUD repository for DatedMixin entities
+    delete is implemented as a soft-delete
+    """
+
     async def find_all(self) -> Sequence[T]:
         async with self.session_factory() as session:
             statement = select(self.model).where(self.not_deleted())

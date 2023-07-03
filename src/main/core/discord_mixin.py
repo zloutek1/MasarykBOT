@@ -10,11 +10,20 @@ T = TypeVar('T')
 
 
 class DiscordMixin(DatedMixin, Generic[T]):
+    """
+    An addition to the Entity class
+    provides the database entity with a discord_id and logic based on that
+    """
+
     discord_id: Mapped[str] = Column(String, nullable=False)
 
     @classmethod
     @abc.abstractmethod
     def from_discord(cls, dto: T) -> Self:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def equals(self, other: object) -> bool:
         raise NotImplementedError
 
     def __eq__(self, other: object) -> bool:

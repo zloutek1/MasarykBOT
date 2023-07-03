@@ -6,6 +6,10 @@ from role.repository import RoleRepository
 
 
 class Repository(containers.DeclarativeContainer):
+    """
+    Setup injections of the application's repositories
+    """
+
     database = providers.Dependency()
 
     guild = Singleton(GuildRepository, session_factory=database.provided.session)

@@ -10,6 +10,11 @@ from sqlalchemy.orm import Mapped
 
 
 class DomainMixin(Hashable, abc.ABC):
+    """
+    An addition to the Entity class
+    provides the database entity an id field
+    """
+
     id: Mapped[uuid.UUID | None] = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
 
     def __eq__(self, other) -> bool:

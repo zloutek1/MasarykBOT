@@ -3,6 +3,10 @@ import sys
 
 
 def setup_logging() -> None:
+    """
+    configure all the logging in the application
+    """
+
     logging.getLogger('discord').setLevel(logging.WARNING)
     logging.getLogger('discord.http').setLevel(logging.WARNING)
     logging.getLogger("asyncio").setLevel(logging.INFO)

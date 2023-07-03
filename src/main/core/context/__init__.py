@@ -8,6 +8,10 @@ if TYPE_CHECKING:
 
 
 class Context(commands.Context["MasarykBot"]):
+    """
+    Provide custom methods in the context of commands.
+    """
+
     async def send_error(self, title: str, body: str) -> discord.Message:
         embed = self._get_error_embed(title, body)
         return await self.send(embeds=[embed])
