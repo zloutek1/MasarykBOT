@@ -1,63 +1,46 @@
-version: '3.8'
+version: '3'
 
 services:
   database:
-    container_name: bot.db
-    image: postgres:13
-    #ports:
-    #  - "5432:5432"
+    image: postgres:11-alpine
+    ports:
+      - "5432:5432"
     environment:
-      - POSTGRES_USER=masaryk
-      - POSTGRES_PASSWORD=localdbpassword
-      - POSTGRES_DB=discord
-      - PGDATA=/var/lib/postgresql/data/pgdata
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_USER: masaryk
+      POSTGRES_PASSWORD: changeit
+      POSTGRES_DB: discord
     volumes:
-      - ./database/sql:/docker-entrypoint-initdb.d/
-      - postgres:/var/lib/postgresql/data     # persist data even if container shuts down
-    restart: unless-stopped
+      - postgres:/var/lib/postgresql/data
 
-  bot:
-    container_name: bot.bot
-    build:
-      context: .
-      dockerfile: Dockerfile.bot
+  database-fe:
+    image: dpage/pgadmin4
+    ports:
+      - 8082:80
+    user: root
     environment:
-      - COLUMNS=150
-    volumes:
-      - .:/MasarykBOT
-    depends_on:
-      - database
-    restart: unless-stopped
-
-  tests:
-    container_name: bot.tests
-    build:
-      context: .
-      dockerfile: tests/Dockerfile.test
-    volumes:
-      - .:/MasarykBOT
-    profiles:
-      - test
-
-  database_backup:
-    container_name: bot.db_backup
-    image: prodrigestivill/postgres-backup-local
-    volumes:
-      - ./database/backup:/backups
-    links:
-      - database
-    depends_on:
-      - database
-    environment:
-      - POSTGRES_HOST=database
-      - POSTGRES_USER=masaryk
-      - POSTGRES_PASSWORD=localdbpassword
-      - POSTGRES_DB=discord
-      - POSTGRES_EXTRA_OPTS=-Z6 --blobs
-      - SCHEDULE=@daily
-    restart: unless-stopped
-    profiles:
-      - prod
+      PGADMIN_DEFAULT_EMAIL: admin@muni.cz
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_LISTEN_ADDRESS: 0.0.0.0
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+      SERVER_CONFIG: |
+        {
+          "Servers": {
+             "1": {
+                 "Name": "Docker",
+                 "Group" : "Servers",
+                 "Port": 5432,
+                 "Username": "masaryk",
+                 "Host": "database",
+                 "SSLMode": "prefer",
+                 "MaintenanceDB": "discord",
+                 "PassFile": "/pgpassfile"
+            }
+          }
+        }
+      SERVER_PASS_FILE: |
+        database:5432:masaryk:discord:changeit
 
 volumes:
   postgres:
