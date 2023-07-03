@@ -25,6 +25,7 @@ pre-commit = "^3.3.3"
 aiosqlite = "^0.19.0"
 assertpy = "^1.1"
 sqlalchemy = {extras = ["mypy"], version = "^2.0.17"}
+mockito = "^1.4.0"
 
 [build-system]
 requires = ["poetry-core"]

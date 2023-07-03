@@ -5,7 +5,7 @@ from role.model import Role
 from role.repository import RoleRepository
 
 
-class Test(helpers.RepositoryTest):
+class Test(helpers.TestBase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -13,7 +13,7 @@ class Test(helpers.RepositoryTest):
 
     async def test_create(self):
         # Call the method being tested
-        role = helpers.create_role('role name')
+        role = helpers.create_discord_role(name='role name')
         model = Role.from_discord(role)
 
         result = await self.repository.create(model)

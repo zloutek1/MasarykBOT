@@ -6,7 +6,7 @@ from guild.model import Guild
 from guild.repository import GuildRepository
 
 
-class Test(helpers.RepositoryTest):
+class Test(helpers.TestBase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -22,7 +22,7 @@ class Test(helpers.RepositoryTest):
 
     async def test_create(self):
         # Call the method being tested
-        guild = helpers.create_guild('guild name')
+        guild = helpers.create_discord_guild(name='guild name')
         model = Guild.from_discord(guild)
 
         result = await self.repository.create(model)

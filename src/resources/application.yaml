@@ -1,6 +1,6 @@
 database:
   url: 'postgresql+asyncpg://masaryk:changeit@localhost:5432/discord'
-  echo: True
+  echo: true
 
 bot:
   prefix: '!'

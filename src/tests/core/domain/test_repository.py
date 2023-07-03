@@ -21,7 +21,7 @@ class DomainItemRepository(DomainRepository[DomainItem]):
     def model(self): return DomainItem
 
 
-class Test(helpers.RepositoryTest):
+class Test(helpers.TestBase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()

@@ -48,11 +48,3 @@ class DomainRepository(abc.ABC, Generic[T]):
             await session.commit()
             session.expunge_all()
             return entity
-
-    async def delete(self, id: str) -> None:
-        async with self.session_factory() as session:
-            if not (entity := await self.find(id)):
-                return
-            await session.delete(entity)
-            await session.commit()
-            session.expunge_all()

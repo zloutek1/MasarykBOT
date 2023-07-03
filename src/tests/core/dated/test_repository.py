@@ -21,7 +21,7 @@ class DatedItemRepository(DatedRepository[DatedItem]):
     def model(self): return DatedItem
 
 
-class Test(helpers.RepositoryTest):
+class Test(helpers.TestBase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
