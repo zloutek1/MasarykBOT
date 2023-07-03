@@ -14,8 +14,8 @@ T = TypeVar('T', bound=Union[Entity, DomainMixin])
 
 class DomainRepository(abc.ABC, Generic[T]):
     """
-    A CRUD repository for DomainMixin entities
-    """
+   A CRUD repository for DomainMixin entities
+   """
 
     def __init__(self, session_factory: Callable[..., AsyncContextManager[AsyncSession]]) -> None:
         self.session_factory = session_factory
@@ -52,3 +52,11 @@ class DomainRepository(abc.ABC, Generic[T]):
             await session.commit()
             session.expunge_all()
             return entity
+
+    async def delete(self, id: str) -> None:
+        async with self.session_factory() as session:
+            if not (entity := await self.find(id)):
+                return
+            await session.delete(entity)
+            await session.commit()
+            session.expunge_all()
