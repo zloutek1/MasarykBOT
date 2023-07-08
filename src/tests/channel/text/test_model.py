@@ -7,11 +7,11 @@ from channel.text.model import TextChannel
 class Test(helpers.TestBase):
 
     async def test_from_discord(self):
-        role = helpers.create_discord_text_channel(name='guild name')
+        role = helpers.create_discord_text_channel(name='text channel name')
 
         model = TextChannel.from_discord(role)
 
-        assert_that(model.name).is_equal_to('guild name')
+        assert_that(model.name).is_equal_to('text channel name')
 
     async def test_hash_by_discord_id(self):
         model1 = TextChannel()

@@ -6,7 +6,7 @@ from guild.model import Guild
 from helpers.attachment import create_attachment
 from role.model import Role
 
-__all__ = ['create_discord_guild']
+__all__ = ['create_discord_guild', 'create_db_guild']
 
 
 def create_discord_guild(

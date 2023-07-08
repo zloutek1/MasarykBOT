@@ -33,3 +33,13 @@ class Test(helpers.TestBase):
 
         results = await self.repository.find_all()
         assert_that(results).contains_only(result)
+
+    async def test_find_all(self):
+        model = helpers.create_db_text_channel(name='channel name')
+        result1 = await self.repository.create(model)
+
+        model = helpers.create_db_category_channel(name='category name')
+        result2 = await self.repository.create(model)
+
+        results = await self.repository.find_all()
+        assert_that(results).contains_only(result1, result2)

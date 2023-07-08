@@ -10,7 +10,7 @@ class TestBase(unittest.IsolatedAsyncioTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.database = Database(url='sqlite+aiosqlite:///:memory:', echo=True)
+        cls.database = Database(url='sqlite+aiosqlite:///:memory:', echo=False)
 
     async def asyncSetUp(self) -> None:
         await self.database.create_database()
