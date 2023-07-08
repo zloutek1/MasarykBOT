@@ -7,9 +7,9 @@ from guild.model import Guild
 class Test(helpers.TestBase):
 
     async def test_from_discord(self):
-        role = helpers.create_discord_guild(name='guild name')
+        guild = helpers.create_discord_guild(name='guild name')
 
-        model = Guild.from_discord(role)
+        model = Guild.from_discord(guild)
 
         assert_that(model.name).is_equal_to('guild name')
 

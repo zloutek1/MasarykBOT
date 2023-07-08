@@ -7,9 +7,9 @@ from channel.text.model import TextChannel
 class Test(helpers.TestBase):
 
     async def test_from_discord(self):
-        role = helpers.create_discord_text_channel(name='text channel name')
+        text_channel = helpers.create_discord_text_channel(name='text channel name')
 
-        model = TextChannel.from_discord(role)
+        model = TextChannel.from_discord(text_channel)
 
         assert_that(model.name).is_equal_to('text channel name')
 
