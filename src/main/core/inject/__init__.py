@@ -1,5 +1,7 @@
+import redis.asyncio as redis
 from dependency_injector import containers, providers
 from dependency_injector.wiring import register_loader_containers
+from redis.asyncio.client import Redis
 
 from core.database import Database
 from core.inject.cog import Cog
@@ -18,6 +20,12 @@ class Inject(containers.DeclarativeContainer):
         Database,
         url=config.database.url,
         echo=config.database.echo
+    )
+
+    redis: Redis = providers.Singleton(
+        redis.from_url,
+        url=config.redis.url,
+        decode_responses=True
     )
 
     repository: Repository = providers.Container(Repository, database=database)
