@@ -32,7 +32,12 @@ class Inject(containers.DeclarativeContainer):
 
     cog: Cog = providers.Container(Cog)
 
-    syncer: Syncer = providers.Container(Syncer, role_repository=repository.role)
+    syncer: Syncer = providers.Container(
+        Syncer,
+        role_repository=repository.role,
+        category_channel_repository=repository.category_channel,
+        text_channel_repository=repository.text_channel
+    )
 
 
 def setup_injections():
