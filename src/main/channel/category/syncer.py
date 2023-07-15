@@ -22,19 +22,11 @@ class CategoryChannelSyncer(Syncer[CategoryChannel]):
         log.debug("Getting the diff for category channels.")
 
         db_categories = set(await self.repository.find_all())
-        discord_categories = {CategoryChannel.from_discord(category) for category in guild.categories}
+        guild_categories = {CategoryChannel.from_discord(category) for category in guild.categories}
 
-        categories_to_create = discord_categories - db_categories
-
-        categories_to_update = set()
-        for discord_category in discord_categories - categories_to_create:
-            for db_category in db_categories:
-                if discord_category == db_category:
-                    if not discord_category.equals(db_category):
-                        categories_to_update.add(discord_category)
-                    break
-
-        categories_to_delete = db_categories - discord_categories
+        categories_to_create = guild_categories - db_categories
+        categories_to_update = guild_categories - categories_to_create
+        categories_to_delete = db_categories - guild_categories
 
         return Diff(categories_to_create, categories_to_update, categories_to_delete)
 

@@ -19,31 +19,31 @@ class Test(helpers.TestBase):
         cls.syncer = TextChannelSyncer(repository=cls.repository)
 
     async def test__get_diff_no_change(self):
-        await self.repository.create(TextChannel(discord_id=123456, name='Admin'))
-        discord_text_channels = [MockTextChannel(id=123456, name='Admin')]
+        await self.repository.create(TextChannel(discord_id=123456, name='channel'))
+        discord_text_channels = [MockTextChannel(id=123456, name='channel')]
         guild = MockGuild(text_channels=discord_text_channels)
 
         diff = await self.syncer._get_diff(guild)
 
         assert_that(diff).is_instance_of(Diff)
         assert_that(diff.created).is_empty()
-        assert_that(diff.updated).is_empty()
+        assert_that(diff.updated).contains_only(TextChannel(discord_id=123456, name='channel'))
         assert_that(diff.deleted).is_empty()
 
     async def test__get_diff_created(self):
-        discord_text_channels = [MockTextChannel(id=123456, name='Admin')]
+        discord_text_channels = [MockTextChannel(id=123456, name='channel')]
         guild = MockGuild(text_channels=discord_text_channels)
 
         diff = await self.syncer._get_diff(guild)
 
         assert_that(diff).is_instance_of(Diff)
         assert_that(diff.created).contains_only(
-            TextChannel(id=None, discord_id=123456, name='Admin'))
+            TextChannel(id=None, discord_id=123456, name='channel'))
         assert_that(diff.updated).is_empty()
         assert_that(diff.deleted).is_empty()
 
     async def test__get_diff_updated(self):
-        await self.repository.create(TextChannel(discord_id=123456, name='Admin'))
+        await self.repository.create(TextChannel(discord_id=123456, name='channel'))
         discord_text_channels = [MockTextChannel(id=123456, name='User')]
         guild = MockGuild(text_channels=discord_text_channels)
 
@@ -55,9 +55,9 @@ class Test(helpers.TestBase):
         assert_that(diff.deleted).is_empty()
 
     async def test__get_diff_deleted(self):
-        await self.repository.create(TextChannel(discord_id=123456, name='Admin'))
-        discord_roles = []
-        guild = MockGuild(roles=discord_roles)
+        await self.repository.create(TextChannel(discord_id=123456, name='channel'))
+        discord_text_channels = []
+        guild = MockGuild(text_channels=discord_text_channels)
 
         diff = await self.syncer._get_diff(guild)
 
@@ -67,7 +67,7 @@ class Test(helpers.TestBase):
         assert_that(diff.deleted).contains_only(TextChannel(discord_id=123456, name='User'))
 
     async def test__sync_created(self):
-        text_channel = TextChannel(discord_id=123456, name='Admin')
+        text_channel = TextChannel(discord_id=123456, name='channel')
         diff = Diff(created={text_channel}, updated=set(), deleted=set())
 
         await self.syncer._sync(diff)
@@ -76,7 +76,7 @@ class Test(helpers.TestBase):
         assert_that(results).contains_only(text_channel)
 
     async def test__sync_updated(self):
-        await self.repository.create(TextChannel(discord_id=123456, name='Admin'))
+        await self.repository.create(TextChannel(discord_id=123456, name='channel'))
         text_channel = TextChannel(discord_id=123456, name='User')
         diff = Diff(created=set(), updated={text_channel}, deleted=set())
 
@@ -87,7 +87,7 @@ class Test(helpers.TestBase):
 
     async def test__sync_deleted(self):
         db_text_channel = await self.repository.create(
-            TextChannel(discord_id=123456, name='Admin'))
+            TextChannel(discord_id=123456, name='channel'))
         diff = Diff(created=set(), updated=set(), deleted={db_text_channel})
 
         await self.syncer._sync(diff)

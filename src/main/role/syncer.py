@@ -22,19 +22,11 @@ class RoleSyncer(Syncer[Role]):
         log.debug("Getting the diff for roles.")
 
         db_roles = set(await self.repository.find_all())
-        discord_roles = {Role.from_discord(role) for role in guild.roles}
+        guild_roles: set[Role] = {Role.from_discord(role) for role in guild.roles}
 
-        roles_to_create = discord_roles - db_roles
-
-        roles_to_update = set()
-        for discord_role in discord_roles - roles_to_create:
-            for db_role in db_roles:
-                if discord_role == db_role:
-                    if not discord_role.equals(db_role):
-                        roles_to_update.add(discord_role)
-                    break
-
-        roles_to_delete = db_roles - discord_roles
+        roles_to_create = guild_roles - db_roles
+        roles_to_update = guild_roles - roles_to_create
+        roles_to_delete = db_roles - guild_roles
 
         return Diff(roles_to_create, roles_to_update, roles_to_delete)
 

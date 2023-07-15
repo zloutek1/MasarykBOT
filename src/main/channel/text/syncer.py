@@ -22,19 +22,12 @@ class TextChannelSyncer(Syncer[TextChannel]):
         log.debug("Getting the diff for text channels.")
 
         db_text_channels = set(await self.repository.find_all())
-        discord_text_channels = {TextChannel.from_discord(text_channel) for text_channel in guild.text_channels}
+        guild_text_channels: set[TextChannel] = {TextChannel.from_discord(text_channel)
+                                                 for text_channel in guild.text_channels}
 
-        text_channels_to_create = discord_text_channels - db_text_channels
-
-        text_channels_to_update = set()
-        for discord_text_channel in discord_text_channels - text_channels_to_create:
-            for db_text_channel in db_text_channels:
-                if discord_text_channel == db_text_channel:
-                    if not discord_text_channel.equals(db_text_channel):
-                        text_channels_to_update.add(discord_text_channel)
-                    break
-
-        text_channels_to_delete = db_text_channels - discord_text_channels
+        text_channels_to_create = guild_text_channels - db_text_channels
+        text_channels_to_update = guild_text_channels - text_channels_to_create
+        text_channels_to_delete = db_text_channels - guild_text_channels
 
         return Diff(text_channels_to_create, text_channels_to_update, text_channels_to_delete)
 

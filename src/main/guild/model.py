@@ -24,11 +24,6 @@ class Guild(Entity, DiscordMixin[discord.Guild]):
         entity.icon_url = dto.icon.url if dto.icon else None
         return entity
 
-    def equals(self, other: object) -> bool:
-        if not isinstance(other, self.__class__):
-            return False
-        return self.name == other.name and self.icon_url == other.icon_url
-
     def __repr__(self) -> str:
         attrs = (
             ('id', self.id),
@@ -40,4 +35,4 @@ class Guild(Entity, DiscordMixin[discord.Guild]):
             ('icon_url', self.icon_url),
         )
         inner = ' '.join('%s=%r' % t for t in attrs)
-        return f'<Guild {inner}>'
+        return f'<{type(self).__name__} {inner}>'

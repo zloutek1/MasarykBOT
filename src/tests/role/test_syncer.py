@@ -32,7 +32,7 @@ class Test(helpers.TestBase):
 
         assert_that(diff).is_instance_of(Diff)
         assert_that(diff.created).is_empty()
-        assert_that(diff.updated).is_empty()
+        assert_that(diff.updated).contains_only(self.everyone_role, Role(discord_id=123456, name='Admin'))
         assert_that(diff.deleted).is_empty()
 
     async def test__get_diff_created(self):
@@ -44,7 +44,7 @@ class Test(helpers.TestBase):
 
         assert_that(diff).is_instance_of(Diff)
         assert_that(diff.created).contains_only(Role(id=None, discord_id=123456, name='Admin'))
-        assert_that(diff.updated).is_empty()
+        assert_that(diff.updated).contains_only(self.everyone_role)
         assert_that(diff.deleted).is_empty()
 
     async def test__get_diff_updated(self):
@@ -57,7 +57,7 @@ class Test(helpers.TestBase):
 
         assert_that(diff).is_instance_of(Diff)
         assert_that(diff.created).is_empty()
-        assert_that(diff.updated).contains_only(Role(discord_id=123456, name='User'))
+        assert_that(diff.updated).contains_only(self.everyone_role, Role(discord_id=123456, name='User'))
         assert_that(diff.deleted).is_empty()
 
     async def test__get_diff_deleted(self):
@@ -69,7 +69,7 @@ class Test(helpers.TestBase):
 
         assert_that(diff).is_instance_of(Diff)
         assert_that(diff.created).is_empty()
-        assert_that(diff.updated).is_empty()
+        assert_that(diff.updated).contains_only(self.everyone_role)
         assert_that(diff.deleted).contains_only(Role(discord_id=123456, name='User'))
 
     async def test__sync_created(self):

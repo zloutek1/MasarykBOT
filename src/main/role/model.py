@@ -24,11 +24,6 @@ class Role(Entity, DiscordMixin[discord.Role]):
         entity.color = dto.color.value
         return entity
 
-    def equals(self, other: object) -> bool:
-        if not isinstance(other, self.__class__):
-            return False
-        return self.name == other.name and self.color == other.color
-
     def __repr__(self) -> str:
         attrs = (
             ('id', self.id),
@@ -40,4 +35,4 @@ class Role(Entity, DiscordMixin[discord.Role]):
             ('color', self.color),
         )
         inner = ' '.join('%s=%r' % t for t in attrs)
-        return f'<Role {inner}>'
+        return f'<{type(self).__name__} {inner}>'

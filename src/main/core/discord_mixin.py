@@ -23,10 +23,6 @@ class DiscordMixin(DatedMixin, Generic[T]):
     def from_discord(cls, dto: T) -> Self:
         raise NotImplementedError
 
-    @abc.abstractmethod
-    def equals(self, other: object) -> bool:
-        raise NotImplementedError
-
     def __eq__(self, other: object) -> bool:
         if isinstance(other, self.__class__):
             return self.discord_id == other.discord_id

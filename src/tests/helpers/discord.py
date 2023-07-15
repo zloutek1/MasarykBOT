@@ -169,7 +169,7 @@ class MockGuild(CustomMockMixin, unittest.mock.Mock, HashableMixin):
     spec_set = guild_instance
 
     def __init__(self, roles: Iterable[MockRole] | None = None, **kwargs) -> None:
-        default_kwargs = {"id": next(self.discord_id), "members": [], "icon": None}
+        default_kwargs = {"id": next(self.discord_id), "members": [], "icon": None, "channels": [], "text_channels": []}
         super().__init__(**collections.ChainMap(kwargs, default_kwargs))
 
         if roles:
@@ -355,6 +355,10 @@ class MockTextChannel(CustomMockMixin, unittest.mock.Mock, HashableMixin):
         if "mention" not in kwargs:
             self.mention = f"#{self.name}"
 
+        if guild in kwargs and isinstance(guild, MockGuild):
+            guild.text_channels.append(self)
+            guild.channels.append(self)
+
 
 class MockVoiceChannel(CustomMockMixin, unittest.mock.Mock, HashableMixin):
     """
@@ -440,7 +444,7 @@ message_instance = discord.Message(state=state, channel=channel, data=message_da
 # Create a Context instance to get a realistic MagicMock of `discord.ext.commands.Context`
 context_instance = Context(
     message=unittest.mock.MagicMock(),
-    prefix="$",
+    prefix="!",
     bot=MockBot(),
     view=None
 )

@@ -21,10 +21,3 @@ class Message(Entity, DiscordMixin[discord.Message]):
         entity.discord_id = dto.id
         entity.content = dto.content
         return entity
-
-    def equals(self, other: object) -> bool:
-        if not isinstance(other, self.__class__):
-            return False
-        if self.id and other.id and self.id != other.id:
-            return False
-        return self.content == other.content
