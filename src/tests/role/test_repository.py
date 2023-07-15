@@ -1,6 +1,7 @@
 from assertpy import assert_that
 
 import helpers
+from helpers import MockRole
 from role.model import Role
 from role.repository import RoleRepository
 
@@ -13,7 +14,7 @@ class Test(helpers.TestBase):
 
     async def test_create(self):
         # Call the method being tested
-        role = helpers.create_discord_role(name='role name')
+        role = MockRole(name='role name')
         model = Role.from_discord(role)
 
         result = await self.repository.create(model)

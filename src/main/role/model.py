@@ -14,7 +14,7 @@ class Role(Entity, DiscordMixin[discord.Role]):
     __tablename__ = "role"
 
     name: Mapped[str] = Column(String)
-    color: Mapped[int] = Column(Integer)
+    color: Mapped[int] = Column(Integer, default=0xdeadbf)
 
     @classmethod
     def from_discord(cls, dto: discord.Role) -> Self:
@@ -27,6 +27,17 @@ class Role(Entity, DiscordMixin[discord.Role]):
     def equals(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return False
-        if self.id and other.id and self.id != other.id:
-            return False
         return self.name == other.name and self.color == other.color
+
+    def __repr__(self) -> str:
+        attrs = (
+            ('id', self.id),
+            ('discord_id', self.discord_id),
+            ('created', self.created),
+            ('updated', self.updated),
+            ('deleted', self.deleted),
+            ('name', self.name),
+            ('color', self.color),
+        )
+        inner = ' '.join('%s=%r' % t for t in attrs)
+        return f'<Role {inner}>'

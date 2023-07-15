@@ -1,13 +1,14 @@
 from assertpy import assert_that
 
 import helpers
+from helpers import MockMessage
 from message.model import Message
 
 
 class Test(helpers.TestBase):
 
     async def test_from_discord(self):
-        message = helpers.create_discord_message(content='Hi')
+        message = MockMessage(content='Hi')
 
         model = Message.from_discord(message)
 

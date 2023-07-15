@@ -8,5 +8,5 @@ __all__ = ["MessageRepository"]
 
 class MessageRepository(DatedRepository[Message]):
     @property
-    def model(self) -> Type:
+    def model(self) -> Type[Message]:
         return Message

@@ -2,6 +2,7 @@ from assertpy import assert_that
 
 import helpers
 from core.database import Entity
+from helpers import MockMessage
 from message.model import Message
 from message.repository import MessageRepository
 
@@ -22,7 +23,7 @@ class Test(helpers.TestBase):
 
     async def test_create(self):
         # Call the method being tested
-        message = helpers.create_discord_message(content='Hi')
+        message = MockMessage(content='Hi')
         model = Message.from_discord(message)
 
         result = await self.repository.create(model)

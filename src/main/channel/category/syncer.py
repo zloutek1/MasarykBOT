@@ -3,7 +3,6 @@ import logging
 import discord
 
 from channel.category.model import CategoryChannel
-from channel.category.model import categoryChannel
 from channel.category.repository import CategoryChannelRepository
 from sync.syncer import Syncer, Diff
 
@@ -39,7 +38,7 @@ class CategoryChannelSyncer(Syncer[CategoryChannel]):
 
         return Diff(categories_to_create, categories_to_update, categories_to_delete)
 
-    async def _sync(self, diff: Diff[categoryChannel]) -> None:
+    async def _sync(self, diff: Diff[CategoryChannel]) -> None:
         """Synchronise the database with the category channels cache of `guild`."""
         log.debug("Syncing created categories...")
         for category in diff.created:

@@ -1,9 +1,11 @@
 from assertpy import assert_that
 
 import helpers
+from channel.category.model import CategoryChannel
 from channel.repository import ChannelRepository
 from channel.text.model import TextChannel
 from core.database import Entity
+from helpers import MockTextChannel
 
 
 class Test(helpers.TestBase):
@@ -22,7 +24,7 @@ class Test(helpers.TestBase):
 
     async def test_create(self):
         # Call the method being tested
-        channel = helpers.create_discord_text_channel(name='channel name')
+        channel = MockTextChannel(name='channel name')
         model = TextChannel.from_discord(channel)
 
         result = await self.repository.create(model)
@@ -35,10 +37,10 @@ class Test(helpers.TestBase):
         assert_that(results).contains_only(result)
 
     async def test_find_all(self):
-        model = helpers.create_db_text_channel(name='channel name')
+        model = TextChannel(discord_id=1, name='channel name')
         result1 = await self.repository.create(model)
 
-        model = helpers.create_db_category_channel(name='category name')
+        model = CategoryChannel(discord_id=2, name='category name')
         result2 = await self.repository.create(model)
 
         results = await self.repository.find_all()

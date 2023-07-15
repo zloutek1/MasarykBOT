@@ -4,6 +4,7 @@ import helpers
 from channel.category.model import CategoryChannel
 from channel.category.repository import CategoryChannelRepository
 from core.database import Entity
+from helpers import MockCategoryChannel
 
 
 class Test(helpers.TestBase):
@@ -22,7 +23,7 @@ class Test(helpers.TestBase):
 
     async def test_create(self):
         # Call the method being tested
-        channel = helpers.create_discord_category_channel(name='channel name')
+        channel = MockCategoryChannel(name='channel name')
         model = CategoryChannel.from_discord(channel)
 
         result = await self.repository.create(model)

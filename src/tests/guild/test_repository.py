@@ -4,6 +4,7 @@ import helpers
 from core.database import Entity
 from guild.model import Guild
 from guild.repository import GuildRepository
+from helpers import MockGuild
 
 
 class Test(helpers.TestBase):
@@ -22,7 +23,7 @@ class Test(helpers.TestBase):
 
     async def test_create(self):
         # Call the method being tested
-        guild = helpers.create_discord_guild(name='guild name')
+        guild = MockGuild(name='guild name')
         model = Guild.from_discord(guild)
 
         result = await self.repository.create(model)

@@ -2,12 +2,13 @@ from assertpy import assert_that
 
 import helpers
 from channel.category.model import CategoryChannel
+from helpers import MockCategoryChannel
 
 
 class Test(helpers.TestBase):
 
     async def test_from_discord(self):
-        category = helpers.create_discord_category_channel(name='category name')
+        category = MockCategoryChannel(name='category name')
 
         model = CategoryChannel.from_discord(category)
 

@@ -2,12 +2,13 @@ from assertpy import assert_that
 
 import helpers
 from channel.text.model import TextChannel
+from helpers import MockTextChannel
 
 
 class Test(helpers.TestBase):
 
     async def test_from_discord(self):
-        text_channel = helpers.create_discord_text_channel(name='text channel name')
+        text_channel = MockTextChannel(name='text channel name')
 
         model = TextChannel.from_discord(text_channel)
 

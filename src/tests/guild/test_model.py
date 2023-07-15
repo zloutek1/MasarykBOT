@@ -1,13 +1,15 @@
+import discord
 from assertpy import assert_that
 
 import helpers
 from guild.model import Guild
+from helpers import MockGuild
 
 
 class Test(helpers.TestBase):
 
     async def test_from_discord(self):
-        guild = helpers.create_discord_guild(name='guild name')
+        guild: discord.Guild = MockGuild(name='guild name')
 
         model = Guild.from_discord(guild)
 

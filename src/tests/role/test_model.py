@@ -1,13 +1,14 @@
 from assertpy import assert_that
 
 import helpers
+from helpers import MockRole
 from role.model import Role
 
 
 class Test(helpers.TestBase):
 
     async def test_from_discord(self):
-        role = helpers.create_discord_role(name='role name')
+        role = MockRole(name='role name')
 
         model = Role.from_discord(role)
 

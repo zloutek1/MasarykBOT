@@ -8,5 +8,5 @@ __all__ = ["TextChannelRepository"]
 
 class TextChannelRepository(DatedRepository[TextChannel]):
     @property
-    def model(self) -> Type:
+    def model(self) -> Type[TextChannel]:
         return TextChannel

@@ -27,6 +27,17 @@ class Guild(Entity, DiscordMixin[discord.Guild]):
     def equals(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return False
-        if self.id and other.id and self.id != other.id:
-            return False
         return self.name == other.name and self.icon_url == other.icon_url
+
+    def __repr__(self) -> str:
+        attrs = (
+            ('id', self.id),
+            ('discord_id', self.discord_id),
+            ('created', self.created),
+            ('updated', self.updated),
+            ('deleted', self.deleted),
+            ('name', self.name),
+            ('icon_url', self.icon_url),
+        )
+        inner = ' '.join('%s=%r' % t for t in attrs)
+        return f'<Guild {inner}>'

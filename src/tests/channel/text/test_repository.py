@@ -4,6 +4,7 @@ import helpers
 from channel.text.model import TextChannel
 from channel.text.repository import TextChannelRepository
 from core.database import Entity
+from helpers import MockTextChannel
 
 
 class Test(helpers.TestBase):
@@ -22,7 +23,7 @@ class Test(helpers.TestBase):
 
     async def test_create(self):
         # Call the method being tested
-        channel = helpers.create_discord_text_channel(name='channel name')
+        channel = MockTextChannel(name='channel name')
         model = TextChannel.from_discord(channel)
 
         result = await self.repository.create(model)

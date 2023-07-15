@@ -1,7 +1,8 @@
 import abc
 from typing import Generic, TypeVar, Self
 
-from sqlalchemy import Column, String
+from discord.types.snowflake import Snowflake
+from sqlalchemy import Column, Integer
 from sqlalchemy.orm import Mapped
 
 from core.dated.mixin import DatedMixin
@@ -15,7 +16,7 @@ class DiscordMixin(DatedMixin, Generic[T]):
     provides the database entity with a discord_id and logic based on that
     """
 
-    discord_id: Mapped[str] = Column(String, nullable=False)
+    discord_id: Mapped[Snowflake] = Column(Integer, nullable=False)
 
     @classmethod
     @abc.abstractmethod
@@ -28,8 +29,8 @@ class DiscordMixin(DatedMixin, Generic[T]):
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, self.__class__):
-            return self.discord_id == self.discord_id
+            return self.discord_id == other.discord_id
         return False
 
     def __hash__(self) -> int:
-        return hash(self.discord_id)
+        return int(self.discord_id)

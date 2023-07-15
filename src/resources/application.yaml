@@ -1,9 +1,9 @@
 database:
-  url: 'postgresql+asyncpg://masaryk:changeit@localhost:5432/discord'
+  url: 'postgresql+asyncpg://masaryk:changeit@localhost:9432/discord'
   echo: true
 
 redis:
-  url: 'redis://localhost:6379'
+  url: 'redis://localhost:9379'
 
 bot:
   prefix: '!'

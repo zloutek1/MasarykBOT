@@ -8,5 +8,5 @@ __all__ = ["GuildRepository"]
 
 class GuildRepository(DatedRepository[Guild]):
     @property
-    def model(self) -> Type:
+    def model(self) -> Type[Guild]:
         return Guild

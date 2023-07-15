@@ -8,5 +8,5 @@ __all__ = ["CategoryChannelRepository"]
 
 class CategoryChannelRepository(DatedRepository[CategoryChannel]):
     @property
-    def model(self) -> Type:
+    def model(self) -> Type[CategoryChannel]:
         return CategoryChannel

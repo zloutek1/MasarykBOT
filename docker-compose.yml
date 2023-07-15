@@ -4,7 +4,7 @@ services:
   database:
     image: postgres:11-alpine
     ports:
-      - "5432:5432"
+      - "9432:5432"
     environment:
       PGDATA: /var/lib/postgresql/data/pgdata
       POSTGRES_USER: masaryk
@@ -16,7 +16,7 @@ services:
   database-fe:
     image: dpage/pgadmin4
     ports:
-      - 8082:80
+      - 9082:80
     user: root
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@muni.cz
@@ -45,12 +45,12 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - '6379:6379'
+      - '9379:6379'
 
   redisinsight:
     image: redislabs/redisinsight:latest
     ports:
-      - '8001:8001'
+      - '9001:8001'
 
 
 volumes:

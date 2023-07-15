@@ -3,9 +3,12 @@ import logging
 from contextlib import asynccontextmanager
 from typing import AsyncContextManager
 
+import sqlalchemy.exc
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession, AsyncAttrs
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm.decl_api import DeclarativeAttributeIntercept
+
+__all__ = ['Entity', 'Database', 'DatabaseError']
 
 log = logging.getLogger(__name__)
 
@@ -25,6 +28,10 @@ class Entity(AsyncAttrs, DeclarativeBase, metaclass=CombinedMeta):
         class User(Entity):
             __tablename__ = "user"
     """
+
+
+class DatabaseError(sqlalchemy.exc.SQLAlchemyError):
+    pass
 
 
 class Database:
