@@ -6,6 +6,7 @@ from channel.text.repository import TextChannelRepository
 from guild.repository import GuildRepository
 from message.repository import MessageRepository
 from role.repository import RoleRepository
+from starboard.config.repository import StarboardConfigRepository
 
 
 class Repository(containers.DeclarativeContainer):
@@ -20,3 +21,5 @@ class Repository(containers.DeclarativeContainer):
     category_channel = Singleton(CategoryChannelRepository, session_factory=database.provided.session)
     text_channel = Singleton(TextChannelRepository, session_factory=database.provided.session)
     message = Singleton(MessageRepository, session_factory=database.provided.session)
+
+    starboard_config = Singleton(StarboardConfigRepository, session_factory=database.provided.session)
