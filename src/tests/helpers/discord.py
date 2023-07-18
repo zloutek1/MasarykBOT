@@ -355,9 +355,9 @@ class MockTextChannel(CustomMockMixin, unittest.mock.Mock, HashableMixin):
         if "mention" not in kwargs:
             self.mention = f"#{self.name}"
 
-        if guild in kwargs and isinstance(guild, MockGuild):
-            guild.text_channels.append(self)
-            guild.channels.append(self)
+        if "guild" in kwargs and isinstance(kwargs["guild"], MockGuild):
+            kwargs["guild"].text_channels.append(self)
+            kwargs["guild"].channels.append(self)
 
 
 class MockVoiceChannel(CustomMockMixin, unittest.mock.Mock, HashableMixin):
