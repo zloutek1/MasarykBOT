@@ -12,7 +12,7 @@ enforce-typing==1.0.0.post1
 inject==4.3.1
 
 # database access
-aiohttp==3.8.3
+aiohttp==3.8.5
 asyncpg==0.27.0
 asyncpg-stubs==0.27.0
 
