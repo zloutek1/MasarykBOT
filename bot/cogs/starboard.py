@@ -272,7 +272,7 @@ class StarboardEmbed(discord.Embed):
         if message.attachments:
             file = message.attachments[0]
             spoiler = file.is_spoiler()
-            if not spoiler and file.url.lower().endswith(('png', 'jpeg', 'jpg', 'gif', 'webp')):
+            if not spoiler and file.filename.lower().endswith(('png', 'jpeg', 'jpg', 'gif', 'webp')):
                 self.set_image(url=file.url)
             elif spoiler:
                 self.add_field(name='Attachment',
