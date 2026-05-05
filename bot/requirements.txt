@@ -24,7 +24,7 @@ beautifulsoup4==4.11.1
 numpy==1.23.5
 matplotlib==3.6.2
 pandas==1.5.2
-Pillow==9.3.0
+Pillow==12.2.0
 types-Pillow==9.3.0.2
 
 ## fun
